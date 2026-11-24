@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.uv-cache/
+.DS_Store
+*.egg-info/
+dist/
+build/
+PROMPT.md
+scene.json
+*.atom
+preview.png
+renders*/
+
+# Private research data and outputs (never committed)
+examples/private/
+*.blend
+*.blend1
+.venv-blender/
+
+# Static site built by scripts/build_site.sh
+site/

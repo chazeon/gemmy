@@ -1,0 +1,12 @@
+Box fixture: corner, edge, face and interior atoms (test fixture)
+1.0
+4.0 0.0 0.0
+0.0 4.0 0.0
+0.0 0.0 4.0
+C N O H
+1 1 1 1
+Direct
+0.0 0.0 0.0
+0.5 0.0 0.0
+0.5 0.5 0.0
+0.5 0.5 0.5

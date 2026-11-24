@@ -1,0 +1,8 @@
+{
+  "elements": {"default": {"radius": 0.3}, "Al": {"radius": 0.4, "visible": false}},
+  "cells": {"supercell": [1, 1, 1], "periodic": [true, true, true]},
+  "polyhedra": [
+    {"name": "AlO6", "center": "Al", "ligands": ["O"], "min": 1.8, "max": 2.2,
+     "min_coordination": 6, "max_coordination": 6, "image_centers": true}
+  ]
+}

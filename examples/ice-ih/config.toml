@@ -1,0 +1,61 @@
+# Ice Ih: O-H covalent bonds plus dashed H-bonds, H1 (up) and H2 (down) in different colours.
+# Same content as config.json (tests/test_examples.py checks they agree).
+structure = "POSCAR"  # relative to this file
+polyhedra = []
+
+[elements.O]
+radius = 0.36
+color = [0.9, 0.05, 0.05, 1.0]
+material = "matte"
+
+[elements.H1]  # POSCAR species label: H whose O-H vector points up
+radius = 0.2
+color = [0.45, 0.7, 1.0, 1.0]
+material = "matte"
+
+[elements.H2]  # ... and down
+radius = 0.2
+color = [1.0, 0.85, 0.3, 1.0]
+material = "matte"
+
+[elements.H]
+radius = 0.2
+color = [0.95, 0.95, 0.95, 1.0]
+material = "matte"
+
+[materials.covalent]
+type = "principled"
+base_color = [0.85, 0.85, 0.85, 1.0]
+roughness = 0.4
+
+[materials.hbond]
+type = "principled"
+base_color = [0.3, 0.3, 0.3, 1.0]
+roughness = 0.5
+
+[cells]
+supercell = [1, 1, 1]
+periodic = [true, true, true]
+box = { x = [0, 1], y = [0, 1], z = [0, 1] }
+
+# Covalent O-H. "ends": an H across the box boundary is still drawn with its O.
+[[bonds]]
+a = "O"
+b = "H"
+min = 0.8
+max = 1.2
+radius = 0.07
+material = "covalent"
+complete = "ends"
+
+# Hydrogen bond, same O-H pair at a longer distance; only drawn when both ends are in the box.
+[[bonds]]
+a = "O"
+b = "H"
+min = 1.5
+max = 2.0
+radius = 0.02
+material = "hbond"
+color = [0.3, 0.3, 0.3, 1.0]
+complete = "none"
+style = "dashed"  # or "dotted"

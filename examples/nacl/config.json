@@ -1,0 +1,53 @@
+{
+  "structure": "POSCAR",
+  "elements": {
+    "Na": {
+      "radius": 0.95,
+      "color": [
+        0.55,
+        0.3,
+        0.8,
+        1.0
+      ],
+      "material": "matte"
+    },
+    "Cl": {
+      "radius": 0.75,
+      "color": [
+        0.2,
+        0.75,
+        0.3,
+        1.0
+      ],
+      "material": "matte"
+    }
+  },
+  "cells": {
+    "supercell": [
+      1,
+      1,
+      1
+    ],
+    "periodic": [
+      true,
+      true,
+      true
+    ],
+    "box": {
+      "x": [
+        0,
+        1
+      ],
+      "y": [
+        0,
+        1
+      ],
+      "z": [
+        0,
+        1
+      ]
+    }
+  },
+  "bonds": [],
+  "polyhedra": []
+}

@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gemmy"
+version = "0.1.0"
+description = "ASE-powered Blender scene builder for crystal structures."
+readme = "README.md"
+# Rendering needs Blender 4.2 LTS or newer (bundled Python 3.11).
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "ase>=3.23",
+    "pydantic>=2",
+    "tyro>=1.0.17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+gemmy = "gemmy.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+gemmy = ["view_template.html", "render/fonts/*.ttf", "render/fonts/OFL.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["blender: drives the real Blender backend in-process (needs bpy; skipped when it is not importable)"]
+
+[dependency-groups]
+blender = [
+    "bpy==5.2.3 ; python_full_version == '3.13.*'",
+]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# The Blender entry script must extend sys.path before importing gemmy.
+"scripts/blender_build_scene.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gemmy"]

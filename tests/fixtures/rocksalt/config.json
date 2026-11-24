@@ -1,0 +1,25 @@
+{
+  "elements": {
+    "default": {"radius": 0.3, "color": [0.8, 0.8, 0.8, 1.0]},
+    "Mg": {"radius": 0.4, "color": [0.2, 0.7, 0.3, 1.0]},
+    "O": {"radius": 0.28, "color": [0.9, 0.1, 0.1, 1.0]}
+  },
+  "cells": {"supercell": [1, 1, 1], "periodic": [true, true, true]},
+  "bonds": [
+    {"a": "Mg", "b": "O", "min": 1.8, "max": 2.4, "radius": 0.07, "material": "bond"}
+  ],
+  "polyhedra": [
+    {
+      "name": "MgO6",
+      "center": "Mg",
+      "ligands": ["O"],
+      "min": 1.8,
+      "max": 2.4,
+      "min_coordination": 6,
+      "max_coordination": 6,
+      "material": "polyhedron",
+      "color": [0.2, 0.6, 1.0, 0.2]
+    }
+  ],
+  "displacements": {"enabled": true, "style": "arrow", "scale": 5.0, "data_file": "disp.json"}
+}

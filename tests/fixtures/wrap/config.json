@@ -1,0 +1,5 @@
+{
+  "elements": {"default": {"radius": 0.3}, "Mg": {"radius": 0.4}},
+  "cells": {"supercell": [1, 1, 1], "periodic": [true, true, true]},
+  "bonds": [{"a": "Mg", "b": "O", "min": 1.8, "max": 2.4}]
+}

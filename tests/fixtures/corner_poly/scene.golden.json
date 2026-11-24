@@ -1,0 +1,1590 @@
+{
+ "cell": {
+  "origin": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "vectors": [
+   [
+    4.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    4.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    4.0
+   ]
+  ]
+ },
+ "materials": {
+  "bond": {
+   "alpha": 1.0,
+   "base_color": [
+    0.7,
+    0.7,
+    0.7,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.4,
+   "type": "principled"
+  },
+  "glass": {
+   "alpha": 0.2,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.05,
+   "type": "principled"
+  },
+  "matte": {
+   "alpha": 1.0,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.6,
+   "type": "principled"
+  },
+  "metal": {
+   "alpha": 1.0,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.9,
+   "roughness": 0.15,
+   "type": "principled"
+  },
+  "polyhedron": {
+   "alpha": 0.25,
+   "base_color": [
+    0.2,
+    0.6,
+    1.0,
+    0.25
+   ],
+   "metallic": 0.0,
+   "roughness": 0.2,
+   "type": "principled"
+  }
+ },
+ "points": [
+  {
+   "element": "Al",
+   "fractional": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "id": "p0",
+   "position": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "ref": "0"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "id": "p1",
+   "position": [
+    0.0,
+    0.0,
+    4.0
+   ],
+   "ref": "0+0_0_1"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "id": "p2",
+   "position": [
+    0.0,
+    4.0,
+    0.0
+   ],
+   "ref": "0+0_1_0"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    0.0,
+    1.0,
+    1.0
+   ],
+   "id": "p3",
+   "position": [
+    0.0,
+    4.0,
+    4.0
+   ],
+   "ref": "0+0_1_1"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "id": "p4",
+   "position": [
+    4.0,
+    0.0,
+    0.0
+   ],
+   "ref": "0+1_0_0"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    1.0,
+    0.0,
+    1.0
+   ],
+   "id": "p5",
+   "position": [
+    4.0,
+    0.0,
+    4.0
+   ],
+   "ref": "0+1_0_1"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    1.0,
+    1.0,
+    0.0
+   ],
+   "id": "p6",
+   "position": [
+    4.0,
+    4.0,
+    0.0
+   ],
+   "ref": "0+1_1_0"
+  },
+  {
+   "element": "Al",
+   "fractional": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "id": "p7",
+   "position": [
+    4.0,
+    4.0,
+    4.0
+   ],
+   "ref": "0+1_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.5,
+    0.0,
+    0.0
+   ],
+   "id": "p8",
+   "position": [
+    2.0,
+    0.0,
+    0.0
+   ],
+   "ref": "1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.5,
+    0.0,
+    1.0
+   ],
+   "id": "p9",
+   "position": [
+    2.0,
+    0.0,
+    4.0
+   ],
+   "ref": "1+0_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.5,
+    1.0,
+    0.0
+   ],
+   "id": "p10",
+   "position": [
+    2.0,
+    4.0,
+    0.0
+   ],
+   "ref": "1+0_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.5,
+    1.0,
+    1.0
+   ],
+   "id": "p11",
+   "position": [
+    2.0,
+    4.0,
+    4.0
+   ],
+   "ref": "1+0_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.5,
+    0.0
+   ],
+   "id": "p12",
+   "position": [
+    0.0,
+    2.0,
+    0.0
+   ],
+   "ref": "2"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.5,
+    1.0
+   ],
+   "id": "p13",
+   "position": [
+    0.0,
+    2.0,
+    4.0
+   ],
+   "ref": "2+0_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    0.5,
+    0.0
+   ],
+   "id": "p14",
+   "position": [
+    4.0,
+    2.0,
+    0.0
+   ],
+   "ref": "2+1_0_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    0.5,
+    1.0
+   ],
+   "id": "p15",
+   "position": [
+    4.0,
+    2.0,
+    4.0
+   ],
+   "ref": "2+1_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.0,
+    0.5
+   ],
+   "id": "p16",
+   "position": [
+    0.0,
+    0.0,
+    2.0
+   ],
+   "ref": "3"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    1.0,
+    0.5
+   ],
+   "id": "p17",
+   "position": [
+    0.0,
+    4.0,
+    2.0
+   ],
+   "ref": "3+0_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    0.0,
+    0.5
+   ],
+   "id": "p18",
+   "position": [
+    4.0,
+    0.0,
+    2.0
+   ],
+   "ref": "3+1_0_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    1.0,
+    0.5
+   ],
+   "id": "p19",
+   "position": [
+    4.0,
+    4.0,
+    2.0
+   ],
+   "ref": "3+1_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    -0.5,
+    0.0,
+    0.0
+   ],
+   "id": "p20",
+   "position": [
+    -2.0,
+    0.0,
+    0.0
+   ],
+   "ref": "1+-1_0_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    -0.5,
+    0.0
+   ],
+   "id": "p21",
+   "position": [
+    0.0,
+    -2.0,
+    0.0
+   ],
+   "ref": "2+0_-1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.0,
+    -0.5
+   ],
+   "id": "p22",
+   "position": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "ref": "3+0_0_-1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    -0.5,
+    0.0,
+    1.0
+   ],
+   "id": "p23",
+   "position": [
+    -2.0,
+    0.0,
+    4.0
+   ],
+   "ref": "1+-1_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    -0.5,
+    1.0
+   ],
+   "id": "p24",
+   "position": [
+    0.0,
+    -2.0,
+    4.0
+   ],
+   "ref": "2+0_-1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.0,
+    1.5
+   ],
+   "id": "p25",
+   "position": [
+    0.0,
+    0.0,
+    6.0
+   ],
+   "ref": "3+0_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    -0.5,
+    1.0,
+    0.0
+   ],
+   "id": "p26",
+   "position": [
+    -2.0,
+    4.0,
+    0.0
+   ],
+   "ref": "1+-1_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    1.5,
+    0.0
+   ],
+   "id": "p27",
+   "position": [
+    0.0,
+    6.0,
+    0.0
+   ],
+   "ref": "2+0_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    1.0,
+    -0.5
+   ],
+   "id": "p28",
+   "position": [
+    0.0,
+    4.0,
+    -2.0
+   ],
+   "ref": "3+0_1_-1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    -0.5,
+    1.0,
+    1.0
+   ],
+   "id": "p29",
+   "position": [
+    -2.0,
+    4.0,
+    4.0
+   ],
+   "ref": "1+-1_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    1.5,
+    1.0
+   ],
+   "id": "p30",
+   "position": [
+    0.0,
+    6.0,
+    4.0
+   ],
+   "ref": "2+0_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    1.0,
+    1.5
+   ],
+   "id": "p31",
+   "position": [
+    0.0,
+    4.0,
+    6.0
+   ],
+   "ref": "3+0_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.5,
+    0.0,
+    0.0
+   ],
+   "id": "p32",
+   "position": [
+    6.0,
+    0.0,
+    0.0
+   ],
+   "ref": "1+1_0_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    -0.5,
+    0.0
+   ],
+   "id": "p33",
+   "position": [
+    4.0,
+    -2.0,
+    0.0
+   ],
+   "ref": "2+1_-1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    0.0,
+    -0.5
+   ],
+   "id": "p34",
+   "position": [
+    4.0,
+    0.0,
+    -2.0
+   ],
+   "ref": "3+1_0_-1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.5,
+    0.0,
+    1.0
+   ],
+   "id": "p35",
+   "position": [
+    6.0,
+    0.0,
+    4.0
+   ],
+   "ref": "1+1_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    -0.5,
+    1.0
+   ],
+   "id": "p36",
+   "position": [
+    4.0,
+    -2.0,
+    4.0
+   ],
+   "ref": "2+1_-1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    0.0,
+    1.5
+   ],
+   "id": "p37",
+   "position": [
+    4.0,
+    0.0,
+    6.0
+   ],
+   "ref": "3+1_0_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.5,
+    1.0,
+    0.0
+   ],
+   "id": "p38",
+   "position": [
+    6.0,
+    4.0,
+    0.0
+   ],
+   "ref": "1+1_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    1.5,
+    0.0
+   ],
+   "id": "p39",
+   "position": [
+    4.0,
+    6.0,
+    0.0
+   ],
+   "ref": "2+1_1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    1.0,
+    -0.5
+   ],
+   "id": "p40",
+   "position": [
+    4.0,
+    4.0,
+    -2.0
+   ],
+   "ref": "3+1_1_-1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.5,
+    1.0,
+    1.0
+   ],
+   "id": "p41",
+   "position": [
+    6.0,
+    4.0,
+    4.0
+   ],
+   "ref": "1+1_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    1.5,
+    1.0
+   ],
+   "id": "p42",
+   "position": [
+    4.0,
+    6.0,
+    4.0
+   ],
+   "ref": "2+1_1_1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    1.0,
+    1.0,
+    1.5
+   ],
+   "id": "p43",
+   "position": [
+    4.0,
+    4.0,
+    6.0
+   ],
+   "ref": "3+1_1_1"
+  }
+ ],
+ "primitives": {
+  "atoms": [
+   {
+    "element": "O",
+    "id": "atom_0_O",
+    "material_id": "matte",
+    "point_id": "p8",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_1_O",
+    "material_id": "matte",
+    "point_id": "p9",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_2_O",
+    "material_id": "matte",
+    "point_id": "p10",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_3_O",
+    "material_id": "matte",
+    "point_id": "p11",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_4_O",
+    "material_id": "matte",
+    "point_id": "p12",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_5_O",
+    "material_id": "matte",
+    "point_id": "p13",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_6_O",
+    "material_id": "matte",
+    "point_id": "p14",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_7_O",
+    "material_id": "matte",
+    "point_id": "p15",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_8_O",
+    "material_id": "matte",
+    "point_id": "p16",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_9_O",
+    "material_id": "matte",
+    "point_id": "p17",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_10_O",
+    "material_id": "matte",
+    "point_id": "p18",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_11_O",
+    "material_id": "matte",
+    "point_id": "p19",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_12_O",
+    "material_id": "matte",
+    "point_id": "p20",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_13_O",
+    "material_id": "matte",
+    "point_id": "p21",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_14_O",
+    "material_id": "matte",
+    "point_id": "p22",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_15_O",
+    "material_id": "matte",
+    "point_id": "p23",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_16_O",
+    "material_id": "matte",
+    "point_id": "p24",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_17_O",
+    "material_id": "matte",
+    "point_id": "p25",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_18_O",
+    "material_id": "matte",
+    "point_id": "p26",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_19_O",
+    "material_id": "matte",
+    "point_id": "p27",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_20_O",
+    "material_id": "matte",
+    "point_id": "p28",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_21_O",
+    "material_id": "matte",
+    "point_id": "p29",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_22_O",
+    "material_id": "matte",
+    "point_id": "p30",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_23_O",
+    "material_id": "matte",
+    "point_id": "p31",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_24_O",
+    "material_id": "matte",
+    "point_id": "p32",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_25_O",
+    "material_id": "matte",
+    "point_id": "p33",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_26_O",
+    "material_id": "matte",
+    "point_id": "p34",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_27_O",
+    "material_id": "matte",
+    "point_id": "p35",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_28_O",
+    "material_id": "matte",
+    "point_id": "p36",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_29_O",
+    "material_id": "matte",
+    "point_id": "p37",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_30_O",
+    "material_id": "matte",
+    "point_id": "p38",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_31_O",
+    "material_id": "matte",
+    "point_id": "p39",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_32_O",
+    "material_id": "matte",
+    "point_id": "p40",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_33_O",
+    "material_id": "matte",
+    "point_id": "p41",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_34_O",
+    "material_id": "matte",
+    "point_id": "p42",
+    "radius": 0.3
+   },
+   {
+    "element": "O",
+    "id": "atom_35_O",
+    "material_id": "matte",
+    "point_id": "p43",
+    "radius": 0.3
+   }
+  ],
+  "bonds": [],
+  "displacements": [],
+  "polyhedra": [
+   {
+    "center_point_id": "p0",
+    "id": "poly_0_AlO6",
+    "ligand_point_ids": [
+     "p20",
+     "p8",
+     "p21",
+     "p12",
+     "p22",
+     "p16"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_0"
+    },
+    "topology_id": "topo_0",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p1",
+    "id": "poly_1_AlO6",
+    "ligand_point_ids": [
+     "p23",
+     "p9",
+     "p24",
+     "p13",
+     "p16",
+     "p25"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_1"
+    },
+    "topology_id": "topo_1",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p2",
+    "id": "poly_2_AlO6",
+    "ligand_point_ids": [
+     "p26",
+     "p10",
+     "p12",
+     "p27",
+     "p28",
+     "p17"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_2"
+    },
+    "topology_id": "topo_2",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p3",
+    "id": "poly_3_AlO6",
+    "ligand_point_ids": [
+     "p29",
+     "p11",
+     "p13",
+     "p30",
+     "p17",
+     "p31"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_3"
+    },
+    "topology_id": "topo_3",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p4",
+    "id": "poly_4_AlO6",
+    "ligand_point_ids": [
+     "p8",
+     "p32",
+     "p33",
+     "p14",
+     "p34",
+     "p18"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_4"
+    },
+    "topology_id": "topo_4",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p5",
+    "id": "poly_5_AlO6",
+    "ligand_point_ids": [
+     "p9",
+     "p35",
+     "p36",
+     "p15",
+     "p18",
+     "p37"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_5"
+    },
+    "topology_id": "topo_5",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p6",
+    "id": "poly_6_AlO6",
+    "ligand_point_ids": [
+     "p10",
+     "p38",
+     "p14",
+     "p39",
+     "p40",
+     "p19"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_6"
+    },
+    "topology_id": "topo_6",
+    "topology_mode": "topology_locked"
+   },
+   {
+    "center_point_id": "p7",
+    "id": "poly_7_AlO6",
+    "ligand_point_ids": [
+     "p11",
+     "p41",
+     "p15",
+     "p42",
+     "p19",
+     "p43"
+    ],
+    "material_id": "polyhedron",
+    "name": "AlO6",
+    "per_frame_topology": {
+     "0": "topo_7"
+    },
+    "topology_id": "topo_7",
+    "topology_mode": "topology_locked"
+   }
+  ]
+ },
+ "schema_version": 2,
+ "source_comment": "POSCAR",
+ "topologies": [
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_0",
+   "point_ids": [
+    "p20",
+    "p8",
+    "p21",
+    "p12",
+    "p22",
+    "p16"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_1",
+   "point_ids": [
+    "p23",
+    "p9",
+    "p24",
+    "p13",
+    "p16",
+    "p25"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_2",
+   "point_ids": [
+    "p26",
+    "p10",
+    "p12",
+    "p27",
+    "p28",
+    "p17"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_3",
+   "point_ids": [
+    "p29",
+    "p11",
+    "p13",
+    "p30",
+    "p17",
+    "p31"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_4",
+   "point_ids": [
+    "p8",
+    "p32",
+    "p33",
+    "p14",
+    "p34",
+    "p18"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_5",
+   "point_ids": [
+    "p9",
+    "p35",
+    "p36",
+    "p15",
+    "p18",
+    "p37"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_6",
+   "point_ids": [
+    "p10",
+    "p38",
+    "p14",
+    "p39",
+    "p40",
+    "p19"
+   ]
+  },
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_7",
+   "point_ids": [
+    "p11",
+    "p41",
+    "p15",
+    "p42",
+    "p19",
+    "p43"
+   ]
+  }
+ ]
+}

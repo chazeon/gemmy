@@ -1,0 +1,425 @@
+{
+ "cell": {
+  "origin": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "vectors": [
+   [
+    4.2,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    4.2,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    4.2
+   ]
+  ]
+ },
+ "materials": {
+  "bond": {
+   "alpha": 1.0,
+   "base_color": [
+    0.7,
+    0.7,
+    0.7,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.4,
+   "type": "principled"
+  },
+  "glass": {
+   "alpha": 0.2,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.05,
+   "type": "principled"
+  },
+  "matte": {
+   "alpha": 1.0,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.6,
+   "type": "principled"
+  },
+  "matte_0p2000_0p7000_0p3000_1p0000": {
+   "alpha": 1.0,
+   "base_color": [
+    0.2,
+    0.7,
+    0.3,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.6,
+   "type": "principled"
+  },
+  "matte_0p9000_0p1000_0p1000_1p0000": {
+   "alpha": 1.0,
+   "base_color": [
+    0.9,
+    0.1,
+    0.1,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.6,
+   "type": "principled"
+  },
+  "metal": {
+   "alpha": 1.0,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.9,
+   "roughness": 0.15,
+   "type": "principled"
+  },
+  "polyhedron": {
+   "alpha": 0.25,
+   "base_color": [
+    0.2,
+    0.6,
+    1.0,
+    0.25
+   ],
+   "metallic": 0.0,
+   "roughness": 0.2,
+   "type": "principled"
+  },
+  "polyhedron_0p2000_0p6000_1p0000_0p2000": {
+   "alpha": 0.2,
+   "base_color": [
+    0.2,
+    0.6,
+    1.0,
+    0.2
+   ],
+   "metallic": 0.0,
+   "roughness": 0.2,
+   "type": "principled"
+  }
+ },
+ "points": [
+  {
+   "element": "Mg",
+   "fractional": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "id": "p0",
+   "position": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "ref": "0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    -0.5,
+    0.0,
+    0.0
+   ],
+   "id": "p1",
+   "position": [
+    -2.1,
+    0.0,
+    0.0
+   ],
+   "ref": "5+-1_0_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.5,
+    0.0,
+    0.0
+   ],
+   "id": "p2",
+   "position": [
+    2.1,
+    0.0,
+    0.0
+   ],
+   "ref": "5"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    -0.5,
+    0.0
+   ],
+   "id": "p3",
+   "position": [
+    0.0,
+    -2.1,
+    0.0
+   ],
+   "ref": "6+0_-1_0"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.5,
+    0.0
+   ],
+   "id": "p4",
+   "position": [
+    0.0,
+    2.1,
+    0.0
+   ],
+   "ref": "6"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.0,
+    -0.5
+   ],
+   "id": "p5",
+   "position": [
+    0.0,
+    0.0,
+    -2.1
+   ],
+   "ref": "7+0_0_-1"
+  },
+  {
+   "element": "O",
+   "fractional": [
+    0.0,
+    0.0,
+    0.5
+   ],
+   "id": "p6",
+   "position": [
+    0.0,
+    0.0,
+    2.1
+   ],
+   "ref": "7"
+  }
+ ],
+ "primitives": {
+  "atoms": [
+   {
+    "element": "Mg",
+    "id": "atom_0_Mg",
+    "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
+    "point_id": "p0",
+    "radius": 0.4
+   },
+   {
+    "element": "O",
+    "id": "atom_1_O",
+    "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
+    "point_id": "p1",
+    "radius": 0.28
+   },
+   {
+    "element": "O",
+    "id": "atom_2_O",
+    "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
+    "point_id": "p2",
+    "radius": 0.28
+   },
+   {
+    "element": "O",
+    "id": "atom_3_O",
+    "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
+    "point_id": "p3",
+    "radius": 0.28
+   },
+   {
+    "element": "O",
+    "id": "atom_4_O",
+    "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
+    "point_id": "p4",
+    "radius": 0.28
+   },
+   {
+    "element": "O",
+    "id": "atom_5_O",
+    "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
+    "point_id": "p5",
+    "radius": 0.28
+   },
+   {
+    "element": "O",
+    "id": "atom_6_O",
+    "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
+    "point_id": "p6",
+    "radius": 0.28
+   }
+  ],
+  "bonds": [
+   {
+    "a_element": "Mg",
+    "a_point_id": "p0",
+    "b_element": "O",
+    "b_point_id": "p1",
+    "id": "bond_0_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "Mg",
+    "a_point_id": "p0",
+    "b_element": "O",
+    "b_point_id": "p2",
+    "id": "bond_1_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "Mg",
+    "a_point_id": "p0",
+    "b_element": "O",
+    "b_point_id": "p3",
+    "id": "bond_2_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "Mg",
+    "a_point_id": "p0",
+    "b_element": "O",
+    "b_point_id": "p4",
+    "id": "bond_3_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "Mg",
+    "a_point_id": "p0",
+    "b_element": "O",
+    "b_point_id": "p5",
+    "id": "bond_4_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "Mg",
+    "a_point_id": "p0",
+    "b_element": "O",
+    "b_point_id": "p6",
+    "id": "bond_5_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   }
+  ],
+  "displacements": [],
+  "polyhedra": [
+   {
+    "center_point_id": "p0",
+    "id": "poly_0_MgO6",
+    "ligand_point_ids": [
+     "p1",
+     "p2",
+     "p3",
+     "p4",
+     "p5",
+     "p6"
+    ],
+    "material_id": "polyhedron_0p2000_0p6000_1p0000_0p2000",
+    "name": "MgO6",
+    "per_frame_topology": {
+     "0": "topo_0"
+    },
+    "topology_id": "topo_0",
+    "topology_mode": "topology_locked"
+   }
+  ]
+ },
+ "schema_version": 2,
+ "source_comment": "POSCAR",
+ "topologies": [
+  {
+   "faces": [
+    [
+     4,
+     2,
+     0
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     5,
+     0,
+     2
+    ],
+    [
+     5,
+     2,
+     1
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     3,
+     4,
+     0
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     3,
+     0,
+     5
+    ]
+   ],
+   "id": "topo_0",
+   "point_ids": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6"
+   ]
+  }
+ ]
+}

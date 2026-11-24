@@ -1,0 +1,4 @@
+{
+  "elements": {"default": {"radius": 0.3}},
+  "cells": {"supercell": [1, 1, 1], "periodic": [true, true, true]}
+}

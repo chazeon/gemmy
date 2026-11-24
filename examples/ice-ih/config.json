@@ -1,0 +1,121 @@
+{
+  "structure": "POSCAR",
+  "elements": {
+    "O": {
+      "radius": 0.36,
+      "color": [
+        0.9,
+        0.05,
+        0.05,
+        1.0
+      ],
+      "material": "matte"
+    },
+    "H1": {
+      "radius": 0.2,
+      "color": [
+        0.45,
+        0.7,
+        1.0,
+        1.0
+      ],
+      "material": "matte"
+    },
+    "H2": {
+      "radius": 0.2,
+      "color": [
+        1.0,
+        0.85,
+        0.3,
+        1.0
+      ],
+      "material": "matte"
+    },
+    "H": {
+      "radius": 0.2,
+      "color": [
+        0.95,
+        0.95,
+        0.95,
+        1.0
+      ],
+      "material": "matte"
+    }
+  },
+  "materials": {
+    "covalent": {
+      "type": "principled",
+      "base_color": [
+        0.85,
+        0.85,
+        0.85,
+        1.0
+      ],
+      "roughness": 0.4
+    },
+    "hbond": {
+      "type": "principled",
+      "base_color": [
+        0.3,
+        0.3,
+        0.3,
+        1.0
+      ],
+      "roughness": 0.5
+    }
+  },
+  "cells": {
+    "supercell": [
+      1,
+      1,
+      1
+    ],
+    "periodic": [
+      true,
+      true,
+      true
+    ],
+    "box": {
+      "x": [
+        0,
+        1
+      ],
+      "y": [
+        0,
+        1
+      ],
+      "z": [
+        0,
+        1
+      ]
+    }
+  },
+  "bonds": [
+    {
+      "a": "O",
+      "b": "H",
+      "min": 0.8,
+      "max": 1.2,
+      "radius": 0.07,
+      "material": "covalent",
+      "complete": "ends"
+    },
+    {
+      "a": "O",
+      "b": "H",
+      "min": 1.5,
+      "max": 2.0,
+      "radius": 0.02,
+      "material": "hbond",
+      "color": [
+        0.3,
+        0.3,
+        0.3,
+        1.0
+      ],
+      "complete": "none",
+      "style": "dashed"
+    }
+  ],
+  "polyhedra": []
+}
