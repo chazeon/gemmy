@@ -66,6 +66,14 @@
   .island::-webkit-scrollbar { display: none; }
   #menu-island { grid-area: left; justify-self: start; }
   #tools { grid-area: center; justify-self: center; }
+  /* On a phone the tool row scrolls: fingers may pan it from a button, and a faded edge marks hidden buttons. */
+  #tools .tool { touch-action: pan-x; -webkit-touch-callout: none; }
+  #tools.more-right { --fade: linear-gradient(to left, rgb(0 0 0 / 0.15), #000 40px); }
+  #tools.more-left { --fade: linear-gradient(to right, rgb(0 0 0 / 0.15), #000 40px); }
+  #tools.more-left.more-right {
+    --fade: linear-gradient(to right, rgb(0 0 0 / 0.15), #000 40px, #000 calc(100% - 40px), rgb(0 0 0 / 0.15));
+  }
+  #tools.more-left, #tools.more-right { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
   #export-button { grid-area: right; justify-self: end; }
   #msgs { grid-area: msgs; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
   /* Zoom and lens: always one slim column in the bottom-left corner, the lens over zoom (+, 100%, −, fit). */
@@ -74,6 +82,10 @@
     pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
   }
   #bottom .island { flex-direction: column; width: 44px; overflow: visible; }
+  /* The aperture button folds the lens and zoom away (folded by default on a phone, where they cover the triad). */
+  #view-toggle { width: 44px; height: 40px; border-radius: 10px; background: var(--bar); box-shadow: var(--shadow); pointer-events: auto; }
+  #view-toggle[aria-expanded="true"] { background: var(--hover); }
+  #bottom.folded .island { display: none; }
   #bottom [data-act="zoom"][data-sign="1"] { order: -2; }
   #bottom #zoom-level { order: -1; min-width: 0; font-size: 12px; padding: 4px 0; }
   #bottom #zoom-group .sep { width: auto; height: 1px; align-self: stretch; margin: 4px 6px; }
@@ -235,7 +247,7 @@
       grid-template-areas: "left right" "center center" "bottom help" "msgs msgs" ". .";
     }
     #help-button { grid-area: help; align-self: start; }
-    #info { left: max(16px, env(safe-area-inset-left, 0px)); width: auto; bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+    #info { left: max(16px, env(safe-area-inset-left, 0px)); width: auto; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 48px); } /* above the aperture and (i) */
     #info-button { right: max(16px, env(safe-area-inset-right, 0px)); } /* "?" is at the top here */
     .sub { display: none; }
   }
@@ -344,6 +356,9 @@
         <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
       </button>
     </div>
+    <button class="tool" id="view-toggle" title="Lens and zoom" aria-label="Lens and zoom" aria-expanded="true" aria-controls="lens-group zoom-group">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m14.31 8 5.74 9.94"/><path d="M9.69 8h11.48"/><path d="m7.38 12 5.74-9.94"/><path d="M9.69 16 3.95 6.06"/><path d="M14.31 16H2.83"/><path d="m16.62 12-5.74 9.94"/></svg>
+    </button>
   </div>
 
   <button class="tool" id="help-button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
@@ -1225,17 +1240,22 @@ function act(button, amount) { // amount: 1 for a click, else the fraction of a 
   else if (kind === "fit") fit();
 }
 
-// Press: one step at once; keep holding (after a short pause) and it keeps going smoothly.
+// Press: one step at once; keep holding (after a short pause) and it keeps going smoothly. With a finger the step waits
+// for the release, so a swipe across the toolbar scrolls it (the browser cancels the press) instead of turning.
 for (const button of document.querySelectorAll("[data-act]")) {
   let hold = null;
   const stop = () => { if (hold) { cancelAnimationFrame(hold.frame); clearTimeout(hold.timer); hold = null; } };
   button.addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    button.setPointerCapture(e.pointerId);
-    act(button, 1);
+    const touch = e.pointerType === "touch";
+    if (!touch) {
+      e.preventDefault();
+      button.setPointerCapture(e.pointerId);
+      act(button, 1);
+    }
+    hold = { touch, last: 0, repeating: false };
     if (button.dataset.act === "fit") return;
-    hold = { last: 0 };
     hold.timer = setTimeout(() => {
+      hold.repeating = true;
       const tick = (t) => {
         if (!hold) return;
         if (hold.last) act(button, Math.min((t - hold.last) / 1000, 0.05));
@@ -1245,9 +1265,20 @@ for (const button of document.querySelectorAll("[data-act]")) {
       hold.frame = requestAnimationFrame(tick);
     }, 300);
   });
-  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
+  button.addEventListener("pointerup", () => { if (hold?.touch && !hold.repeating) act(button, 1); stop(); });
+  for (const ev of ["pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
   button.addEventListener("click", (e) => { if (e.detail === 0) act(button, 1); }); // keyboard Enter / Space
 }
+// The tool row scrolls sideways when it does not fit; a faded edge says more buttons are that way.
+const toolsBar = document.getElementById("tools");
+function markToolsOverflow() {
+  const { scrollLeft: l, scrollWidth: w, clientWidth: c } = toolsBar;
+  toolsBar.classList.toggle("more-left", l > 2);
+  toolsBar.classList.toggle("more-right", l + c < w - 2);
+}
+toolsBar.addEventListener("scroll", markToolsOverflow, { passive: true });
+window.addEventListener("resize", markToolsOverflow);
+markToolsOverflow();
 for (const l of [...GEMMY.lenses, Infinity]) {
   const b = document.createElement("button");
   const ortho = l === Infinity;
@@ -1390,9 +1421,11 @@ const info = document.getElementById("info-body");
 // storage works) and wins on the next visit.
 const infoPanel = document.getElementById("info"), infoButton = document.getElementById("info-button");
 const INFO_KEY = "gemmy.info-open";
+const narrowScreen = matchMedia("(max-width: 640px)");
 let infoChoice = null;
 try { const v = localStorage.getItem(INFO_KEY); infoChoice = v === null ? null : v === "1"; } catch { /* no storage */ }
 function showInfo(open) {
+  if (open && narrowScreen.matches) showViewControls(false); // a phone has room for one of them at the bottom
   infoPanel.hidden = !open;
   infoButton.hidden = open;
   infoButton.setAttribute("aria-expanded", String(open));
@@ -1406,6 +1439,24 @@ function toggleInfo() {
 }
 infoButton.addEventListener("click", toggleInfo);
 document.getElementById("info-close").addEventListener("click", toggleInfo);
+
+// The lens and zoom column folds into its aperture button: open on wide screens, folded on a phone, and the user's own
+// choice is remembered (per browser, when storage works).
+const viewBar = document.getElementById("bottom"), viewToggle = document.getElementById("view-toggle");
+const VIEW_KEY = "gemmy.view-controls-open";
+let viewOpen = !narrowScreen.matches;
+try { const v = localStorage.getItem(VIEW_KEY); if (v !== null) viewOpen = v === "1"; } catch { /* no storage */ }
+function showViewControls(open) {
+  viewBar.classList.toggle("folded", !open);
+  viewToggle.setAttribute("aria-expanded", String(open));
+}
+showViewControls(viewOpen);
+viewToggle.addEventListener("click", () => {
+  viewOpen = !viewOpen;
+  if (viewOpen && narrowScreen.matches && !infoPanel.hidden) showInfo(false);
+  showViewControls(viewOpen);
+  try { localStorage.setItem(VIEW_KEY, viewOpen ? "1" : "0"); } catch { /* no storage */ }
+});
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const fmt = (x, n = 3) => x.toFixed(n);
 const sub = (s) => s.replace(/(\d+)/g, (m) => [...m].map((c) => "₀₁₂₃₄₅₆₇₈₉"[c]).join(""));
@@ -1705,7 +1756,7 @@ function openScene(doc, bounds) {
   const middle = [...polyTargets].sort((p, q) =>
     dist(points.get(p.poly.center_point_id).position, centre) - dist(points.get(q.poly.center_point_id).position, centre))[0];
   select(middle ?? null);
-  showInfo(infoChoice ?? Boolean(middle));
+  showInfo(infoChoice ?? (Boolean(middle) && !narrowScreen.matches)); // a phone opens with it folded
 }
 const embedded = document.getElementById("scene-data").textContent.trim();
 if (embedded) {
