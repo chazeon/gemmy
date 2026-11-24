@@ -64,16 +64,17 @@
     background: var(--bar); border-radius: 10px; box-shadow: var(--shadow);
   }
   .island::-webkit-scrollbar { display: none; }
-  #menu-island { grid-area: left; justify-self: start; }
+  #menu-island { grid-area: left; justify-self: start; overflow: hidden; } /* the tabs scroll, the menu button stays */
   #tools { grid-area: center; justify-self: center; }
-  /* On a phone the tool row scrolls: fingers may pan it from a button, and a faded edge marks hidden buttons. */
+  /* On a phone the toolbars scroll sideways: fingers may pan the tool row from a button, and a faded edge marks
+     hidden buttons on every island (and the tab strip) that does not fit. */
   #tools .tool { touch-action: pan-x; -webkit-touch-callout: none; }
-  #tools.more-right { --fade: linear-gradient(to left, rgb(0 0 0 / 0.15), #000 40px); }
-  #tools.more-left { --fade: linear-gradient(to right, rgb(0 0 0 / 0.15), #000 40px); }
-  #tools.more-left.more-right {
+  :is(.island, .tabs).more-right { --fade: linear-gradient(to left, rgb(0 0 0 / 0.15), #000 40px); }
+  :is(.island, .tabs).more-left { --fade: linear-gradient(to right, rgb(0 0 0 / 0.15), #000 40px); }
+  :is(.island, .tabs).more-left.more-right {
     --fade: linear-gradient(to right, rgb(0 0 0 / 0.15), #000 40px, #000 calc(100% - 40px), rgb(0 0 0 / 0.15));
   }
-  #tools.more-left, #tools.more-right { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
+  :is(.island, .tabs):is(.more-left, .more-right) { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
   #export-button { grid-area: right; justify-self: end; }
   #msgs { grid-area: msgs; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
   /* Zoom and lens: always one slim column in the bottom-left corner, the lens over zoom (+, 100%, −, fit). */
@@ -98,7 +99,8 @@
   .sub { margin: 0; color: var(--muted); font-size: 12px; white-space: nowrap; }
   .sub:empty { display: none; }
   /* `gemmy serve` with several configs: one tab per structure, in place of the name. */
-  .tabs { display: flex; gap: 2px; flex: none; }
+  .tabs { display: flex; gap: 2px; flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
   .tabs + .name { display: none; }
   .tabs a {
     font: 400 13px var(--ui); color: var(--fg); text-decoration: none; border-radius: 8px; padding: 9px 10px; white-space: nowrap;
@@ -1269,16 +1271,17 @@ for (const button of document.querySelectorAll("[data-act]")) {
   for (const ev of ["pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
   button.addEventListener("click", (e) => { if (e.detail === 0) act(button, 1); }); // keyboard Enter / Space
 }
-// The tool row scrolls sideways when it does not fit; a faded edge says more buttons are that way.
-const toolsBar = document.getElementById("tools");
-function markToolsOverflow() {
-  const { scrollLeft: l, scrollWidth: w, clientWidth: c } = toolsBar;
-  toolsBar.classList.toggle("more-left", l > 2);
-  toolsBar.classList.toggle("more-right", l + c < w - 2);
+// A toolbar that does not fit scrolls sideways; a faded edge says more buttons are that way.
+const islands = [...document.querySelectorAll(".island, .tabs")];
+document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+function markOverflow(island) {
+  const { scrollLeft: l, scrollWidth: w, clientWidth: c } = island;
+  island.classList.toggle("more-left", l > 2);
+  island.classList.toggle("more-right", l + c < w - 2);
 }
-toolsBar.addEventListener("scroll", markToolsOverflow, { passive: true });
-window.addEventListener("resize", markToolsOverflow);
-markToolsOverflow();
+for (const island of islands) island.addEventListener("scroll", () => markOverflow(island), { passive: true });
+window.addEventListener("resize", () => islands.forEach(markOverflow));
+islands.forEach(markOverflow);
 for (const l of [...GEMMY.lenses, Infinity]) {
   const b = document.createElement("button");
   const ortho = l === Infinity;
