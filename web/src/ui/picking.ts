@@ -6,6 +6,7 @@ import { atomGroup, camera, polyGroup, polyTargets, requestRender, type Target, 
 import { describe } from "./readout";
 import { showInfo } from "./panels";
 import { glideTo } from "../camera/glide";
+import { releasePivot } from "../camera/pivot";
 import { POINTER_SLOP_PX } from "../config";
 
 // ---- the selection highlight ----
@@ -133,5 +134,8 @@ renderer.domElement.addEventListener("pointerup", (e) => {
   const hit = hitAt(e.clientX, e.clientY);
   select(hit ? targetOf(hit) : null);
   if (hit) showInfo(true); // a pick opens the details; clearing it leaves them as they are
-  if (double && hit) glideTo(hit.point); // a double-click on empty space does nothing
+  // The pivot follows the selection. Only a double-click sets it (the glide makes the hit the target); a single click
+  // on another object leaves it where it is, and clearing the selection (a click on empty space, or Esc) lets it go.
+  if (double && hit) glideTo(hit.point); // a double-click on empty space is a click on empty space: it lets go
+  else if (!hit) releasePivot();
 });

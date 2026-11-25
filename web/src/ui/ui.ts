@@ -4,13 +4,14 @@ import * as THREE from "three";
 import { GEMMY, LOOK, RATE, STEP } from "../config";
 import { baseDistance, perspToOrthoZoom, orthoToPerspZoom } from "../camera/framing";
 import { controls, key, orthoCamera, perspCamera, stage } from "../render/draw";
-import { beginRotation } from "../camera/pivot";
+import { beginRotation, releasePivot } from "../camera/pivot";
 import { resize } from "../render/loop";
 import { atomGroup, box, camera, extent, fitValue, lattice, lens, outlineGroup, requestRender, setCamera, setFitValue, setLens, setOutlines, show } from "../state";
 import { currentZoom, fit, fitFor, isPersp, isScreenAxis, pan, rotate, setZoom, shownZoom, zoom, viewFrom } from "../camera/view";
 import { FLY, flying, setShiftHeld } from "../camera/fly";
 import { helpPopover } from "./menus";
 import { toggleInfo } from "./panels";
+import { select } from "./picking";
 import { cycleTheme } from "./theme";
 import { byId, clamp, closestOf } from "./dom";
 
@@ -325,9 +326,24 @@ function runShortcut(e: KeyboardEvent): boolean {
   return true;
 }
 
+// Whether this Esc closes a menu. Read in the capture phase, before menus.ts closes it, so the order the listeners were
+// added in does not matter.
+let escapeClosesMenu = false;
+window.addEventListener("keydown", (e) => {
+  escapeClosesMenu = e.key === "Escape" && document.querySelector(".popover:not([hidden])") !== null;
+}, { capture: true });
+
 window.addEventListener("keydown", (e) => {
   setShiftHeld(e.shiftKey);
   if (isTyping(e)) return;
+  if (e.key === "Escape") {
+    // Esc closes an open menu first (menus.ts), and then the selection stays.
+    if (!escapeClosesMenu) {
+      select(null);
+      releasePivot();
+    }
+    return;
+  }
   // A turn starts with the first press of a key; its auto-repeat is the same turn going on.
   if (isTurnKey(e) && !e.repeat) beginRotation();
   if (runShortcut(e)) e.preventDefault();

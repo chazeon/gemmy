@@ -10,11 +10,9 @@ from __future__ import annotations
 
 import json
 import math
-import re
 import shlex
 import subprocess
 import tomllib
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -47,7 +45,6 @@ SCENE = {
 }
 
 Quaternion = tuple[float, float, float, float]  # x, y, z, w, three.js order
-IDENTITY = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
 
 def _run_js(cases: list[dict], tmp_path: Path) -> list[dict]:
@@ -187,133 +184,6 @@ def test_hidden_box_and_rounding(tmp_path: Path) -> None:
     assert "show = false" in _run_js([case], tmp_path)[0]["toml"]
 
 
-def _svg(scene_path: Path, tmp_path: Path, **overrides) -> str:
-    scene = json.loads(scene_path.read_text(encoding="utf-8"))
-    centre, extent = scene_bounds(from_dict(SceneDocument, scene))
-    args = {
-        "data": scene, "centre": list(centre), "extent": extent, "quaternion": ROTATIONS["default"], "zoom": 1.0,
-        "target": [0, 0, 0], "width": 900, "height": 600, "show": {"atoms": True, "box": True}, "outlines": True,
-        "lattice": [list(v) for v in scene.get("cell", {"vectors": IDENTITY})["vectors"]],
-        "boxColor": "#2a2d3e",
-    }  # fmt: skip
-    args.update(overrides)
-    script = tmp_path / "svg.mjs"
-    script.write_text(header() + "\nconsole.log(buildSvg(JSON.parse(process.argv[2])));\n", encoding="utf-8")
-    result = subprocess.run(["node", str(script), json.dumps(args)], capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-    return result.stdout
-
-
-@pytest.mark.parametrize("name", ["stishovite", "nacl"])
-def test_svg_is_well_formed_vector_output(name: str, tmp_path: Path) -> None:
-    from gemmy.compile.pipeline import compile_to_json
-
-    examples = Path(__file__).resolve().parents[1] / "examples" / name
-    scene_path = tmp_path / "scene.json"
-    compile_to_json(examples / "config.toml", scene_path)
-    scene = json.loads(scene_path.read_text(encoding="utf-8"))
-    ns = {"s": "http://www.w3.org/2000/svg"}
-    root = ET.fromstring(_svg(scene_path, tmp_path))
-    assert root.get("viewBox") == "0 0 900 600"
-    texts = [t.text for t in root.iterfind(".//s:text", ns)]
-    assert sorted(texts) == ["a", "b", "c"]
-    visible_atoms = len(scene["primitives"]["atoms"])
-    # zoomed out, every atom is on the canvas (the triad's hub is inside its group, not a direct child): exactly one
-    # disc per atom
-    zoomed = ET.fromstring(_svg(scene_path, tmp_path, zoom=0.5))
-    discs = len(zoomed.findall("s:circle", ns)) + len(zoomed.findall("s:ellipse", ns))
-    assert discs == visible_atoms, (discs, visible_atoms)
-    assert len(root.findall(".//s:path", ns)) >= visible_atoms  # the dark band of each atom
-    assert len(root.findall(".//s:line", ns)) > 12  # the cell box in pieces
-    if scene["primitives"]["polyhedra"]:
-        assert root.findall("s:g", ns) and root.findall(".//s:polygon", ns)
-    for colour in re.findall(r'(?:fill|stroke)="([^"]+)"', ET.tostring(root, encoding="unicode")):
-        assert colour in ("none",) or re.fullmatch(r"#[0-9a-f]{6}", colour), colour
-
-
-@pytest.mark.parametrize("name", ["nacl", "stishovite"])
-def test_outlines_are_stroked_outside_in_the_linear_outline_colour(name: str, tmp_path: Path) -> None:
-    """Outlined shapes are painted with paint-order="stroke" (the fill covers the stroke's inner half), and the outline
-    colour is LOOK.outline read as linear, which is #27273f in sRGB (the live outline, and Blender's Freestyle line).
-    A stroke with no fill (the polyhedron silhouette) gets no paint-order: it has no effect there."""
-    from gemmy.compile.pipeline import compile_to_json
-
-    examples = Path(__file__).resolve().parents[1] / "examples" / name
-    scene_path = tmp_path / "scene.json"
-    compile_to_json(examples / "config.toml", scene_path)
-    svg = _svg(scene_path, tmp_path)
-    assert 'paint-order="stroke"' in svg
-    assert 'stroke="#27273f"' in svg
-    assert not re.search(r'<path[^>]*fill="none"[^>]*paint-order', svg)
-
-
-def test_svg_toggles_hide_atoms_and_box(tmp_path: Path) -> None:
-    from gemmy.compile.pipeline import compile_to_json
-
-    examples = Path(__file__).resolve().parents[1] / "examples" / "nacl"
-    scene_path = tmp_path / "scene.json"
-    compile_to_json(examples / "config.toml", scene_path)
-    bare = _svg(scene_path, tmp_path, show={"atoms": False, "box": False}, outlines=False)
-    assert "<line" in bare  # only the triad's lines
-    assert bare.count("<line") <= 3 and "<circle" in bare and bare.count("<circle") == 1  # the triad's centre dot
-
-
-def test_perspective_with_the_eye_inside_the_structure_stays_finite(tmp_path: Path) -> None:
-    """A bond with one end in the eye plane and one behind the eye. The depth is clamped to 1e-3 before the divide (as
-    the page's pixels-per-angstrom is), so the bond stays finite and its screen centre is where that formula puts it."""
-    from gemmy.render.looks import SENSOR_WIDTH
-
-    eye, extent, lens, width, height = 0.5, 10.0, 35.0, 900, 600  # the eye sits 0.5 angstrom from the target
-    points = {"a": [1.0, 0.3, eye], "b": [-1.0, 0.5, 0.8]}  # a: in the eye plane; b: behind the eye
-    scene = {
-        "source_comment": "eye inside",
-        "materials": {"m": {"base_color": [1, 0, 0, 1]}},
-        "points": [{"id": key, "element": "O", "position": pos} for key, pos in points.items()],
-        "topologies": [],
-        "primitives": {
-            "atoms": [],
-            "bonds": [
-                {
-                    "id": "b0",
-                    "a_point_id": "a",
-                    "b_point_id": "b",
-                    "radius": 0.1,
-                    "material_id": "m",
-                    "a_element": "O",
-                    "b_element": "O",
-                    "style": "solid",
-                }
-            ],
-            "polyhedra": [],
-            "displacements": [],
-        },
-    }
-    scene_path = tmp_path / "scene.json"
-    scene_path.write_text(json.dumps(scene), encoding="utf-8")
-    svg = _svg(
-        scene_path, tmp_path, centre=[0, 0, 0], target=[0, 0, 0], quaternion=[0, 0, 0, 1], extent=extent,
-        zoom=camera_distance(extent, 1.0) / eye, projection="persp", lens=lens, width=width, height=height,
-        show={"atoms": False, "box": False}, outlines=False,
-    )  # fmt: skip
-    assert "Infinity" not in svg and "NaN" not in svg
-    ns = {"s": "http://www.w3.org/2000/svg"}
-    bond = [p for p in ET.fromstring(svg).iterfind(".//s:polygon", ns) if p.get("fill") == "#ff0000"]
-    assert len(bond) == 1
-    corners = [tuple(map(float, pt.split(","))) for pt in bond[0].get("points").split()]
-    assert len(corners) == 4
-    # the four corners are a +/- n and b +/- n, so their mean is the midpoint of the two screen ends
-    mean = (sum(x for x, _ in corners) / 4, sum(y for _, y in corners) / 4)
-    focal = lens * max(width, height) / SENSOR_WIDTH
-
-    def screen(x: float, y: float, z: float) -> tuple[float, float]:
-        depth = max(eye - z, 1e-3)
-        return width / 2 + x * focal / depth, height / 2 - y * focal / depth
-
-    (ax, ay), (bx, by) = screen(*points["a"]), screen(*points["b"])
-    assert mean[0] == pytest.approx((ax + bx) / 2, abs=0.02)
-    assert mean[1] == pytest.approx((ay + by) / 2, abs=0.02)
-
-
 @pytest.mark.parametrize(("width", "height"), [(1280, 656), (500, 900), (700, 700), (1920, 400)])
 def test_fitted_view_shows_the_whole_structure_in_the_blender_frame(width: int, height: int, tmp_path: Path) -> None:
     centre, extent = scene_bounds(from_dict(SceneDocument, SCENE))
@@ -430,42 +300,6 @@ def test_lens_choices_include_the_default_lens(tmp_path: Path) -> None:
 def test_switching_projection_keeps_the_framing_at_the_target(tmp_path: Path) -> None:
     out = _run_js([_case("default", zoom=1.9, projection="persp", lens=50.0)], tmp_path)[0]
     assert out["roundTrip"] == pytest.approx(1.9)
-
-
-def test_persp_svg_is_well_formed_and_sorted_by_distance(tmp_path: Path) -> None:
-    from gemmy.compile.pipeline import compile_to_json
-
-    scene_path = tmp_path / "scene.json"
-    compile_to_json(Path(__file__).resolve().parents[1] / "examples" / "stishovite" / "config.toml", scene_path)
-    scene = json.loads(scene_path.read_text(encoding="utf-8"))
-    ns = {"s": "http://www.w3.org/2000/svg"}
-    root = ET.fromstring(_svg(scene_path, tmp_path, projection="persp", lens=24.0, zoom=1.0))
-    assert sorted(t.text for t in root.iterfind(".//s:text", ns)) == ["a", "b", "c"]
-    assert len(root.findall(".//s:circle", ns)) + len(root.findall(".//s:ellipse", ns)) >= len(
-        scene["primitives"]["atoms"]
-    )
-    assert root.findall(".//s:polygon", ns)
-
-
-def test_persp_svg_draws_the_nearer_atom_last_and_larger(tmp_path: Path) -> None:
-    scene = {
-        **SCENE,
-        "points": [
-            {"id": "p0", "element": "O", "position": [0.0, 0.0, 0.0]},
-            {"id": "p1", "element": "O", "position": [0.0, 0.0, 3.0]},
-        ],
-        "topologies": [],
-        "primitives": {**SCENE["primitives"], "polyhedra": []},
-    }
-    scene_path = tmp_path / "scene.json"
-    scene_path.write_text(json.dumps(scene), encoding="utf-8")
-    root = ET.fromstring(_svg(
-        scene_path, tmp_path, projection="persp", lens=50.0, quaternion=(0, 0, 0, 1),
-        show={"atoms": True, "box": False}, outlines=False,
-    ))  # fmt: skip
-    circles = [c for c in root.findall("s:circle", {"s": "http://www.w3.org/2000/svg"}) if c.get("fill") != "none"]
-    radii = [float(c.get("r")) for c in circles]
-    assert len(radii) == 2 and radii[0] < radii[1]  # looking down -z from +z: p1 (z=3) is nearer, bigger, drawn last
 
 
 # ---- the page's scene bounds (sceneBounds, web/src/scene/bounds.ts) against gemmy.render.runner.scene_bounds ----

@@ -4,11 +4,12 @@
 // back to.
 import * as THREE from "three";
 import {
-  baseDistance, centreDistance, clipPlanesAround, depthOfCentre, dollyPosition, fitZoom, fitZoomPersp, flyShift, viewForward,
+  baseDistance, centreDistance, clipPlanesAround, depthOfCentre, dollyPosition, fitZoom, fitZoomPersp, flyShift, orthoSide,
+  viewForward,
 } from "./framing";
 import { controls, perspCamera, stage } from "../render/draw";
-import { camera, extent, fitValue, lens, requestRender, setFitValue } from "../state";
-import { cancelGlide } from "./glide";
+import { camera, extent, lens, requestRender, setFitValue } from "../state";
+import { cancelGlide, glideView } from "./glide";
 
 // The zoom range, shared with the trackball's dolly limits (scene/load.ts).
 export const ZOOM_MIN = 0.05;
@@ -33,8 +34,11 @@ export const currentZoom = (): number => (isPersp() ? baseDistance(extent) / dis
 // Orthographic has no such difference: camera.zoom is the zoom.
 export const shownZoom = (): number =>
   isPersp() ? baseDistance(extent) / centreDistance(camera.position.toArray()) : camera.zoom;
-export const fitFor = (width: number, height: number): number =>
-  isPersp() ? fitZoomPersp(extent, lens, width, height) : fitZoom(width, height);
+// The zoom that frames an object of `size` (its sphere with the ortho margin, as the structure's fit): by the fit maths
+// of the structure, with the structure's extent in place of the object's. Orthographic zoom scales with the margin.
+export const frameZoom = (size: number, width: number, height: number): number =>
+  isPersp() ? fitZoomPersp(size, lens, width, height) : (fitZoom(width, height) * orthoSide(extent)) / orthoSide(size);
+export const fitFor = (width: number, height: number): number => frameZoom(extent, width, height);
 
 // Zoom towards or away from the structure. Perspective moves the camera along its view line; ortho changes camera.zoom.
 export function setZoom(requested: number): void {
@@ -141,14 +145,40 @@ export function setShownZoom(requested: number): void {
 // Zoom in or out by a factor, as the shown zoom reads it: one press multiplies the readout by the factor.
 export const zoom = (factor: number): void => setShownZoom(shownZoom() * factor);
 
-// Fit the structure to the window: the target goes to the middle and the zoom to the fit.
+// The view that frames an object of `size` centred on `centre` (scene units, the origin is the structure's middle), by
+// the fit maths: the target goes to the centre and the camera keeps its view direction. Perspective puts the camera at
+// the distance its zoom gives; orthographic keeps the camera's distance and sets the zoom (zoom is undefined then).
+function framedView(centre: THREE.Vector3, size: number): { target: THREE.Vector3; position: THREE.Vector3; zoom?: number } {
+  const width = stage.clientWidth, height = stage.clientHeight;
+  const zoomWanted = frameZoom(size, width, height);
+  if (isPersp()) {
+    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
+    const distance = baseDistance(size) / zoomWanted;
+    return { target: centre, position: centre.clone().addScaledVector(towardsCamera, distance) };
+  }
+  const offset = camera.position.clone().sub(controls.target);
+  return { target: centre, position: centre.clone().add(offset), zoom: zoomWanted };
+}
+
+// Fit the structure to the window: the target goes to the middle and the zoom to the fit (at once, not a glide).
 export function fit(): void {
   cancelGlide();
-  const offset = camera.position.clone().sub(controls.target);
-  controls.target.set(0, 0, 0);
-  camera.position.copy(offset);
+  const view = framedView(new THREE.Vector3(0, 0, 0), extent);
+  controls.target.copy(view.target);
+  camera.position.copy(view.position);
+  if (view.zoom !== undefined) {
+    camera.zoom = view.zoom;
+    camera.updateProjectionMatrix();
+  }
   setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
-  setZoom(fitValue);
+  requestRender();
+}
+
+// Center on an object (its centre and size in scene units, as the origin is the structure's middle): the same framing as
+// fit, glided to over GLIDE_MS. The target stays on the object while it is selected (camera/pivot.ts).
+export function centreOn(centre: THREE.Vector3, size: number): void {
+  const view = framedView(centre, size);
+  glideView(view.target, view.position, view.zoom);
 }
 
 // The distance from the camera to the target (the orbit point). A camera exactly on the target falls back to the base

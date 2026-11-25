@@ -7,9 +7,14 @@
     "check": "tsc --noEmit -p ."
   },
   "devDependencies": {
+    "@types/d3-contour": "3.0.6",
     "@types/three": "0.160.0",
     "esbuild": "0.24.0",
     "three": "0.160.0",
     "typescript": "5.6.3"
+  },
+  "dependencies": {
+    "d3-contour": "4.0.3",
+    "fit-curve": "0.2.0"
   }
 }

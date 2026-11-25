@@ -1,7 +1,6 @@
 // Startup: open the embedded scene (or follow a live server), then the viewer runs on its own.
 import { settingsJson } from "./camera/framing";
 import { sceneBounds } from "./scene/bounds";
-import "./export/export";
 import "./render/draw";
 import { VIEWS } from "./ui/ui";
 import "./render/triad";

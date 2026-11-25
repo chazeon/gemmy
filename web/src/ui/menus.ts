@@ -1,7 +1,7 @@
 // The popovers: the ☰ menu, Export and help. Each opens next to its button, one at a time, and closes on Escape or an
 // outside press. Export's items save or copy the view (as PNG, SVG or render settings).
 import { renderer, scene, stage, controls } from "../render/draw";
-import { buildSvg } from "../export/export";
+import { buildTracedSvg } from "../trace/traced";
 import { exportView, renderCommand, settingsJson, settingsToml } from "../camera/framing";
 import { drawTriad } from "../render/triad";
 import { isPersp, currentZoom } from "../camera/view";
@@ -99,15 +99,23 @@ function triadAt(scale: number): HTMLCanvasElement {
   return canvas;
 }
 
+// The SVG export (trace/traced.ts): the same view, drawn from the GPU's object ids.
 function exportSvg() {
   const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
-  const text = buildSvg({
-    data, centre, extent, quaternion: camera.quaternion.toArray(), zoom: currentZoom(), target: controls.target.toArray(),
-    projection: projectionName(), lens, width: stage.clientWidth, height: stage.clientHeight, show, outlines,
-    lattice: lattice.map((v) => v.toArray()), boxColor,
-  });
-  download("view.svg", new Blob([text], { type: "image/svg+xml" }));
-  say(`Saved view.svg (${Math.round(text.length / KB)} kB).`);
+  let result;
+  try {
+    result = buildTracedSvg({
+      data, centre, extent, quaternion: camera.quaternion.toArray(), zoom: currentZoom(), target: controls.target.toArray(),
+      projection: projectionName(), lens, width: stage.clientWidth, height: stage.clientHeight, show, outlines,
+      lattice: lattice.map((v) => v.toArray()), boxColor,
+    });
+  } catch (error) {
+    say(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`, true);
+    return;
+  }
+  download("view.svg", new Blob([result.text], { type: "image/svg+xml" }));
+  requestRender();
+  say(`Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`);
 }
 
 // What each Export button does, by its data-export name.

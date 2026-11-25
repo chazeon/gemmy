@@ -1,4 +1,362 @@
 /* generated from web/ by npm run build; do not edit */
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key2 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key2) && key2 !== except)
+        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// node_modules/fit-curve/lib/fit-curve.js
+var require_fit_curve = __commonJS({
+  "node_modules/fit-curve/lib/fit-curve.js"(exports, module) {
+    (function(global, factory) {
+      if (typeof define === "function" && define.amd) {
+        define(["module"], factory);
+      } else if (typeof exports !== "undefined") {
+        factory(module);
+      } else {
+        var mod = {
+          exports: {}
+        };
+        factory(mod);
+        global.fitCurve = mod.exports;
+      }
+    })(exports, function(module2) {
+      "use strict";
+      function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+          throw new TypeError("Cannot call a class as a function");
+        }
+      }
+      function fitCurve2(points2, maxError, progressCallback) {
+        if (!Array.isArray(points2)) {
+          throw new TypeError("First argument should be an array");
+        }
+        points2.forEach(function(point) {
+          if (!Array.isArray(point) || point.some(function(item) {
+            return typeof item !== "number";
+          }) || point.length !== points2[0].length) {
+            throw Error("Each point should be an array of numbers. Each point should have the same amount of numbers.");
+          }
+        });
+        points2 = points2.filter(function(point, i) {
+          return i === 0 || !point.every(function(val, j) {
+            return val === points2[i - 1][j];
+          });
+        });
+        if (points2.length < 2) {
+          return [];
+        }
+        var len = points2.length;
+        var leftTangent = createTangent(points2[1], points2[0]);
+        var rightTangent = createTangent(points2[len - 2], points2[len - 1]);
+        return fitCubic(points2, leftTangent, rightTangent, maxError, progressCallback);
+      }
+      function fitCubic(points2, leftTangent, rightTangent, error, progressCallback) {
+        var MaxIterations = 20;
+        var bezCurve, u, uPrime, maxError, prevErr, splitPoint, prevSplit, centerVector, toCenterTangent, fromCenterTangent, beziers, dist2, i;
+        if (points2.length === 2) {
+          dist2 = maths.vectorLen(maths.subtract(points2[0], points2[1])) / 3;
+          bezCurve = [points2[0], maths.addArrays(points2[0], maths.mulItems(leftTangent, dist2)), maths.addArrays(points2[1], maths.mulItems(rightTangent, dist2)), points2[1]];
+          return [bezCurve];
+        }
+        u = chordLengthParameterize(points2);
+        var _generateAndReport = generateAndReport(points2, u, u, leftTangent, rightTangent, progressCallback);
+        bezCurve = _generateAndReport[0];
+        maxError = _generateAndReport[1];
+        splitPoint = _generateAndReport[2];
+        if (maxError === 0 || maxError < error) {
+          return [bezCurve];
+        }
+        if (maxError < error * error) {
+          uPrime = u;
+          prevErr = maxError;
+          prevSplit = splitPoint;
+          for (i = 0; i < MaxIterations; i++) {
+            uPrime = reparameterize(bezCurve, points2, uPrime);
+            var _generateAndReport2 = generateAndReport(points2, u, uPrime, leftTangent, rightTangent, progressCallback);
+            bezCurve = _generateAndReport2[0];
+            maxError = _generateAndReport2[1];
+            splitPoint = _generateAndReport2[2];
+            if (maxError < error) {
+              return [bezCurve];
+            } else if (splitPoint === prevSplit) {
+              var errChange = maxError / prevErr;
+              if (errChange > 0.9999 && errChange < 1.0001) {
+                break;
+              }
+            }
+            prevErr = maxError;
+            prevSplit = splitPoint;
+          }
+        }
+        beziers = [];
+        centerVector = maths.subtract(points2[splitPoint - 1], points2[splitPoint + 1]);
+        if (centerVector.every(function(val) {
+          return val === 0;
+        })) {
+          centerVector = maths.subtract(points2[splitPoint - 1], points2[splitPoint]);
+          var _ref = [-centerVector[1], centerVector[0]];
+          centerVector[0] = _ref[0];
+          centerVector[1] = _ref[1];
+        }
+        toCenterTangent = maths.normalize(centerVector);
+        fromCenterTangent = maths.mulItems(toCenterTangent, -1);
+        beziers = beziers.concat(fitCubic(points2.slice(0, splitPoint + 1), leftTangent, toCenterTangent, error, progressCallback));
+        beziers = beziers.concat(fitCubic(points2.slice(splitPoint), fromCenterTangent, rightTangent, error, progressCallback));
+        return beziers;
+      }
+      ;
+      function generateAndReport(points2, paramsOrig, paramsPrime, leftTangent, rightTangent, progressCallback) {
+        var bezCurve, maxError, splitPoint;
+        bezCurve = generateBezier(points2, paramsPrime, leftTangent, rightTangent, progressCallback);
+        var _computeMaxError = computeMaxError(points2, bezCurve, paramsOrig);
+        maxError = _computeMaxError[0];
+        splitPoint = _computeMaxError[1];
+        if (progressCallback) {
+          progressCallback({
+            bez: bezCurve,
+            points: points2,
+            params: paramsOrig,
+            maxErr: maxError,
+            maxPoint: splitPoint
+          });
+        }
+        return [bezCurve, maxError, splitPoint];
+      }
+      function generateBezier(points2, parameters, leftTangent, rightTangent) {
+        var bezCurve, A, a, C, X, det_C0_C1, det_C0_X, det_X_C1, alpha_l, alpha_r, epsilon, segLength, i, len, tmp, u, ux, firstPoint = points2[0], lastPoint = points2[points2.length - 1];
+        bezCurve = [firstPoint, null, null, lastPoint];
+        A = maths.zeros_Xx2x2(parameters.length);
+        for (i = 0, len = parameters.length; i < len; i++) {
+          u = parameters[i];
+          ux = 1 - u;
+          a = A[i];
+          a[0] = maths.mulItems(leftTangent, 3 * u * (ux * ux));
+          a[1] = maths.mulItems(rightTangent, 3 * ux * (u * u));
+        }
+        C = [[0, 0], [0, 0]];
+        X = [0, 0];
+        for (i = 0, len = points2.length; i < len; i++) {
+          u = parameters[i];
+          a = A[i];
+          C[0][0] += maths.dot(a[0], a[0]);
+          C[0][1] += maths.dot(a[0], a[1]);
+          C[1][0] += maths.dot(a[0], a[1]);
+          C[1][1] += maths.dot(a[1], a[1]);
+          tmp = maths.subtract(points2[i], bezier.q([firstPoint, firstPoint, lastPoint, lastPoint], u));
+          X[0] += maths.dot(a[0], tmp);
+          X[1] += maths.dot(a[1], tmp);
+        }
+        det_C0_C1 = C[0][0] * C[1][1] - C[1][0] * C[0][1];
+        det_C0_X = C[0][0] * X[1] - C[1][0] * X[0];
+        det_X_C1 = X[0] * C[1][1] - X[1] * C[0][1];
+        alpha_l = det_C0_C1 === 0 ? 0 : det_X_C1 / det_C0_C1;
+        alpha_r = det_C0_C1 === 0 ? 0 : det_C0_X / det_C0_C1;
+        segLength = maths.vectorLen(maths.subtract(firstPoint, lastPoint));
+        epsilon = 1e-6 * segLength;
+        if (alpha_l < epsilon || alpha_r < epsilon) {
+          bezCurve[1] = maths.addArrays(firstPoint, maths.mulItems(leftTangent, segLength / 3));
+          bezCurve[2] = maths.addArrays(lastPoint, maths.mulItems(rightTangent, segLength / 3));
+        } else {
+          bezCurve[1] = maths.addArrays(firstPoint, maths.mulItems(leftTangent, alpha_l));
+          bezCurve[2] = maths.addArrays(lastPoint, maths.mulItems(rightTangent, alpha_r));
+        }
+        return bezCurve;
+      }
+      ;
+      function reparameterize(bezier2, points2, parameters) {
+        return parameters.map(function(p, i) {
+          return newtonRaphsonRootFind(bezier2, points2[i], p);
+        });
+      }
+      ;
+      function newtonRaphsonRootFind(bez, point, u) {
+        var d = maths.subtract(bezier.q(bez, u), point), qprime = bezier.qprime(bez, u), numerator = maths.mulMatrix(d, qprime), denominator = maths.sum(maths.squareItems(qprime)) + 2 * maths.mulMatrix(d, bezier.qprimeprime(bez, u));
+        if (denominator === 0) {
+          return u;
+        } else {
+          return u - numerator / denominator;
+        }
+      }
+      ;
+      function chordLengthParameterize(points2) {
+        var u = [], currU, prevU, prevP;
+        points2.forEach(function(p, i) {
+          currU = i ? prevU + maths.vectorLen(maths.subtract(p, prevP)) : 0;
+          u.push(currU);
+          prevU = currU;
+          prevP = p;
+        });
+        u = u.map(function(x) {
+          return x / prevU;
+        });
+        return u;
+      }
+      ;
+      function computeMaxError(points2, bez, parameters) {
+        var dist2, maxDist, splitPoint, v, i, count2, point, t;
+        maxDist = 0;
+        splitPoint = Math.floor(points2.length / 2);
+        var t_distMap = mapTtoRelativeDistances(bez, 10);
+        for (i = 0, count2 = points2.length; i < count2; i++) {
+          point = points2[i];
+          t = find_t(bez, parameters[i], t_distMap, 10);
+          v = maths.subtract(bezier.q(bez, t), point);
+          dist2 = v[0] * v[0] + v[1] * v[1];
+          if (dist2 > maxDist) {
+            maxDist = dist2;
+            splitPoint = i;
+          }
+        }
+        return [maxDist, splitPoint];
+      }
+      ;
+      var mapTtoRelativeDistances = function mapTtoRelativeDistances2(bez, B_parts) {
+        var B_t_curr;
+        var B_t_dist = [0];
+        var B_t_prev = bez[0];
+        var sumLen = 0;
+        for (var i = 1; i <= B_parts; i++) {
+          B_t_curr = bezier.q(bez, i / B_parts);
+          sumLen += maths.vectorLen(maths.subtract(B_t_curr, B_t_prev));
+          B_t_dist.push(sumLen);
+          B_t_prev = B_t_curr;
+        }
+        B_t_dist = B_t_dist.map(function(x) {
+          return x / sumLen;
+        });
+        return B_t_dist;
+      };
+      function find_t(bez, param, t_distMap, B_parts) {
+        if (param < 0) {
+          return 0;
+        }
+        if (param > 1) {
+          return 1;
+        }
+        var lenMax, lenMin, tMax, tMin, t;
+        for (var i = 1; i <= B_parts; i++) {
+          if (param <= t_distMap[i]) {
+            tMin = (i - 1) / B_parts;
+            tMax = i / B_parts;
+            lenMin = t_distMap[i - 1];
+            lenMax = t_distMap[i];
+            t = (param - lenMin) / (lenMax - lenMin) * (tMax - tMin) + tMin;
+            break;
+          }
+        }
+        return t;
+      }
+      function createTangent(pointA, pointB) {
+        return maths.normalize(maths.subtract(pointA, pointB));
+      }
+      var maths = function() {
+        function maths2() {
+          _classCallCheck(this, maths2);
+        }
+        maths2.zeros_Xx2x2 = function zeros_Xx2x2(x) {
+          var zs = [];
+          while (x--) {
+            zs.push([0, 0]);
+          }
+          return zs;
+        };
+        maths2.mulItems = function mulItems(items, multiplier) {
+          return items.map(function(x) {
+            return x * multiplier;
+          });
+        };
+        maths2.mulMatrix = function mulMatrix(m1, m2) {
+          return m1.reduce(function(sum, x1, i) {
+            return sum + x1 * m2[i];
+          }, 0);
+        };
+        maths2.subtract = function subtract(arr1, arr2) {
+          return arr1.map(function(x1, i) {
+            return x1 - arr2[i];
+          });
+        };
+        maths2.addArrays = function addArrays(arr1, arr2) {
+          return arr1.map(function(x1, i) {
+            return x1 + arr2[i];
+          });
+        };
+        maths2.addItems = function addItems(items, addition) {
+          return items.map(function(x) {
+            return x + addition;
+          });
+        };
+        maths2.sum = function sum(items) {
+          return items.reduce(function(sum2, x) {
+            return sum2 + x;
+          });
+        };
+        maths2.dot = function dot(m1, m2) {
+          return maths2.mulMatrix(m1, m2);
+        };
+        maths2.vectorLen = function vectorLen(v) {
+          return Math.hypot.apply(Math, v);
+        };
+        maths2.divItems = function divItems(items, divisor) {
+          return items.map(function(x) {
+            return x / divisor;
+          });
+        };
+        maths2.squareItems = function squareItems(items) {
+          return items.map(function(x) {
+            return x * x;
+          });
+        };
+        maths2.normalize = function normalize(v) {
+          return this.divItems(v, this.vectorLen(v));
+        };
+        return maths2;
+      }();
+      var bezier = function() {
+        function bezier2() {
+          _classCallCheck(this, bezier2);
+        }
+        bezier2.q = function q(ctrlPoly, t) {
+          var tx = 1 - t;
+          var pA = maths.mulItems(ctrlPoly[0], tx * tx * tx), pB = maths.mulItems(ctrlPoly[1], 3 * tx * tx * t), pC = maths.mulItems(ctrlPoly[2], 3 * tx * t * t), pD = maths.mulItems(ctrlPoly[3], t * t * t);
+          return maths.addArrays(maths.addArrays(pA, pB), maths.addArrays(pC, pD));
+        };
+        bezier2.qprime = function qprime(ctrlPoly, t) {
+          var tx = 1 - t;
+          var pA = maths.mulItems(maths.subtract(ctrlPoly[1], ctrlPoly[0]), 3 * tx * tx), pB = maths.mulItems(maths.subtract(ctrlPoly[2], ctrlPoly[1]), 6 * tx * t), pC = maths.mulItems(maths.subtract(ctrlPoly[3], ctrlPoly[2]), 3 * t * t);
+          return maths.addArrays(maths.addArrays(pA, pB), pC);
+        };
+        bezier2.qprimeprime = function qprimeprime(ctrlPoly, t) {
+          return maths.addArrays(maths.mulItems(maths.addArrays(maths.subtract(ctrlPoly[2], maths.mulItems(ctrlPoly[1], 2)), ctrlPoly[0]), 6 * (1 - t)), maths.mulItems(maths.addArrays(maths.subtract(ctrlPoly[3], maths.mulItems(ctrlPoly[2], 2)), ctrlPoly[1]), 6 * t));
+        };
+        return bezier2;
+      }();
+      module2.exports = fitCurve2;
+      module2.exports.fitCubic = fitCubic;
+      module2.exports.createTangent = createTangent;
+    });
+  }
+});
 
 // src/config.ts
 var LOOK = {
@@ -36,22 +394,22 @@ function vunit(a) {
 }
 
 // src/camera/framing.ts
-var baseDistance = (extent2) => Math.max(GEMMY.distanceFactor * extent2, GEMMY.distanceMin);
-var orthoSide = (extent2) => Math.max(GEMMY.orthoFactor * extent2, GEMMY.orthoMin);
-function orthoFrame(extent2, width, height) {
-  const side = orthoSide(extent2);
+var baseDistance = (extent3) => Math.max(GEMMY.distanceFactor * extent3, GEMMY.distanceMin);
+var orthoSide = (extent3) => Math.max(GEMMY.orthoFactor * extent3, GEMMY.orthoMin);
+function orthoFrame(extent3, width, height) {
+  const side = orthoSide(extent3);
   const larger = Math.max(width, height);
   return { halfWidth: side / 2 * (width / larger), halfHeight: side / 2 * (height / larger) };
 }
 var RAD_TO_DEG = 180 / Math.PI;
-function fitZoomPersp(extent2, lens2, width, height) {
+function fitZoomPersp(extent3, lens2, width, height) {
   const shorterSensor = GEMMY.sensorWidth * Math.min(width, height) / Math.max(width, height);
   const halfAngle = Math.atan(shorterSensor / 2 / lens2);
-  return baseDistance(extent2) * Math.sin(halfAngle) / (orthoSide(extent2) / 2);
+  return baseDistance(extent3) * Math.sin(halfAngle) / (orthoSide(extent3) / 2);
 }
 var fitZoom = (width, height) => Math.min(width, height) / Math.max(width, height);
-var orthoToPerspZoom = (extent2, lens2, zoom2) => baseDistance(extent2) * GEMMY.sensorWidth * zoom2 / (orthoSide(extent2) * lens2);
-var perspToOrthoZoom = (extent2, lens2, zoom2) => zoom2 * orthoSide(extent2) * lens2 / (baseDistance(extent2) * GEMMY.sensorWidth);
+var orthoToPerspZoom = (extent3, lens2, zoom2) => baseDistance(extent3) * GEMMY.sensorWidth * zoom2 / (orthoSide(extent3) * lens2);
+var perspToOrthoZoom = (extent3, lens2, zoom2) => zoom2 * orthoSide(extent3) * lens2 / (baseDistance(extent3) * GEMMY.sensorWidth);
 var EXPORT_LONG_SIDE = 1600;
 function exportView(view) {
   const { quaternion, zoom: zoom2, target, centre: centre2, box: box2, width, height } = view;
@@ -127,16 +485,16 @@ var DOT_RADIUS = 0.0875;
 function triadItem(d, index, origin, length) {
   const T = GEMMY.triad;
   const flat = Math.hypot(d[0], d[1]);
-  const onScreen = flat > LABEL_FLAT_MIN;
-  const [ux, uy] = labelDirection(d, flat, onScreen);
+  const onScreen2 = flat > LABEL_FLAT_MIN;
+  const [ux, uy] = labelDirection(d, flat, onScreen2);
   const labelRadius = length * (1 + T.labelReach * T.arrowRadius);
-  const reach = onScreen ? labelRadius * flat : 0;
+  const reach = onScreen2 ? labelRadius * flat : 0;
   const pad = T.labelPad * length;
   const label = { x: origin[0] + (reach + pad) * ux, y: origin[1] - (reach + pad) * uy };
   return flat > HEAD_FLAT_MIN ? { index, depth: d[2], label, ...triadArrow(d, flat, origin, length) } : { index, depth: d[2], label };
 }
-function labelDirection(d, flat, onScreen) {
-  return onScreen ? [d[0] / flat, d[1] / flat] : [DIAGONAL, DIAGONAL];
+function labelDirection(d, flat, onScreen2) {
+  return onScreen2 ? [d[0] / flat, d[1] / flat] : [DIAGONAL, DIAGONAL];
 }
 var SHAFT_INTO_HEAD = 0.5;
 function triadArrow(d, flat, [ox, oy], length) {
@@ -249,604 +607,6 @@ function boundingBox(points2) {
     }
   }
   return { lo, hi };
-}
-
-// src/export/export.ts
-import { MathUtils as MathUtils2, Vector2 as Vector27, Vector3 as Vector35 } from "three";
-
-// src/export/markup.ts
-import { Color, LinearSRGBColorSpace, SRGBColorSpace } from "three";
-var SVG_PRECISION = 100;
-var escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-var escapeAttr = (s) => escapeText(s).replace(/"/g, "&quot;");
-var fmt = (x) => Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0";
-var xy = (p) => `${fmt(p.x)} ${fmt(p.y)}`;
-var pointList = (list) => list.map((p) => `${fmt(p.x)},${fmt(p.y)}`).join(" ");
-var segment = (a, b) => `M${xy(a)}L${xy(b)}`;
-function attrText(attrs) {
-  return Object.entries(attrs).filter((entry) => entry[1] !== void 0 && entry[1] !== false).map(([name, value]) => ` ${name}="${typeof value === "number" ? fmt(value) : escapeAttr(value)}"`).join("");
-}
-function el(tag, attrs, body) {
-  const list = attrText(attrs);
-  return body === void 0 ? `<${tag}${list}/>` : `<${tag}${list}>${body}</${tag}>`;
-}
-function textEl(tag, attrs, text) {
-  return `<${tag}${attrText(attrs)}>${escapeText(text)}</${tag}>`;
-}
-function srgbHex(rgb) {
-  return `#${new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace).getHexString()}`;
-}
-function linearHex(rgb) {
-  return `#${new Color().setRGB(rgb[0], rgb[1], rgb[2], LinearSRGBColorSpace).getHexString()}`;
-}
-function shadedBand(base, darkening) {
-  return `#${new Color().setRGB(base[0], base[1], base[2], SRGBColorSpace).multiplyScalar(darkening).getHexString()}`;
-}
-
-// src/export/view.ts
-import { Quaternion, Vector2 as Vector22, Vector3 } from "three";
-var MIN_DEPTH = 1e-3;
-var HORIZON_MARGIN = 1e-3;
-var vec3 = (p) => new Vector3(p[0], p[1], p[2]);
-function makeView(o) {
-  const { width: W, height: H, zoom: zoom2 } = o;
-  const orientation = new Quaternion().fromArray(o.quaternion);
-  const right = new Vector3(1, 0, 0).applyQuaternion(orientation);
-  const up = new Vector3(0, 1, 0).applyQuaternion(orientation);
-  const back = new Vector3(0, 0, 1).applyQuaternion(orientation);
-  const offset = vec3(o.centre).add(vec3(o.target));
-  const inverse = orientation.clone().invert();
-  const persp = o.projection === "persp";
-  const lens2 = o.lens ?? GEMMY.defaultLens;
-  const eyeZ = baseDistance(o.extent) / zoom2;
-  const eye = new Vector3(0, 0, eyeZ);
-  const focal = lens2 * (Math.max(W, H) / GEMMY.sensorWidth);
-  const scale = W / (2 * orthoFrame(o.extent, W, H).halfWidth) * zoom2;
-  const pinhole = { eyeZ, focal, W, H };
-  const toCam = (p) => p.clone().sub(offset).applyQuaternion(inverse);
-  const pxPerUnit = (c) => persp ? focal / Math.max(eyeZ - c.z, MIN_DEPTH) : scale;
-  const toScreen = (c) => {
-    const k = pxPerUnit(c);
-    return new Vector22(W / 2 + c.x * k, H / 2 - c.y * k);
-  };
-  const depth = (c) => persp ? -Math.hypot(c.x, c.y, eyeZ - c.z) : c.z;
-  const facing = (normal, point) => persp ? normal.dot(eye.clone().sub(point)) > 0 : normal.z > 0;
-  const sphereImage = (c, r) => {
-    if (!persp) {
-      const s = toScreen(c);
-      return { cx: s.x, cy: s.y, rx: r * scale, ry: r * scale, phi: 0 };
-    }
-    return perspectiveSphereImage(c, r, pinhole);
-  };
-  return { right, up, back, toCam, toScreen, depth, pxPerUnit, facing, sphereImage };
-}
-function perspectiveSphereImage(c, r, pinhole) {
-  const { eyeZ, focal, W, H } = pinhole;
-  const t = eyeZ - c.z;
-  const rho = Math.hypot(c.x, c.y);
-  const dist2 = Math.hypot(rho, t);
-  const theta = Math.atan2(rho, t);
-  const alpha = Math.asin(Math.min(r / dist2, 1));
-  if (dist2 <= r || theta + alpha >= Math.PI / 2 - HORIZON_MARGIN) return null;
-  const nearEdgePx = focal * Math.tan(theta - alpha);
-  const farEdgePx = focal * Math.tan(theta + alpha);
-  const centreOffsetPx = (nearEdgePx + farEdgePx) / 2;
-  const across = (centreOffsetPx * Math.sin(theta) + focal * Math.cos(theta)) / Math.cos(alpha);
-  const dx = rho > EPS ? c.x / rho : 1;
-  const dy = rho > EPS ? -c.y / rho : 0;
-  return {
-    cx: W / 2 + dx * centreOffsetPx,
-    cy: H / 2 + dy * centreOffsetPx,
-    rx: (farEdgePx - nearEdgePx) / 2,
-    ry: Math.sqrt(Math.max(across * across - centreOffsetPx * centreOffsetPx - focal * focal, 0)),
-    phi: Math.atan2(dy, dx)
-  };
-}
-
-// src/export/hull.ts
-import { Vector2 as Vector23, Vector3 as Vector32 } from "three";
-var LIT_STEPS = 120;
-function hull2d(points2) {
-  const sorted = [...points2].sort((a, b) => a.x - b.x || a.y - b.y);
-  const build = (list) => {
-    const out = [];
-    for (const q of list) {
-      while (out.length >= 2 && turn(out[out.length - 2], out[out.length - 1], q) <= 0) out.pop();
-      out.push(q);
-    }
-    out.pop();
-    return out;
-  };
-  return sorted.length < 3 ? sorted : [...build(sorted), ...build([...sorted].reverse())];
-}
-var turn = (o, a, b) => new Vector23().subVectors(a, o).cross(new Vector23().subVectors(b, o));
-function litRegion(light, threshold) {
-  const c0 = light.clone().multiplyScalar(threshold);
-  const rho = Math.sqrt(1 - threshold * threshold);
-  const u = new Vector32().crossVectors(light, new Vector32(0, 0, 1)).normalize();
-  const v = new Vector32().crossVectors(light, u);
-  const at = (phi) => c0.clone().addScaledVector(u, rho * Math.cos(phi)).addScaledVector(v, rho * Math.sin(phi));
-  const samples = [];
-  for (let i = 0; i < LIT_STEPS; i++) {
-    const n = at(i / LIT_STEPS * 2 * Math.PI);
-    if (n.z >= 0) samples.push(n);
-  }
-  const A = rho * u.z;
-  const B = rho * v.z;
-  const R = Math.hypot(A, B);
-  if (R > EPS && Math.abs(c0.z) <= R) {
-    const base = Math.atan2(B, A);
-    const off = Math.acos(-c0.z / R);
-    samples.push(at(base + off), at(base - off));
-  }
-  for (let i = 0; i < LIT_STEPS; i++) {
-    const a = i / LIT_STEPS * 2 * Math.PI;
-    const n = new Vector32(Math.cos(a), Math.sin(a), 0);
-    if (n.dot(light) >= threshold) samples.push(n);
-  }
-  return hull2d(samples.map((n) => new Vector23(n.x, n.y)));
-}
-
-// src/export/shape.ts
-var DEPTH_NUDGE = 1e-6;
-function outlineStroke(ctx, on) {
-  return on && ctx.o.outlines ? { stroke: ctx.outlineHex, "stroke-width": ctx.outlineWidth, "stroke-linejoin": "round" } : {};
-}
-function outlineAttrs(ctx, on) {
-  return on && ctx.o.outlines ? { ...outlineStroke(ctx, on), "paint-order": "stroke" } : {};
-}
-function colorOf(o, id) {
-  return o.data.materials[id].base_color.slice(0, 3);
-}
-function arrowColor() {
-  return ARROW.color.slice(0, 3);
-}
-function pointOf(ctx, id) {
-  const p = ctx.points.get(id);
-  if (!p) throw new Error(`export: no point ${id}`);
-  return p;
-}
-
-// src/export/bonds.ts
-import { Vector2 as Vector24 } from "three";
-
-// src/geom/bonds.ts
-function trimDistance(R, r) {
-  return R === null ? 0 : Math.sqrt(Math.max(R * R - r * r, 0));
-}
-function trimToSpheres(a, b, r, Ra, Rb) {
-  const length = span(a, b);
-  if (length <= EPS) return null;
-  const fromA = trimDistance(Ra, r);
-  const fromB = trimDistance(Rb, r);
-  if (fromA + fromB >= length) return null;
-  return [lerp(a, b, fromA / length), lerp(a, b, 1 - fromB / length)];
-}
-function clipToSegment(p, q, s, e) {
-  const axis = vsub(e, s);
-  const axisSq = vdot(axis, axis);
-  if (axisSq <= EPS) return null;
-  const along = (x) => vdot(vsub(x, s), axis) / axisSq;
-  const startFraction = along(p);
-  const endFraction = along(q);
-  const visibleFrom = Math.max(startFraction, 0);
-  const visibleTo = Math.min(endFraction, 1);
-  if (visibleTo <= visibleFrom) return null;
-  return {
-    p: lerp(p, q, (visibleFrom - startFraction) / (endFraction - startFraction)),
-    q: lerp(p, q, (visibleTo - startFraction) / (endFraction - startFraction)),
-    cutStart: startFraction < 0,
-    cutEnd: endFraction > 1
-  };
-}
-function insideSphere(p, c, rad, R) {
-  return R !== null && span(p, c) + rad <= R;
-}
-
-// src/geom/dashes.ts
-function dashSegments(a, b, dash, gap) {
-  const len = span(a, b);
-  if (len <= EPS) return [];
-  const count = Math.max(1, Math.round((len + gap) / (dash + gap)));
-  const stretch = len / (count * dash + (count - 1) * gap);
-  const dashFraction = dash * stretch / len;
-  const periodFraction = (dash + gap) * stretch / len;
-  return Array.from({ length: count }, (_, i) => [
-    lerp(a, b, i * periodFraction),
-    lerp(a, b, i * periodFraction + dashFraction)
-  ]);
-}
-function dotCentres(a, b, spacing) {
-  const len = span(a, b);
-  if (len <= EPS) return [];
-  const count = Math.max(1, Math.round(len / spacing));
-  return Array.from({ length: count }, (_, i) => lerp(a, b, (i + 0.5) / count));
-}
-
-// src/export/bonds.ts
-var MIDPOINT = 0.5;
-function bondShapes(ctx, drawn) {
-  const shapes = [];
-  for (const bond of ctx.o.data.primitives.bonds ?? []) {
-    const a = pointOf(ctx, bond.a_point_id);
-    const b = pointOf(ctx, bond.b_point_id);
-    const ends = { a: drawn.get(bond.a_point_id) ?? null, b: drawn.get(bond.b_point_id) ?? null };
-    const r = bond.radius;
-    const rgb = colorOf(ctx.o, bond.material_id);
-    const style = bond.style ?? "solid";
-    if (style === "dashed") shapes.push(...dashShapes(ctx, a, b, r, rgb, ends));
-    else if (style === "dotted") shapes.push(...dotShapes(ctx, a, b, r, rgb, ends));
-    else shapes.push(...solidTubeShapes(ctx, a, b, r, rgb, ends));
-  }
-  return shapes;
-}
-var sphereRadius = (atom) => atom ? atom.radius : null;
-function solidTubeShapes(ctx, a, b, r, rgb, ends) {
-  const cut = trimToSpheres(a.toArray(), b.toArray(), r, sphereRadius(ends.a), sphereRadius(ends.b));
-  if (!cut) return [];
-  const [p, q] = cut;
-  if (!ends.a || !ends.b) return [tube(ctx, { from: p, to: q, radius: r, rgb, outlined: true, fromAtom: ends.a, toAtom: ends.b })];
-  const mid = lerp(p, q, MIDPOINT);
-  return [
-    tube(ctx, { from: p, to: mid, radius: r, rgb, outlined: true, fromAtom: ends.a, toAtom: null }),
-    tube(ctx, { from: mid, to: q, radius: r, rgb, outlined: true, fromAtom: null, toAtom: ends.b })
-  ];
-}
-function dashShapes(ctx, a, b, r, rgb, ends) {
-  const cut = trimToSpheres(a.toArray(), b.toArray(), r, sphereRadius(ends.a), sphereRadius(ends.b));
-  if (!cut) return [];
-  const dash = Math.max(DASH.length * r, DASH.min);
-  const shapes = [];
-  for (const [p, q] of dashSegments(a.toArray(), b.toArray(), dash, dash * DASH.gap / DASH.length)) {
-    const piece = clipToSegment(p, q, cut[0], cut[1]);
-    if (!piece) continue;
-    shapes.push(tube(ctx, {
-      from: piece.p,
-      to: piece.q,
-      radius: r,
-      rgb,
-      outlined: false,
-      fromAtom: piece.cutStart ? ends.a : null,
-      toAtom: piece.cutEnd ? ends.b : null
-    }));
-  }
-  return shapes;
-}
-function dotShapes(ctx, a, b, r, rgb, ends) {
-  const dotRadius = DOT.radius * r;
-  const from = a.toArray();
-  const to = b.toArray();
-  const hidden = (p) => insideSphere(p, from, dotRadius, sphereRadius(ends.a)) || insideSphere(p, to, dotRadius, sphereRadius(ends.b));
-  const centres = dotCentres(from, to, Math.max(DOT.spacing * r, DOT.spacingMin));
-  return centres.filter((p) => !hidden(p)).map((p) => dotShape(ctx, vec3(p), r, rgb));
-}
-function dotShape(ctx, p, r, rgb) {
-  const { view } = ctx;
-  const c = view.toCam(p);
-  const s = view.toScreen(c);
-  return { z: view.depth(c), svg: el("circle", { cx: s.x, cy: s.y, r: DOT.radius * r * view.pxPerUnit(c), fill: srgbHex(rgb) }) };
-}
-function tube(ctx, spec) {
-  const { view } = ctx;
-  const cp = view.toCam(vec3(spec.from));
-  const cq = view.toCam(vec3(spec.to));
-  const quad = trapezoid(view.toScreen(cp), view.toScreen(cq), spec.radius * view.pxPerUnit(cp), spec.radius * view.pxPerUnit(cq));
-  const sides = spec.outlined && ctx.o.outlines ? el("path", { d: segment(quad[0], quad[1]) + segment(quad[3], quad[2]), fill: "none", ...outlineAttrs(ctx, true), "stroke-linecap": "butt" }) : "";
-  const fill = el("polygon", { points: pointList(quad), fill: srgbHex(spec.rgb) });
-  return { z: Math.max(endDepth(ctx, cp, spec.fromAtom), endDepth(ctx, cq, spec.toAtom)), svg: sides + fill };
-}
-function endDepth(ctx, junction, atom) {
-  const { view } = ctx;
-  if (!atom) return view.depth(junction);
-  const outward = junction.clone().sub(view.toCam(atom.centre));
-  const towardViewer = outward.lengthSq() > EPS && view.facing(outward.normalize(), junction);
-  return towardViewer ? atom.z + DEPTH_NUDGE : Math.min(view.depth(junction), atom.z - DEPTH_NUDGE);
-}
-function trapezoid(a, b, ha, hb) {
-  const along = b.clone().sub(a);
-  const length = along.length() || 1;
-  const side = new Vector24(-along.y, along.x).divideScalar(length);
-  return [
-    a.clone().addScaledVector(side, ha),
-    b.clone().addScaledVector(side, hb),
-    b.clone().addScaledVector(side, -hb),
-    a.clone().addScaledVector(side, -ha)
-  ];
-}
-
-// src/export/polyhedra.ts
-import { MathUtils, Vector3 as Vector34 } from "three";
-var FACE_SEAM_WIDTH = 0.6;
-var EDGE_WIDTH = 1;
-var HARD_EDGE_COS = Math.cos(MathUtils.degToRad(1));
-function polyhedronShapes(ctx) {
-  const { o, view } = ctx;
-  const shapes = [];
-  const touch = { after: /* @__PURE__ */ new Map(), before: /* @__PURE__ */ new Map() };
-  const topologies = new Map(o.data.topologies.map((t) => [t.id, t]));
-  const maxRadius = Math.max(0, ...o.data.primitives.atoms.map((a) => a.radius));
-  for (const poly of o.data.primitives.polyhedra) {
-    const topo = topologies.get(poly.topology_id);
-    const material = o.data.materials[poly.material_id];
-    const alpha = material.alpha ?? 1;
-    const ghost = alpha < 1;
-    const rgb = material.base_color.slice(0, 3);
-    const verts = topo.point_ids.map((id) => view.toCam(pointOf(ctx, id)));
-    const mid = verts.reduce((sum, x) => sum.add(x), new Vector34()).divideScalar(verts.length);
-    const faces = topo.faces.map((f) => faceOf(f, verts, mid, view));
-    const screen = verts.map((c) => view.toScreen(c));
-    const key2 = Math.max(...verts.map((c) => view.depth(c))) + (ghost ? maxRadius : 0);
-    if (!ghost) recordTouch(touch, topo.point_ids, faces, key2);
-    const { edges, silhouette } = edgePaths(faces, screen, ghost);
-    let body = silhouette && o.outlines && !ghost ? el("path", { d: silhouette, fill: "none", ...outlineStroke(ctx, true), "stroke-linecap": "round" }) : "";
-    body += faceMarkup(ctx, faces, screen, rgb, alpha, ghost);
-    if (edges) {
-      body += el("path", { d: edges, fill: "none", stroke: ctx.edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" });
-    }
-    shapes.push({ z: key2, svg: el("g", {}, body) });
-  }
-  return { shapes, touch };
-}
-function faceMarkup(ctx, faces, screen, rgb, alpha, ghost) {
-  let markup = "";
-  for (const f of faces) {
-    if (!f.front) continue;
-    const fill = f.n.dot(ctx.light) >= LOOK.threshold ? srgbHex(rgb) : shadedBand(rgb, LOOK.dark);
-    const style = ghost ? { "fill-opacity": alpha } : { stroke: fill, "stroke-width": FACE_SEAM_WIDTH, "stroke-linejoin": "round" };
-    markup += el("polygon", { points: pointList(f.idx.map((i) => screen[i])), fill, ...style });
-  }
-  return markup;
-}
-function edgePaths(faces, screen, ghost) {
-  let edges = "";
-  let silhouette = "";
-  for (const e of edgesOf(faces)) {
-    const hard = e.faces.length === 1 || e.faces[0].n.dot(e.faces[1].n) < HARD_EDGE_COS;
-    const seg = segment(screen[e.i], screen[e.j]);
-    const anyFront = e.faces.some((f) => f.front);
-    const anyBack = e.faces.some((f) => !f.front);
-    if (hard && (ghost || anyFront)) edges += seg;
-    if (anyFront && anyBack) silhouette += seg;
-  }
-  return { edges, silhouette };
-}
-function faceOf(f, verts, mid, view) {
-  let [i, j, k] = f;
-  let n = new Vector34().subVectors(verts[j], verts[i]).cross(new Vector34().subVectors(verts[k], verts[i])).normalize();
-  const centre2 = verts[i].clone().add(verts[j]).add(verts[k]).divideScalar(3);
-  if (n.dot(centre2.clone().sub(mid)) < 0) {
-    [j, k] = [k, j];
-    n = n.negate();
-  }
-  return { idx: [i, j, k], n, front: view.facing(n, centre2) };
-}
-function edgesOf(faces) {
-  const edges = /* @__PURE__ */ new Map();
-  for (const f of faces) {
-    for (let e = 0; e < 3; e++) {
-      const i = f.idx[e];
-      const j = f.idx[(e + 1) % 3];
-      const key2 = i < j ? `${i}-${j}` : `${j}-${i}`;
-      if (!edges.has(key2)) edges.set(key2, { i, j, faces: [] });
-      edges.get(key2).faces.push(f);
-    }
-  }
-  return [...edges.values()];
-}
-function recordTouch(touch, ids, faces, key2) {
-  const touched = new Set(faces.filter((f) => f.front).flatMap((f) => f.idx));
-  ids.forEach((id, i) => {
-    if (touched.has(i)) touch.after.set(id, Math.max(touch.after.get(id) ?? -Infinity, key2));
-    else touch.before.set(id, Math.min(touch.before.get(id) ?? Infinity, key2));
-  });
-}
-
-// src/export/triad.ts
-import { Vector2 as Vector26 } from "three";
-function triadSvg(ctx) {
-  const { o, view } = ctx;
-  const dirs = o.lattice.map((vec) => {
-    const v = vec3(vec);
-    return [v.dot(view.right), v.dot(view.up), v.dot(view.back)];
-  });
-  const tri = triadLayout(dirs, o.width, o.height);
-  const items = [];
-  for (const it of tri.items) {
-    const color = LOOK.axisColors[it.index];
-    if (it.head) {
-      items.push(el("line", { x1: tri.origin[0], y1: tri.origin[1], x2: it.shaftEnd[0], y2: it.shaftEnd[1], stroke: color, "stroke-width": tri.lineWidth }));
-      items.push(el("polygon", { points: pointList(it.head.map(([x, y]) => new Vector26(x, y))), fill: color }));
-    }
-    items.push(textEl("text", {
-      x: it.label.x,
-      y: it.label.y,
-      fill: color,
-      "text-anchor": "middle",
-      "dominant-baseline": "central",
-      "font-family": `'${AXIS_FONT.family}', sans-serif`,
-      "font-style": "italic",
-      "font-weight": 700,
-      "font-size": tri.fontSize
-    }, "abc"[it.index]));
-  }
-  items.push(el("circle", { cx: tri.origin[0], cy: tri.origin[1], r: tri.dotRadius, fill: o.boxColor }));
-  return el("g", { id: "triad", "stroke-linecap": "round" }, items.join(""));
-}
-
-// src/export/export.ts
-var OUTLINE_FRACTION = 35e-4;
-var LINE_RADIUS_RATIO = 0.7;
-var ARROW_HEAD_MIN_RADII = 3;
-var ARROW_HEAD_MAX_FRACTION = 0.8;
-var ARROW_SHAFT_MIN_FRACTION = 0.2;
-var PARALLEL_LIMIT = 0.9;
-var RING_STEPS = 24;
-var ROUND_TOLERANCE = 0.01;
-var CELL_PIECES = 40;
-var CELL_PIECE_MIN = 0.2;
-var BOX_LINE_WIDTH = 1;
-var LARGE_ARC = 1;
-var SWEEP = 0;
-function buildSvg(o) {
-  const ctx = makeContext(o);
-  const polyhedra2 = polyhedronShapes(ctx);
-  const atoms = o.show.atoms ? atomShapes(ctx, polyhedra2.touch) : { shapes: [], drawn: /* @__PURE__ */ new Map() };
-  const shapes = [...bondShapes(ctx, atoms.drawn), ...arrowShapes(ctx, atoms.drawn), ...polyhedra2.shapes, ...atoms.shapes];
-  if (o.show.box && o.data.cell) shapes.push(...cellBoxShapes(ctx, o.data.cell));
-  shapes.sort((p, q) => p.z - q.z);
-  return svgDocument(ctx, [...shapes.map((s) => s.svg), triadSvg(ctx)].join("\n"));
-}
-function makeContext(o) {
-  return {
-    o,
-    view: makeView(o),
-    points: new Map(o.data.points.map((p) => [p.id, vec3(p.position)])),
-    light: new Vector35(...LOOK.key).normalize(),
-    outlineHex: linearHex(LOOK.outline),
-    edgeHex: srgbHex(LOOK.outline),
-    outlineWidth: OUTLINE_FRACTION * o.height
-  };
-}
-function arrowShapes(ctx, drawn) {
-  const { view } = ctx;
-  const shapes = [];
-  for (const d of ctx.o.data.primitives.displacements ?? []) {
-    const p = pointOf(ctx, d.start_point_id);
-    const v = vec3(d.vector);
-    const [a, b] = d.anchor === "tip" ? [p.clone().sub(v), p] : [p, p.clone().add(v)];
-    const radius = ARROW.radius;
-    const rgb = arrowColor();
-    if ((d.mode ?? "arrow").toLowerCase() !== "arrow") {
-      const atom = drawn.get(d.start_point_id) ?? null;
-      const ends = d.anchor === "tip" ? { a: null, b: atom } : { a: atom, b: null };
-      shapes.push(...solidTubeShapes(ctx, a, b, radius * LINE_RADIUS_RATIO, rgb, ends));
-      continue;
-    }
-    const length = a.distanceTo(b);
-    if (length <= EPS) continue;
-    const dir = b.clone().sub(a).divideScalar(length);
-    const headLength = Math.min(Math.max(length * ARROW.headLengthRatio, radius * ARROW_HEAD_MIN_RADII), length * ARROW_HEAD_MAX_FRACTION);
-    const shaftLength = Math.max(length - headLength, length * ARROW_SHAFT_MIN_FRACTION);
-    const end = a.clone().addScaledVector(dir, shaftLength);
-    shapes.push(cylinder(ctx, a, end, radius, rgb));
-    const helper = Math.abs(dir.z) < PARALLEL_LIMIT ? new Vector35(0, 0, 1) : new Vector35(1, 0, 0);
-    const s1 = new Vector35().crossVectors(dir, helper).normalize();
-    const s2 = new Vector35().crossVectors(dir, s1);
-    const headRadius = radius * ARROW.headRadiusRatio;
-    const ring = Array.from({ length: RING_STEPS }, (_, i) => {
-      const t = i / RING_STEPS * 2 * Math.PI;
-      return end.clone().addScaledVector(s1, headRadius * Math.cos(t)).addScaledVector(s2, headRadius * Math.sin(t));
-    });
-    const camPoints = [b, ...ring].map((x) => view.toCam(x));
-    const outline = hull2d(camPoints.map((c) => view.toScreen(c)));
-    shapes.push({
-      z: Math.max(...camPoints.map((c) => view.depth(c))),
-      svg: el("polygon", { points: pointList(outline), fill: srgbHex(rgb), ...outlineAttrs(ctx, true) })
-    });
-  }
-  return shapes;
-}
-function cylinder(ctx, a, b, radius, rgb) {
-  const { view } = ctx;
-  const ca = view.toCam(a);
-  const cb = view.toCam(b);
-  const quad = trapezoid(view.toScreen(ca), view.toScreen(cb), radius * view.pxPerUnit(ca), radius * view.pxPerUnit(cb));
-  return {
-    z: Math.max(view.depth(ca), view.depth(cb)),
-    svg: el("polygon", { points: pointList(quad), fill: srgbHex(rgb), ...outlineAttrs(ctx, true) })
-  };
-}
-function atomShapes(ctx, touch) {
-  const lit = litRegion(ctx.light, LOOK.threshold);
-  const shapes = [];
-  const drawn = /* @__PURE__ */ new Map();
-  for (const atom of ctx.o.data.primitives.atoms) {
-    const shape = atomShape(ctx, lit, atom, touch);
-    if (!shape) continue;
-    shapes.push(shape);
-    drawn.set(atom.point_id, { centre: pointOf(ctx, atom.point_id), radius: atom.radius, z: shape.z });
-  }
-  return { shapes, drawn };
-}
-function atomShape(ctx, lit, atom, touch) {
-  const { o, view } = ctx;
-  const c = view.toCam(pointOf(ctx, atom.point_id));
-  const e = view.sphereImage(c, atom.radius);
-  if (!e) return null;
-  const reach = Math.max(e.rx, e.ry);
-  if (e.cx + reach < 0 || e.cx - reach > o.width || e.cy + reach < 0 || e.cy - reach > o.height) return null;
-  const rgb = colorOf(o, atom.material_id);
-  const center = new Vector27(e.cx, e.cy);
-  const radial = new Vector27(Math.cos(e.phi), Math.sin(e.phi));
-  const across = new Vector27(-radial.y, radial.x);
-  const warp = (p) => {
-    const s = new Vector27(p.x, -p.y);
-    return center.clone().addScaledVector(radial, s.dot(radial) * e.rx).addScaledVector(across, s.dot(across) * e.ry);
-  };
-  const tip2 = center.clone().addScaledVector(radial, e.rx);
-  const tail = center.clone().addScaledVector(radial, -e.rx);
-  const arc = `A${fmt(e.rx)} ${fmt(e.ry)} ${fmt(e.phi * MathUtils2.RAD2DEG)} ${LARGE_ARC} ${SWEEP}`;
-  const disc = `M${xy(tip2)}${arc} ${xy(tail)}${arc} ${xy(tip2)}z`;
-  const band = `${disc}M${lit.map((p) => xy(warp(p))).join("L")}z`;
-  const z = atomDepth(view.depth(c) + atom.radius, atom.point_id, touch);
-  const svg = ellipseEl(e, { fill: srgbHex(rgb), ...outlineAttrs(ctx, true) }) + el("path", { d: band, fill: shadedBand(rgb, LOOK.dark), "fill-rule": "evenodd" });
-  return { z, svg };
-}
-function atomDepth(natural, id, touch) {
-  if (touch.after.has(id)) return Math.max(natural, touch.after.get(id) + DEPTH_NUDGE);
-  if (touch.before.has(id)) return Math.min(natural, touch.before.get(id) - DEPTH_NUDGE);
-  return natural;
-}
-function ellipseEl(e, attrs) {
-  if (Math.abs(e.rx - e.ry) < ROUND_TOLERANCE * e.rx) return el("circle", { cx: e.cx, cy: e.cy, r: e.rx, ...attrs });
-  const deg = e.phi * MathUtils2.RAD2DEG;
-  return el("ellipse", {
-    cx: e.cx,
-    cy: e.cy,
-    rx: e.rx,
-    ry: e.ry,
-    transform: `rotate(${fmt(deg)} ${fmt(e.cx)} ${fmt(e.cy)})`,
-    ...attrs
-  });
-}
-function cellBoxShapes(ctx, cell) {
-  const { o, view } = ctx;
-  const origin = vec3(cell.origin);
-  const [a, b, c] = cell.vectors.map(vec3);
-  const corner = (i, j, k) => origin.clone().addScaledVector(a, i).addScaledVector(b, j).addScaledVector(c, k);
-  const piece = Math.max(o.extent / CELL_PIECES, CELL_PIECE_MIN);
-  const shapes = [];
-  for (let n = 0; n < 8; n++) {
-    for (let axis = 0; axis < 3; axis++) {
-      if (n & 1 << axis) continue;
-      const bits = [n & 1, n >> 1 & 1, n >> 2 & 1];
-      const start = corner(...bits);
-      bits[axis] = 1;
-      const end = corner(...bits);
-      const count = Math.max(1, Math.ceil(start.distanceTo(end) / piece));
-      for (let s = 0; s < count; s++) {
-        const p = view.toCam(start.clone().lerp(end, s / count));
-        const q = view.toCam(start.clone().lerp(end, (s + 1) / count));
-        const from = view.toScreen(p);
-        const to = view.toScreen(q);
-        shapes.push({
-          z: Math.max(view.depth(p), view.depth(q)),
-          svg: el("line", { x1: from.x, y1: from.y, x2: to.x, y2: to.y, stroke: o.boxColor, "stroke-width": BOX_LINE_WIDTH })
-        });
-      }
-    }
-  }
-  return shapes;
-}
-function svgDocument(ctx, body) {
-  const { width: W, height: H } = ctx.o;
-  const style = textEl("style", {}, axisFontFace(["700"]));
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: W, height: H, viewBox: `0 0 ${W} ${H}` }, `
-${style}
-${body}
-`);
-  return `${svg}
-`;
 }
 
 // src/render/draw.ts
@@ -1097,13 +857,178 @@ function makeToonGradient() {
 }
 
 // src/ui/ui.ts
-import * as THREE7 from "three";
+import * as THREE12 from "three";
 
 // src/ui/picking.ts
-import * as THREE5 from "three";
+import * as THREE6 from "three";
 
 // src/ui/readout.ts
+import * as THREE5 from "three";
+
+// src/camera/view.ts
+import * as THREE4 from "three";
+
+// src/camera/glide.ts
 import * as THREE3 from "three";
+var GLIDE_MS = 300;
+var current = 0;
+function glideTo(point) {
+  const offset = point.clone().sub(controls.target);
+  glideView(point, camera.position.clone().add(offset));
+}
+function glideView(target, position, zoom2) {
+  const id = ++current;
+  const moveTarget = target.clone().sub(controls.target);
+  const movePosition = position.clone().sub(camera.position);
+  const zoomStart = camera.zoom;
+  const started = performance.now();
+  let shareMoved = 0;
+  const step = () => {
+    if (id !== current) return;
+    const progress = (performance.now() - started) / GLIDE_MS;
+    const share = THREE3.MathUtils.smoothstep(progress, 0, 1);
+    const part = share - shareMoved;
+    camera.position.addScaledVector(movePosition, part);
+    controls.target.addScaledVector(moveTarget, part);
+    if (zoom2 !== void 0) {
+      camera.zoom = progress < 1 ? camera.zoom * Math.pow(zoom2 / zoomStart, part) : zoom2;
+      camera.updateProjectionMatrix();
+    }
+    shareMoved = share;
+    requestRender();
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function cancelGlide() {
+  current++;
+}
+
+// src/camera/view.ts
+var ZOOM_MIN = 0.05;
+var ZOOM_MAX = 40;
+var ORTHO_FAR_EXTENTS = 40;
+var ORTHO_VIEW_DISTANCE = 8;
+var CLIP_CHANGE_TOLERANCE = 1e-6;
+var isPersp = () => camera === perspCamera;
+var currentZoom = () => isPersp() ? baseDistance(extent) / distance() : camera.zoom;
+var shownZoom = () => isPersp() ? baseDistance(extent) / centreDistance(camera.position.toArray()) : camera.zoom;
+var frameZoom = (size, width, height) => isPersp() ? fitZoomPersp(size, lens, width, height) : fitZoom(width, height) * orthoSide(extent) / orthoSide(size);
+var fitFor = (width, height) => frameZoom(extent, width, height);
+function setZoom(requested) {
+  const zoomLevel2 = THREE4.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
+  if (isPersp()) {
+    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(towardsCamera, baseDistance(extent) / zoomLevel2);
+  } else {
+    camera.zoom = zoomLevel2;
+    camera.updateProjectionMatrix();
+  }
+  requestRender();
+}
+function syncClip() {
+  if (!isPersp()) return;
+  const depth = depthOfCentre(camera.position.toArray(), camera.quaternion.toArray());
+  const { near, far } = clipPlanesAround(depth, extent);
+  if (Math.abs(camera.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(camera.far - far) > CLIP_CHANGE_TOLERANCE) {
+    Object.assign(camera, { near, far });
+    camera.updateProjectionMatrix();
+  }
+}
+function viewFrom(dir, up) {
+  cancelGlide();
+  controls.target.set(0, 0, 0);
+  const target = controls.target;
+  const sizeAway = isPersp() ? baseDistance(extent) : extent * ORTHO_VIEW_DISTANCE;
+  camera.position.copy(target).addScaledVector(dir.clone().normalize(), sizeAway);
+  camera.up.copy(up).normalize();
+  camera.lookAt(target);
+  requestRender();
+}
+var SCREEN_AXES = {
+  x: new THREE4.Vector3(1, 0, 0),
+  y: new THREE4.Vector3(0, 1, 0),
+  z: new THREE4.Vector3(0, 0, 1)
+};
+function isScreenAxis(name) {
+  return name !== void 0 && Object.hasOwn(SCREEN_AXES, name);
+}
+function rotate(axis, degrees) {
+  const world = SCREEN_AXES[axis].clone().applyQuaternion(camera.quaternion);
+  const turn = new THREE4.Quaternion().setFromAxisAngle(world, THREE4.MathUtils.degToRad(degrees));
+  const offset = camera.position.clone().sub(controls.target).applyQuaternion(turn);
+  camera.position.copy(controls.target).add(offset);
+  camera.up.applyQuaternion(turn);
+  camera.lookAt(controls.target);
+  requestRender();
+}
+function pan(dx, dy, fraction) {
+  const distanceAway = visibleHeightAtTarget(camera) * fraction;
+  const shift = new THREE4.Vector3(-dx, -dy, 0).multiplyScalar(distanceAway).applyQuaternion(camera.quaternion);
+  camera.position.add(shift);
+  controls.target.add(shift);
+  requestRender();
+}
+function flyForward(fraction) {
+  const shift = new THREE4.Vector3(...flyShift(camera.quaternion.toArray(), visibleHeightAtTarget(camera) * fraction));
+  camera.position.add(shift);
+  controls.target.add(shift);
+  requestRender();
+}
+function setShownZoom(requested) {
+  const wanted = THREE4.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
+  if (!isPersp()) {
+    setZoom(wanted);
+    return;
+  }
+  const next = dollyPosition(
+    camera.position.toArray(),
+    controls.target.toArray(),
+    baseDistance(extent) / wanted,
+    controls.minDistance,
+    controls.maxDistance
+  );
+  if (next) camera.position.fromArray(next);
+  requestRender();
+}
+var zoom = (factor) => setShownZoom(shownZoom() * factor);
+function framedView(centre2, size) {
+  const width = stage.clientWidth, height = stage.clientHeight;
+  const zoomWanted = frameZoom(size, width, height);
+  if (isPersp()) {
+    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
+    const distance2 = baseDistance(size) / zoomWanted;
+    return { target: centre2, position: centre2.clone().addScaledVector(towardsCamera, distance2) };
+  }
+  const offset = camera.position.clone().sub(controls.target);
+  return { target: centre2, position: centre2.clone().add(offset), zoom: zoomWanted };
+}
+function fit() {
+  cancelGlide();
+  const view = framedView(new THREE4.Vector3(0, 0, 0), extent);
+  controls.target.copy(view.target);
+  camera.position.copy(view.position);
+  if (view.zoom !== void 0) {
+    camera.zoom = view.zoom;
+    camera.updateProjectionMatrix();
+  }
+  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
+  requestRender();
+}
+function centreOn(centre2, size) {
+  const view = framedView(centre2, size);
+  glideView(view.target, view.position, view.zoom);
+}
+function distance() {
+  return camera.position.distanceTo(controls.target) || baseDistance(extent);
+}
+function visibleHeightAtTarget(view) {
+  if (view instanceof THREE4.PerspectiveCamera) {
+    const halfAngle = THREE4.MathUtils.degToRad(view.fov) / 2;
+    return 2 * distance() * Math.tan(halfAngle);
+  }
+  return (view.top - view.bottom) / view.zoom;
+}
 
 // src/ui/dom.ts
 function byId(id) {
@@ -1127,14 +1052,14 @@ var COPY_FEEDBACK_MS = 1500;
 var SUBSCRIPT_DIGITS = "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089";
 var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 function dist(a, b) {
-  return new THREE3.Vector3(...a).distanceTo(new THREE3.Vector3(...b));
+  return new THREE5.Vector3(...a).distanceTo(new THREE5.Vector3(...b));
 }
-function pointOf2(id) {
+function pointOf(id) {
   const point = points.get(id);
   if (!point) throw new Error(`gemmy viewer: the scene has no point ${id}`);
   return point;
 }
-function fmt2(x, digits = ANGSTROM_DIGITS) {
+function fmt(x, digits = ANGSTROM_DIGITS) {
   return x.toFixed(digits);
 }
 function average(xs) {
@@ -1148,41 +1073,60 @@ function subscripts(s) {
 }
 function grouped(values) {
   const counts = /* @__PURE__ */ new Map();
-  for (const x of values) counts.set(fmt2(x), (counts.get(fmt2(x)) || 0) + 1);
+  for (const x of values) counts.set(fmt(x), (counts.get(fmt(x)) || 0) + 1);
   return [...counts].sort((p, q) => Number(p[0]) - Number(q[0])).map(([x, n]) => n > 1 ? `${n} \xD7 ${x}` : x).join(", ");
 }
 function nothingSelectedHtml() {
   return `<h2>Nothing selected</h2><p class="hint">Click an atom or a polyhedron to see its distances.</p>`;
 }
 function polyhedronHtml(p) {
-  const centre2 = pointOf2(p.center_point_id);
-  const bonds = p.ligand_point_ids.map((id) => dist(centre2.position, pointOf2(id).position));
+  const centre2 = pointOf(p.center_point_id);
+  const bonds = p.ligand_point_ids.map((id) => dist(centre2.position, pointOf(id).position));
   const mean = average(bonds);
   const distortion = average(bonds.map((x) => ((x - mean) / mean) ** 2));
-  const centreText = centre2.fractional ? `${centre2.element} at (${centre2.fractional.map((x) => fmt2(x, FRACTIONAL_DIGITS)).join(", ")})` : centre2.element;
+  const centreText = centre2.fractional ? `${centre2.element} at (${centre2.fractional.map((x) => fmt(x, FRACTIONAL_DIGITS)).join(", ")})` : centre2.element;
   return `<h2>${escapeHtml(subscripts(p.name ?? "Polyhedron"))}</h2><dl>
       <dt>Centre</dt><dd>${escapeHtml(centreText)}</dd>
       <dt>Bonds</dt><dd>${grouped(bonds)} \xC5</dd>
-      <dt>Mean</dt><dd>${fmt2(mean)} \xC5</dd>
-      <dt>\u0394</dt><dd>${(distortion * DELTA_SCALE).toFixed(2)} \xD7 10\u207B\u2074</dd></dl>
+      <dt>Mean</dt><dd>${fmt(mean)} \xC5</dd>
+      <dt>\u0394</dt><dd>${(distortion * DELTA_SCALE).toFixed(2)} \xD7 10\u207B\u2074</dd>
+      <dt>View</dt><dd>${CENTER_BUTTON}</dd></dl>
       <p class="hint">\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\xB2. Fractional coordinates are in the supercell.</p>`;
 }
+function objectBounds(target) {
+  const offset = new THREE5.Vector3(...centre);
+  if (target.kind === "atom") {
+    const position = new THREE5.Vector3(...pointOf(target.atom.point_id).position).sub(offset);
+    return { centre: position, size: 2 * target.atom.radius };
+  }
+  const corners = target.poly.ligand_point_ids.map((id) => new THREE5.Vector3(...pointOf(id).position));
+  const low = new THREE5.Vector3(Infinity, Infinity, Infinity), high = low.clone().multiplyScalar(-1);
+  for (const c of corners) {
+    low.min(c);
+    high.max(c);
+  }
+  return { centre: low.clone().add(high).multiplyScalar(0.5).sub(offset), size: low.distanceTo(high) };
+}
+var CENTER_BUTTON = `<button type="button" class="copy" data-center title="Center and fit this object" aria-label="Center and fit this object"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg> Center</button>`;
 function atomHtml(a) {
-  const point = pointOf2(a.point_id);
+  const point = pointOf(a.point_id);
   const hosts = polyhedra.filter((p) => p.ligand_point_ids.includes(a.point_id));
-  const neighbours = hosts.map((p) => dist(point.position, pointOf2(p.center_point_id).position));
-  const hostElement = hosts.length ? pointOf2(hosts[0].center_point_id).element : "";
+  const neighbours = hosts.map((p) => dist(point.position, pointOf(p.center_point_id).position));
+  const hostElement = hosts.length ? pointOf(hosts[0].center_point_id).element : "";
   const ref = point.ref ? `<dt>Ref</dt><dd>${escapeHtml(point.ref)} <button type="button" class="copy" data-copy="${escapeHtml(point.ref)}">Copy</button></dd>` : "";
-  const fractional = point.fractional ? `<dt>Fractional</dt><dd>${point.fractional.map((x) => fmt2(x, FRACTIONAL_DIGITS)).join(", ")}</dd>` : "";
+  const fractional = point.fractional ? `<dt>Fractional</dt><dd>${point.fractional.map((x) => fmt(x, FRACTIONAL_DIGITS)).join(", ")}</dd>` : "";
   const nbrs = neighbours.length ? `<dt>${escapeHtml(hostElement)} nbrs</dt><dd>${grouped(neighbours)} \xC5</dd>` : "";
   return `<h2>${escapeHtml(point.element)} atom</h2><dl>
       ${ref}
       ${fractional}
-      <dt>Cartesian</dt><dd>${point.position.map((x) => fmt2(x)).join(", ")} \xC5</dd>
-      ${nbrs}</dl>
+      <dt>Cartesian</dt><dd>${point.position.map((x) => fmt(x)).join(", ")} \xC5</dd>
+      ${nbrs}
+      <dt>View</dt><dd>${CENTER_BUTTON}</dd></dl>
       <p class="hint">Fractional coordinates are in the supercell.</p>`;
 }
+var shown = null;
 function describe(target) {
+  shown = target;
   if (!target) info.innerHTML = nothingSelectedHtml();
   else if (target.kind === "polyhedron") info.innerHTML = polyhedronHtml(target.poly);
   else info.innerHTML = atomHtml(target.atom);
@@ -1203,6 +1147,10 @@ function copyRef(button) {
 info.addEventListener("click", (e) => {
   const button = closestOf(e.target, "button[data-copy]");
   if (button) copyRef(button);
+  else if (closestOf(e.target, "button[data-center]") && shown) {
+    const { centre: centre2, size } = objectBounds(shown);
+    centreOn(centre2, size);
+  }
 });
 
 // src/ui/panels.ts
@@ -1258,34 +1206,6 @@ viewToggle.addEventListener("click", () => {
   saveChoice(VIEW_KEY, viewOpen);
 });
 
-// src/camera/glide.ts
-import * as THREE4 from "three";
-var GLIDE_MS = 300;
-var current = 0;
-function glideTo(point) {
-  const id = ++current;
-  const offset = point.clone().sub(controls.target);
-  const started = performance.now();
-  let shareMoved = 0;
-  const step = () => {
-    if (id !== current) return;
-    const progress = (performance.now() - started) / GLIDE_MS;
-    const share = THREE4.MathUtils.smoothstep(progress, 0, 1);
-    shiftView(offset.clone().multiplyScalar(share - shareMoved));
-    shareMoved = share;
-    requestRender();
-    if (progress < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-function cancelGlide() {
-  current++;
-}
-function shiftView(delta) {
-  camera.position.add(delta);
-  controls.target.add(delta);
-}
-
 // src/ui/picking.ts
 var HIGHLIGHT_GLOW = 0.55;
 var PULL_FORWARD = -1;
@@ -1306,7 +1226,7 @@ function highlightMaterial(base) {
   return material;
 }
 function highlightAtom(target) {
-  const mesh = new THREE5.Mesh(target.mesh.geometry, highlightMaterial(target.mesh.material));
+  const mesh = new THREE6.Mesh(target.mesh.geometry, highlightMaterial(target.mesh.material));
   target.mesh.getMatrixAt(target.index, mesh.matrix);
   mesh.matrixAutoUpdate = false;
   atomGroup.add(mesh);
@@ -1314,12 +1234,12 @@ function highlightAtom(target) {
 }
 function highlightPolyhedron(target) {
   const from = target.first * FLOATS_PER_TRIANGLE, to = (target.first + target.count) * FLOATS_PER_TRIANGLE;
-  const geometry = new THREE5.BufferGeometry();
+  const geometry = new THREE6.BufferGeometry();
   for (const name of ["position", "normal"]) {
     const values = target.mesh.geometry.getAttribute(name).array.slice(from, to);
-    geometry.setAttribute(name, new THREE5.Float32BufferAttribute(values, 3));
+    geometry.setAttribute(name, new THREE6.Float32BufferAttribute(values, 3));
   }
-  const mesh = new THREE5.Mesh(geometry, highlightMaterial(target.mesh.material));
+  const mesh = new THREE6.Mesh(geometry, highlightMaterial(target.mesh.material));
   mesh.userData.own = true;
   mesh.renderOrder = target.ghost ? GHOST_RENDER_ORDER : 0;
   polyGroup.add(mesh);
@@ -1345,10 +1265,10 @@ function pickableObjects() {
   const polys = polyGroup.children.filter((o) => o.isMesh && o.userData.owner);
   return [...atoms, ...polys];
 }
-var ray = new THREE5.Raycaster();
+var ray = new THREE6.Raycaster();
 function hitAt(clientX, clientY) {
   const r = renderer.domElement.getBoundingClientRect();
-  const ndc = new THREE5.Vector2((clientX - r.left) / r.width * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+  const ndc = new THREE6.Vector2((clientX - r.left) / r.width * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(pickableObjects(), false);
   return hits.find((h) => !isGhostHit(h)) ?? hits[0] ?? null;
@@ -1386,6 +1306,7 @@ renderer.domElement.addEventListener("pointerup", (e) => {
   select(hit ? targetOf(hit) : null);
   if (hit) showInfo(true);
   if (double && hit) glideTo(hit.point);
+  else if (!hit) releasePivot();
 });
 
 // src/camera/pivot.ts
@@ -1403,6 +1324,14 @@ function beginRotation() {
   );
   if (!pivot) return;
   controls.target.fromArray(pivot);
+  requestRender();
+}
+function releasePivot() {
+  const position = camera.position.toArray();
+  const forward = viewForward(camera.quaternion.toArray());
+  const depth = depthOfCentre(position, camera.quaternion.toArray());
+  const along = Math.min(Math.max(depth, controls.minDistance), controls.maxDistance);
+  controls.target.fromArray(pointAlong(position, forward, along));
   requestRender();
 }
 function cameraInsideStructure() {
@@ -1425,113 +1354,6 @@ for (const ending of ["pointerup", "pointercancel"]) {
   window.addEventListener(ending, () => {
     press = null;
   }, { capture: true });
-}
-
-// src/camera/view.ts
-import * as THREE6 from "three";
-var ZOOM_MIN = 0.05;
-var ZOOM_MAX = 40;
-var ORTHO_FAR_EXTENTS = 40;
-var ORTHO_VIEW_DISTANCE = 8;
-var CLIP_CHANGE_TOLERANCE = 1e-6;
-var isPersp = () => camera === perspCamera;
-var currentZoom = () => isPersp() ? baseDistance(extent) / distance() : camera.zoom;
-var shownZoom = () => isPersp() ? baseDistance(extent) / centreDistance(camera.position.toArray()) : camera.zoom;
-var fitFor = (width, height) => isPersp() ? fitZoomPersp(extent, lens, width, height) : fitZoom(width, height);
-function setZoom(requested) {
-  const zoomLevel2 = THREE6.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
-  if (isPersp()) {
-    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
-    camera.position.copy(controls.target).addScaledVector(towardsCamera, baseDistance(extent) / zoomLevel2);
-  } else {
-    camera.zoom = zoomLevel2;
-    camera.updateProjectionMatrix();
-  }
-  requestRender();
-}
-function syncClip() {
-  if (!isPersp()) return;
-  const depth = depthOfCentre(camera.position.toArray(), camera.quaternion.toArray());
-  const { near, far } = clipPlanesAround(depth, extent);
-  if (Math.abs(camera.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(camera.far - far) > CLIP_CHANGE_TOLERANCE) {
-    Object.assign(camera, { near, far });
-    camera.updateProjectionMatrix();
-  }
-}
-function viewFrom(dir, up) {
-  cancelGlide();
-  controls.target.set(0, 0, 0);
-  const target = controls.target;
-  const sizeAway = isPersp() ? baseDistance(extent) : extent * ORTHO_VIEW_DISTANCE;
-  camera.position.copy(target).addScaledVector(dir.clone().normalize(), sizeAway);
-  camera.up.copy(up).normalize();
-  camera.lookAt(target);
-  requestRender();
-}
-var SCREEN_AXES = {
-  x: new THREE6.Vector3(1, 0, 0),
-  y: new THREE6.Vector3(0, 1, 0),
-  z: new THREE6.Vector3(0, 0, 1)
-};
-function isScreenAxis(name) {
-  return name !== void 0 && Object.hasOwn(SCREEN_AXES, name);
-}
-function rotate(axis, degrees) {
-  const world = SCREEN_AXES[axis].clone().applyQuaternion(camera.quaternion);
-  const turn2 = new THREE6.Quaternion().setFromAxisAngle(world, THREE6.MathUtils.degToRad(degrees));
-  const offset = camera.position.clone().sub(controls.target).applyQuaternion(turn2);
-  camera.position.copy(controls.target).add(offset);
-  camera.up.applyQuaternion(turn2);
-  camera.lookAt(controls.target);
-  requestRender();
-}
-function pan(dx, dy, fraction) {
-  const distanceAway = visibleHeightAtTarget(camera) * fraction;
-  const shift = new THREE6.Vector3(-dx, -dy, 0).multiplyScalar(distanceAway).applyQuaternion(camera.quaternion);
-  camera.position.add(shift);
-  controls.target.add(shift);
-  requestRender();
-}
-function flyForward(fraction) {
-  const shift = new THREE6.Vector3(...flyShift(camera.quaternion.toArray(), visibleHeightAtTarget(camera) * fraction));
-  camera.position.add(shift);
-  controls.target.add(shift);
-  requestRender();
-}
-function setShownZoom(requested) {
-  const wanted = THREE6.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
-  if (!isPersp()) {
-    setZoom(wanted);
-    return;
-  }
-  const next = dollyPosition(
-    camera.position.toArray(),
-    controls.target.toArray(),
-    baseDistance(extent) / wanted,
-    controls.minDistance,
-    controls.maxDistance
-  );
-  if (next) camera.position.fromArray(next);
-  requestRender();
-}
-var zoom = (factor) => setShownZoom(shownZoom() * factor);
-function fit() {
-  cancelGlide();
-  const offset = camera.position.clone().sub(controls.target);
-  controls.target.set(0, 0, 0);
-  camera.position.copy(offset);
-  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
-  setZoom(fitValue);
-}
-function distance() {
-  return camera.position.distanceTo(controls.target) || baseDistance(extent);
-}
-function visibleHeightAtTarget(view) {
-  if (view instanceof THREE6.PerspectiveCamera) {
-    const halfAngle = THREE6.MathUtils.degToRad(view.fov) / 2;
-    return 2 * distance() * Math.tan(halfAngle);
-  }
-  return (view.top - view.bottom) / view.zoom;
 }
 
 // src/camera/fly.ts
@@ -1704,587 +1526,1035 @@ document.fonts?.ready.then(requestRender);
 applyTheme();
 frame();
 
-// src/ui/theme.ts
-var THEME_KEY = "gemmy.theme";
-var THEME_CHOICES = ["auto", "light", "dark"];
-var AUTO = "auto";
-var THEME_ATTRIBUTE = "data-theme";
-function isThemeChoice(value) {
-  return THEME_CHOICES.some((choice) => choice === value);
+// src/trace/traced.ts
+import * as THREE11 from "three";
+
+// src/export/markup.ts
+import { Color as Color2, LinearSRGBColorSpace, SRGBColorSpace as SRGBColorSpace2 } from "three";
+var SVG_PRECISION = 100;
+var escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+var escapeAttr = (s) => escapeText(s).replace(/"/g, "&quot;");
+var fmt2 = (x) => Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0";
+var pointList = (list) => list.map((p) => `${fmt2(p.x)},${fmt2(p.y)}`).join(" ");
+function attrText(attrs) {
+  return Object.entries(attrs).filter((entry) => entry[1] !== void 0 && entry[1] !== false).map(([name, value]) => ` ${name}="${typeof value === "number" ? fmt2(value) : escapeAttr(value)}"`).join("");
 }
-var listeners = [];
-function onThemeChange(listener) {
-  listeners.push(listener);
+function el(tag, attrs, body) {
+  const list = attrText(attrs);
+  return body === void 0 ? `<${tag}${list}/>` : `<${tag}${list}>${body}</${tag}>`;
 }
-function readStoredChoice() {
-  try {
-    const value = localStorage.getItem(THEME_KEY);
-    return isThemeChoice(value) ? value : AUTO;
-  } catch {
-    return AUTO;
-  }
+function textEl(tag, attrs, text) {
+  return `<${tag}${attrText(attrs)}>${escapeText(text)}</${tag}>`;
 }
-function storeTheme(choice) {
-  try {
-    localStorage.setItem(THEME_KEY, choice);
-  } catch {
-  }
+function srgbHex(rgb) {
+  return `#${new Color2().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace2).getHexString()}`;
 }
-function applyToPage(choice) {
-  if (choice === AUTO) document.documentElement.removeAttribute(THEME_ATTRIBUTE);
-  else document.documentElement.setAttribute(THEME_ATTRIBUTE, choice);
+function linearHex(rgb) {
+  return `#${new Color2().setRGB(rgb[0], rgb[1], rgb[2], LinearSRGBColorSpace).getHexString()}`;
 }
-var current2 = readStoredChoice();
-applyToPage(current2);
-function currentTheme() {
-  return current2;
-}
-function setTheme(choice) {
-  current2 = choice;
-  storeTheme(choice);
-  applyToPage(choice);
-  for (const listener of listeners) listener(choice);
-}
-function cycleTheme() {
-  const next = (THEME_CHOICES.indexOf(current2) + 1) % THEME_CHOICES.length;
-  setTheme(THEME_CHOICES[next]);
+function shadedBand(base, darkening) {
+  return `#${new Color2().setRGB(base[0], base[1], base[2], SRGBColorSpace2).multiplyScalar(darkening).getHexString()}`;
 }
 
-// src/ui/outline-scale.ts
-var OUTLINE_SCALE_KEY = "gemmy.outline-scale";
-var OUTLINE_SCALE_CHOICES = [0.5, 1, 1.75];
-var DEFAULT_SCALE = 1;
-function isOutlineScale(value) {
-  return OUTLINE_SCALE_CHOICES.some((choice) => choice === value);
+// src/export/shape.ts
+function colorOf(o, id) {
+  return o.data.materials[id].base_color.slice(0, 3);
 }
-function readStoredScale() {
-  try {
-    const value = Number(localStorage.getItem(OUTLINE_SCALE_KEY));
-    return isOutlineScale(value) ? value : DEFAULT_SCALE;
-  } catch {
-    return DEFAULT_SCALE;
-  }
-}
-function storeScale(scale) {
-  try {
-    localStorage.setItem(OUTLINE_SCALE_KEY, String(scale));
-  } catch {
-  }
-}
-var listeners2 = [];
-function onOutlineScaleChange(listener) {
-  listeners2.push(listener);
-}
-var current3 = readStoredScale();
-setOutlineScale(current3);
-function outlineScale() {
-  return current3;
-}
-function chooseOutlineScale(scale) {
-  current3 = scale;
-  storeScale(scale);
-  setOutlineScale(scale);
-  for (const listener of listeners2) listener(scale);
+function arrowColor() {
+  return ARROW.color.slice(0, 3);
 }
 
-// src/ui/menus.ts
-var PNG_SCALE = 2;
-var KB = 1024;
-var DOWNLOAD_REVOKE_MS = 1e4;
-var DEFAULT_SCENE_FILE = "scene.json";
-function projectionName() {
-  return isPersp() ? "persp" : "ortho";
-}
-var currentView = () => exportView({
-  quaternion: camera.quaternion.toArray(),
-  zoom: currentZoom(),
-  target: controls.target.toArray(),
-  centre,
-  box: show.box,
-  width: stage.clientWidth,
-  height: stage.clientHeight,
-  projection: projectionName(),
-  lens
-});
-var exportStatus = byId("export-status");
-function say(text, failed = false) {
-  exportStatus.textContent = text;
-  exportStatus.classList.toggle("err", failed);
-}
-function download(name, blob) {
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = name;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(link.href), DOWNLOAD_REVOKE_MS);
-}
-function saveFile(name, type, text) {
-  download(name, new Blob([text], { type }));
-  say(`Saved ${name}.`);
-}
-var exportText = byId("export-text");
-function showSelectedText(text, what) {
-  exportText.value = text;
-  exportText.hidden = false;
-  exportText.focus();
-  exportText.select();
-  say(`Could not use the clipboard: ${what} is selected, press Ctrl/Cmd+C.`, true);
-}
-function copyText(text, what) {
-  const fallback = () => showSelectedText(text, what);
-  try {
-    navigator.clipboard.writeText(text).then(() => {
-      exportText.hidden = true;
-      say(`Copied ${what}.`);
-    }, fallback);
-  } catch {
-    fallback();
-  }
-}
-function exportPng(transparent) {
-  const w = stage.clientWidth, h = stage.clientHeight, ratio = renderer.getPixelRatio();
-  renderer.setPixelRatio(PNG_SCALE);
-  renderer.setSize(w, h);
-  renderer.render(scene, camera);
-  const out = document.createElement("canvas");
-  out.width = w * PNG_SCALE;
-  out.height = h * PNG_SCALE;
-  const ctx = out.getContext("2d");
-  if (!transparent) {
-    ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
-    ctx.fillRect(0, 0, out.width, out.height);
-  }
-  ctx.drawImage(renderer.domElement, 0, 0);
-  ctx.drawImage(triadAt(PNG_SCALE), 0, 0);
-  renderer.setPixelRatio(ratio);
-  renderer.setSize(w, h);
-  requestRender();
-  out.toBlob((blob) => {
-    if (blob) {
-      download("view.png", blob);
-      say(`Saved view.png (${out.width} \xD7 ${out.height}).`);
-    } else {
-      say("The browser could not make the PNG.", true);
-    }
-  }, "image/png");
-}
-function triadAt(scale) {
-  const canvas = document.createElement("canvas");
-  drawTriad(canvas, canvas.getContext("2d"), scale);
-  return canvas;
-}
-function exportSvg() {
-  const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
-  const text = buildSvg({
-    data,
-    centre,
-    extent,
-    quaternion: camera.quaternion.toArray(),
-    zoom: currentZoom(),
-    target: controls.target.toArray(),
-    projection: projectionName(),
-    lens,
-    width: stage.clientWidth,
-    height: stage.clientHeight,
-    show,
-    outlines,
-    lattice: lattice.map((v) => v.toArray()),
-    boxColor
-  });
-  download("view.svg", new Blob([text], { type: "image/svg+xml" }));
-  say(`Saved view.svg (${Math.round(text.length / KB)} kB).`);
-}
-var EXPORTS = {
-  svg: exportSvg,
-  png: () => exportPng(byId("png-transparent").checked),
-  "save-toml": () => saveFile("render-settings.toml", "application/toml", settingsToml(currentView())),
-  "save-json": () => saveFile("render-settings.json", "application/json", settingsJson(currentView())),
-  "copy-toml": () => copyText(settingsToml(currentView()), "the TOML settings"),
-  "copy-json": () => copyText(settingsJson(currentView()), "the JSON settings"),
-  "copy-command": () => copyText(renderCommand(currentView(), sceneFileName()), "the command")
-};
-function sceneFileName() {
-  const meta = document.querySelector('meta[name="gemmy-scene-file"]');
-  return meta?.content || DEFAULT_SCENE_FILE;
-}
-var POPOVER_GAP_PX = 6;
-var POPOVER_MARGIN_PX = 8;
-var POPOVER_CLEARANCE_PX = 14;
-function placePopover(button, panel) {
-  const r = button.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
-  const below = r.top + r.height / 2 < H / 2;
-  panel.style.maxHeight = `${(below ? H - r.bottom : r.top) - POPOVER_CLEARANCE_PX}px`;
-  const w = panel.offsetWidth, h = panel.offsetHeight;
-  const left = r.left + r.width / 2 < W / 2 ? r.left : r.right - w;
-  panel.style.left = `${clamp(left, POPOVER_MARGIN_PX, W - w - POPOVER_MARGIN_PX)}px`;
-  panel.style.top = `${below ? r.bottom + POPOVER_GAP_PX : r.top - POPOVER_GAP_PX - h}px`;
-}
-function focusable(panel) {
-  return [...panel.querySelectorAll("button, input")].filter((el2) => !el2.hidden && !el2.closest("[hidden]"));
-}
-function moveFocus(key2, list) {
-  const i = list.indexOf(document.activeElement);
-  if (key2 === "ArrowDown") list[(i + 1) % list.length]?.focus();
-  else if (key2 === "ArrowUp") list[(i + list.length - 1) % list.length]?.focus();
-  else if (key2 === "Home") list[0]?.focus();
-  else if (key2 === "End") list[list.length - 1]?.focus();
-  else return false;
-  return true;
-}
-var popovers = [];
-function popover(button, panel) {
-  const self = {
-    button,
-    panel,
-    place: () => placePopover(button, panel),
-    open() {
-      for (const other of popovers) if (other !== self) other.close();
-      panel.hidden = false;
-      self.place();
-      button.setAttribute("aria-expanded", "true");
-      focusable(panel)[0]?.focus();
-    },
-    close(refocus = false) {
-      if (panel.hidden) return;
-      panel.hidden = true;
-      button.setAttribute("aria-expanded", "false");
-      if (refocus) button.focus();
-    },
-    toggle() {
-      if (panel.hidden) self.open();
-      else self.close();
-    }
+// src/export/triad.ts
+import { Vector2 as Vector24 } from "three";
+
+// src/export/view.ts
+import { Quaternion as Quaternion2, Vector2 as Vector23, Vector3 as Vector34 } from "three";
+var MIN_DEPTH = 1e-3;
+var HORIZON_MARGIN = 1e-3;
+var vec3 = (p) => new Vector34(p[0], p[1], p[2]);
+function makeView(o) {
+  const { width: W, height: H, zoom: zoom2 } = o;
+  const orientation = new Quaternion2().fromArray(o.quaternion);
+  const right = new Vector34(1, 0, 0).applyQuaternion(orientation);
+  const up = new Vector34(0, 1, 0).applyQuaternion(orientation);
+  const back = new Vector34(0, 0, 1).applyQuaternion(orientation);
+  const offset = vec3(o.centre).add(vec3(o.target));
+  const inverse = orientation.clone().invert();
+  const persp = o.projection === "persp";
+  const lens2 = o.lens ?? GEMMY.defaultLens;
+  const eyeZ = baseDistance(o.extent) / zoom2;
+  const focal = lens2 * (Math.max(W, H) / GEMMY.sensorWidth);
+  const scale = W / (2 * orthoFrame(o.extent, W, H).halfWidth) * zoom2;
+  const pinhole = { eyeZ, focal, W, H };
+  const toCam = (p) => p.clone().sub(offset).applyQuaternion(inverse);
+  const pxPerUnit = (c) => persp ? focal / Math.max(eyeZ - c.z, MIN_DEPTH) : scale;
+  const toScreen = (c) => {
+    const k = pxPerUnit(c);
+    return new Vector23(W / 2 + c.x * k, H / 2 - c.y * k);
   };
-  button.addEventListener("click", self.toggle);
-  panel.addEventListener("keydown", (e) => {
-    if (e.key === "Tab") {
-      self.close();
-      return;
+  const depth = (c) => persp ? -Math.hypot(c.x, c.y, eyeZ - c.z) : c.z;
+  const sphereImage = (c, r) => {
+    if (!persp) {
+      const s = toScreen(c);
+      return { cx: s.x, cy: s.y, rx: r * scale, ry: r * scale, phi: 0 };
     }
-    if (moveFocus(e.key, focusable(panel))) e.preventDefault();
-  });
-  popovers.push(self);
-  return self;
+    return perspectiveSphereImage(c, r, pinhole);
+  };
+  return { right, up, back, toCam, toScreen, depth, pxPerUnit, sphereImage };
 }
-var exportMenu = byId("export-menu");
-var exportPopover = popover(byId("export-button"), exportMenu);
-popover(byId("menu-button"), byId("main-menu"));
-var themeSegments = [...document.querySelectorAll("[data-theme-choice]")];
-function showThemeChoice(choice) {
-  for (const segment2 of themeSegments) segment2.setAttribute("aria-pressed", String(segment2.dataset.themeChoice === choice));
-}
-function chooseFromSegment(segment2) {
-  const choice = segment2.dataset.themeChoice;
-  if (isThemeChoice(choice)) setTheme(choice);
-}
-for (const segment2 of themeSegments) segment2.addEventListener("click", () => chooseFromSegment(segment2));
-onThemeChange(showThemeChoice);
-showThemeChoice(currentTheme());
-var outlineSegments = [...document.querySelectorAll("[data-outline-scale]")];
-function showOutlineScale(scale) {
-  for (const segment2 of outlineSegments) segment2.setAttribute("aria-pressed", String(Number(segment2.dataset.outlineScale) === scale));
-}
-for (const segment2 of outlineSegments) {
-  segment2.addEventListener("click", () => chooseOutlineScale(Number(segment2.dataset.outlineScale)));
-}
-onOutlineScaleChange(showOutlineScale);
-showOutlineScale(outlineScale());
-var helpPopover = popover(byId("help-button"), byId("help"));
-exportMenu.addEventListener("click", (e) => {
-  const item = closestOf(e.target, "[data-export]");
-  if (item) EXPORTS[item.dataset.export ?? ""]?.(item);
-});
-window.addEventListener("keydown", (e) => {
-  const open = popovers.find((p) => !p.panel.hidden);
-  if (e.key === "Escape" && open) {
-    open.close(true);
-    e.preventDefault();
-  }
-});
-document.addEventListener("pointerdown", (e) => {
-  for (const p of popovers) {
-    const inside = p.panel.contains(e.target) || p.button.contains(e.target);
-    if (!inside) p.close();
-  }
-});
-window.addEventListener("resize", () => {
-  for (const p of popovers) if (!p.panel.hidden) p.place();
-});
-
-// src/ui/ui.ts
-var DRAG_FEEL = { rotateSpeed: 3, zoomSpeed: 1.2, panSpeed: 0.8, staticMoving: true };
-Object.assign(controls, DRAG_FEEL);
-function viewDirection(azimuthDeg, elevationDeg) {
-  const a = THREE7.MathUtils.degToRad(azimuthDeg), e = THREE7.MathUtils.degToRad(elevationDeg);
-  return new THREE7.Vector3(Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e));
-}
-var VIEWS = {
-  a: () => viewFrom(lattice[0], lattice[2]),
-  b: () => viewFrom(lattice[1], lattice[2]),
-  c: () => viewFrom(lattice[2], lattice[1]),
-  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE7.Vector3(0, 0, 1))
-};
-for (const button of document.querySelectorAll("[data-view]")) {
-  button.addEventListener("click", () => VIEWS[button.dataset.view ?? ""]());
-}
-var ORTHO_LENS = Infinity;
-var ORTHO_TAG = "inf";
-var ORTHO_CAMERA_DISTANCE = 8;
-var FIT_EPSILON = 1e-9;
-var lensGroup = byId("lens-group");
-function isLensOn(button) {
-  const value = button.dataset.lens;
-  return value === ORTHO_TAG ? !isPersp() : isPersp() && Number(value) === lens;
-}
-function syncLensButtons() {
-  for (const button of lensGroup.querySelectorAll("[data-lens]")) {
-    button.setAttribute("aria-pressed", String(isLensOn(button)));
-  }
-}
-function switchProjection(mode, newLens = lens) {
-  if (mode === "persp" === isPersp() && newLens === lens) return;
-  const view = captureView();
-  setLens(newLens);
-  installCamera(mode === "persp" ? perspCamera : orthoCamera, view);
-  syncLensButtons();
-  requestRender();
-}
-function captureView() {
-  const target = controls.target.clone();
+function perspectiveSphereImage(c, r, pinhole) {
+  const { eyeZ, focal, W, H } = pinhole;
+  const t = eyeZ - c.z;
+  const rho = Math.hypot(c.x, c.y);
+  const dist2 = Math.hypot(rho, t);
+  const theta = Math.atan2(rho, t);
+  const alpha = Math.asin(Math.min(r / dist2, 1));
+  if (dist2 <= r || theta + alpha >= Math.PI / 2 - HORIZON_MARGIN) return null;
+  const nearEdgePx = focal * Math.tan(theta - alpha);
+  const farEdgePx = focal * Math.tan(theta + alpha);
+  const centreOffsetPx = (nearEdgePx + farEdgePx) / 2;
+  const across = (centreOffsetPx * Math.sin(theta) + focal * Math.cos(theta)) / Math.cos(alpha);
+  const dx = rho > EPS ? c.x / rho : 1;
+  const dy = rho > EPS ? -c.y / rho : 0;
   return {
-    target,
-    direction: camera.position.clone().sub(target).normalize(),
-    orthoZoom: isPersp() ? perspToOrthoZoom(extent, lens, currentZoom()) : camera.zoom,
-    fitted: Math.abs(shownZoom() - fitValue) < FIT_EPSILON
+    cx: W / 2 + dx * centreOffsetPx,
+    cy: H / 2 + dy * centreOffsetPx,
+    rx: (farEdgePx - nearEdgePx) / 2,
+    ry: Math.sqrt(Math.max(across * across - centreOffsetPx * centreOffsetPx - focal * focal, 0)),
+    phi: Math.atan2(dy, dx)
   };
 }
-function installCamera(next, view) {
-  const persp = next instanceof THREE7.PerspectiveCamera;
-  next.up.copy(camera.up);
-  setCamera(next);
-  camera.add(key, key.target);
-  controls.object = camera;
-  camera.position.copy(view.target).addScaledVector(view.direction, cameraDistance(persp, view.orthoZoom));
-  if (!persp) camera.zoom = view.orthoZoom;
-  camera.lookAt(view.target);
-  resize();
-  if (view.fitted) setZoom(fitFor(stage.clientWidth, stage.clientHeight));
-  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
-}
-function cameraDistance(persp, orthoZoom) {
-  if (persp) return baseDistance(extent) / orthoToPerspZoom(extent, lens, orthoZoom);
-  return extent * ORTHO_CAMERA_DISTANCE;
-}
-function addLensButton(focalLength) {
-  const ortho = focalLength === ORTHO_LENS;
-  const button = document.createElement("button");
-  Object.assign(button, {
-    type: "button",
-    className: "pill lens",
-    textContent: ortho ? "\u221E" : String(focalLength),
-    title: ortho ? "Orthographic (an infinitely long lens): no perspective, as in the 3to2d renders" : `${focalLength} mm lens on a ${GEMMY.sensorWidth} mm sensor`
-  });
-  button.dataset.lens = ortho ? ORTHO_TAG : String(focalLength);
-  button.setAttribute("aria-label", ortho ? "Orthographic" : `${focalLength} mm`);
-  button.addEventListener("click", () => ortho ? switchProjection("ortho") : switchProjection("persp", focalLength));
-  if (ortho) lensGroup.insertAdjacentHTML("beforeend", '<span class="unit">mm</span>');
-  lensGroup.appendChild(button);
-}
-for (const focalLength of [...GEMMY.lenses, ORTHO_LENS]) addLensButton(focalLength);
-syncLensButtons();
-var MS_PER_SECOND2 = 1e3;
-var MAX_FRAME_SECONDS = 0.05;
-var HOLD_DELAY_MS = 300;
-var CLICK = { held: false };
-function act(button, amount) {
-  const kind = button.dataset.act;
-  const sign = Number(button.dataset.sign);
-  if (kind === "rotate") {
-    const turn2 = amount.held ? RATE.rotate * amount.seconds : STEP.rotate;
-    const axis = button.dataset.axis;
-    if (isScreenAxis(axis)) rotate(axis, sign * turn2);
-  } else if (kind === "pan") {
-    const move = amount.held ? RATE.pan * amount.seconds : STEP.pan;
-    pan(Number(button.dataset.dx), Number(button.dataset.dy), move);
-  } else if (kind === "zoom") {
-    const factor = amount.held ? RATE.zoom ** amount.seconds : STEP.zoom;
-    zoom(factor ** sign);
-  } else if (kind === "fit") {
-    fit();
-  }
-}
-var isRotateButton = (button) => button.dataset.act === "rotate";
-function wirePressButton(button) {
-  let press2 = null;
-  const stop = () => {
-    if (!press2) return;
-    cancelAnimationFrame(press2.frame);
-    window.clearTimeout(press2.timer);
-    press2 = null;
-  };
-  const repeatWhileHeld = () => {
-    if (!press2) return;
-    press2.repeating = true;
-    const tick = (t) => {
-      if (!press2) return;
-      if (press2.last) act(button, { held: true, seconds: Math.min((t - press2.last) / MS_PER_SECOND2, MAX_FRAME_SECONDS) });
-      press2.last = t;
-      press2.frame = requestAnimationFrame(tick);
-    };
-    press2.frame = requestAnimationFrame(tick);
-  };
-  button.addEventListener("pointerdown", (e) => {
-    if (isRotateButton(button)) beginRotation();
-    const touch = e.pointerType === "touch";
-    if (!touch) {
-      e.preventDefault();
-      button.setPointerCapture(e.pointerId);
-      act(button, CLICK);
-    }
-    press2 = { touch, last: 0, repeating: false, timer: 0, frame: 0 };
-    if (button.dataset.act === "fit") return;
-    press2.timer = window.setTimeout(repeatWhileHeld, HOLD_DELAY_MS);
-  });
-  button.addEventListener("pointerup", () => {
-    if (press2?.touch && !press2.repeating) act(button, CLICK);
-    stop();
-  });
-  for (const ev of ["pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
-  button.addEventListener("click", (e) => {
-    if (e.detail !== 0) return;
-    if (isRotateButton(button)) beginRotation();
-    act(button, CLICK);
-  });
-}
-for (const button of document.querySelectorAll("[data-act]")) wirePressButton(button);
-var EDGE_SLACK_PX = 2;
-var scrollers = [...document.querySelectorAll(".island, .tabs")];
-function markOverflow(el2) {
-  const { scrollLeft, scrollWidth, clientWidth } = el2;
-  el2.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
-  el2.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
-}
-for (const el2 of scrollers) el2.addEventListener("scroll", () => markOverflow(el2), { passive: true });
-window.addEventListener("resize", () => scrollers.forEach(markOverflow));
-scrollers.forEach(markOverflow);
-document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
-var TIP_DELAY_MS = 300;
-var TIP_GAP_PX = 8;
-var tip = Object.assign(document.createElement("div"), { id: "tip", role: "tooltip" });
-document.body.appendChild(tip);
-var tipTimer = 0;
-function hideTip() {
-  window.clearTimeout(tipTimer);
-  tip.classList.remove("on");
-}
-function showTip(el2) {
-  tip.textContent = el2.dataset.tip ?? "";
-  placeTip(el2);
-  tip.classList.add("on");
-}
-function placeTip(el2) {
-  const r = el2.getBoundingClientRect(), t = tip.getBoundingClientRect();
-  const [x, y] = el2.closest("#bottom") ? tipBesideLeftColumn(r, t) : tipCentredVertically(r, t);
-  tip.style.left = `${clamp(x, TIP_GAP_PX, innerWidth - t.width - TIP_GAP_PX)}px`;
-  tip.style.top = `${clamp(y, TIP_GAP_PX, innerHeight - t.height - TIP_GAP_PX)}px`;
-}
-function tipBesideLeftColumn(r, t) {
-  return [r.right + TIP_GAP_PX, r.top + r.height / 2 - t.height / 2];
-}
-function tipCentredVertically(r, t) {
-  const x = r.left + r.width / 2 - t.width / 2;
-  const y = r.top < innerHeight / 2 ? r.bottom + TIP_GAP_PX : r.top - TIP_GAP_PX - t.height;
-  return [x, y];
-}
-document.addEventListener("pointerover", (e) => {
-  const el2 = closestOf(e.target, "[title], [data-tip]");
-  if (!el2 || e.pointerType === "touch") return;
-  if (el2.hasAttribute("title")) {
-    el2.dataset.tip = el2.title;
-    el2.removeAttribute("title");
-  }
-  window.clearTimeout(tipTimer);
-  tipTimer = window.setTimeout(() => showTip(el2), TIP_DELAY_MS);
-});
-document.addEventListener("pointerout", (e) => {
-  if (closestOf(e.target, "[data-tip]")) hideTip();
-});
-for (const ev of ["pointerdown", "keydown", "wheel"]) document.addEventListener(ev, hideTip, { passive: true });
-function arrow(dx, dy, shift) {
-  if (shift) pan(dx, dy, STEP.pan);
-  else if (dy) rotate("x", dy * STEP.rotate);
-  else rotate("y", -dx * STEP.rotate);
-}
-var KEY_ACTIONS = {
-  ArrowUp: (shift) => arrow(0, 1, shift),
-  ArrowDown: (shift) => arrow(0, -1, shift),
-  ArrowLeft: (shift) => arrow(-1, 0, shift),
-  ArrowRight: (shift) => arrow(1, 0, shift),
-  "+": () => zoom(STEP.zoom),
-  "=": () => zoom(STEP.zoom),
-  "-": () => zoom(1 / STEP.zoom),
-  "_": () => zoom(1 / STEP.zoom),
-  "0": () => fit(),
-  "[": () => rotate("z", -STEP.rotate),
-  "]": () => rotate("z", STEP.rotate),
-  t: cycleTheme
-  // Auto → Light → Dark
-};
-function isTurnKey(e) {
-  return e.key.startsWith("Arrow") && !e.shiftKey || e.key === "[" || e.key === "]";
-}
-function isTyping(e) {
-  return closestOf(e.target, "input, textarea, .popover") !== null || e.metaKey || e.ctrlKey || e.altKey;
-}
-function runShortcut(e) {
-  if (e.key === "?") {
-    helpPopover.toggle();
-    return true;
-  }
-  if (e.key === "i" && !e.shiftKey) {
-    toggleInfo();
-    return true;
-  }
-  if (FLY[e.code]) {
-    flying.add(e.code);
-    return true;
-  }
-  if (!Object.hasOwn(KEY_ACTIONS, e.key)) return false;
-  KEY_ACTIONS[e.key](e.shiftKey);
-  return true;
-}
-window.addEventListener("keydown", (e) => {
-  setShiftHeld(e.shiftKey);
-  if (isTyping(e)) return;
-  if (isTurnKey(e) && !e.repeat) beginRotation();
-  if (runShortcut(e)) e.preventDefault();
-});
-function wireShowToggle(id, apply) {
-  const button = byId(id);
-  button.addEventListener("click", () => {
-    const on = button.getAttribute("aria-pressed") !== "true";
-    button.setAttribute("aria-pressed", String(on));
-    apply(on);
-    requestRender();
-  });
-}
-wireShowToggle("toggle-atoms", (on) => {
-  show.atoms = on;
-  atomGroup.visible = on;
-});
-wireShowToggle("toggle-outline", (on) => {
-  setOutlines(on);
-  outlineGroup.visible = on;
-});
-wireShowToggle("toggle-box", (on) => {
-  show.box = on;
-  if (box) box.visible = on;
-});
 
-// src/scene/load.ts
+// src/export/triad.ts
+function triadSvg(ctx) {
+  const { o, view } = ctx;
+  const dirs = o.lattice.map((vec) => {
+    const v = vec3(vec);
+    return [v.dot(view.right), v.dot(view.up), v.dot(view.back)];
+  });
+  const tri = triadLayout(dirs, o.width, o.height);
+  const items = [];
+  for (const it of tri.items) {
+    const color = LOOK.axisColors[it.index];
+    if (it.head) {
+      items.push(el("line", { x1: tri.origin[0], y1: tri.origin[1], x2: it.shaftEnd[0], y2: it.shaftEnd[1], stroke: color, "stroke-width": tri.lineWidth }));
+      items.push(el("polygon", { points: pointList(it.head.map(([x, y]) => new Vector24(x, y))), fill: color }));
+    }
+    items.push(textEl("text", {
+      x: it.label.x,
+      y: it.label.y,
+      fill: color,
+      "text-anchor": "middle",
+      "dominant-baseline": "central",
+      "font-family": `'${AXIS_FONT.family}', sans-serif`,
+      "font-style": "italic",
+      "font-weight": 700,
+      "font-size": tri.fontSize
+    }, "abc"[it.index]));
+  }
+  items.push(el("circle", { cx: tri.origin[0], cy: tri.origin[1], r: tri.dotRadius, fill: o.boxColor }));
+  return el("g", { id: "triad", "stroke-linecap": "round" }, items.join(""));
+}
+
+// src/trace/curves.ts
+var import_fit_curve = __toESM(require_fit_curve());
+var RESAMPLE_PX = 0.25;
+var CORNER_ANGLE_DEG = 50;
+var CORNER_WINDOW_PX = 1;
+var WINDOW_SAMPLES = Math.max(1, Math.round(CORNER_WINDOW_PX / RESAMPLE_PX));
+var FIT_ERROR_PX = 0.3;
+function closedPath(points2) {
+  return pathFrom(points2, true);
+}
+function fitCommands(points2) {
+  const line = resample(points2, false, RESAMPLE_PX);
+  if (line.length < 2) return "";
+  const corners = cornerIndices(turningAngles(line, false), false);
+  return linePieces(line, corners).map(fitPiece).join("");
+}
+function pathFrom(points2, closed) {
+  const line = resample(points2, closed, RESAMPLE_PX);
+  if (line.length < 2) return "";
+  const turns = turningAngles(line, closed);
+  const corners = cornerIndices(turns, closed);
+  const pieces = closed ? ringPieces(line, corners) : linePieces(line, corners);
+  const [x0, y0] = pieces[0][0];
+  let d = `M${fmt2(x0)} ${fmt2(y0)}`;
+  for (const piece of pieces) d += fitPiece(piece);
+  return closed ? `${d}Z` : d;
+}
+function resample(points2, closed, spacing) {
+  const ring = closed ? [...points2, points2[0]] : points2;
+  const lengths = [0];
+  for (let i = 1; i < ring.length; i++) lengths.push(lengths[i - 1] + Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]));
+  const total = lengths[lengths.length - 1];
+  if (total === 0) return [];
+  const count2 = Math.max(2, Math.round(total / spacing));
+  const out = [];
+  let seg = 0;
+  const steps = closed ? count2 : count2 - 1;
+  for (let k = 0; k <= steps; k++) {
+    const target = k * total / (closed ? count2 : steps);
+    while (seg < ring.length - 2 && lengths[seg + 1] < target) seg++;
+    const span2 = lengths[seg + 1] - lengths[seg] || 1;
+    const t = Math.min(1, Math.max(0, (target - lengths[seg]) / span2));
+    const a = ring[seg];
+    const b = ring[seg + 1];
+    out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+  }
+  return out;
+}
+function turningAngles(line, closed) {
+  const n = line.length;
+  const step = WINDOW_SAMPLES;
+  const turns = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    const before = closed ? (i - step + n) % n : i - step;
+    const after = closed ? (i + step) % n : i + step;
+    if (!closed && (before < 0 || after >= n)) continue;
+    const ax = line[i][0] - line[before][0];
+    const ay = line[i][1] - line[before][1];
+    const bx = line[after][0] - line[i][0];
+    const by = line[after][1] - line[i][1];
+    turns[i] = Math.atan2(ax * by - ay * bx, ax * bx + ay * by) * 180 / Math.PI;
+    turns[i] = Math.abs(turns[i]);
+  }
+  return turns;
+}
+function cornerIndices(turns, closed) {
+  const n = turns.length;
+  const reach = WINDOW_SAMPLES;
+  const corners = [];
+  for (let i = 0; i < n; i++) {
+    if (turns[i] <= CORNER_ANGLE_DEG) continue;
+    let isPeak = true;
+    for (let k = -reach; k <= reach && isPeak; k++) {
+      if (k === 0) continue;
+      const j = closed ? (i + k + n) % n : i + k;
+      if (j < 0 || j >= n) continue;
+      if (turns[j] > turns[i] || turns[j] === turns[i] && k < 0) isPeak = false;
+    }
+    if (isPeak) corners.push(i);
+  }
+  return corners;
+}
+function ringPieces(line, corners) {
+  const n = line.length;
+  if (corners.length === 0) return [[...line, line[0]]];
+  const pieces = [];
+  for (let c = 0; c < corners.length; c++) {
+    const from = corners[c];
+    const to = corners[(c + 1) % corners.length];
+    const piece = [];
+    for (let i = from; ; i = (i + 1) % n) {
+      piece.push(line[i]);
+      if (i === to && piece.length > 1) break;
+    }
+    pieces.push(piece);
+  }
+  return pieces;
+}
+function linePieces(line, corners) {
+  const cuts = [0, ...corners.filter((i) => i > 0 && i < line.length - 1), line.length - 1];
+  const pieces = [];
+  for (let c = 0; c < cuts.length - 1; c++) pieces.push(line.slice(cuts[c], cuts[c + 1] + 1));
+  return pieces;
+}
+function fitPiece(piece) {
+  if (piece.length < 3) return piece.slice(1).map((p) => `L${fmt2(p[0])} ${fmt2(p[1])}`).join("");
+  const curves = (0, import_fit_curve.default)(piece.map((p) => [p[0], p[1]]), FIT_ERROR_PX * FIT_ERROR_PX);
+  return curves.map(([, c1, c2, end]) => `C${fmt2(c1[0])} ${fmt2(c1[1])} ${fmt2(c2[0])} ${fmt2(c2[1])} ${fmt2(end[0])} ${fmt2(end[1])}`).join("");
+}
+
+// src/trace/exact.ts
+import * as THREE7 from "three";
+var SEGMENT_MARGIN_PX = 2;
+var MIN_RADIUS_PX = 1e-6;
+function ellipseFromBasis(c, a, b) {
+  const p = a[0] * a[0] + b[0] * b[0];
+  const q = a[0] * a[1] + b[0] * b[1];
+  const s = a[1] * a[1] + b[1] * b[1];
+  const mean = (p + s) / 2;
+  const spread = Math.sqrt(((p - s) / 2) ** 2 + q * q);
+  return { cx: c[0], cy: c[1], rx: Math.sqrt(mean + spread), ry: Math.sqrt(Math.max(mean - spread, 0)), phi: 0.5 * Math.atan2(2 * q, p - s) };
+}
+function pointAt(e, t) {
+  const x = e.rx * Math.cos(t);
+  const y = e.ry * Math.sin(t);
+  const cos = Math.cos(e.phi);
+  const sin = Math.sin(e.phi);
+  return [e.cx + x * cos - y * sin, e.cy + x * sin + y * cos];
+}
+function paramOf(e, p) {
+  const [wx, wy] = local(e, p);
+  return Math.atan2(wy / Math.max(e.ry, MIN_RADIUS_PX), wx / Math.max(e.rx, MIN_RADIUS_PX));
+}
+function local(e, p) {
+  const dx = p[0] - e.cx;
+  const dy = p[1] - e.cy;
+  const cos = Math.cos(e.phi);
+  const sin = Math.sin(e.phi);
+  return [dx * cos + dy * sin, -dx * sin + dy * cos];
+}
+function ellipseRms(e, pts) {
+  const mean = (e.rx + e.ry) / 2;
+  let sum = 0;
+  for (const p of pts) {
+    const [wx, wy] = local(e, p);
+    const r = Math.hypot(wx / Math.max(e.rx, MIN_RADIUS_PX), wy / Math.max(e.ry, MIN_RADIUS_PX));
+    sum += ((r - 1) * mean) ** 2;
+  }
+  return Math.sqrt(sum / pts.length);
+}
+function lineRms(a, b, pts) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy);
+  if (len < MIN_RADIUS_PX) return Infinity;
+  let sum = 0;
+  for (const p of pts) {
+    const along = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len;
+    if (along < -SEGMENT_MARGIN_PX || along > len + SEGMENT_MARGIN_PX) return Infinity;
+    const across = ((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) / len;
+    sum += across * across;
+  }
+  return Math.sqrt(sum / pts.length);
+}
+function onLine(a, b, p) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / Math.max(dx * dx + dy * dy, MIN_RADIUS_PX);
+  return [a[0] + t * dx, a[1] + t * dy];
+}
+function curveRms(curve, pts) {
+  return curve.kind === "line" ? lineRms(curve.a, curve.b, pts) : ellipseRms(curve.e, pts);
+}
+function arcTo(e, from, to, pts) {
+  const t0 = paramOf(e, from);
+  let prev = t0;
+  let swept = 0;
+  for (const p of pts) {
+    const t = paramOf(e, p);
+    swept += wrapPi(t - prev);
+    prev = t;
+  }
+  const dir = swept >= 0 ? 1 : -1;
+  return arcSeries(e, t0, dir, Math.abs(swept), to);
+}
+function fullEllipseArcs(e, start) {
+  return arcSeries(e, paramOf(e, start), 1, 2 * Math.PI, start);
+}
+function arcSeries(e, t0, dir, span2, end) {
+  const pieces = Math.max(1, Math.ceil(span2 / (Math.PI / 2)));
+  const sweep = dir > 0 ? 1 : 0;
+  let d = "";
+  for (let k = 1; k <= pieces; k++) {
+    const point = k === pieces ? end : pointAt(e, t0 + dir * span2 * k / pieces);
+    d += `A${num(e.rx)} ${num(e.ry)} ${num(e.phi * 180 / Math.PI)} 0 ${sweep} ${num(point[0])} ${num(point[1])}`;
+  }
+  return d;
+}
+function wrapPi(t) {
+  return t - 2 * Math.PI * Math.round(t / (2 * Math.PI));
+}
+function num(x) {
+  return String(Math.round(x * 100) / 100 || 0);
+}
+function sphereCurves(view, centre2, radius) {
+  const image = view.sphereImage(view.toCam(centre2), radius);
+  return image ? [{ kind: "ellipse", e: { cx: image.cx, cy: image.cy, rx: image.rx, ry: image.ry, phi: image.phi } }] : [];
+}
+function cylinderCurves(matrix, screen) {
+  const col = (i) => new THREE7.Vector3(matrix[4 * i], matrix[4 * i + 1], matrix[4 * i + 2]);
+  const centre2 = new THREE7.Vector3(matrix[12], matrix[13], matrix[14]);
+  const axis = col(1).multiplyScalar(0.5);
+  const ends = [centre2.clone().sub(axis), centre2.clone().add(axis)];
+  const caps = ends.map((end) => {
+    const c = screen(end);
+    const a = screen(end.clone().add(col(0)));
+    const b = screen(end.clone().add(col(2)));
+    return ellipseFromBasis(c, [a[0] - c[0], a[1] - c[1]], [b[0] - c[0], b[1] - c[1]]);
+  });
+  const pa = screen(ends[0]);
+  const pb = screen(ends[1]);
+  const dx = pb[0] - pa[0];
+  const dy = pb[1] - pa[1];
+  const len = Math.hypot(dx, dy);
+  if (len < MIN_RADIUS_PX) return caps.map((e) => ({ kind: "ellipse", e }));
+  const n = [-dy / len, dx / len];
+  const support = (e) => Math.hypot(e.rx * Math.cos(e.phi) * n[0] + e.rx * Math.sin(e.phi) * n[1], e.ry * Math.sin(e.phi) * n[0] - e.ry * Math.cos(e.phi) * n[1]);
+  const sa = support(caps[0]);
+  const sb = support(caps[1]);
+  const sides = [1, -1].map((side) => ({
+    kind: "line",
+    a: [pa[0] + side * n[0] * sa, pa[1] + side * n[1] * sa],
+    b: [pb[0] + side * n[0] * sb, pb[1] + side * n[1] * sb]
+  }));
+  return [...caps.map((e) => ({ kind: "ellipse", e })), ...sides];
+}
+function edgeCurves(edges, screen) {
+  return edges.map(([p, q]) => ({ kind: "line", a: screen(p), b: screen(q) }));
+}
+function sectionCurve(centre2, radius, face, screen) {
+  const [p0, p1, p2] = face;
+  const n = new THREE7.Vector3().subVectors(p1, p0).cross(new THREE7.Vector3().subVectors(p2, p0)).normalize();
+  const d = n.dot(new THREE7.Vector3().subVectors(centre2, p0));
+  if (Math.abs(d) >= radius) return null;
+  const foot = centre2.clone().addScaledVector(n, -d);
+  const rho = Math.sqrt(radius * radius - d * d);
+  const u = new THREE7.Vector3().subVectors(p1, p0).normalize();
+  const v = new THREE7.Vector3().crossVectors(n, u).normalize();
+  const c = screen(foot);
+  const a = screen(foot.clone().addScaledVector(u, rho));
+  const b = screen(foot.clone().addScaledVector(v, rho));
+  return { kind: "ellipse", e: ellipseFromBasis(c, [a[0] - c[0], a[1] - c[1]], [b[0] - c[0], b[1] - c[1]]) };
+}
+function cylinderSectionCurve(matrix, face, screen) {
+  const [p0, p1, p2] = face;
+  const n = new THREE7.Vector3().subVectors(p1, p0).cross(new THREE7.Vector3().subVectors(p2, p0)).normalize();
+  const c = new THREE7.Vector3(matrix[12], matrix[13], matrix[14]);
+  const axisFull = new THREE7.Vector3(matrix[4], matrix[5], matrix[6]);
+  const radius = new THREE7.Vector3(matrix[0], matrix[1], matrix[2]).length();
+  const dir = axisFull.clone().normalize();
+  const cosAlpha = Math.abs(n.dot(dir));
+  if (cosAlpha < MIN_RADIUS_PX) return null;
+  const t = n.dot(new THREE7.Vector3().subVectors(p0, c)) / n.dot(dir);
+  const centre2 = c.clone().addScaledVector(dir, t);
+  const along = dir.clone().addScaledVector(n, -dir.dot(n)).normalize();
+  const across = new THREE7.Vector3().crossVectors(n, along).normalize();
+  const a = screen(centre2.clone().addScaledVector(along, radius / cosAlpha));
+  const b = screen(centre2.clone().addScaledVector(across, radius));
+  const o = screen(centre2);
+  return { kind: "ellipse", e: ellipseFromBasis(o, [a[0] - o[0], a[1] - o[1]], [b[0] - o[0], b[1] - o[1]]) };
+}
+
+// src/trace/edges.ts
 import * as THREE8 from "three";
+var HARD_EDGE_DEG = 1;
+var SAMPLE_SPACING_PX = 0.5;
+var MAX_SAMPLES_PER_IMAGE_EDGE = 4;
+var NDC_DEPTH_MIN = -1;
+var NDC_DEPTH_MAX = 1;
+function visibleSpans(a, b, project, lineIds, id, width, height, scale) {
+  const pa = project(a);
+  const pb = project(b);
+  if (!onScreen(pa) || !onScreen(pb)) return [];
+  const outputLength = Math.hypot(pb.x - pa.x, pb.y - pa.y) / scale;
+  const sampleLimit = MAX_SAMPLES_PER_IMAGE_EDGE * (width + height) / SAMPLE_SPACING_PX;
+  const count2 = Math.min(sampleLimit, Math.max(1, Math.ceil(outputLength / SAMPLE_SPACING_PX)));
+  const visible = (t) => {
+    const p = project(a.clone().lerp(b, t));
+    return showsId(lineIds, id, width, height, Math.floor(p.x), Math.floor(p.y));
+  };
+  const out = [];
+  let start = -1;
+  for (let k = 0; k <= count2; k++) {
+    const on = visible(k / count2);
+    if (on && start < 0) start = k;
+    if ((!on || k === count2) && start >= 0) {
+      const end = on ? k : k - 1;
+      out.push([cssAt(a, b, start / count2, project, scale), cssAt(a, b, end / count2, project, scale)]);
+      start = -1;
+    }
+  }
+  return out;
+}
+function onScreen(p) {
+  return Number.isFinite(p.x) && Number.isFinite(p.y) && p.depth >= NDC_DEPTH_MIN && p.depth <= NDC_DEPTH_MAX;
+}
+function showsId(lineIds, id, width, height, x, y) {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const px = x + dx;
+      const py = y + dy;
+      if (px >= 0 && py >= 0 && px < width && py < height && lineIds[py * width + px] === id) return true;
+    }
+  }
+  return false;
+}
+function cssAt(a, b, t, project, scale) {
+  const p = project(a.clone().lerp(b, t));
+  return [p.x / scale, p.y / scale];
+}
+function hardEdges(topo, points2) {
+  const v = topo.point_ids.map((id) => new THREE8.Vector3(...points2.get(id)));
+  const normals = topo.faces.map(([i, j, k]) => new THREE8.Vector3().subVectors(v[j], v[i]).cross(new THREE8.Vector3().subVectors(v[k], v[i])).normalize());
+  const sides = /* @__PURE__ */ new Map();
+  topo.faces.forEach(([i, j, k], f) => {
+    for (const [p, q] of [[i, j], [j, k], [k, i]]) {
+      const key2 = p < q ? `${p}-${q}` : `${q}-${p}`;
+      if (!sides.has(key2)) sides.set(key2, { i: p, j: q, faces: [] });
+      sides.get(key2).faces.push(normals[f]);
+    }
+  });
+  const sharp = Math.cos(HARD_EDGE_DEG * Math.PI / 180);
+  const edges = [];
+  for (const side of sides.values()) {
+    const hard = side.faces.length === 1 || Math.abs(side.faces[0].dot(side.faces[1])) < sharp;
+    if (hard) edges.push([v[side.i], v[side.j]]);
+  }
+  return edges;
+}
+function cellEdges(cell) {
+  const [a, b, c] = cell.vectors.map((vec) => new THREE8.Vector3(...vec));
+  const origin = new THREE8.Vector3(...cell.origin);
+  const corner = (n) => origin.clone().addScaledVector(a, n & 1).addScaledVector(b, n >> 1 & 1).addScaledVector(c, n >> 2 & 1);
+  const edges = [];
+  for (let n = 0; n < 8; n++) {
+    for (let axis = 0; axis < 3; axis++) {
+      const bit = 1 << axis;
+      if (n & bit) continue;
+      edges.push([corner(n), corner(n | bit)]);
+    }
+  }
+  return edges;
+}
+
+// node_modules/d3-array/dist/d3-array.mjs
+function ascending(a, b) {
+  return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+}
+function descending(a, b) {
+  return a == null || b == null ? NaN : b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+}
+function bisector(f) {
+  let compare1, compare2, delta;
+  if (f.length !== 2) {
+    compare1 = ascending;
+    compare2 = (d, x) => ascending(f(d), x);
+    delta = (d, x) => f(d) - x;
+  } else {
+    compare1 = f === ascending || f === descending ? f : zero;
+    compare2 = f;
+    delta = f;
+  }
+  function left(a, x, lo = 0, hi = a.length) {
+    if (lo < hi) {
+      if (compare1(x, x) !== 0) return hi;
+      do {
+        const mid = lo + hi >>> 1;
+        if (compare2(a[mid], x) < 0) lo = mid + 1;
+        else hi = mid;
+      } while (lo < hi);
+    }
+    return lo;
+  }
+  function right(a, x, lo = 0, hi = a.length) {
+    if (lo < hi) {
+      if (compare1(x, x) !== 0) return hi;
+      do {
+        const mid = lo + hi >>> 1;
+        if (compare2(a[mid], x) <= 0) lo = mid + 1;
+        else hi = mid;
+      } while (lo < hi);
+    }
+    return lo;
+  }
+  function center(a, x, lo = 0, hi = a.length) {
+    const i = left(a, x, lo, hi - 1);
+    return i > lo && delta(a[i - 1], x) > -delta(a[i], x) ? i - 1 : i;
+  }
+  return { left, center, right };
+}
+function zero() {
+  return 0;
+}
+function number(x) {
+  return x === null ? NaN : +x;
+}
+var ascendingBisect = bisector(ascending);
+var bisectRight = ascendingBisect.right;
+var bisectLeft = ascendingBisect.left;
+var bisectCenter = bisector(number).center;
+var blur2 = Blur2(blurf);
+var blurImage = Blur2(blurfImage);
+function Blur2(blur) {
+  return function(data2, rx, ry = rx) {
+    if (!((rx = +rx) >= 0)) throw new RangeError("invalid rx");
+    if (!((ry = +ry) >= 0)) throw new RangeError("invalid ry");
+    let { data: values, width, height } = data2;
+    if (!((width = Math.floor(width)) >= 0)) throw new RangeError("invalid width");
+    if (!((height = Math.floor(height !== void 0 ? height : values.length / width)) >= 0)) throw new RangeError("invalid height");
+    if (!width || !height || !rx && !ry) return data2;
+    const blurx = rx && blur(rx);
+    const blury = ry && blur(ry);
+    const temp = values.slice();
+    if (blurx && blury) {
+      blurh(blurx, temp, values, width, height);
+      blurh(blurx, values, temp, width, height);
+      blurh(blurx, temp, values, width, height);
+      blurv(blury, values, temp, width, height);
+      blurv(blury, temp, values, width, height);
+      blurv(blury, values, temp, width, height);
+    } else if (blurx) {
+      blurh(blurx, values, temp, width, height);
+      blurh(blurx, temp, values, width, height);
+      blurh(blurx, values, temp, width, height);
+    } else if (blury) {
+      blurv(blury, values, temp, width, height);
+      blurv(blury, temp, values, width, height);
+      blurv(blury, values, temp, width, height);
+    }
+    return data2;
+  };
+}
+function blurh(blur, T, S, w, h) {
+  for (let y = 0, n = w * h; y < n; ) {
+    blur(T, S, y, y += w, 1);
+  }
+}
+function blurv(blur, T, S, w, h) {
+  for (let x = 0, n = w * h; x < w; ++x) {
+    blur(T, S, x, x + n, w);
+  }
+}
+function blurfImage(radius) {
+  const blur = blurf(radius);
+  return (T, S, start, stop, step) => {
+    start <<= 2, stop <<= 2, step <<= 2;
+    blur(T, S, start + 0, stop + 0, step);
+    blur(T, S, start + 1, stop + 1, step);
+    blur(T, S, start + 2, stop + 2, step);
+    blur(T, S, start + 3, stop + 3, step);
+  };
+}
+function blurf(radius) {
+  const radius0 = Math.floor(radius);
+  if (radius0 === radius) return bluri(radius);
+  const t = radius - radius0;
+  const w = 2 * radius + 1;
+  return (T, S, start, stop, step) => {
+    if (!((stop -= step) >= start)) return;
+    let sum = radius0 * S[start];
+    const s0 = step * radius0;
+    const s1 = s0 + step;
+    for (let i = start, j = start + s0; i < j; i += step) {
+      sum += S[Math.min(stop, i)];
+    }
+    for (let i = start, j = stop; i <= j; i += step) {
+      sum += S[Math.min(stop, i + s0)];
+      T[i] = (sum + t * (S[Math.max(start, i - s1)] + S[Math.min(stop, i + s1)])) / w;
+      sum -= S[Math.max(start, i - s0)];
+    }
+  };
+}
+function bluri(radius) {
+  const w = 2 * radius + 1;
+  return (T, S, start, stop, step) => {
+    if (!((stop -= step) >= start)) return;
+    let sum = radius * S[start];
+    const s = step * radius;
+    for (let i = start, j = start + s; i < j; i += step) {
+      sum += S[Math.min(stop, i)];
+    }
+    for (let i = start, j = stop; i <= j; i += step) {
+      sum += S[Math.min(stop, i + s)];
+      T[i] = sum / w;
+      sum -= S[Math.max(start, i - s)];
+    }
+  };
+}
+function count(values, valueof) {
+  let count2 = 0;
+  if (valueof === void 0) {
+    for (let value of values) {
+      if (value != null && (value = +value) >= value) {
+        ++count2;
+      }
+    }
+  } else {
+    let index = -1;
+    for (let value of values) {
+      if ((value = valueof(value, ++index, values)) != null && (value = +value) >= value) {
+        ++count2;
+      }
+    }
+  }
+  return count2;
+}
+function extent2(values, valueof) {
+  let min;
+  let max2;
+  if (valueof === void 0) {
+    for (const value of values) {
+      if (value != null) {
+        if (min === void 0) {
+          if (value >= value) min = max2 = value;
+        } else {
+          if (min > value) min = value;
+          if (max2 < value) max2 = value;
+        }
+      }
+    }
+  } else {
+    let index = -1;
+    for (let value of values) {
+      if ((value = valueof(value, ++index, values)) != null) {
+        if (min === void 0) {
+          if (value >= value) min = max2 = value;
+        } else {
+          if (min > value) min = value;
+          if (max2 < value) max2 = value;
+        }
+      }
+    }
+  }
+  return [min, max2];
+}
+var array = Array.prototype;
+var slice = array.slice;
+var e10 = Math.sqrt(50);
+var e5 = Math.sqrt(10);
+var e2 = Math.sqrt(2);
+function tickSpec(start, stop, count2) {
+  const step = (stop - start) / Math.max(0, count2), power = Math.floor(Math.log10(step)), error = step / Math.pow(10, power), factor = error >= e10 ? 10 : error >= e5 ? 5 : error >= e2 ? 2 : 1;
+  let i1, i2, inc;
+  if (power < 0) {
+    inc = Math.pow(10, -power) / factor;
+    i1 = Math.round(start * inc);
+    i2 = Math.round(stop * inc);
+    if (i1 / inc < start) ++i1;
+    if (i2 / inc > stop) --i2;
+    inc = -inc;
+  } else {
+    inc = Math.pow(10, power) * factor;
+    i1 = Math.round(start / inc);
+    i2 = Math.round(stop / inc);
+    if (i1 * inc < start) ++i1;
+    if (i2 * inc > stop) --i2;
+  }
+  if (i2 < i1 && 0.5 <= count2 && count2 < 2) return tickSpec(start, stop, count2 * 2);
+  return [i1, i2, inc];
+}
+function ticks(start, stop, count2) {
+  stop = +stop, start = +start, count2 = +count2;
+  if (!(count2 > 0)) return [];
+  if (start === stop) return [start];
+  const reverse = stop < start, [i1, i2, inc] = reverse ? tickSpec(stop, start, count2) : tickSpec(start, stop, count2);
+  if (!(i2 >= i1)) return [];
+  const n = i2 - i1 + 1, ticks2 = new Array(n);
+  if (reverse) {
+    if (inc < 0) for (let i = 0; i < n; ++i) ticks2[i] = (i2 - i) / -inc;
+    else for (let i = 0; i < n; ++i) ticks2[i] = (i2 - i) * inc;
+  } else {
+    if (inc < 0) for (let i = 0; i < n; ++i) ticks2[i] = (i1 + i) / -inc;
+    else for (let i = 0; i < n; ++i) ticks2[i] = (i1 + i) * inc;
+  }
+  return ticks2;
+}
+function tickIncrement(start, stop, count2) {
+  stop = +stop, start = +start, count2 = +count2;
+  return tickSpec(start, stop, count2)[2];
+}
+function nice(start, stop, count2) {
+  let prestep;
+  while (true) {
+    const step = tickIncrement(start, stop, count2);
+    if (step === prestep || step === 0 || !isFinite(step)) {
+      return [start, stop];
+    } else if (step > 0) {
+      const i = Math.ceil(start / step);
+      const j = Math.floor(stop / step);
+      start = (i - (i * step > start)) * step;
+      stop = (j + (j * step < stop)) * step;
+    } else if (step < 0) {
+      const s = -step;
+      const i = Math.ceil(start * s);
+      const j = Math.floor(stop * s);
+      start = (i - (i / s > start)) / s;
+      stop = (j + (j / s < stop)) / s;
+    }
+    prestep = step;
+  }
+}
+function thresholdSturges(values) {
+  return Math.max(1, Math.ceil(Math.log(count(values)) / Math.LN2) + 1);
+}
+var shuffle = shuffler(Math.random);
+function shuffler(random) {
+  return function shuffle2(array3, i0 = 0, i1 = array3.length) {
+    let m = i1 - (i0 = +i0);
+    while (m) {
+      const i = random() * m-- | 0, t = array3[m + i0];
+      array3[m + i0] = array3[i + i0];
+      array3[i + i0] = t;
+    }
+    return array3;
+  };
+}
+
+// node_modules/d3-contour/dist/d3-contour.mjs
+var array2 = Array.prototype;
+var slice2 = array2.slice;
+function ascending2(a, b) {
+  return a - b;
+}
+function area(ring) {
+  var i = 0, n = ring.length, area2 = ring[n - 1][1] * ring[0][0] - ring[n - 1][0] * ring[0][1];
+  while (++i < n) area2 += ring[i - 1][1] * ring[i][0] - ring[i - 1][0] * ring[i][1];
+  return area2;
+}
+var constant = (x) => () => x;
+function contains(ring, hole) {
+  var i = -1, n = hole.length, c;
+  while (++i < n) if (c = ringContains(ring, hole[i])) return c;
+  return 0;
+}
+function ringContains(ring, point) {
+  var x = point[0], y = point[1], contains2 = -1;
+  for (var i = 0, n = ring.length, j = n - 1; i < n; j = i++) {
+    var pi = ring[i], xi = pi[0], yi = pi[1], pj = ring[j], xj = pj[0], yj = pj[1];
+    if (segmentContains(pi, pj, point)) return 0;
+    if (yi > y !== yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi) contains2 = -contains2;
+  }
+  return contains2;
+}
+function segmentContains(a, b, c) {
+  var i;
+  return collinear(a, b, c) && within(a[i = +(a[0] === b[0])], c[i], b[i]);
+}
+function collinear(a, b, c) {
+  return (b[0] - a[0]) * (c[1] - a[1]) === (c[0] - a[0]) * (b[1] - a[1]);
+}
+function within(p, q, r) {
+  return p <= q && q <= r || r <= q && q <= p;
+}
+function noop() {
+}
+var cases = [
+  [],
+  [[[1, 1.5], [0.5, 1]]],
+  [[[1.5, 1], [1, 1.5]]],
+  [[[1.5, 1], [0.5, 1]]],
+  [[[1, 0.5], [1.5, 1]]],
+  [[[1, 1.5], [0.5, 1]], [[1, 0.5], [1.5, 1]]],
+  [[[1, 0.5], [1, 1.5]]],
+  [[[1, 0.5], [0.5, 1]]],
+  [[[0.5, 1], [1, 0.5]]],
+  [[[1, 1.5], [1, 0.5]]],
+  [[[0.5, 1], [1, 0.5]], [[1.5, 1], [1, 1.5]]],
+  [[[1.5, 1], [1, 0.5]]],
+  [[[0.5, 1], [1.5, 1]]],
+  [[[1, 1.5], [1.5, 1]]],
+  [[[0.5, 1], [1, 1.5]]],
+  []
+];
+function Contours() {
+  var dx = 1, dy = 1, threshold = thresholdSturges, smooth = smoothLinear;
+  function contours(values) {
+    var tz = threshold(values);
+    if (!Array.isArray(tz)) {
+      const e = extent2(values, finite);
+      tz = ticks(...nice(e[0], e[1], tz), tz);
+      while (tz[tz.length - 1] >= e[1]) tz.pop();
+      while (tz[1] < e[0]) tz.shift();
+    } else {
+      tz = tz.slice().sort(ascending2);
+    }
+    return tz.map((value) => contour(values, value));
+  }
+  function contour(values, value) {
+    const v = value == null ? NaN : +value;
+    if (isNaN(v)) throw new Error(`invalid value: ${value}`);
+    var polygons = [], holes = [];
+    isorings(values, v, function(ring) {
+      smooth(ring, values, v);
+      if (area(ring) > 0) polygons.push([ring]);
+      else holes.push(ring);
+    });
+    holes.forEach(function(hole) {
+      for (var i = 0, n = polygons.length, polygon; i < n; ++i) {
+        if (contains((polygon = polygons[i])[0], hole) !== -1) {
+          polygon.push(hole);
+          return;
+        }
+      }
+    });
+    return {
+      type: "MultiPolygon",
+      value,
+      coordinates: polygons
+    };
+  }
+  function isorings(values, value, callback) {
+    var fragmentByStart = new Array(), fragmentByEnd = new Array(), x, y, t0, t1, t2, t3;
+    x = y = -1;
+    t1 = above(values[0], value);
+    cases[t1 << 1].forEach(stitch);
+    while (++x < dx - 1) {
+      t0 = t1, t1 = above(values[x + 1], value);
+      cases[t0 | t1 << 1].forEach(stitch);
+    }
+    cases[t1 << 0].forEach(stitch);
+    while (++y < dy - 1) {
+      x = -1;
+      t1 = above(values[y * dx + dx], value);
+      t2 = above(values[y * dx], value);
+      cases[t1 << 1 | t2 << 2].forEach(stitch);
+      while (++x < dx - 1) {
+        t0 = t1, t1 = above(values[y * dx + dx + x + 1], value);
+        t3 = t2, t2 = above(values[y * dx + x + 1], value);
+        cases[t0 | t1 << 1 | t2 << 2 | t3 << 3].forEach(stitch);
+      }
+      cases[t1 | t2 << 3].forEach(stitch);
+    }
+    x = -1;
+    t2 = values[y * dx] >= value;
+    cases[t2 << 2].forEach(stitch);
+    while (++x < dx - 1) {
+      t3 = t2, t2 = above(values[y * dx + x + 1], value);
+      cases[t2 << 2 | t3 << 3].forEach(stitch);
+    }
+    cases[t2 << 3].forEach(stitch);
+    function stitch(line) {
+      var start = [line[0][0] + x, line[0][1] + y], end = [line[1][0] + x, line[1][1] + y], startIndex = index(start), endIndex = index(end), f, g;
+      if (f = fragmentByEnd[startIndex]) {
+        if (g = fragmentByStart[endIndex]) {
+          delete fragmentByEnd[f.end];
+          delete fragmentByStart[g.start];
+          if (f === g) {
+            f.ring.push(end);
+            callback(f.ring);
+          } else {
+            fragmentByStart[f.start] = fragmentByEnd[g.end] = { start: f.start, end: g.end, ring: f.ring.concat(g.ring) };
+          }
+        } else {
+          delete fragmentByEnd[f.end];
+          f.ring.push(end);
+          fragmentByEnd[f.end = endIndex] = f;
+        }
+      } else if (f = fragmentByStart[endIndex]) {
+        if (g = fragmentByEnd[startIndex]) {
+          delete fragmentByStart[f.start];
+          delete fragmentByEnd[g.end];
+          if (f === g) {
+            f.ring.push(end);
+            callback(f.ring);
+          } else {
+            fragmentByStart[g.start] = fragmentByEnd[f.end] = { start: g.start, end: f.end, ring: g.ring.concat(f.ring) };
+          }
+        } else {
+          delete fragmentByStart[f.start];
+          f.ring.unshift(start);
+          fragmentByStart[f.start = startIndex] = f;
+        }
+      } else {
+        fragmentByStart[startIndex] = fragmentByEnd[endIndex] = { start: startIndex, end: endIndex, ring: [start, end] };
+      }
+    }
+  }
+  function index(point) {
+    return point[0] * 2 + point[1] * (dx + 1) * 4;
+  }
+  function smoothLinear(ring, values, value) {
+    ring.forEach(function(point) {
+      var x = point[0], y = point[1], xt = x | 0, yt = y | 0, v1 = valid(values[yt * dx + xt]);
+      if (x > 0 && x < dx && xt === x) {
+        point[0] = smooth1(x, valid(values[yt * dx + xt - 1]), v1, value);
+      }
+      if (y > 0 && y < dy && yt === y) {
+        point[1] = smooth1(y, valid(values[(yt - 1) * dx + xt]), v1, value);
+      }
+    });
+  }
+  contours.contour = contour;
+  contours.size = function(_) {
+    if (!arguments.length) return [dx, dy];
+    var _0 = Math.floor(_[0]), _1 = Math.floor(_[1]);
+    if (!(_0 >= 0 && _1 >= 0)) throw new Error("invalid size");
+    return dx = _0, dy = _1, contours;
+  };
+  contours.thresholds = function(_) {
+    return arguments.length ? (threshold = typeof _ === "function" ? _ : Array.isArray(_) ? constant(slice2.call(_)) : constant(_), contours) : threshold;
+  };
+  contours.smooth = function(_) {
+    return arguments.length ? (smooth = _ ? smoothLinear : noop, contours) : smooth === smoothLinear;
+  };
+  return contours;
+}
+function finite(x) {
+  return isFinite(x) ? x : NaN;
+}
+function above(x, value) {
+  return x == null ? false : +x >= value;
+}
+function valid(v) {
+  return v == null || isNaN(v = +v) ? -Infinity : v;
+}
+function smooth1(x, v0, v1, value) {
+  const a = value - v0;
+  const b = v1 - v0;
+  const d = isFinite(a) || isFinite(b) ? a / b : Math.sign(a) / Math.sign(b);
+  return isNaN(d) ? x : x + d - 0.5;
+}
+
+// src/trace/field.ts
+var FIELD_RADIUS_PX = 1;
+var FIELD_BORDER_PX = 2;
+var ISO_LEVEL = 0.5;
+function regionRings(keys, width, box2, match) {
+  if (box2.x1 < box2.x0) return [];
+  const cols = box2.x1 - box2.x0 + 1 + 2 * FIELD_BORDER_PX;
+  const rows = box2.y1 - box2.y0 + 1 + 2 * FIELD_BORDER_PX;
+  const mask = new Float64Array(cols * rows);
+  for (let y = box2.y0; y <= box2.y1; y++) {
+    for (let x = box2.x0; x <= box2.x1; x++) {
+      if (match(keys[y * width + x])) mask[(y - box2.y0 + FIELD_BORDER_PX) * cols + (x - box2.x0 + FIELD_BORDER_PX)] = 1;
+    }
+  }
+  const field = boxBlur(boxBlur(mask, cols, rows, FIELD_RADIUS_PX, true), cols, rows, FIELD_RADIUS_PX, false);
+  const multi = Contours().size([cols, rows]).thresholds([ISO_LEVEL])(Array.from(field))[0];
+  const offsetX = box2.x0 - FIELD_BORDER_PX + 0.5;
+  const offsetY = box2.y0 - FIELD_BORDER_PX + 0.5;
+  const rings = [];
+  for (const polygon of multi.coordinates) {
+    for (const ring of polygon) {
+      const points2 = ring.slice(0, -1).map(([gx, gy]) => [gx + offsetX, gy + offsetY]);
+      if (points2.length >= 3) rings.push(points2);
+    }
+  }
+  return rings;
+}
+function boxBlur(src, cols, rows, radius, horizontal) {
+  const out = new Float64Array(cols * rows);
+  const weight = 1 / (2 * radius + 1);
+  const length = horizontal ? cols : rows;
+  for (let line = 0; line < (horizontal ? rows : cols); line++) {
+    for (let i = 0; i < length; i++) {
+      let sum = 0;
+      for (let k = -radius; k <= radius; k++) {
+        const j = Math.min(length - 1, Math.max(0, i + k));
+        sum += horizontal ? src[line * cols + j] : src[j * cols + line];
+      }
+      if (horizontal) out[line * cols + i] = sum * weight;
+      else out[i * cols + line] = sum * weight;
+    }
+  }
+  return out;
+}
+
+// src/trace/objects.ts
+import * as THREE9 from "three";
+
+// src/geom/dashes.ts
+function dashSegments(a, b, dash, gap) {
+  const len = span(a, b);
+  if (len <= EPS) return [];
+  const count2 = Math.max(1, Math.round((len + gap) / (dash + gap)));
+  const stretch = len / (count2 * dash + (count2 - 1) * gap);
+  const dashFraction = dash * stretch / len;
+  const periodFraction = (dash + gap) * stretch / len;
+  return Array.from({ length: count2 }, (_, i) => [
+    lerp(a, b, i * periodFraction),
+    lerp(a, b, i * periodFraction + dashFraction)
+  ]);
+}
+function dotCentres(a, b, spacing) {
+  const len = span(a, b);
+  if (len <= EPS) return [];
+  const count2 = Math.max(1, Math.round(len / spacing));
+  return Array.from({ length: count2 }, (_, i) => lerp(a, b, (i + 0.5) / count2));
+}
 
 // src/render/instancing.ts
 var HEAD_MIN_RADII = 3;
@@ -2461,7 +2731,1418 @@ function rotationFromY(d) {
   };
 }
 
+// src/trace/objects.ts
+function buildIdMeshes(data2, material, keep = () => true) {
+  const objects = [];
+  const meshes = [];
+  const shells = [];
+  const thin = [];
+  for (const group of instanceGroups(data2)) {
+    const first = objects.length + 1;
+    const kept = [];
+    const dropped = [];
+    group.refs.forEach((_, i) => {
+      const obj = { kind: group.shape, material: group.material, alpha: 1, outlined: group.outlined, centre: instanceCentre(group.matrices, i), matrix: group.matrices.slice(16 * i, 16 * i + 16) };
+      objects.push(obj);
+      (keep(obj) ? kept : dropped).push(i);
+    });
+    if (kept.length) {
+      const mesh = instanceSet(group, first, kept, material);
+      mesh.userData = { shape: group.shape };
+      meshes.push(mesh);
+      if (group.outlined) {
+        const shell = instanceSet(group, first, kept, material);
+        shell.userData = { shape: group.shape, shell: true };
+        shells.push(shell);
+      }
+    }
+    if (dropped.length) {
+      const mesh = instanceSet(group, first, dropped, material);
+      mesh.userData = { shape: group.shape, thin: true };
+      thin.push(mesh);
+    }
+  }
+  const points2 = new Map(data2.points.map((p) => [p.id, p.position]));
+  const polyBase = objects.length;
+  data2.primitives.polyhedra.forEach((poly, index) => {
+    const alpha = data2.materials[poly.material_id].alpha ?? 1;
+    objects.push({
+      kind: "polyhedron",
+      material: poly.material_id,
+      alpha,
+      outlined: alpha >= 1,
+      centre: points2.get(poly.center_point_id),
+      poly: index
+    });
+  });
+  for (const group of polyhedronGroups(data2)) {
+    const ids = new Float32Array(group.owner.length * 3);
+    group.owner.forEach((p, t) => ids.fill(polyBase + p + 1, t * 3, t * 3 + 3));
+    const geometry = new THREE9.BufferGeometry();
+    geometry.setAttribute("position", new THREE9.Float32BufferAttribute(group.positions, 3));
+    geometry.setAttribute("objectId", new THREE9.BufferAttribute(ids, 1));
+    geometry.computeVertexNormals();
+    const mesh = new THREE9.Mesh(geometry, material);
+    mesh.userData = { shape: "polyhedron" };
+    meshes.push(mesh);
+    if (group.material && (data2.materials[group.material].alpha ?? 1) >= 1) {
+      const shell = new THREE9.Mesh(geometry, material);
+      shell.userData = { shape: "polyhedron", shell: true };
+      shells.push(shell);
+    }
+  }
+  return { objects, meshes, shells, thin };
+}
+function instanceCentre(matrices, i) {
+  return [matrices[16 * i + 12], matrices[16 * i + 13], matrices[16 * i + 14]];
+}
+function instanceSet(group, first, indices, material) {
+  const ids = new Float32Array(indices.length);
+  indices.forEach((i, k) => ids[k] = first + i);
+  const matrices = indices.flatMap((i) => group.matrices.slice(16 * i, 16 * i + 16));
+  const geometry = SHAPES[group.shape]();
+  geometry.setAttribute("objectId", new THREE9.InstancedBufferAttribute(ids, 1));
+  return instanced(geometry, material, matrices);
+}
+
+// src/trace/passes.ts
+import * as THREE10 from "three";
+var TOON_STEPS2 = 16;
+var DEPTH_SCALE = 16777215;
+var BACKGROUND_DEPTH = 2;
+var ID_VERTEX = `
+    attribute float objectId;
+    flat varying float vObject;
+    void main() {
+      vObject = objectId;
+      vec4 local = vec4(position, 1.0);
+      #ifdef USE_INSTANCING
+        local = instanceMatrix * local;
+      #endif
+      gl_Position = projectionMatrix * modelViewMatrix * local;
+    }`;
+var ID_FRAGMENT = `
+    flat varying float vObject;
+    void main() {
+      float lo = mod(vObject, 256.0);
+      float mid = mod(floor(vObject / 256.0), 256.0);
+      float hi = floor(vObject / 65536.0);
+      gl_FragColor = vec4(lo, mid, hi, 255.0) / 255.0;
+    }`;
+var BAND_VERTEX = `
+    varying vec3 vNormal;
+    void main() {
+      vec3 n = normal;
+      vec4 local = vec4(position, 1.0);
+      #ifdef USE_INSTANCING
+        mat3 m = mat3(instanceMatrix);
+        // dividing each column by its squared length gives the inverse transpose for a scaled instance
+        n = m * (n / vec3(dot(m[0], m[0]), dot(m[1], m[1]), dot(m[2], m[2])));
+        local = instanceMatrix * local;
+      #endif
+      vNormal = normalMatrix * n;
+      gl_Position = projectionMatrix * modelViewMatrix * local;
+    }`;
+var BAND_FRAGMENT = `
+    uniform vec3 lightDir; // view space, unit length: towards the key light
+    uniform float litCut; // N.L at which the toon gradient turns lit
+    varying vec3 vNormal;
+    void main() {
+      float lit = dot(normalize(vNormal), lightDir) >= litCut ? 1.0 : 0.0;
+      gl_FragColor = vec4(lit, 0.0, 0.0, 1.0);
+    }`;
+var DEPTH_FRAGMENT = `
+    void main() {
+      float v = floor(gl_FragCoord.z * ${DEPTH_SCALE.toFixed(1)} + 0.5);
+      gl_FragColor = vec4(mod(v, 256.0), mod(floor(v / 256.0), 256.0), floor(v / 65536.0), 255.0) / 255.0;
+    }`;
+var PLAIN_VERTEX = `
+    void main() {
+      vec4 local = vec4(position, 1.0);
+      #ifdef USE_INSTANCING
+        local = instanceMatrix * local;
+      #endif
+      gl_Position = projectionMatrix * modelViewMatrix * local;
+    }`;
+var FIRST_LIT = Math.ceil((LOOK.threshold + 1) / 2 * TOON_STEPS2);
+var LIT_CUT = 2 * FIRST_LIT / TOON_STEPS2 - 1;
+var FACE_OFFSET_FACTOR2 = 1;
+var FACE_OFFSET_UNITS2 = 1;
+function passMaterial(pass, faces) {
+  const offset = faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR2, polygonOffsetUnits: FACE_OFFSET_UNITS2 } : {};
+  switch (pass) {
+    case "id":
+      return new THREE10.ShaderMaterial({ vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, ...offset });
+    case "band":
+      return new THREE10.ShaderMaterial({
+        vertexShader: BAND_VERTEX,
+        fragmentShader: BAND_FRAGMENT,
+        uniforms: { lightDir: { value: new THREE10.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } },
+        ...offset
+      });
+    case "depth":
+      return new THREE10.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, ...offset });
+  }
+}
+function idScene(meshes) {
+  const group = new THREE10.Group();
+  group.position.copy(root.position);
+  group.add(...meshes);
+  const scene2 = new THREE10.Scene();
+  scene2.add(group);
+  return scene2;
+}
+var OUTLINE_THICKNESS2 = 35e-4;
+var OUTLINE_SIZE_FRACTION2 = 0.12;
+var SHELL_VERTEX = `
+    uniform float outlineThickness;
+    uniform float outlineScale;
+    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION2.toFixed(3)}
+    float outlineWidth(float clipW, float radius) {
+      float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
+      return min(outlineThickness, capWidth);
+    }
+    void main() {
+      vec4 local = vec4(position, 1.0);
+      vec3 normalLocal = normal;
+      float radius = 1e9;
+      #ifdef USE_INSTANCING
+        mat3 instanceRotation = mat3(instanceMatrix);
+        normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
+        local = instanceMatrix * local;
+        radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
+      #endif
+      normalLocal = normalize(normalLocal);
+      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
+      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
+      float width = outlineWidth(clipPos.w, radius) * outlineScale;
+      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
+    }`;
+var SHELL_FRAGMENT = `
+    void main() {
+      gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }`;
+var ZERO_FRAGMENT = `
+    void main() {
+      gl_FragColor = vec4(0.0);
+    }`;
+var shellMaterial = () => new THREE10.ShaderMaterial({
+  vertexShader: SHELL_VERTEX,
+  fragmentShader: SHELL_FRAGMENT,
+  side: THREE10.BackSide,
+  uniforms: { outlineThickness: { value: OUTLINE_THICKNESS2 }, outlineScale: { value: 1 } }
+});
+var occluderMaterial = (faces) => new THREE10.ShaderMaterial({
+  vertexShader: PLAIN_VERTEX,
+  fragmentShader: ZERO_FRAGMENT,
+  ...faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR2, polygonOffsetUnits: FACE_OFFSET_UNITS2 } : {}
+});
+function renderPasses(meshes, shells, thin, lines, cssWidth, cssHeight, scale) {
+  const width = cssWidth * scale;
+  const height = cssHeight * scale;
+  const keys = new Uint32Array(width * height);
+  const depth = new Float32Array(width * height).fill(BACKGROUND_DEPTH);
+  const shell = new Uint8Array(width * height);
+  const lineId = new Uint32Array(width * height);
+  const all = [...meshes, ...shells, ...thin, ...lines];
+  const scene2 = idScene(all);
+  const materials = {
+    id: [passMaterial("id", false), passMaterial("id", true)],
+    band: [passMaterial("band", false), passMaterial("band", true)],
+    depth: [passMaterial("depth", false), passMaterial("depth", true)]
+  };
+  const pick = (pass) => (mesh) => materials[pass][mesh.userData.shape === "polyhedron" ? 1 : 0];
+  const maskShell = shellMaterial();
+  const maskPlain = occluderMaterial(false);
+  const maskFaces = occluderMaterial(true);
+  const maskPick = (mesh) => mesh.userData.shell ? maskShell : mesh.userData.shape === "polyhedron" ? maskFaces : maskPlain;
+  const lineIdMaterial = passMaterial("id", false);
+  const linePick = (mesh) => mesh.userData.line || mesh.userData.thin ? lineIdMaterial : mesh.userData.shape === "polyhedron" ? maskFaces : maskPlain;
+  const show2 = (pass) => {
+    for (const m of shells) m.visible = pass === "mask";
+    for (const m of [...thin, ...lines]) m.visible = pass === "line";
+  };
+  const tile = renderer.capabilities.maxTextureSize;
+  camera.updateMatrixWorld();
+  for (let y0 = 0; y0 < height; y0 += tile) {
+    for (let x0 = 0; x0 < width; x0 += tile) {
+      const tw = Math.min(tile, width - x0);
+      const th = Math.min(tile, height - y0);
+      camera.setViewOffset(width, height, x0, y0, tw, th);
+      show2("id");
+      const ids = readPass(scene2, all, pick("id"), tw, th);
+      show2("band");
+      const bands = readPass(scene2, all, pick("band"), tw, th);
+      show2("depth");
+      const depths = readPass(scene2, all, pick("depth"), tw, th);
+      show2("mask");
+      const masks = readPass(scene2, all, maskPick, tw, th);
+      show2("line");
+      const lines32 = readPass(scene2, all, linePick, tw, th);
+      for (let row = 0; row < th; row++) {
+        const topRow = th - 1 - row;
+        for (let col = 0; col < tw; col++) {
+          const src = (row * tw + col) * 4;
+          const dst = (y0 + topRow) * width + x0 + col;
+          shell[dst] = masks[src] >= 128 ? 1 : 0;
+          lineId[dst] = lines32[src] + 256 * lines32[src + 1] + 65536 * lines32[src + 2];
+          const id = ids[src] + 256 * ids[src + 1] + 65536 * ids[src + 2];
+          if (id === 0) continue;
+          const dark = bands[src] < 128 ? 1 : 0;
+          keys[dst] = 2 * id + dark;
+          depth[dst] = (depths[src] + 256 * depths[src + 1] + 65536 * depths[src + 2]) / DEPTH_SCALE;
+        }
+      }
+    }
+  }
+  camera.clearViewOffset();
+  for (const pair of Object.values(materials)) for (const material of pair) material.dispose();
+  maskShell.dispose();
+  maskPlain.dispose();
+  maskFaces.dispose();
+  lineIdMaterial.dispose();
+  return { keys, depth, shell, lineId, width, height };
+}
+function readPass(scene2, all, materialOf, tw, th) {
+  for (const mesh of all) mesh.material = materialOf(mesh);
+  const target = new THREE10.WebGLRenderTarget(tw, th, { depthBuffer: true, minFilter: THREE10.NearestFilter, magFilter: THREE10.NearestFilter, generateMipmaps: false });
+  renderer.setRenderTarget(target);
+  renderer.render(scene2, camera);
+  const pixels = new Uint8Array(tw * th * 4);
+  renderer.readRenderTargetPixels(target, 0, 0, tw, th, pixels);
+  renderer.setRenderTarget(null);
+  target.dispose();
+  return pixels;
+}
+function disposeMeshes(meshes) {
+  for (const mesh of meshes) mesh.geometry.dispose();
+}
+function projector(width, height) {
+  return (p) => {
+    const ndc = p.clone().add(root.position).applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
+    return { x: (ndc.x + 1) / 2 * width, y: (1 - ndc.y) / 2 * height, depth: ndc.z / 2 + 0.5 };
+  };
+}
+
+// src/trace/stretch.ts
+var SNAP_TOL_RENDER_PX = 0.6;
+var BAND_OFFSETS_PX = [0.5, 1, 1.5];
+var FLAG_HALF_WINDOW = 3;
+var BACKGROUND = 0;
+function labelAt(x, y, id, keys, width, height) {
+  const left = Math.floor(x - 0.5);
+  const top = Math.floor(y - 0.5);
+  let inside = false;
+  const votes = /* @__PURE__ */ new Map();
+  for (let dy = 0; dy <= 1; dy++) {
+    for (let dx = 0; dx <= 1; dx++) {
+      const px = left + dx;
+      const py = top + dy;
+      const key2 = px >= 0 && py >= 0 && px < width && py < height ? keys[py * width + px] : 0;
+      if (key2 !== 0 && key2 >> 1 === id) {
+        inside = true;
+        continue;
+      }
+      const label = key2 === 0 ? BACKGROUND : key2 >> 1;
+      votes.set(label, (votes.get(label) ?? 0) + 1);
+    }
+  }
+  if (!inside || votes.size === 0) return null;
+  let best = -1;
+  let bestCount = 0;
+  for (const [label, count2] of votes) {
+    if (count2 > bestCount) {
+      best = label;
+      bestCount = count2;
+    }
+  }
+  return best;
+}
+function stretchesOf(ring, id, keys, width, height, scale, shell) {
+  const labels = ring.map(([x, y]) => labelAt(x, y, id, keys, width, height));
+  const first = labels.find((l) => l !== null);
+  if (first === void 0) return { stretches: [], whole: false };
+  let prev = first;
+  for (let i = 0; i < labels.length; i++) {
+    if (labels[i] === null) labels[i] = prev;
+    else prev = labels[i];
+  }
+  const css = ring.map(([x, y]) => [x / scale, y / scale]);
+  const ctx = { id, keys, width, height, scale, shell };
+  if (labels.every((l) => l === labels[0])) {
+    const flags = shellFlags(css, true, ctx);
+    if (flags.every((f) => f === flags[0])) return { stretches: [{ pts: css, label: labels[0], outlined: flags[0] }], whole: true };
+    return { stretches: cyclicRuns(css, flags, labels[0]), whole: false };
+  }
+  const start = labels.findIndex((l, i) => l !== labels[(i - 1 + labels.length) % labels.length]);
+  const rotated = [...css.slice(start), ...css.slice(0, start)];
+  const rotatedLabels = [...labels.slice(start), ...labels.slice(0, start)];
+  const stretches = [];
+  for (let i = 0; i < rotated.length; ) {
+    let j = i;
+    while (j + 1 < rotated.length && rotatedLabels[j + 1] === rotatedLabels[i]) j++;
+    for (const piece of runsOf(rotated.slice(i, j + 1), shellFlags(rotated.slice(i, j + 1), false, ctx))) {
+      stretches.push({ pts: piece.pts, label: rotatedLabels[i], outlined: piece.outlined });
+    }
+    i = j + 1;
+  }
+  return { stretches, whole: false };
+}
+function shellFlags(pts, closed, ctx) {
+  const n = pts.length;
+  const raw = pts.map((p, i) => {
+    const a = closed ? pts[(i - 1 + n) % n] : pts[Math.max(0, i - 1)];
+    const b = closed ? pts[(i + 1) % n] : pts[Math.min(n - 1, i + 1)];
+    const tx = b[0] - a[0];
+    const ty = b[1] - a[1];
+    const len = Math.hypot(tx, ty) || 1;
+    let nx = ty / len;
+    let ny = -tx / len;
+    if (ownAt([p[0] + nx / ctx.scale, p[1] + ny / ctx.scale], ctx)) {
+      nx = -nx;
+      ny = -ny;
+    }
+    let hits = 0;
+    for (const d of BAND_OFFSETS_PX) if (shellAt([p[0] + nx * d / ctx.scale, p[1] + ny * d / ctx.scale], ctx)) hits++;
+    return hits * 2 > BAND_OFFSETS_PX.length;
+  });
+  return majority(raw, closed);
+}
+function ownAt(p, ctx) {
+  const x = Math.floor(p[0] * ctx.scale);
+  const y = Math.floor(p[1] * ctx.scale);
+  if (x < 0 || y < 0 || x >= ctx.width || y >= ctx.height) return false;
+  const key2 = ctx.keys[y * ctx.width + x];
+  return key2 !== 0 && key2 >> 1 === ctx.id;
+}
+function shellAt(p, ctx) {
+  const x = Math.floor(p[0] * ctx.scale);
+  const y = Math.floor(p[1] * ctx.scale);
+  return x >= 0 && y >= 0 && x < ctx.width && y < ctx.height && ctx.shell[y * ctx.width + x] === 1;
+}
+function majority(flags, closed) {
+  const n = flags.length;
+  return flags.map((_, i) => {
+    let count2 = 0;
+    let seen = 0;
+    for (let k = -FLAG_HALF_WINDOW; k <= FLAG_HALF_WINDOW; k++) {
+      const j = closed ? (i + k + n * 2) % n : i + k;
+      if (j < 0 || j >= n) continue;
+      seen++;
+      if (flags[j]) count2++;
+    }
+    return count2 * 2 > seen;
+  });
+}
+function runsOf(pts, flags) {
+  const out = [];
+  if (pts.length < 2) return [{ pts, outlined: flags[0] }];
+  let i = 0;
+  while (i < pts.length - 1) {
+    let j = i + 1;
+    while (j + 1 < pts.length && flags[j + 1] === flags[i]) j++;
+    out.push({ pts: pts.slice(i, j + 1), outlined: flags[i] });
+    i = j;
+  }
+  return out;
+}
+function cyclicRuns(pts, flags, label) {
+  const n = pts.length;
+  const change = flags.findIndex((f, i) => f !== flags[(i - 1 + n) % n]);
+  const from = change < 0 ? 0 : change;
+  const rotatedPts = [...pts.slice(from), ...pts.slice(0, from), pts[from]];
+  const rotatedFlags = [...flags.slice(from), ...flags.slice(0, from), flags[from]];
+  return runsOf(rotatedPts, rotatedFlags).map((piece) => ({ pts: piece.pts, label, outlined: piece.outlined }));
+}
+function ringPaths(stretches, whole, candidates, tol) {
+  if (stretches.length === 0) return { fill: "", outline: "" };
+  if (whole) {
+    const st = stretches[0];
+    const best = bestCurve(candidates(st), st.pts, tol);
+    if (best?.kind === "ellipse") {
+      const d3 = `M${startOf(best.e, st.pts[0])}${fullEllipseArcs(best.e, pointAt(best.e, paramOf(best.e, st.pts[0])))}Z`;
+      return { fill: d3, outline: st.outlined ? d3 : "" };
+    }
+    const d2 = closedPath(st.pts);
+    return { fill: d2, outline: st.outlined ? d2 : "" };
+  }
+  const bests = stretches.map((st) => bestCurve(candidates(st), st.pts, tol));
+  let cur = startOn(bests[0], stretches[0].pts[0]);
+  let d = `M${fmtPt(cur)}`;
+  const pieces = [];
+  stretches.forEach((st, index) => {
+    const start = cur;
+    const best = bests[index];
+    let cmd;
+    if (best?.kind === "line") {
+      const end = onLine(best.a, best.b, st.pts[st.pts.length - 1]);
+      cmd = `L${fmtPt(end)}`;
+      cur = end;
+    } else if (best?.kind === "ellipse") {
+      const from = pointAt(best.e, paramOf(best.e, start));
+      const end = pointAt(best.e, paramOf(best.e, st.pts[st.pts.length - 1]));
+      cmd = arcTo(best.e, from, end, st.pts);
+      cur = end;
+    } else {
+      const pts = [start, ...st.pts.slice(1)];
+      cmd = fitCommands(pts);
+      cur = st.pts[st.pts.length - 1];
+    }
+    d += cmd;
+    pieces.push({ start, cmd, outlined: st.outlined });
+  });
+  d += "Z";
+  return { fill: d, outline: outlineOf2(pieces) };
+}
+function outlineOf2(pieces) {
+  let out = "";
+  let open = false;
+  for (const p of pieces) {
+    if (!p.outlined) {
+      open = false;
+      continue;
+    }
+    if (!open) out += `M${fmtPt(p.start)}`;
+    out += p.cmd;
+    open = true;
+  }
+  return out;
+}
+function bestCurve(curves, pts, tol) {
+  let best = null;
+  let bestRms = tol;
+  for (const c of curves) {
+    const rms = curveRms(c, pts);
+    if (rms <= bestRms) {
+      best = c;
+      bestRms = rms;
+    }
+  }
+  return best;
+}
+function snapTolerance(scale) {
+  return SNAP_TOL_RENDER_PX / scale;
+}
+function startOn(curve, p) {
+  if (!curve) return p;
+  if (curve.kind === "line") return onLine(curve.a, curve.b, p);
+  return pointAt(curve.e, paramOf(curve.e, p));
+}
+function startOf(e, p) {
+  return fmtPt(pointAt(e, paramOf(e, p)));
+}
+function fmtPt(p) {
+  return `${Math.round(p[0] * 100) / 100 || 0} ${Math.round(p[1] * 100) / 100 || 0}`;
+}
+
+// src/trace/traced.ts
+var TRACE_SCALE = 2;
+var SEAM_TRAP_PX = 0.5;
+var THIN_AS_LINE_PX = 3;
+var OUTLINE_SIZE_FRACTION3 = 0.12;
+var OUTLINE_FRACTION = 35e-4;
+var EDGE_WIDTH = 1;
+var BOX_LINE_WIDTH = 1;
+var OUT_OF_RANGE = 1 << 30;
+var MIN_REGION_PX = 4;
+var MIN_STRIP_PX = 1;
+var MIN_SILHOUETTE_PX = 1;
+var NEAREST_START = 2;
+function buildTracedSvg(o) {
+  const started = performance.now();
+  const scale = TRACE_SCALE;
+  const view = makeView(o);
+  const radiusPx = (obj) => {
+    if (!obj.matrix) return null;
+    const unit = obj.kind === "cylinder" ? Math.hypot(obj.matrix[0], obj.matrix[1], obj.matrix[2]) : obj.kind === "sphere" || obj.kind === "dot" ? obj.matrix[0] : null;
+    return unit === null ? null : unit * view.pxPerUnit(view.toCam(vec3(obj.centre)));
+  };
+  const isThin = (obj) => (obj.kind === "cylinder" || obj.kind === "dot") && (radiusPx(obj) ?? Infinity) * 2 < THIN_AS_LINE_PX;
+  const { objects, meshes, shells, thin } = buildIdMeshes(o.data, passMaterial("id", false), (obj) => !isThin(obj));
+  const shown2 = (mesh) => o.show.atoms || mesh.userData.shape !== "sphere";
+  const points2 = new Map(o.data.points.map((p) => [p.id, p.position]));
+  const topologies = new Map(o.data.topologies.map((t) => [t.id, t]));
+  const edgeSpans = [];
+  let nextId = objects.length + 1;
+  objects.forEach((obj, index) => {
+    if (obj.kind !== "polyhedron") return;
+    const poly = o.data.primitives.polyhedra[obj.poly];
+    for (const [a, b] of hardEdges(topologies.get(poly.topology_id), points2)) edgeSpans.push({ owner: index + 1, a, b, id: nextId++ });
+  });
+  const boxId = nextId;
+  const boxEdges = o.show.box && o.data.cell ? cellEdges(o.data.cell) : [];
+  const edgeLines = lineSet(edgeSpans.map((e) => [e.a, e.b, e.id]));
+  const boxLines = lineSet(boxEdges.map(([a, b]) => [a, b, boxId]));
+  const lines = [edgeLines, boxLines].filter((set) => set.geometry.getAttribute("position").count > 0);
+  const { keys, depth, shell, lineId, width, height } = renderPasses(meshes.filter(shown2), shells.filter(shown2), thin, lines, o.width, o.height, scale);
+  const { boxes, nearest, pixels } = objectBoxes(keys, depth, width, objects.length);
+  const project = projector(width, height);
+  const screen = (p) => {
+    const s = view.toScreen(view.toCam(p));
+    return [s.x, s.y];
+  };
+  const tol = snapTolerance(scale);
+  const edgeHex = srgbHex(LOOK.outline);
+  const outlineHex = linearHex(LOOK.outline);
+  const outlineWidth = OUTLINE_FRACTION * o.height;
+  const spansOf = (a, b, id) => visibleSpans(a, b, project, lineId, id, width, height, scale);
+  const ownCache = /* @__PURE__ */ new Map();
+  const own = (id) => {
+    if (!ownCache.has(id)) ownCache.set(id, ownCurves(o, objects[id - 1], view, screen, topologies, points2));
+    return ownCache.get(id);
+  };
+  const faceCache = /* @__PURE__ */ new Map();
+  const facesOf = (poly) => {
+    if (!faceCache.has(poly)) {
+      const p = o.data.primitives.polyhedra[poly];
+      const topo = topologies.get(p.topology_id);
+      faceCache.set(poly, topo.faces.map(([i, j, k]) => [i, j, k].map((q) => vec3(points2.get(topo.point_ids[q])))));
+    }
+    return faceCache.get(poly);
+  };
+  const crossing = (id, label, mid) => {
+    const a = objects[id - 1];
+    const b = objects[label - 1];
+    const [poly, other] = a.kind === "polyhedron" ? [a, b] : b.kind === "polyhedron" ? [b, a] : [null, null];
+    if (!poly || !other) return [];
+    const face = nearestFace(facesOf(poly.poly), mid, screen);
+    if (!face) return [];
+    if (other.kind === "sphere" || other.kind === "dot") {
+      const c = sectionCurve(vec3(other.centre), other.matrix[0], face, screen);
+      return c ? [c] : [];
+    }
+    if (other.kind === "cylinder" && other.matrix) {
+      const c = cylinderSectionCurve(other.matrix, face, screen);
+      return c ? [c] : [];
+    }
+    return [];
+  };
+  const order = objects.map((obj, i) => ({ id: i + 1, nearestDepth: isThin(obj) ? project(vec3(obj.centre)).depth : nearest[i + 1], obj })).sort((p, q) => q.nearestDepth - p.nearestDepth);
+  const clips = [];
+  let paths = 0;
+  const fills = [];
+  const outlines2 = [];
+  for (const { id, obj } of order) {
+    if (isThin(obj)) {
+      const thin2 = thinMarkup(obj, o, project, lineId, id, width, height, scale, radiusPx(obj) ?? 0);
+      if (thin2) {
+        fills.push(thin2);
+        paths++;
+      }
+      continue;
+    }
+    const box3 = boxOf(boxes, id);
+    if (box3.x1 < box3.x0) continue;
+    const rgb = obj.material === null ? arrowColor() : colorOf(o, obj.material);
+    const lit = srgbHex(rgb);
+    const dark = shadedBand(rgb, LOOK.dark);
+    const common = { "fill-rule": "evenodd", ...obj.alpha < 1 ? { "fill-opacity": obj.alpha } : {} };
+    const outlined = o.outlines && obj.outlined;
+    let body2 = "";
+    let fillD = "";
+    let outlineD = "";
+    const regionPx = pixels[id] / (scale * scale);
+    const centre2 = project(vec3(obj.centre));
+    let unionRings = regionRings(keys, width, box3, (k) => k >> 1 === id);
+    let silhouette = "";
+    if (regionPx < MIN_REGION_PX) {
+      const exact = own(id).find((c) => c.kind === "ellipse");
+      if (exact && exact.kind === "ellipse" && keyAtCentre(keys, width, centre2) === id && regionPx >= MIN_SILHOUETTE_PX) {
+        silhouette = closedPath(sampleEllipse(exact.e));
+      }
+      unionRings = [];
+    } else {
+      unionRings = unionRings.filter((ring) => ringArea(ring, scale) >= MIN_REGION_PX);
+    }
+    if (silhouette) fillD += silhouette;
+    for (const ring of unionRings) {
+      const { stretches, whole } = stretchesOf(ring, id, keys, width, height, scale, shell);
+      const parts = ringPaths(stretches, whole, (st) => candidatesFor(id, st, own, crossing), tol);
+      fillD += parts.fill;
+      outlineD += parts.outline;
+    }
+    const clipId = `k${id}`;
+    if (fillD) {
+      const stroke = { stroke: lit, "stroke-width": 2 * SEAM_TRAP_PX, "stroke-linejoin": "round" };
+      body2 += el("path", { d: fillD, fill: lit, ...stroke, ...common });
+      paths++;
+      clips.push(el("clipPath", { id: clipId }, el("path", { d: fillD, "clip-rule": "evenodd" })));
+    }
+    const bandRings = regionRings(keys, width, box3, (k) => k === 2 * id + 1).filter((ring) => ringArea(ring, scale) >= MIN_REGION_PX && ringArea(ring, scale) / Math.max(ringPerimeter(ring, scale), 1e-9) >= MIN_STRIP_PX);
+    const shade = bandRings.map((ring) => closedPath(toCss(ring, scale))).join("");
+    if (shade) {
+      const stroke = { stroke: dark, "stroke-width": 2 * SEAM_TRAP_PX, "stroke-linejoin": "round" };
+      body2 += el("path", { d: shade, fill: dark, ...stroke, ...common, "clip-path": fillD ? `url(#${clipId})` : void 0 });
+      paths++;
+    }
+    if (obj.kind === "polyhedron") {
+      const d = edgeSpans.filter((e) => e.owner === id).flatMap((e) => spansOf(e.a, e.b, e.id)).map(([p, q]) => `M${fmt2(p[0])} ${fmt2(p[1])}L${fmt2(q[0])} ${fmt2(q[1])}`).join("");
+      if (d) {
+        body2 += el("path", { d, fill: "none", stroke: edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" });
+        paths++;
+      }
+    }
+    fills.push(el("g", {}, body2));
+    if (outlined && outlineD) {
+      const r = radiusPx(obj);
+      const strokeWidth = r === null ? outlineWidth / 2 : Math.min(outlineWidth / 2, 2 * OUTLINE_SIZE_FRACTION3 * r);
+      outlines2.push(el("path", { d: outlineD, fill: "none", stroke: outlineHex, "stroke-width": strokeWidth, "stroke-linejoin": "round" }));
+      paths++;
+    }
+  }
+  disposeMeshes([...meshes, ...shells, ...thin, ...lines]);
+  let box2 = "";
+  if (o.show.box && o.data.cell) {
+    const d = boxEdges.flatMap(([a, b]) => spansOf(a, b, boxId)).map(([p, q]) => `M${fmt2(p[0])} ${fmt2(p[1])}L${fmt2(q[0])} ${fmt2(q[1])}`).join("");
+    if (d) {
+      box2 = el("path", { d, fill: "none", stroke: o.boxColor, "stroke-width": BOX_LINE_WIDTH });
+      paths++;
+    }
+  }
+  const body = `${el("defs", {}, clips.join(""))}
+${fills.join("\n")}
+${box2}
+${outlines2.join("\n")}
+${triadSvg({ o, view })}`;
+  const style = textEl("style", {}, axisFontFace(["700"]));
+  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: o.width, height: o.height, viewBox: `0 0 ${o.width} ${o.height}` }, `
+${style}
+${body}
+`);
+  const text = `${svg}
+`;
+  return { text, paths, ms: performance.now() - started };
+}
+function thinMarkup(obj, o, project, lineId, id, width, height, scale, radiusPx) {
+  const rgb = obj.material === null ? arrowColor() : colorOf(o, obj.material);
+  const lit = srgbHex(rgb);
+  const m = obj.matrix;
+  const c = vec3(obj.centre);
+  if (obj.kind === "dot") {
+    const p = project(c);
+    if (!onScreen(p)) return "";
+    if (!showsId(lineId, id, width, height, Math.floor(p.x), Math.floor(p.y))) return "";
+    return el("circle", { cx: p.x / scale, cy: p.y / scale, r: radiusPx, fill: lit });
+  }
+  const axis = new THREE11.Vector3(m[4], m[5], m[6]).multiplyScalar(0.5);
+  const stretches = visibleSpans(c.clone().sub(axis), c.clone().add(axis), project, lineId, id, width, height, scale);
+  const d = stretches.map(([p, q]) => `M${fmt2(p[0])} ${fmt2(p[1])}L${fmt2(q[0])} ${fmt2(q[1])}`).join("");
+  return d ? el("path", { d, fill: "none", stroke: lit, "stroke-width": 2 * radiusPx, "stroke-linecap": "round" }) : "";
+}
+function candidatesFor(id, st, own, crossing) {
+  if (st.label <= 0) return own(id);
+  const mid = st.pts[Math.floor(st.pts.length / 2)];
+  return [...own(id), ...own(st.label), ...crossing(id, st.label, mid)];
+}
+function ownCurves(o, obj, view, screen, topologies, points2) {
+  if ((obj.kind === "sphere" || obj.kind === "dot") && obj.matrix) return sphereCurves(view, vec3(obj.centre), obj.matrix[0]);
+  if (obj.kind === "cylinder" && obj.matrix) return cylinderCurves(obj.matrix, screen);
+  if (obj.kind === "polyhedron") {
+    const poly = o.data.primitives.polyhedra[obj.poly];
+    const topo = topologies.get(poly.topology_id);
+    return edgeCurves(hardEdges(topo, points2), screen);
+  }
+  return [];
+}
+function nearestFace(faces, p, screen) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const f of faces) {
+    const d = triangleDistance(p, screen(f[0]), screen(f[1]), screen(f[2]));
+    if (d < bestDist) {
+      bestDist = d;
+      best = [f[0], f[1], f[2]];
+    }
+  }
+  return best;
+}
+function triangleDistance(p, a, b, c) {
+  const sign = (u, v, w) => (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
+  const s1 = sign(a, b, p);
+  const s2 = sign(b, c, p);
+  const s3 = sign(c, a, p);
+  if (s1 >= 0 && s2 >= 0 && s3 >= 0 || s1 <= 0 && s2 <= 0 && s3 <= 0) return 0;
+  return Math.min(segmentDistance(p, a, b), segmentDistance(p, b, c), segmentDistance(p, c, a));
+}
+function segmentDistance(p, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / Math.max(dx * dx + dy * dy, 1e-12)));
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+function toCss(ring, scale) {
+  return ring.map(([x, y]) => [x / scale, y / scale]);
+}
+function objectBoxes(keys, depth, width, count2) {
+  const pixels = new Uint32Array(count2 + 1);
+  const boxes = new Int32Array((count2 + 1) * 4);
+  const nearest = new Float64Array(count2 + 1).fill(NEAREST_START);
+  for (let id = 0; id <= count2; id++) boxes.set([OUT_OF_RANGE, OUT_OF_RANGE, -1, -1], 4 * id);
+  for (let p = 0; p < keys.length; p++) {
+    const k = keys[p];
+    if (k === 0) continue;
+    const id = k >> 1;
+    const b = 4 * id;
+    nearest[id] = Math.min(nearest[id], depth[p]);
+    pixels[id]++;
+    const x = p % width;
+    const y = (p - x) / width;
+    if (x < boxes[b]) boxes[b] = x;
+    if (y < boxes[b + 1]) boxes[b + 1] = y;
+    if (x > boxes[b + 2]) boxes[b + 2] = x;
+    if (y > boxes[b + 3]) boxes[b + 3] = y;
+  }
+  return { boxes, nearest, pixels };
+}
+function boxOf(boxes, id) {
+  return { x0: boxes[4 * id], y0: boxes[4 * id + 1], x1: boxes[4 * id + 2], y1: boxes[4 * id + 3] };
+}
+function lineSet(segments) {
+  const positions = new Float32Array(segments.length * 6);
+  const ids = new Float32Array(segments.length * 2);
+  segments.forEach(([a, b, id], k) => {
+    positions.set([a.x, a.y, a.z, b.x, b.y, b.z], 6 * k);
+    ids.set([id, id], 2 * k);
+  });
+  const geometry = new THREE11.BufferGeometry();
+  geometry.setAttribute("position", new THREE11.BufferAttribute(positions, 3));
+  geometry.setAttribute("objectId", new THREE11.BufferAttribute(ids, 1));
+  const set = new THREE11.LineSegments(geometry, new THREE11.LineBasicMaterial());
+  set.userData = { line: true };
+  return set;
+}
+function keyAtCentre(keys, width, p) {
+  const x = Math.floor(p.x);
+  const y = Math.floor(p.y);
+  return keys[y * width + x] >> 1;
+}
+function ringArea(ring, scale) {
+  let twice = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [x0, y0] = ring[i];
+    const [x1, y1] = ring[(i + 1) % ring.length];
+    twice += x0 * y1 - x1 * y0;
+  }
+  return Math.abs(twice) / 2 / (scale * scale);
+}
+function ringPerimeter(ring, scale) {
+  let total = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [x0, y0] = ring[i];
+    const [x1, y1] = ring[(i + 1) % ring.length];
+    total += Math.hypot(x1 - x0, y1 - y0);
+  }
+  return total / scale;
+}
+function sampleEllipse(e) {
+  const steps = 48;
+  return Array.from({ length: steps }, (_, i) => {
+    const t = 2 * Math.PI * i / steps;
+    const x = e.rx * Math.cos(t);
+    const y = e.ry * Math.sin(t);
+    return [e.cx + x * Math.cos(e.phi) - y * Math.sin(e.phi), e.cy + x * Math.sin(e.phi) + y * Math.cos(e.phi)];
+  });
+}
+
+// src/ui/theme.ts
+var THEME_KEY = "gemmy.theme";
+var THEME_CHOICES = ["auto", "light", "dark"];
+var AUTO = "auto";
+var THEME_ATTRIBUTE = "data-theme";
+function isThemeChoice(value) {
+  return THEME_CHOICES.some((choice) => choice === value);
+}
+var listeners = [];
+function onThemeChange(listener) {
+  listeners.push(listener);
+}
+function readStoredChoice() {
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    return isThemeChoice(value) ? value : AUTO;
+  } catch {
+    return AUTO;
+  }
+}
+function storeTheme(choice) {
+  try {
+    localStorage.setItem(THEME_KEY, choice);
+  } catch {
+  }
+}
+function applyToPage(choice) {
+  if (choice === AUTO) document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+  else document.documentElement.setAttribute(THEME_ATTRIBUTE, choice);
+}
+var current2 = readStoredChoice();
+applyToPage(current2);
+function currentTheme() {
+  return current2;
+}
+function setTheme(choice) {
+  current2 = choice;
+  storeTheme(choice);
+  applyToPage(choice);
+  for (const listener of listeners) listener(choice);
+}
+function cycleTheme() {
+  const next = (THEME_CHOICES.indexOf(current2) + 1) % THEME_CHOICES.length;
+  setTheme(THEME_CHOICES[next]);
+}
+
+// src/ui/outline-scale.ts
+var OUTLINE_SCALE_KEY = "gemmy.outline-scale";
+var OUTLINE_SCALE_CHOICES = [0.5, 1, 1.75];
+var DEFAULT_SCALE = 1;
+function isOutlineScale(value) {
+  return OUTLINE_SCALE_CHOICES.some((choice) => choice === value);
+}
+function readStoredScale() {
+  try {
+    const value = Number(localStorage.getItem(OUTLINE_SCALE_KEY));
+    return isOutlineScale(value) ? value : DEFAULT_SCALE;
+  } catch {
+    return DEFAULT_SCALE;
+  }
+}
+function storeScale(scale) {
+  try {
+    localStorage.setItem(OUTLINE_SCALE_KEY, String(scale));
+  } catch {
+  }
+}
+var listeners2 = [];
+function onOutlineScaleChange(listener) {
+  listeners2.push(listener);
+}
+var current3 = readStoredScale();
+setOutlineScale(current3);
+function outlineScale() {
+  return current3;
+}
+function chooseOutlineScale(scale) {
+  current3 = scale;
+  storeScale(scale);
+  setOutlineScale(scale);
+  for (const listener of listeners2) listener(scale);
+}
+
+// src/ui/menus.ts
+var PNG_SCALE = 2;
+var KB = 1024;
+var DOWNLOAD_REVOKE_MS = 1e4;
+var DEFAULT_SCENE_FILE = "scene.json";
+function projectionName() {
+  return isPersp() ? "persp" : "ortho";
+}
+var currentView = () => exportView({
+  quaternion: camera.quaternion.toArray(),
+  zoom: currentZoom(),
+  target: controls.target.toArray(),
+  centre,
+  box: show.box,
+  width: stage.clientWidth,
+  height: stage.clientHeight,
+  projection: projectionName(),
+  lens
+});
+var exportStatus = byId("export-status");
+function say(text, failed = false) {
+  exportStatus.textContent = text;
+  exportStatus.classList.toggle("err", failed);
+}
+function download(name, blob) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), DOWNLOAD_REVOKE_MS);
+}
+function saveFile(name, type, text) {
+  download(name, new Blob([text], { type }));
+  say(`Saved ${name}.`);
+}
+var exportText = byId("export-text");
+function showSelectedText(text, what) {
+  exportText.value = text;
+  exportText.hidden = false;
+  exportText.focus();
+  exportText.select();
+  say(`Could not use the clipboard: ${what} is selected, press Ctrl/Cmd+C.`, true);
+}
+function copyText(text, what) {
+  const fallback = () => showSelectedText(text, what);
+  try {
+    navigator.clipboard.writeText(text).then(() => {
+      exportText.hidden = true;
+      say(`Copied ${what}.`);
+    }, fallback);
+  } catch {
+    fallback();
+  }
+}
+function exportPng(transparent) {
+  const w = stage.clientWidth, h = stage.clientHeight, ratio = renderer.getPixelRatio();
+  renderer.setPixelRatio(PNG_SCALE);
+  renderer.setSize(w, h);
+  renderer.render(scene, camera);
+  const out = document.createElement("canvas");
+  out.width = w * PNG_SCALE;
+  out.height = h * PNG_SCALE;
+  const ctx = out.getContext("2d");
+  if (!transparent) {
+    ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+    ctx.fillRect(0, 0, out.width, out.height);
+  }
+  ctx.drawImage(renderer.domElement, 0, 0);
+  ctx.drawImage(triadAt(PNG_SCALE), 0, 0);
+  renderer.setPixelRatio(ratio);
+  renderer.setSize(w, h);
+  requestRender();
+  out.toBlob((blob) => {
+    if (blob) {
+      download("view.png", blob);
+      say(`Saved view.png (${out.width} \xD7 ${out.height}).`);
+    } else {
+      say("The browser could not make the PNG.", true);
+    }
+  }, "image/png");
+}
+function triadAt(scale) {
+  const canvas = document.createElement("canvas");
+  drawTriad(canvas, canvas.getContext("2d"), scale);
+  return canvas;
+}
+function exportSvg() {
+  const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
+  let result;
+  try {
+    result = buildTracedSvg({
+      data,
+      centre,
+      extent,
+      quaternion: camera.quaternion.toArray(),
+      zoom: currentZoom(),
+      target: controls.target.toArray(),
+      projection: projectionName(),
+      lens,
+      width: stage.clientWidth,
+      height: stage.clientHeight,
+      show,
+      outlines,
+      lattice: lattice.map((v) => v.toArray()),
+      boxColor
+    });
+  } catch (error) {
+    say(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`, true);
+    return;
+  }
+  download("view.svg", new Blob([result.text], { type: "image/svg+xml" }));
+  requestRender();
+  say(`Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`);
+}
+var EXPORTS = {
+  svg: exportSvg,
+  png: () => exportPng(byId("png-transparent").checked),
+  "save-toml": () => saveFile("render-settings.toml", "application/toml", settingsToml(currentView())),
+  "save-json": () => saveFile("render-settings.json", "application/json", settingsJson(currentView())),
+  "copy-toml": () => copyText(settingsToml(currentView()), "the TOML settings"),
+  "copy-json": () => copyText(settingsJson(currentView()), "the JSON settings"),
+  "copy-command": () => copyText(renderCommand(currentView(), sceneFileName()), "the command")
+};
+function sceneFileName() {
+  const meta = document.querySelector('meta[name="gemmy-scene-file"]');
+  return meta?.content || DEFAULT_SCENE_FILE;
+}
+var POPOVER_GAP_PX = 6;
+var POPOVER_MARGIN_PX = 8;
+var POPOVER_CLEARANCE_PX = 14;
+function placePopover(button, panel) {
+  const r = button.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+  const below = r.top + r.height / 2 < H / 2;
+  panel.style.maxHeight = `${(below ? H - r.bottom : r.top) - POPOVER_CLEARANCE_PX}px`;
+  const w = panel.offsetWidth, h = panel.offsetHeight;
+  const left = r.left + r.width / 2 < W / 2 ? r.left : r.right - w;
+  panel.style.left = `${clamp(left, POPOVER_MARGIN_PX, W - w - POPOVER_MARGIN_PX)}px`;
+  panel.style.top = `${below ? r.bottom + POPOVER_GAP_PX : r.top - POPOVER_GAP_PX - h}px`;
+}
+function focusable(panel) {
+  return [...panel.querySelectorAll("button, input")].filter((el2) => !el2.hidden && !el2.closest("[hidden]"));
+}
+function moveFocus(key2, list) {
+  const i = list.indexOf(document.activeElement);
+  if (key2 === "ArrowDown") list[(i + 1) % list.length]?.focus();
+  else if (key2 === "ArrowUp") list[(i + list.length - 1) % list.length]?.focus();
+  else if (key2 === "Home") list[0]?.focus();
+  else if (key2 === "End") list[list.length - 1]?.focus();
+  else return false;
+  return true;
+}
+var popovers = [];
+function popover(button, panel) {
+  const self = {
+    button,
+    panel,
+    place: () => placePopover(button, panel),
+    open() {
+      for (const other of popovers) if (other !== self) other.close();
+      panel.hidden = false;
+      self.place();
+      button.setAttribute("aria-expanded", "true");
+      focusable(panel)[0]?.focus();
+    },
+    close(refocus = false) {
+      if (panel.hidden) return;
+      panel.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      if (refocus) button.focus();
+    },
+    toggle() {
+      if (panel.hidden) self.open();
+      else self.close();
+    }
+  };
+  button.addEventListener("click", self.toggle);
+  panel.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      self.close();
+      return;
+    }
+    if (moveFocus(e.key, focusable(panel))) e.preventDefault();
+  });
+  popovers.push(self);
+  return self;
+}
+var exportMenu = byId("export-menu");
+var exportPopover = popover(byId("export-button"), exportMenu);
+popover(byId("menu-button"), byId("main-menu"));
+var themeSegments = [...document.querySelectorAll("[data-theme-choice]")];
+function showThemeChoice(choice) {
+  for (const segment of themeSegments) segment.setAttribute("aria-pressed", String(segment.dataset.themeChoice === choice));
+}
+function chooseFromSegment(segment) {
+  const choice = segment.dataset.themeChoice;
+  if (isThemeChoice(choice)) setTheme(choice);
+}
+for (const segment of themeSegments) segment.addEventListener("click", () => chooseFromSegment(segment));
+onThemeChange(showThemeChoice);
+showThemeChoice(currentTheme());
+var outlineSegments = [...document.querySelectorAll("[data-outline-scale]")];
+function showOutlineScale(scale) {
+  for (const segment of outlineSegments) segment.setAttribute("aria-pressed", String(Number(segment.dataset.outlineScale) === scale));
+}
+for (const segment of outlineSegments) {
+  segment.addEventListener("click", () => chooseOutlineScale(Number(segment.dataset.outlineScale)));
+}
+onOutlineScaleChange(showOutlineScale);
+showOutlineScale(outlineScale());
+var helpPopover = popover(byId("help-button"), byId("help"));
+exportMenu.addEventListener("click", (e) => {
+  const item = closestOf(e.target, "[data-export]");
+  if (item) EXPORTS[item.dataset.export ?? ""]?.(item);
+});
+window.addEventListener("keydown", (e) => {
+  const open = popovers.find((p) => !p.panel.hidden);
+  if (e.key === "Escape" && open) {
+    open.close(true);
+    e.preventDefault();
+  }
+});
+document.addEventListener("pointerdown", (e) => {
+  for (const p of popovers) {
+    const inside = p.panel.contains(e.target) || p.button.contains(e.target);
+    if (!inside) p.close();
+  }
+});
+window.addEventListener("resize", () => {
+  for (const p of popovers) if (!p.panel.hidden) p.place();
+});
+
+// src/ui/ui.ts
+var DRAG_FEEL = { rotateSpeed: 3, zoomSpeed: 1.2, panSpeed: 0.8, staticMoving: true };
+Object.assign(controls, DRAG_FEEL);
+function viewDirection(azimuthDeg, elevationDeg) {
+  const a = THREE12.MathUtils.degToRad(azimuthDeg), e = THREE12.MathUtils.degToRad(elevationDeg);
+  return new THREE12.Vector3(Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e));
+}
+var VIEWS = {
+  a: () => viewFrom(lattice[0], lattice[2]),
+  b: () => viewFrom(lattice[1], lattice[2]),
+  c: () => viewFrom(lattice[2], lattice[1]),
+  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE12.Vector3(0, 0, 1))
+};
+for (const button of document.querySelectorAll("[data-view]")) {
+  button.addEventListener("click", () => VIEWS[button.dataset.view ?? ""]());
+}
+var ORTHO_LENS = Infinity;
+var ORTHO_TAG = "inf";
+var ORTHO_CAMERA_DISTANCE = 8;
+var FIT_EPSILON = 1e-9;
+var lensGroup = byId("lens-group");
+function isLensOn(button) {
+  const value = button.dataset.lens;
+  return value === ORTHO_TAG ? !isPersp() : isPersp() && Number(value) === lens;
+}
+function syncLensButtons() {
+  for (const button of lensGroup.querySelectorAll("[data-lens]")) {
+    button.setAttribute("aria-pressed", String(isLensOn(button)));
+  }
+}
+function switchProjection(mode, newLens = lens) {
+  if (mode === "persp" === isPersp() && newLens === lens) return;
+  const view = captureView();
+  setLens(newLens);
+  installCamera(mode === "persp" ? perspCamera : orthoCamera, view);
+  syncLensButtons();
+  requestRender();
+}
+function captureView() {
+  const target = controls.target.clone();
+  return {
+    target,
+    direction: camera.position.clone().sub(target).normalize(),
+    orthoZoom: isPersp() ? perspToOrthoZoom(extent, lens, currentZoom()) : camera.zoom,
+    fitted: Math.abs(shownZoom() - fitValue) < FIT_EPSILON
+  };
+}
+function installCamera(next, view) {
+  const persp = next instanceof THREE12.PerspectiveCamera;
+  next.up.copy(camera.up);
+  setCamera(next);
+  camera.add(key, key.target);
+  controls.object = camera;
+  camera.position.copy(view.target).addScaledVector(view.direction, cameraDistance(persp, view.orthoZoom));
+  if (!persp) camera.zoom = view.orthoZoom;
+  camera.lookAt(view.target);
+  resize();
+  if (view.fitted) setZoom(fitFor(stage.clientWidth, stage.clientHeight));
+  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
+}
+function cameraDistance(persp, orthoZoom) {
+  if (persp) return baseDistance(extent) / orthoToPerspZoom(extent, lens, orthoZoom);
+  return extent * ORTHO_CAMERA_DISTANCE;
+}
+function addLensButton(focalLength) {
+  const ortho = focalLength === ORTHO_LENS;
+  const button = document.createElement("button");
+  Object.assign(button, {
+    type: "button",
+    className: "pill lens",
+    textContent: ortho ? "\u221E" : String(focalLength),
+    title: ortho ? "Orthographic (an infinitely long lens): no perspective, as in the 3to2d renders" : `${focalLength} mm lens on a ${GEMMY.sensorWidth} mm sensor`
+  });
+  button.dataset.lens = ortho ? ORTHO_TAG : String(focalLength);
+  button.setAttribute("aria-label", ortho ? "Orthographic" : `${focalLength} mm`);
+  button.addEventListener("click", () => ortho ? switchProjection("ortho") : switchProjection("persp", focalLength));
+  if (ortho) lensGroup.insertAdjacentHTML("beforeend", '<span class="unit">mm</span>');
+  lensGroup.appendChild(button);
+}
+for (const focalLength of [...GEMMY.lenses, ORTHO_LENS]) addLensButton(focalLength);
+syncLensButtons();
+var MS_PER_SECOND2 = 1e3;
+var MAX_FRAME_SECONDS = 0.05;
+var HOLD_DELAY_MS = 300;
+var CLICK = { held: false };
+function act(button, amount) {
+  const kind = button.dataset.act;
+  const sign = Number(button.dataset.sign);
+  if (kind === "rotate") {
+    const turn = amount.held ? RATE.rotate * amount.seconds : STEP.rotate;
+    const axis = button.dataset.axis;
+    if (isScreenAxis(axis)) rotate(axis, sign * turn);
+  } else if (kind === "pan") {
+    const move = amount.held ? RATE.pan * amount.seconds : STEP.pan;
+    pan(Number(button.dataset.dx), Number(button.dataset.dy), move);
+  } else if (kind === "zoom") {
+    const factor = amount.held ? RATE.zoom ** amount.seconds : STEP.zoom;
+    zoom(factor ** sign);
+  } else if (kind === "fit") {
+    fit();
+  }
+}
+var isRotateButton = (button) => button.dataset.act === "rotate";
+function wirePressButton(button) {
+  let press2 = null;
+  const stop = () => {
+    if (!press2) return;
+    cancelAnimationFrame(press2.frame);
+    window.clearTimeout(press2.timer);
+    press2 = null;
+  };
+  const repeatWhileHeld = () => {
+    if (!press2) return;
+    press2.repeating = true;
+    const tick = (t) => {
+      if (!press2) return;
+      if (press2.last) act(button, { held: true, seconds: Math.min((t - press2.last) / MS_PER_SECOND2, MAX_FRAME_SECONDS) });
+      press2.last = t;
+      press2.frame = requestAnimationFrame(tick);
+    };
+    press2.frame = requestAnimationFrame(tick);
+  };
+  button.addEventListener("pointerdown", (e) => {
+    if (isRotateButton(button)) beginRotation();
+    const touch = e.pointerType === "touch";
+    if (!touch) {
+      e.preventDefault();
+      button.setPointerCapture(e.pointerId);
+      act(button, CLICK);
+    }
+    press2 = { touch, last: 0, repeating: false, timer: 0, frame: 0 };
+    if (button.dataset.act === "fit") return;
+    press2.timer = window.setTimeout(repeatWhileHeld, HOLD_DELAY_MS);
+  });
+  button.addEventListener("pointerup", () => {
+    if (press2?.touch && !press2.repeating) act(button, CLICK);
+    stop();
+  });
+  for (const ev of ["pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
+  button.addEventListener("click", (e) => {
+    if (e.detail !== 0) return;
+    if (isRotateButton(button)) beginRotation();
+    act(button, CLICK);
+  });
+}
+for (const button of document.querySelectorAll("[data-act]")) wirePressButton(button);
+var EDGE_SLACK_PX = 2;
+var scrollers = [...document.querySelectorAll(".island, .tabs")];
+function markOverflow(el2) {
+  const { scrollLeft, scrollWidth, clientWidth } = el2;
+  el2.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
+  el2.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
+}
+for (const el2 of scrollers) el2.addEventListener("scroll", () => markOverflow(el2), { passive: true });
+window.addEventListener("resize", () => scrollers.forEach(markOverflow));
+scrollers.forEach(markOverflow);
+document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+var TIP_DELAY_MS = 300;
+var TIP_GAP_PX = 8;
+var tip = Object.assign(document.createElement("div"), { id: "tip", role: "tooltip" });
+document.body.appendChild(tip);
+var tipTimer = 0;
+function hideTip() {
+  window.clearTimeout(tipTimer);
+  tip.classList.remove("on");
+}
+function showTip(el2) {
+  tip.textContent = el2.dataset.tip ?? "";
+  placeTip(el2);
+  tip.classList.add("on");
+}
+function placeTip(el2) {
+  const r = el2.getBoundingClientRect(), t = tip.getBoundingClientRect();
+  const [x, y] = el2.closest("#bottom") ? tipBesideLeftColumn(r, t) : tipCentredVertically(r, t);
+  tip.style.left = `${clamp(x, TIP_GAP_PX, innerWidth - t.width - TIP_GAP_PX)}px`;
+  tip.style.top = `${clamp(y, TIP_GAP_PX, innerHeight - t.height - TIP_GAP_PX)}px`;
+}
+function tipBesideLeftColumn(r, t) {
+  return [r.right + TIP_GAP_PX, r.top + r.height / 2 - t.height / 2];
+}
+function tipCentredVertically(r, t) {
+  const x = r.left + r.width / 2 - t.width / 2;
+  const y = r.top < innerHeight / 2 ? r.bottom + TIP_GAP_PX : r.top - TIP_GAP_PX - t.height;
+  return [x, y];
+}
+document.addEventListener("pointerover", (e) => {
+  const el2 = closestOf(e.target, "[title], [data-tip]");
+  if (!el2 || e.pointerType === "touch") return;
+  if (el2.hasAttribute("title")) {
+    el2.dataset.tip = el2.title;
+    el2.removeAttribute("title");
+  }
+  window.clearTimeout(tipTimer);
+  tipTimer = window.setTimeout(() => showTip(el2), TIP_DELAY_MS);
+});
+document.addEventListener("pointerout", (e) => {
+  if (closestOf(e.target, "[data-tip]")) hideTip();
+});
+for (const ev of ["pointerdown", "keydown", "wheel"]) document.addEventListener(ev, hideTip, { passive: true });
+function arrow(dx, dy, shift) {
+  if (shift) pan(dx, dy, STEP.pan);
+  else if (dy) rotate("x", dy * STEP.rotate);
+  else rotate("y", -dx * STEP.rotate);
+}
+var KEY_ACTIONS = {
+  ArrowUp: (shift) => arrow(0, 1, shift),
+  ArrowDown: (shift) => arrow(0, -1, shift),
+  ArrowLeft: (shift) => arrow(-1, 0, shift),
+  ArrowRight: (shift) => arrow(1, 0, shift),
+  "+": () => zoom(STEP.zoom),
+  "=": () => zoom(STEP.zoom),
+  "-": () => zoom(1 / STEP.zoom),
+  "_": () => zoom(1 / STEP.zoom),
+  "0": () => fit(),
+  "[": () => rotate("z", -STEP.rotate),
+  "]": () => rotate("z", STEP.rotate),
+  t: cycleTheme
+  // Auto → Light → Dark
+};
+function isTurnKey(e) {
+  return e.key.startsWith("Arrow") && !e.shiftKey || e.key === "[" || e.key === "]";
+}
+function isTyping(e) {
+  return closestOf(e.target, "input, textarea, .popover") !== null || e.metaKey || e.ctrlKey || e.altKey;
+}
+function runShortcut(e) {
+  if (e.key === "?") {
+    helpPopover.toggle();
+    return true;
+  }
+  if (e.key === "i" && !e.shiftKey) {
+    toggleInfo();
+    return true;
+  }
+  if (FLY[e.code]) {
+    flying.add(e.code);
+    return true;
+  }
+  if (!Object.hasOwn(KEY_ACTIONS, e.key)) return false;
+  KEY_ACTIONS[e.key](e.shiftKey);
+  return true;
+}
+var escapeClosesMenu = false;
+window.addEventListener("keydown", (e) => {
+  escapeClosesMenu = e.key === "Escape" && document.querySelector(".popover:not([hidden])") !== null;
+}, { capture: true });
+window.addEventListener("keydown", (e) => {
+  setShiftHeld(e.shiftKey);
+  if (isTyping(e)) return;
+  if (e.key === "Escape") {
+    if (!escapeClosesMenu) {
+      select(null);
+      releasePivot();
+    }
+    return;
+  }
+  if (isTurnKey(e) && !e.repeat) beginRotation();
+  if (runShortcut(e)) e.preventDefault();
+});
+function wireShowToggle(id, apply) {
+  const button = byId(id);
+  button.addEventListener("click", () => {
+    const on = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(on));
+    apply(on);
+    requestRender();
+  });
+}
+wireShowToggle("toggle-atoms", (on) => {
+  show.atoms = on;
+  atomGroup.visible = on;
+});
+wireShowToggle("toggle-outline", (on) => {
+  setOutlines(on);
+  outlineGroup.visible = on;
+});
+wireShowToggle("toggle-box", (on) => {
+  show.box = on;
+  if (box) box.visible = on;
+});
+
 // src/scene/load.ts
+import * as THREE13 from "three";
 function load(doc, bounds) {
   disposeScene();
   select(null);
@@ -2477,16 +4158,16 @@ function load(doc, bounds) {
 function frame2(bounds, cell) {
   setCentre(bounds.centre);
   setExtent(bounds.extent);
-  if (cell) setLattice(cell.vectors.map((vec) => new THREE8.Vector3(...vec).normalize()));
+  if (cell) setLattice(cell.vectors.map((vec) => new THREE13.Vector3(...vec).normalize()));
   root.position.set(-centre[0], -centre[1], -centre[2]);
   orthoCamera.far = extent * ORTHO_FAR_EXTENTS;
   controls.minDistance = baseDistance(extent) / ZOOM_MAX;
   controls.maxDistance = baseDistance(extent) / ZOOM_MIN;
 }
 function addAtomsBondsAndArrows() {
-  setAtomGroup(new THREE8.Group());
-  const bondGroup = new THREE8.Group();
-  setOutlineGroup(new THREE8.Group());
+  setAtomGroup(new THREE13.Group());
+  const bondGroup = new THREE13.Group();
+  setOutlineGroup(new THREE13.Group());
   outlineGroup.visible = outlines;
   const shapes = /* @__PURE__ */ new Map();
   for (const g of instanceGroups(data)) {
@@ -2506,22 +4187,22 @@ function addAtomsBondsAndArrows() {
   root.add(atomGroup, bondGroup, outlineGroup);
 }
 function addPolyhedra() {
-  setPolyGroup(new THREE8.Group());
+  setPolyGroup(new THREE13.Group());
   setPolyTargets(new Array(polyhedra.length));
   for (const g of polyhedronGroups(data)) {
     const ghost = (data.materials[g.material].alpha ?? 1) < 1;
-    const geometry = new THREE8.BufferGeometry();
-    geometry.setAttribute("position", new THREE8.Float32BufferAttribute(g.positions, 3));
+    const geometry = new THREE13.BufferGeometry();
+    geometry.setAttribute("position", new THREE13.Float32BufferAttribute(g.positions, 3));
     geometry.computeVertexNormals();
-    const mesh = new THREE8.Mesh(geometry, toon(g.material, { faces: true, ghost }));
+    const mesh = new THREE13.Mesh(geometry, toon(g.material, { faces: true, ghost }));
     mesh.userData = { owner: g.owner };
     if (ghost) mesh.renderOrder = 1;
-    for (const [index, first, count] of g.ranges) {
-      polyTargets[index] = { kind: "polyhedron", poly: polyhedra[index], ghost, mesh, first, count };
+    for (const [index, first, count2] of g.ranges) {
+      polyTargets[index] = { kind: "polyhedron", poly: polyhedra[index], ghost, mesh, first, count: count2 };
     }
-    const edgeGeometry = new THREE8.BufferGeometry();
-    edgeGeometry.setAttribute("position", new THREE8.Float32BufferAttribute(g.edges, 3));
-    polyGroup.add(mesh, new THREE8.LineSegments(edgeGeometry, edgeMaterial));
+    const edgeGeometry = new THREE13.BufferGeometry();
+    edgeGeometry.setAttribute("position", new THREE13.Float32BufferAttribute(g.edges, 3));
+    polyGroup.add(mesh, new THREE13.LineSegments(edgeGeometry, edgeMaterial));
     if (!ghost) outlineGroup.add(outlineOf(mesh));
   }
   root.add(polyGroup);
@@ -2538,9 +4219,9 @@ function addCellBox(cell) {
       positions.push(...corners[n], ...corners[n | bit]);
     }
   }
-  const boxGeometry = new THREE8.BufferGeometry();
-  boxGeometry.setAttribute("position", new THREE8.Float32BufferAttribute(positions, 3));
-  const cellBox = new THREE8.LineSegments(boxGeometry, boxMaterial);
+  const boxGeometry = new THREE13.BufferGeometry();
+  boxGeometry.setAttribute("position", new THREE13.Float32BufferAttribute(positions, 3));
+  const cellBox = new THREE13.LineSegments(boxGeometry, boxMaterial);
   setBox(cellBox);
   cellBox.visible = show.box;
   root.add(cellBox);

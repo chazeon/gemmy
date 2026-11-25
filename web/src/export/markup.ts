@@ -8,7 +8,7 @@ const SVG_PRECISION = 100;
 export type Attrs = Record<string, string | number | false | undefined>;
 
 // Text content: & < > escaped. Quotes stay as they are, they are only special inside an attribute.
-export const escapeText = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const escapeText = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // An attribute value in double quotes: text escaping plus the double quote.
 const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, "&quot;");
@@ -17,10 +17,8 @@ const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, "&quot;");
 // written as 0 rather than as text that is not a number.
 export const fmt = (x: number): string => (Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0");
 
-// Path data and point lists: "x y" pairs for paths, "x,y" pairs for polygons.
-export const xy = (p: Vector2): string => `${fmt(p.x)} ${fmt(p.y)}`;
+// Point lists: "x,y" pairs for polygons.
 export const pointList = (list: Vector2[]): string => list.map((p) => `${fmt(p.x)},${fmt(p.y)}`).join(" ");
-export const segment = (a: Vector2, b: Vector2): string => `M${xy(a)}L${xy(b)}`;
 
 function attrText(attrs: Attrs): string {
   return Object.entries(attrs)

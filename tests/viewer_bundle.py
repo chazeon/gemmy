@@ -1,6 +1,6 @@
 """The viewer's pure TypeScript modules, bundled once per test session so node can run them.
 
-`web/test/entry.ts` re-exports the modules with no DOM (camera math, scene bounds, the SVG export, instancing); they
+`web/test/entry.ts` re-exports the modules with no DOM (camera math, scene bounds, the view math, instancing); they
 may use three.js math, which is a dev dependency in web/ and bundles for node. esbuild from `web/node_modules` bundles
 them into one ES module; the two placeholders the page fills in get the values `gemmy.view` writes. Callers skip when
 `available()` is false (node or web/node_modules missing).

@@ -1,4 +1,4 @@
-// Vector helpers on plain number arrays, for the SVG export and the instancing, which work on the scene's own arrays.
+// Vector helpers on plain number arrays, for the instancing and the camera framing, which work on the scene's own arrays.
 // No THREE and no DOM, so the node tests can run them. The camera uses THREE.Vector3 where it can.
 export type Vec = readonly number[];
 

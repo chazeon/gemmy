@@ -15,7 +15,7 @@ const PLACEHOLDER_FOV_DEG = 30; // the perspective field of view until resize() 
 const TOON_STEPS = 16; // texels in the one-row toon gradient; NearestFilter makes each one a flat band
 const NUMBERS_PER_MATRIX = 16; // a column-major 4x4 matrix, as instancing.ts writes it
 // The outline shell's offset in clip space per unit of w. The full image height is 2 clip units, so this is about
-// 0.0018 of the height on each side; export.ts uses the same number. Blender's counterpart is look.outline_width
+// 0.0018 of the height on each side; trace/passes.ts uses the same number. Blender's counterpart is look.outline_width
 // (looks.py:38, 0.0022 of the height, as a line width).
 const OUTLINE_THICKNESS = 0.0035;
 // The outline is at most this share of the shape's on-screen radius (outlineWidth in OUTLINE_VERTEX_SHADER). Where

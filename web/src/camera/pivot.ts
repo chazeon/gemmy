@@ -7,7 +7,7 @@
 import { controls, renderer } from "../render/draw";
 import { camera, extent, requestRender } from "../state";
 import { pickPointAt } from "../ui/picking";
-import { pivotTarget } from "./framing";
+import { depthOfCentre, pivotTarget, pointAlong, viewForward } from "./framing";
 import { POINTER_SLOP_PX } from "../config";
 
 // Pivots the target onto the view ray through the screen centre, if the object there is nearer than the target.
@@ -22,6 +22,20 @@ export function beginRotation(): void {
   );
   if (!pivot) return;
   controls.target.fromArray(pivot);
+  requestRender();
+}
+
+// Lets go of the pivot, once nothing is selected (a click on empty space, or Esc). The target moves along the CURRENT
+// view ray to the depth of the structure's centre, so nothing moves on screen and tilts orbit the structure's middle
+// again. The camera keeps its place: only the target slides along the line it already looks down. When the camera is at
+// or past the centre, the depth is kept within the trackball's distance limits (TrackballControls would otherwise move
+// the camera), so the target sits a minimum distance ahead.
+export function releasePivot(): void {
+  const position = camera.position.toArray();
+  const forward = viewForward(camera.quaternion.toArray());
+  const depth = depthOfCentre(position, camera.quaternion.toArray());
+  const along = Math.min(Math.max(depth, controls.minDistance), controls.maxDistance);
+  controls.target.fromArray(pointAlong(position, forward, along));
   requestRender();
 }
 

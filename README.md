@@ -90,10 +90,12 @@ Every control has a tooltip. Click an atom for its fractional and Cartesian posi
 | ← → ↑ ↓ | turn and tilt (hold to keep turning) |
 | `[` `]` | spin |
 | Shift + arrows | move the structure |
-| W S · A D · Q E | fly in/out · left/right · down/up, as in Blender's fly mode (hold; keys combine) |
+| W S · A D · Q E | fly in/out (in perspective, through the structure) · left/right · down/up, as in Blender's fly mode (hold; keys combine) |
 | Shift + W S | fly up, down |
 | `+` `−` · `0` | zoom · fit to window |
-| `i` · `?` · Esc | details · shortcuts · close a menu |
+| double-click | rotate around this atom or polyhedron, while it stays selected |
+| `i` · `?` · `t` | details · shortcuts · theme (auto, light, dark) |
+| Esc | close a menu; otherwise clear the selection and let go of its pivot |
 
 The lens is a real lens on Blender's 36 mm sensor, and zoom moves the camera, so a perspective view renders as seen. ∞
 (the default) is orthographic, the limit of an infinitely long lens. Switching lenses keeps the view direction, target

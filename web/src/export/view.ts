@@ -22,7 +22,7 @@ export interface ViewOptions {
   lens?: number; // mm, perspective only
 }
 
-export interface SphereImage {
+interface SphereImage {
   cx: number;
   cy: number;
   rx: number;
@@ -38,7 +38,6 @@ export interface View {
   toScreen(c: Vector3): Vector2; // camera space -> screen pixels (y down)
   depth(c: Vector3): number; // sort key: the distance to the eye, negated, so larger is nearer
   pxPerUnit(c: Vector3): number; // pixels per angstrom at that point, for radii
-  facing(normal: Vector3, point: Vector3): boolean; // does a face with this normal look at the viewer
   sphereImage(c: Vector3, r: number): SphereImage | null;
 }
 
@@ -64,7 +63,6 @@ export function makeView(o: ViewOptions): View {
   const persp = o.projection === "persp";
   const lens = o.lens ?? GEMMY.defaultLens;
   const eyeZ = baseDistance(o.extent) / zoom;
-  const eye = new Vector3(0, 0, eyeZ);
   // Perspective: the lens in pixels (focal, the sensor spanning the larger side) over the depth, the eye being eyeZ
   // from the target. The page's framing gives the same field of view (perspFov), so the two agree.
   const focal = lens * (Math.max(W, H) / GEMMY.sensorWidth);
@@ -82,7 +80,6 @@ export function makeView(o: ViewOptions): View {
     return new Vector2(W / 2 + c.x * k, H / 2 - c.y * k);
   };
   const depth = (c: Vector3) => (persp ? -Math.hypot(c.x, c.y, eyeZ - c.z) : c.z);
-  const facing = (normal: Vector3, point: Vector3) => (persp ? normal.dot(eye.clone().sub(point)) > 0 : normal.z > 0);
   const sphereImage = (c: Vector3, r: number): SphereImage | null => {
     if (!persp) {
       const s = toScreen(c);
@@ -90,7 +87,7 @@ export function makeView(o: ViewOptions): View {
     }
     return perspectiveSphereImage(c, r, pinhole);
   };
-  return { right, up, back, toCam, toScreen, depth, pxPerUnit, facing, sphereImage };
+  return { right, up, back, toCam, toScreen, depth, pxPerUnit, sphereImage };
 }
 
 // The image of a sphere (camera-space centre c, radius r) under the pinhole as an ellipse. Exact: the silhouette cone

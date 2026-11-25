@@ -1,7 +1,9 @@
 // The geometry readout: the details panel's text for the selected atom or polyhedron (distances, the distortion, the
-// fractional and Cartesian positions), and the Copy button that takes an atom's reference.
+// fractional and Cartesian positions), the Copy button that takes an atom's reference, and the Center button that frames
+// the shown object as Fit frames the structure.
 import * as THREE from "three";
-import { points, polyhedra, type Target } from "../state";
+import { centre as structureCentre, points, polyhedra, type Target } from "../state";
+import { centreOn } from "../camera/view";
 import type { AtomPrimitive, Point, PolyhedronPrimitive, Vec3 } from "../types";
 import { byId, closestOf } from "./dom";
 
@@ -61,9 +63,26 @@ function polyhedronHtml(p: PolyhedronPrimitive): string {
       <dt>Centre</dt><dd>${escapeHtml(centreText)}</dd>
       <dt>Bonds</dt><dd>${grouped(bonds)} Å</dd>
       <dt>Mean</dt><dd>${fmt(mean)} Å</dd>
-      <dt>Δ</dt><dd>${(distortion * DELTA_SCALE).toFixed(2)} × 10⁻⁴</dd></dl>
+      <dt>Δ</dt><dd>${(distortion * DELTA_SCALE).toFixed(2)} × 10⁻⁴</dd>
+      <dt>View</dt><dd>${CENTER_BUTTON}</dd></dl>
       <p class="hint">Δ is the bond-length distortion, the mean of ((d − d̄)/d̄)². Fractional coordinates are in the supercell.</p>`;
 }
+// The Center button's framing: the object's centre and size in scene units (the origin is the structure's middle). An
+// atom's size is its diameter; a polyhedron's is the diagonal of the box round its corners, and its centre the box's.
+function objectBounds(target: Target): { centre: THREE.Vector3; size: number } {
+  const offset = new THREE.Vector3(...structureCentre);
+  if (target.kind === "atom") {
+    const position = new THREE.Vector3(...pointOf(target.atom.point_id).position).sub(offset);
+    return { centre: position, size: 2 * target.atom.radius };
+  }
+  const corners = target.poly.ligand_point_ids.map((id) => new THREE.Vector3(...pointOf(id).position));
+  const low = new THREE.Vector3(Infinity, Infinity, Infinity), high = low.clone().multiplyScalar(-1);
+  for (const c of corners) { low.min(c); high.max(c); }
+  return { centre: low.clone().add(high).multiplyScalar(0.5).sub(offset), size: low.distanceTo(high) };
+}
+// The button in the readout that centres the view on the shown object (the same framing as Fit, glided to).
+const CENTER_BUTTON = `<button type="button" class="copy" data-center title="Center and fit this object" aria-label="Center and fit this object"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg> Center</button>`;
+
 function atomHtml(a: AtomPrimitive): string {
   const point = pointOf(a.point_id);
   const hosts = polyhedra.filter((p) => p.ligand_point_ids.includes(a.point_id));
@@ -80,12 +99,17 @@ function atomHtml(a: AtomPrimitive): string {
       ${ref}
       ${fractional}
       <dt>Cartesian</dt><dd>${point.position.map((x) => fmt(x)).join(", ")} Å</dd>
-      ${nbrs}</dl>
+      ${nbrs}
+      <dt>View</dt><dd>${CENTER_BUTTON}</dd></dl>
       <p class="hint">Fractional coordinates are in the supercell.</p>`;
 }
 
+// The object the readout shows, for its Center button.
+let shown: Target | null = null;
+
 // Fills the readout for a pick (or shows the empty state for none).
 export function describe(target: Target | null) {
+  shown = target;
   if (!target) info.innerHTML = nothingSelectedHtml();
   else if (target.kind === "polyhedron") info.innerHTML = polyhedronHtml(target.poly);
   else info.innerHTML = atomHtml(target.atom);
@@ -108,4 +132,8 @@ function copyRef(button: HTMLElement) {
 info.addEventListener("click", (e) => {
   const button = closestOf(e.target, "button[data-copy]");
   if (button) copyRef(button);
+  else if (closestOf(e.target, "button[data-center]") && shown) {
+    const { centre, size } = objectBounds(shown);
+    centreOn(centre, size);
+  }
 });
