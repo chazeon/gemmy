@@ -2,7 +2,7 @@
 // (the built site's example pages), from a URL typed into the empty state, or from a file (dropped on the page, or the ☰
 // menu's Open scene…). A file is read here and never uploaded. Whatever a load reports is shown as plain text.
 import { fetchGist, fetchScene } from "../scene/fetch";
-import { type Opening, type SceneSource, linkFor, resolveWebUrl, sourceName, sourcesToOpen, tabLabel } from "../scene/source";
+import { type Opening, type SceneSource, linkFor, resolveWebUrl, sceneName, sourcesToOpen } from "../scene/source";
 import { sceneFromFile } from "../scene/read";
 import type { Scene } from "../types";
 import { byId } from "./dom";
@@ -61,7 +61,7 @@ async function loadSource(source: SceneSource, byDefault: boolean): Promise<Show
     const { name, doc } = await fetchGist(source.id, source.file);
     return { doc, name, from: labelOf(source), link };
   }
-  return { doc: await fetchScene(source.url), name: sourceName(source.url), from: source.url, link };
+  return { doc: await fetchScene(source.url), name: sceneName(source), from: source.url, link };
 }
 
 // Shows a loaded scene, or says what failed (the load or the drawing) under the card, naming what was asked for.
@@ -115,7 +115,7 @@ function openTabs(openings: Opening[], show: Show): void {
   const buttons = openings.map(({ source }, k) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = tabLabel(source);
+    button.textContent = sceneName(source);
     button.addEventListener("click", () => choose(k));
     bar.appendChild(button);
     return button;

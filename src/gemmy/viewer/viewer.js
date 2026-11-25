@@ -3891,9 +3891,6 @@ function pathSegments(url) {
     }
   });
 }
-function sourceName(url) {
-  return pathSegments(url).at(-1) ?? url;
-}
 function sourcesToOpen(search, base, defaults) {
   const sources = parseSources(search, base);
   if (sources.length > 0) return sources.map((source) => ({ source, byDefault: false }));
@@ -3906,7 +3903,7 @@ function linkFor(source, byDefault, pageHref) {
   link.search = new URLSearchParams(query).toString();
   return link.href;
 }
-function tabLabel(source) {
+function sceneName(source) {
   if (source.kind === "gist") return source.file ?? `gist ${source.id}`;
   const segments = pathSegments(source.url);
   const stem = (segments.at(-1) ?? source.url).replace(SCENE_FILE, "");
@@ -3988,7 +3985,7 @@ async function loadSource(source, byDefault) {
     const { name, doc } = await fetchGist(source.id, source.file);
     return { doc, name, from: labelOf(source), link };
   }
-  return { doc: await fetchScene(source.url), name: sourceName(source.url), from: source.url, link };
+  return { doc: await fetchScene(source.url), name: sceneName(source), from: source.url, link };
 }
 async function present(label, loading, show2) {
   busy(`Loading ${label}\u2026`);
@@ -4031,7 +4028,7 @@ function openTabs(openings, show2) {
   const buttons = openings.map(({ source }, k) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = tabLabel(source);
+    button.textContent = sceneName(source);
     button.addEventListener("click", () => choose(k));
     bar.appendChild(button);
     return button;

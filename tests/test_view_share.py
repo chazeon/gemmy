@@ -251,13 +251,13 @@ def test_a_pose_without_a_direction_places_nothing(pose: dict, tmp_path: Path) -
     assert _placed(pose, 20.0, {"minDistance": 2, "maxDistance": 400}, tmp_path) is None
 
 
-def test_a_tab_is_named_after_its_folder_or_its_file(tmp_path: Path) -> None:
+def test_a_scene_is_named_after_its_folder_or_its_file(tmp_path: Path) -> None:
     body = """
 console.log(JSON.stringify([
-  tabLabel({ kind: "url", url: "https://x.example/nacl/scene.json.gz" }),
-  tabLabel({ kind: "url", url: "https://x.example/runs/ice-ih.json" }),
-  tabLabel({ kind: "url", url: "https://x.example/a%20b/scene.json" }),
-  tabLabel({ kind: "gist", id: "0123", file: "ice.json.gz" }),
+  sceneName({ kind: "url", url: "https://x.example/nacl/scene.json.gz" }),
+  sceneName({ kind: "url", url: "https://x.example/runs/ice-ih.json" }),
+  sceneName({ kind: "url", url: "https://x.example/a%20b/scene.json" }),
+  sceneName({ kind: "gist", id: "0123", file: "ice.json.gz" }),
 ]));
 """
     assert _run(body, {}, tmp_path) == ["nacl", "ice-ih", "a b", "ice.json.gz"]
@@ -275,7 +275,8 @@ console.log(JSON.stringify({
   sceneOverrides: shown(sourcesToOpen("?scene=https://example.org/a.json", base, defaults)),
   gistOverrides: shown(sourcesToOpen("?gist=0123", base, defaults)),
   nothing: sourcesToOpen("", base, []),
-  secondTab: tabLabel(sourcesToOpen("", base, defaults)[1].source),
+  secondTab: sceneName(sourcesToOpen("", base, defaults)[1].source),
+  frontName: sourcesToOpen("", base, defaults).map((o) => sceneName(o.source)),
 }));
 """
     found = _run(body, {}, tmp_path)
@@ -288,6 +289,7 @@ console.log(JSON.stringify({
     assert found["gistOverrides"] == [{"what": "gist 0123", "byDefault": False}]
     assert found["nothing"] == []
     assert found["secondTab"] == "ice-ih"
+    assert found["frontName"] == ["nacl", "ice-ih", "stishovite"]
 
 
 def test_a_default_tab_links_to_the_page_and_a_scene_tab_to_its_scene(tmp_path: Path) -> None:

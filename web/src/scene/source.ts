@@ -51,11 +51,6 @@ function pathSegments(url: string): string[] {
   });
 }
 
-// The name a loaded scene is shown with: the last path segment.
-export function sourceName(url: string): string {
-  return pathSegments(url).at(-1) ?? url;
-}
-
 // A scene to open, and whether it is a default of the page (its link is then the page's own address, with no scene in it).
 export interface Opening {
   source: SceneSource;
@@ -82,9 +77,9 @@ export function linkFor(source: SceneSource, byDefault: boolean, pageHref: strin
   return link.href;
 }
 
-// The label of a scene's tab: the folder of a scene file that is named scene.json(.gz) (nacl/scene.json.gz is "nacl"),
-// else the file name without its extension; a gist's tab is its file.
-export function tabLabel(source: SceneSource): string {
+// The display name of a scene source: its tab's label and the page's title. The folder of a scene file that is named
+// scene.json(.gz) (nacl/scene.json.gz is "nacl"), else the file name without its extension; a gist is its file.
+export function sceneName(source: SceneSource): string {
   if (source.kind === "gist") return source.file ?? `gist ${source.id}`;
   const segments = pathSegments(source.url);
   const stem = (segments.at(-1) ?? source.url).replace(SCENE_FILE, "");
