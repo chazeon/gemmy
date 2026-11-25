@@ -31,7 +31,7 @@ export function TabStrip({ bar }: { bar: TabBarView }) {
 
   const { handlers } = bar;
   // The tabs scroll in their own row; the "+" is after that row, so it stays in view at the strip's end (and is not
-  // under the row's faded edge).
+  // under the row's faded edge). It opens the start screen's tab, so it is hidden while that tab is the one shown.
   return (
     <div data-testid="tab-strip" className="flex min-w-0 flex-[0_1_auto] items-center gap-1">
       <div
@@ -68,17 +68,19 @@ export function TabStrip({ bar }: { bar: TabBarView }) {
           ),
         )}
       </div>
-      <TipButton
-        variant="ghost"
-        size="icon"
-        aria-label="New tab"
-        tip="Start screen: open a scene in a new tab"
-        className={CONTROL}
-        style={QUARTER_TURN}
-        onClick={handlers.add}
-      >
-        <Plus size={18} strokeWidth={2} />
-      </TipButton>
+      {!bar.tabs[bar.current]?.home && (
+        <TipButton
+          variant="ghost"
+          size="icon"
+          aria-label="New tab"
+          tip="Start screen: open a scene in a new tab"
+          className={CONTROL}
+          style={QUARTER_TURN}
+          onClick={handlers.add}
+        >
+          <Plus size={18} strokeWidth={2} />
+        </TipButton>
+      )}
     </div>
   );
 }

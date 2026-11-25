@@ -1,7 +1,9 @@
 // Captures the gallery thumbnails: each example's page, opened in headless Chrome at 480 x 320 (captured at 2x),
 // light theme, the stage alone at the default view, with the cell box hidden (its item in the ☰ menu, as a reader would turn it
-// off) and the axis triad hidden (a style for this capture only). Writes <out>/<name>.png at 2x; scripts/render_thumbnails.sh
-// trims the picture to the structure and fits it to the frame. Uses tests/browser/cdp.mjs and Node 22 or later.
+// off) and the axis triad hidden (a style for this capture only). The picture is transparent: Chrome's default background
+// is alpha 0 for the capture, and the page's backgrounds (body, main, stage) are transparent in the capture's style, so the
+// WebGL canvas (cleared to alpha 0) shows nothing behind the structure. Writes <out>/<name>.png at 2x;
+// scripts/render_thumbnails.sh trims the picture to the structure (on alpha) and fits it to the frame. Uses tests/browser/cdp.mjs and Node 22 or later.
 //
 // Usage: node render_thumbnails.mjs <base-url> <out-dir> <example-name>...
 import { spawn } from "node:child_process";
@@ -76,6 +78,8 @@ async function capture(browser, url) {
       mobile: false,
     });
     await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+    // The picture's background is transparent (alpha 0), not the page's own colour.
+    await send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
     // The capture's flags, before the page's own scripts run: no triad in the picture (web/src/render/triad3d.ts).
     await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.__gemmyNoTriad = true;" });
     await send("Page.navigate", { url });
@@ -91,7 +95,8 @@ async function capture(browser, url) {
     await hideCellBox(send, evaluate);
     // Only the stage: the viewer's controls, panels and popovers are hidden for the picture, and so are the triad.
     await evaluate(`(() => { const style = document.createElement("style");
-      style.textContent = "body > :not(main) { display: none !important; } #triad { display: none !important; }";
+      style.textContent = "body > :not(main) { display: none !important; } #triad { display: none !important; }" +
+        " body, main, #stage { background: transparent !important; }";
       document.head.append(style); return true; })()`);
     await sleep(200);
     const shot = await send("Page.captureScreenshot", {

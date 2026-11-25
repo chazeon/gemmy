@@ -5,7 +5,7 @@
 import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { FileUp, Link } from "lucide-react";
+import { FileUp, Link, SquareArrowUpRightExit } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Example, type Gallery, thumbnailAddressOf } from "../scene/examples";
 import {
@@ -164,9 +164,13 @@ function ExampleCard({ found, example }: { found: Gallery; example: Example }) {
         <span className="thumb">
           <img src={thumbnailAddressOf(found, example)} alt="" loading="lazy" />
         </span>
+        <span className="cover" aria-hidden="true" />
         <span className="caption">
-          <strong className="label">{example.title}</strong>
-          <span className="label description">{example.description}</span>
+          <span className="description">{example.description}</span>
+          <span className="title-row">
+            <strong className="title">{example.title}</strong>
+            <SquareArrowUpRightExit className="go" size={20} strokeWidth={1.75} aria-hidden="true" />
+          </span>
         </span>
       </button>
     </li>

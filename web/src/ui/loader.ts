@@ -201,7 +201,11 @@ function renderBar(): void {
     },
   };
   showTabs(
-    state.tabs.tabs.map((tab) => ({ label: tab.label, closable: isClosable(tab.source, many) })),
+    state.tabs.tabs.map((tab) => ({
+      label: tab.label,
+      closable: isClosable(tab.source, many),
+      home: tab.source.kind === "home",
+    })),
     state.tabs.current,
     needsBar(),
     handlers,

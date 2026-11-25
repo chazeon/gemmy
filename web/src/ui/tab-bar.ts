@@ -8,6 +8,7 @@ import { type StripLink, linksShown } from "./tab-model";
 export interface StripTab {
   label: string;
   closable: boolean;
+  home: boolean; // the start screen's tab: while it is the one shown, the strip's "+" (which opens it) is hidden
 }
 export interface TabHandlers {
   choose(k: number): void;
