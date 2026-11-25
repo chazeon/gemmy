@@ -339,3 +339,105 @@ def _scene_for_page() -> dict:
         "primitives": {"atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O"}]},
         "cell": {"origin": [0, 0, 0], "vectors": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]},
     }
+
+
+# ---- the viewer's tab list (web/src/ui/tab-model.ts): plain data, so the tab bar only renders what it says ----
+
+
+def _tab_list(body: str, tmp_path: Path) -> Any:
+    tabs = 'const own = { label: "nacl" }, ice = { label: "ice-ih" }, drop = { label: "mine.json" };\n'
+    return _run(tabs + body, {}, tmp_path)
+
+
+def test_a_tab_added_is_the_last_and_the_current_one(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+const first = tabsOf([own]);
+const added = addTab(first, drop);
+console.log(JSON.stringify({ labels: added.tabs.map((t) => t.label), current: added.current, before: first.current }));
+""",
+        tmp_path,
+    )
+    assert found == {"labels": ["nacl", "mine.json"], "current": 1, "before": 0}
+
+
+def test_choosing_a_tab_makes_it_current_and_an_index_out_of_range_changes_nothing(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+const list = tabsOf([own, ice, drop], 2);
+console.log(JSON.stringify({
+  chosen: chooseTab(list, 0).current,
+  kept: chooseTab(list, 3) === list,
+  negative: chooseTab(list, -1) === list,
+}));
+""",
+        tmp_path,
+    )
+    assert found == {"chosen": 0, "kept": True, "negative": True}
+
+
+def test_closing_the_current_tab_makes_the_previous_one_current(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+const list = tabsOf([own, ice, drop], 2);
+const closed = closeTab(list, 2);
+console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
+""",
+        tmp_path,
+    )
+    assert found == {"labels": ["nacl", "ice-ih"], "current": 1}
+
+
+def test_closing_the_first_tab_while_it_is_current_leaves_the_next_one_first(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+const closed = closeTab(tabsOf([ice, drop], 0), 0);
+console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
+""",
+        tmp_path,
+    )
+    assert found == {"labels": ["mine.json"], "current": 0}
+
+
+def test_closing_a_tab_before_the_current_one_keeps_the_same_tab_current(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+const list = tabsOf([own, ice, drop], 2);
+const closed = closeTab(list, 0);
+console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
+""",
+        tmp_path,
+    )
+    assert found == {"labels": ["ice-ih", "mine.json"], "current": 1}
+
+
+def test_closing_a_tab_after_the_current_one_changes_nothing_but_the_list(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+const list = tabsOf([own, ice, drop], 0);
+const closed = closeTab(list, 2);
+console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
+""",
+        tmp_path,
+    )
+    assert found == {"labels": ["nacl", "ice-ih"], "current": 0}
+
+
+def test_the_last_tab_is_never_closed(tmp_path: Path) -> None:
+    found = _tab_list("const list = tabsOf([own]); console.log(JSON.stringify(closeTab(list, 0) === list));", tmp_path)
+    assert found is True
+
+
+def test_a_repeated_label_gets_the_smallest_free_number(tmp_path: Path) -> None:
+    found = _tab_list(
+        """
+console.log(JSON.stringify([
+  uniqueLabel("ice.json", []),
+  uniqueLabel("ice.json", ["nacl"]),
+  uniqueLabel("ice.json", ["ice.json"]),
+  uniqueLabel("ice.json", ["ice.json", "ice.json (2)"]),
+]));
+""",
+        tmp_path,
+    )
+    assert found == ["ice.json", "ice.json", "ice.json (2)", "ice.json (3)"]

@@ -18,3 +18,4 @@ export * from "../src/scene/source";
 export * from "../src/scene/gist";
 export * from "../src/scene/read";
 export * from "../src/camera/viewhash";
+export * from "../src/ui/tab-model";
