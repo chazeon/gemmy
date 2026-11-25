@@ -3,10 +3,10 @@
 import * as THREE from "three";
 import { GEMMY, LOOK, RATE, STEP } from "../config";
 import { ORTHO_VIEW_DISTANCE, baseDistance, perspToOrthoZoom, orthoToPerspZoom } from "../camera/framing";
-import { controls, key, orthoCamera, perspCamera, stage } from "../render/draw";
+import { controls, key, orthoCamera, outlineMaterial, perspCamera, stage } from "../render/draw";
 import { beginRotation, releasePivot } from "../camera/pivot";
 import { resize } from "../render/loop";
-import { atomGroup, box, camera, extent, fitValue, lattice, lens, outlineGroup, requestRender, setCamera, setFitValue, setLens, setOutlines, show } from "../state";
+import { atomGroup, box, camera, extent, fitValue, lattice, lens, requestRender, setCamera, setFitValue, setLens, setOutlines, show } from "../state";
 import { currentZoom, fit, fitFor, isPersp, isScreenAxis, pan, rotate, setZoom, shownZoom, zoom, viewFrom } from "../camera/view";
 import { FLY, flying, setShiftHeld } from "../camera/fly";
 import { helpPopover } from "./menus";
@@ -364,5 +364,5 @@ function wireShowToggle(id: string, apply: (on: boolean) => void) {
   });
 }
 wireShowToggle("toggle-atoms", (on) => { show.atoms = on; atomGroup.visible = on; });
-wireShowToggle("toggle-outline", (on) => { setOutlines(on); outlineGroup.visible = on; });
+wireShowToggle("toggle-outline", (on) => { setOutlines(on); outlineMaterial.visible = on; });
 wireShowToggle("toggle-box", (on) => { show.box = on; if (box) box.visible = on; });

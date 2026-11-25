@@ -626,7 +626,6 @@ var extent = 1;
 var lattice = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
 var atomGroup = new THREE.Group();
 var polyGroup = new THREE.Group();
-var outlineGroup = new THREE.Group();
 var box = null;
 var polyTargets = [];
 var show = { atoms: true, box: true };
@@ -666,9 +665,6 @@ function setAtomGroup(value) {
 }
 function setPolyGroup(value) {
   polyGroup = value;
-}
-function setOutlineGroup(value) {
-  outlineGroup = value;
 }
 function setBox(value) {
   box = value;
@@ -4607,7 +4603,7 @@ wireShowToggle("toggle-atoms", (on) => {
 });
 wireShowToggle("toggle-outline", (on) => {
   setOutlines(on);
-  outlineGroup.visible = on;
+  outlineMaterial.visible = on;
 });
 wireShowToggle("toggle-box", (on) => {
   show.box = on;
@@ -4640,8 +4636,6 @@ function frame2(bounds, cell) {
 function addAtomsBondsAndArrows() {
   setAtomGroup(new THREE14.Group());
   const bondGroup = new THREE14.Group();
-  setOutlineGroup(new THREE14.Group());
-  outlineGroup.visible = outlines;
   const shapes = /* @__PURE__ */ new Map();
   for (const g of instanceGroups(data)) {
     const shapeName = g.shape;
@@ -4652,12 +4646,13 @@ function addAtomsBondsAndArrows() {
     }
     const mesh = instanced(shape, toon(g.material), g.matrices);
     const isAtom = g.shape === "sphere";
-    (isAtom ? atomGroup : bondGroup).add(mesh);
+    const owner = isAtom ? atomGroup : bondGroup;
+    owner.add(mesh);
     if (isAtom) mesh.userData = { atoms: g.refs };
-    if (g.outlined) outlineGroup.add(outlineOf(mesh));
+    if (g.outlined) owner.add(outlineOf(mesh));
   }
   atomGroup.visible = show.atoms;
-  root.add(atomGroup, bondGroup, outlineGroup);
+  root.add(atomGroup, bondGroup);
 }
 function addPolyhedra2() {
   setPolyGroup(new THREE14.Group());
@@ -4676,7 +4671,7 @@ function addPolyhedra2() {
     const edgeGeometry = new THREE14.BufferGeometry();
     edgeGeometry.setAttribute("position", new THREE14.Float32BufferAttribute(g.edges, 3));
     polyGroup.add(mesh, new THREE14.LineSegments(edgeGeometry, edgeMaterial));
-    if (!ghost) outlineGroup.add(outlineOf(mesh));
+    if (!ghost) polyGroup.add(outlineOf(mesh));
   }
   root.add(polyGroup);
 }

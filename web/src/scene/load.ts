@@ -12,8 +12,8 @@ import { select } from "../ui/picking";
 import type { Cell, Scene } from "../types";
 import type { Bounds } from "./bounds";
 import {
-  atomGroup, centre, data, extent, outlineGroup, outlines, polyGroup, polyTargets, polyhedra, show,
-  setAtomGroup, setBox, setCentre, setData, setExtent, setLattice, setOutlineGroup, setPoints, setPolyGroup,
+  atomGroup, centre, data, extent, polyGroup, polyTargets, polyhedra, show,
+  setAtomGroup, setBox, setCentre, setData, setExtent, setLattice, setPoints, setPolyGroup,
   setPolyTargets, setPolyhedra, type PolyTarget,
 } from "../state";
 
@@ -45,11 +45,10 @@ function frame(bounds: Bounds, cell: Cell | null): void {
 type ShapeName = keyof typeof SHAPES;
 
 // One InstancedMesh per (shape, material). Picking maps an instance back to its atom, so only atoms carry `atoms`.
+// An outline shell goes in the group of the mesh it outlines, so hiding that group (the Atoms toggle) hides it too.
 function addAtomsBondsAndArrows(): void {
   setAtomGroup(new THREE.Group());
   const bondGroup = new THREE.Group();
-  setOutlineGroup(new THREE.Group());
-  outlineGroup.visible = outlines;
   const shapes = new Map<ShapeName, THREE.BufferGeometry>();
   for (const g of instanceGroups(data)) {
     const shapeName: ShapeName = g.shape;
@@ -60,12 +59,13 @@ function addAtomsBondsAndArrows(): void {
     }
     const mesh = instanced(shape, toon(g.material), g.matrices);
     const isAtom = g.shape === "sphere";
-    (isAtom ? atomGroup : bondGroup).add(mesh);
+    const owner = isAtom ? atomGroup : bondGroup;
+    owner.add(mesh);
     if (isAtom) mesh.userData = { atoms: g.refs };
-    if (g.outlined) outlineGroup.add(outlineOf(mesh));
+    if (g.outlined) owner.add(outlineOf(mesh));
   }
   atomGroup.visible = show.atoms;
-  root.add(atomGroup, bondGroup, outlineGroup);
+  root.add(atomGroup, bondGroup);
 }
 
 // One triangle soup per material, with flat faces wound outwards, and its edges as one set of line segments. Materials
@@ -88,7 +88,7 @@ function addPolyhedra(): void {
     const edgeGeometry = new THREE.BufferGeometry();
     edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(g.edges, 3));
     polyGroup.add(mesh, new THREE.LineSegments(edgeGeometry, edgeMaterial));
-    if (!ghost) outlineGroup.add(outlineOf(mesh));
+    if (!ghost) polyGroup.add(outlineOf(mesh));
   }
   root.add(polyGroup);
 }
