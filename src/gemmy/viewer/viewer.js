@@ -719,10 +719,14 @@ camera.add(key, key.target);
 var controls = new TrackballControls(camera, renderer.domElement);
 var edgeMaterial = new THREE2.LineBasicMaterial({ color: srgbColor(LOOK.outline) });
 var boxMaterial = new THREE2.LineBasicMaterial();
+var MIN_OUTLINE_W = CLIP_NEAR;
+var MIN_OUTLINE_DIRECTION = 1e-6;
 var OUTLINE_VERTEX_SHADER = `
     uniform float outlineThickness;
     uniform float outlineScale; // the user's width (ui/outline-scale.ts): 1 is the automatic width
     #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)} // a float literal: GLSL reads a bare integer as int
+    #define MIN_OUTLINE_W ${MIN_OUTLINE_W.toFixed(3)}
+    #define MIN_OUTLINE_DIRECTION ${MIN_OUTLINE_DIRECTION.toFixed(9)}
 
     // The outline's width, in NDC (the image spans 2 units). The shell is pushed out by this much and then multiplied
     // by w, so the clip-space offset is the same as the constant width was when the cap does not apply.
@@ -735,6 +739,21 @@ var OUTLINE_VERTEX_SHADER = `
     float outlineWidth(float clipW, float radius) {
       float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
       return min(outlineThickness, capWidth);
+    }
+
+    // The shell's clip position for one vertex: the vertex moved on the screen along its outward normal by the outline
+    // width. clipNormal is projectionMatrix * modelViewMatrix applied to the normal as a direction (w = 0). Moving the
+    // point by t along the normal moves its clip position by t * clipNormal, so the screen position moves in the
+    // direction of (clipNormal.xy * w - clipNormal.w * clip.xy), exactly, with no offset point to pick. That direction is
+    // normalised in 2D, so the outline is the full width in every direction. A vertex at or behind the near plane has
+    // no usable screen position, so it stays where it is.
+    vec4 outlinePosition(vec4 clipPos, vec4 clipNormal, float radius) {
+      if (clipPos.w <= MIN_OUTLINE_W) return clipPos;
+      vec2 screenDirection = clipPos.w * clipNormal.xy - clipNormal.w * clipPos.xy;
+      float length2D = length(screenDirection);
+      if (!(length2D > MIN_OUTLINE_DIRECTION)) return clipPos; // also false for NaN
+      float width = outlineWidth(clipPos.w, radius) * outlineScale;
+      return vec4(clipPos.xy + screenDirection / length2D * width * clipPos.w, clipPos.zw);
     }
 
     void main() {
@@ -751,11 +770,8 @@ var OUTLINE_VERTEX_SHADER = `
         radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
       #endif
       normalLocal = normalize(normalLocal);
-      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
-      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
-      // pushed along the screen-space direction of the normal
-      float width = outlineWidth(clipPos.w, radius) * outlineScale;
-      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
+      mat4 clipFromLocal = projectionMatrix * modelViewMatrix;
+      gl_Position = outlinePosition(clipFromLocal * local, clipFromLocal * vec4(normalLocal, 0.0), radius);
     }`;
 var OUTLINE_FRAGMENT_SHADER = `
     uniform vec3 outlineColor;
@@ -3037,31 +3053,6 @@ var CHANNEL_ON = 128;
 function unpack24(bytes, offset) {
   return bytes[offset] + 256 * bytes[offset + 1] + 65536 * bytes[offset + 2];
 }
-var UNCAPPED_RADIUS = 1e9;
-var SHELL_VERTEX = `
-    uniform float outlineThickness;
-    uniform float outlineScale;
-    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)}
-    float outlineWidth(float clipW, float radius) {
-      float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
-      return min(outlineThickness, capWidth);
-    }
-    void main() {
-      vec4 local = vec4(position, 1.0);
-      vec3 normalLocal = normal;
-      float radius = ${UNCAPPED_RADIUS.toFixed(1)};
-      #ifdef USE_INSTANCING
-        mat3 instanceRotation = mat3(instanceMatrix);
-        normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
-        local = instanceMatrix * local;
-        radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
-      #endif
-      normalLocal = normalize(normalLocal);
-      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
-      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
-      float width = outlineWidth(clipPos.w, radius) * outlineScale;
-      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
-    }`;
 var SHELL_FRAGMENT = `
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -3071,7 +3062,7 @@ var ZERO_FRAGMENT = `
       gl_FragColor = vec4(0.0);
     }`;
 var shellMaterial = (outlineScale2) => new THREE11.ShaderMaterial({
-  vertexShader: SHELL_VERTEX,
+  vertexShader: OUTLINE_VERTEX_SHADER,
   fragmentShader: SHELL_FRAGMENT,
   side: THREE11.BackSide,
   uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale2 } }

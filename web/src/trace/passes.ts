@@ -8,7 +8,7 @@
 // The keys combine the first two: key = 2 * id + dark, so each object has a lit key and a dark key; key 0 is background.
 import * as THREE from "three";
 import { LOOK } from "../config";
-import { OUTLINE_SIZE_FRACTION, OUTLINE_THICKNESS, renderer, root } from "../render/draw";
+import { OUTLINE_THICKNESS, OUTLINE_VERTEX_SHADER, renderer, root } from "../render/draw";
 import { camera } from "../state";
 import { BACKGROUND_DEPTH, Passes, darkKey, litKey } from "./buffers";
 import { roleOf } from "./objects";
@@ -129,34 +129,8 @@ function unpack24(bytes: Uint8Array, offset: number): number {
   return bytes[offset] + 256 * bytes[offset + 1] + 65536 * bytes[offset + 2];
 }
 
-// The outline shell, ported from render/draw.ts (outlineMaterial and its vertex shader): the back faces pushed out, with the
-// on-screen-size cap. Only its visibility is read here, so the fragment writes a plain red 1.
-// An object that is not instanced has no radius, so its cap never binds: a radius this large stands for that.
-const UNCAPPED_RADIUS = 1e9;
-const SHELL_VERTEX = `
-    uniform float outlineThickness;
-    uniform float outlineScale;
-    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)}
-    float outlineWidth(float clipW, float radius) {
-      float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
-      return min(outlineThickness, capWidth);
-    }
-    void main() {
-      vec4 local = vec4(position, 1.0);
-      vec3 normalLocal = normal;
-      float radius = ${UNCAPPED_RADIUS.toFixed(1)};
-      #ifdef USE_INSTANCING
-        mat3 instanceRotation = mat3(instanceMatrix);
-        normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
-        local = instanceMatrix * local;
-        radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
-      #endif
-      normalLocal = normalize(normalLocal);
-      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
-      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
-      float width = outlineWidth(clipPos.w, radius) * outlineScale;
-      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
-    }`;
+// The outline shell: the same vertex shader as the live view (render/draw.ts), back faces only, drawn in the mask pass.
+// Only its visibility is read here, so the fragment writes a plain red 1.
 const SHELL_FRAGMENT = `
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -168,7 +142,7 @@ const ZERO_FRAGMENT = `
 
 // The shell's material: the back faces only, as in the live view.
 const shellMaterial = (outlineScale: number): THREE.ShaderMaterial => new THREE.ShaderMaterial({
-  vertexShader: SHELL_VERTEX,
+  vertexShader: OUTLINE_VERTEX_SHADER,
   fragmentShader: SHELL_FRAGMENT,
   side: THREE.BackSide,
   uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale } },

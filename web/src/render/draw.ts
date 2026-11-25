@@ -61,14 +61,18 @@ export const controls = new TrackballControls(camera, renderer.domElement);
 export const edgeMaterial = new THREE.LineBasicMaterial({ color: srgbColor(LOOK.outline) });
 export const boxMaterial = new THREE.LineBasicMaterial(); // its colour is set from the page theme (loop.ts)
 
-// The outline of a mesh is a back-face copy of it, pushed outwards along its normals. three's OutlineEffect would do
-// this too, but its vertex shader leaves out the instancing chunks, so an InstancedMesh would be displaced from the
-// origin. Instances carry their normals through the instance matrix the way three does it, so stretched cylinders keep
-// round outlines.
-const OUTLINE_VERTEX_SHADER = `
+// The outline of a mesh is a back-face copy of it, pushed outwards on the screen. three's OutlineEffect would do this too,
+// but its vertex shader leaves out the instancing chunks, so an InstancedMesh would be displaced from the origin.
+// Instances carry their normals through the instance matrix the way three does it, so stretched cylinders keep round
+// outlines. trace/passes.ts draws the same shell with this vertex shader, so the traced outline matches the live one.
+const MIN_OUTLINE_W = CLIP_NEAR; // a vertex at or nearer than the near plane (w is the depth) gets no push
+const MIN_OUTLINE_DIRECTION = 1e-6; // a normal along the view ray has no screen direction, so no push either
+export const OUTLINE_VERTEX_SHADER = `
     uniform float outlineThickness;
     uniform float outlineScale; // the user's width (ui/outline-scale.ts): 1 is the automatic width
     #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)} // a float literal: GLSL reads a bare integer as int
+    #define MIN_OUTLINE_W ${MIN_OUTLINE_W.toFixed(3)}
+    #define MIN_OUTLINE_DIRECTION ${MIN_OUTLINE_DIRECTION.toFixed(9)}
 
     // The outline's width, in NDC (the image spans 2 units). The shell is pushed out by this much and then multiplied
     // by w, so the clip-space offset is the same as the constant width was when the cap does not apply.
@@ -81,6 +85,21 @@ const OUTLINE_VERTEX_SHADER = `
     float outlineWidth(float clipW, float radius) {
       float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
       return min(outlineThickness, capWidth);
+    }
+
+    // The shell's clip position for one vertex: the vertex moved on the screen along its outward normal by the outline
+    // width. clipNormal is projectionMatrix * modelViewMatrix applied to the normal as a direction (w = 0). Moving the
+    // point by t along the normal moves its clip position by t * clipNormal, so the screen position moves in the
+    // direction of (clipNormal.xy * w - clipNormal.w * clip.xy), exactly, with no offset point to pick. That direction is
+    // normalised in 2D, so the outline is the full width in every direction. A vertex at or behind the near plane has
+    // no usable screen position, so it stays where it is.
+    vec4 outlinePosition(vec4 clipPos, vec4 clipNormal, float radius) {
+      if (clipPos.w <= MIN_OUTLINE_W) return clipPos;
+      vec2 screenDirection = clipPos.w * clipNormal.xy - clipNormal.w * clipPos.xy;
+      float length2D = length(screenDirection);
+      if (!(length2D > MIN_OUTLINE_DIRECTION)) return clipPos; // also false for NaN
+      float width = outlineWidth(clipPos.w, radius) * outlineScale;
+      return vec4(clipPos.xy + screenDirection / length2D * width * clipPos.w, clipPos.zw);
     }
 
     void main() {
@@ -97,11 +116,8 @@ const OUTLINE_VERTEX_SHADER = `
         radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
       #endif
       normalLocal = normalize(normalLocal);
-      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
-      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
-      // pushed along the screen-space direction of the normal
-      float width = outlineWidth(clipPos.w, radius) * outlineScale;
-      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
+      mat4 clipFromLocal = projectionMatrix * modelViewMatrix;
+      gl_Position = outlinePosition(clipFromLocal * local, clipFromLocal * vec4(normalLocal, 0.0), radius);
     }`;
 const OUTLINE_FRAGMENT_SHADER = `
     uniform vec3 outlineColor;
