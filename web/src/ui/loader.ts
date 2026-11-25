@@ -10,6 +10,7 @@ import { setSceneLink, takePendingPose } from "./share";
 import { signal } from "@preact/signals-core";
 import { byId, pageName } from "./dom";
 import { busy, fail, focusUrl, hideCard, showHome, wireHome } from "./home";
+import { showInfo } from "./panels";
 import { openScene, updateScene } from "./stage";
 import { type TabHandlers, pulseTab, showTabs } from "./tab-bar";
 import { addTab, chooseTab, closeTab, openTabs, tabsOf, uniqueLabel } from "./tab-model";
@@ -111,6 +112,8 @@ function showHomeTab(): void {
   setSceneLink(null);
   pageName.value = { name: nameOf(HOME), from: fromOf(HOME) };
   document.title = "gemmy";
+  // The selection card's buttons act on the scene that is on the stage, which the start screen covers: it closes.
+  showInfo(false);
   const live = state.tabs.tabs.find((tab) => tab.source.kind === "live");
   showHome(live ? nameOf(live.source) : null);
 }
@@ -140,7 +143,10 @@ async function showCurrent(): Promise<void> {
     hideCard();
   } catch (error) {
     clearTimeout(progress);
-    if (tab === currentTab()) fail(`Could not load ${nameOf(tab.source)}: ${messageOf(error)}`);
+    if (tab === currentTab()) {
+      showInfo(false); // no scene is shown now: the card's buttons would act on the one before
+      fail(`Could not load ${nameOf(tab.source)}: ${messageOf(error)}`);
+    }
   }
 }
 
@@ -265,11 +271,12 @@ export async function startTabs(read: () => Promise<Source[]>): Promise<void> {
   state.loaderPage = !opening.some((source) => source.kind === "embedded");
   state.tabs = openTabs(tabsOf<Tab>([]), tabsFor(opening, []), false);
   renderBar();
-  if (problem !== null) fail(problem);
+  // The error goes on the start screen after the tab is shown: showing the home tab clears the card's error.
   await showCurrent();
+  if (problem !== null) fail(problem);
 }
 
-// The ☰ menu's Open local file…: the file picker, the same one the start screen's button opens.
+// The menu's Open local file…: the file picker, the same one the start screen's button opens.
 export function openSceneFile(): void {
   fileInput.click();
 }
@@ -277,13 +284,13 @@ export function openSceneFile(): void {
 // Why New tab is unavailable on this page (a gemmy serve page has no loader for an address), or null when it is.
 export const openUrlUnavailable = signal<string | null>(null);
 
-// New tab in the ☰ menu: the home tab, with its address box focused.
+// New tab in the menu: the home tab, with its address box focused.
 export function openNewTab(): void {
   openHomeTab();
   focusUrl();
 }
 
-// Drop a file anywhere on the page, the file input from the ☰ menu or the start screen's button, and the start screen's
+// Drop a file anywhere on the page, the file input from the menu or the start screen's button, and the start screen's
 // forms and gallery (ui/home.ts).
 export function attachOpeners(): void {
   wireHome({

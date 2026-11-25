@@ -6,13 +6,14 @@ import { STEP } from "../config";
 import { fit, zoom } from "../camera/view";
 import { FLY, type Held, type Motion, flying, letGo, panMotion, press, setShiftHeld, turnMotion } from "../camera/fly";
 import { beginRotation, releasePivot } from "./pivot";
-import { toggleHelp } from "./menus";
+import { card } from "./home";
+import { toggleHelp } from "./help";
 import { toggleInfo } from "./panels";
 import { select } from "./picking";
 import { cycleTheme } from "./theme";
 import { closestOf } from "./dom";
 
-// The shortcuts as the tooltips and the ☰ menu name them, each key one shadcn Kbd cap. The handler below takes the keys
+// The shortcuts as the tooltips and the menu name them, each key one shadcn Kbd cap. The handler below takes the keys
 // from its own tables (HELD_KEYS, KEY_ACTIONS); this table is the labels, so a control's tip reads its key from here.
 export const SHORTCUT = {
   turnUp: ["↑"],
@@ -55,7 +56,7 @@ const KEY_ACTIONS: Record<string, () => void> = {
 // The held keys' presses, by key code: the key's keyup lets its press go.
 const presses = new Map<string, Held>();
 
-// Keys typed into a field or a popover, or that come with a browser or system modifier. The ☰ panel is the exception:
+// Keys typed into a field or a popover, or that come with a browser or system modifier. The menu is the exception:
 // it stays open while the scene is used (react/main-menu.tsx), so the shortcuts work with the focus in it.
 const KEYS_OF_THEIR_OWN =
   "input, textarea, [data-slot=dropdown-menu-content], [data-slot=popover-content]:not(#main-panel)";
@@ -82,7 +83,9 @@ function runShortcut(e: KeyboardEvent): boolean {
     toggleHelp();
     return true;
   }
+  // The card is shown over the start screen, a load in progress and a failed load: no scene is on the stage then.
   if (e.key === "i" && !e.shiftKey) {
+    if (!card.peek().shown) return true;
     toggleInfo();
     return true;
   }

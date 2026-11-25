@@ -4,7 +4,7 @@
 # style.<hash>.css (the one viewer, shared by every page; the hash is of the file's content), view/index.html (the
 # viewer with no scene: ?scene=, ?gist= or a dropped file), and per example <example>/index.html (its page) with
 # <example>/scene.json.gz (its scene), and examples.json (the examples in order, with the titles from each example's
-# gallery.json). See gemmy.view.write_hosted_site.
+# gallery.json). The examples and their order are scripts/examples.txt. See gemmy.site.write_hosted_site.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out="${OUT:-$root/site}"
@@ -13,7 +13,7 @@ scenes="$(mktemp -d)"
 trap 'rm -rf "$scenes"' EXIT
 
 files=()
-for example in nacl methane-clathrate-si ice-ih stishovite dry-ice uio-66 c60 c60-cage dna-1bna glut1-4pyp nav17-6j8i nucleosome-1kx5 apoferritin; do  # the committed examples, never examples/private/
+for example in $(<"$root/scripts/examples.txt"); do  # the committed examples in gallery order, never examples/private/
   $gemmy compile "$root/examples/$example/config.toml" --out "$scenes/$example.json"
   files+=("$scenes/$example.json")
 done

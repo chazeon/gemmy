@@ -1,19 +1,38 @@
 // The keyboard shortcuts: a shadcn Popover from the "?" button in the corner, with the keys as shadcn Kbd. Its open state is
-// ui/menus.ts's (helpOpen), so the ? key and the ☰ menu's item toggle it the same way. It opens without moving the
-// focus, so the ? key still shuts it.
-import { CircleHelp, ExternalLink } from "lucide-react";
+// ui/help.ts's (helpOpen), so the ? key and the ? button toggle it the same way. It opens without moving the focus, so the
+// ? key still shuts it.
+import {
+  CircleHelp,
+  ExternalLink,
+  type LucideIcon,
+  Mouse as MouseIcon,
+  MouseLeft,
+  MousePointerClick,
+  MouseRight,
+} from "lucide-react";
 import type { ReactNode } from "react";
-import { Kbd } from "@/components/ui/kbd";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SHORTCUT } from "../ui/keyboard";
-import { helpOpen, showHelp } from "../ui/menus";
+import { helpOpen, showHelp } from "../ui/help";
 import { TipButton } from "./tip";
 import { useSignal } from "./use-signal";
 import { ISLAND_MENU } from "./placement";
+import { Key } from "./key";
+import { ICON, ICON_SMALL } from "./icons";
 
 const PROJECT_URL = "https://github.com/chazeon/gemmy";
 
-// A row of shortcuts: the keys (kbd), and what they do.
+// A mouse action: Lucide's mouse with the button it uses (or the click pointer), and the action's name.
+function Mouse({ icon: Icon, action }: { icon: LucideIcon; action: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon {...ICON_SMALL} aria-hidden="true" />
+      {action}
+    </span>
+  );
+}
+
+// A row of shortcuts: the keys (key caps) or the mouse action, and what they do.
 function Row({ keys, does }: { keys: ReactNode; does: string }) {
   return (
     <>
@@ -36,7 +55,7 @@ export function HelpButton() {
           tip="Keyboard shortcuts"
           shortcut={SHORTCUT.help}
         >
-          <CircleHelp size={20} strokeWidth={1.75} />
+          <CircleHelp {...ICON} />
         </TipButton>
       </PopoverTrigger>
       <PopoverContent
@@ -46,19 +65,24 @@ export function HelpButton() {
         alignOffset={ISLAND_MENU.alignOffset}
         aria-label="Keyboard shortcuts"
         onOpenAutoFocus={(event) => event.preventDefault()}
-        className="w-[min(340px,calc(100vw-16px))] p-3.5 text-[13px]"
+        className="box-border max-h-(--radix-popover-content-available-height) w-[min(340px,calc(100vw-16px))] overflow-y-auto p-3.5 text-[13px]"
       >
         <h2 className="m-0 mb-2 text-sm font-semibold">Keyboard shortcuts</h2>
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2">
-          <Row keys="Drag · right-drag · scroll" does="rotate · move · zoom" />
-          <Row keys="double-click" does="rotate around this atom; click empty space or Esc to let go" />
+          <Row keys={<Mouse icon={MouseLeft} action="drag" />} does="rotate" />
+          <Row keys={<Mouse icon={MouseRight} action="drag" />} does="move" />
+          <Row keys={<Mouse icon={MouseIcon} action="scroll" />} does="zoom" />
+          <Row
+            keys={<Mouse icon={MousePointerClick} action="double-click" />}
+            does="rotate around this atom; click empty space or Esc to let go"
+          />
           <Row
             keys={
               <>
-                <Kbd>←</Kbd>
-                <Kbd>→</Kbd>
-                <Kbd>↑</Kbd>
-                <Kbd>↓</Kbd>
+                <Key>←</Key>
+                <Key>→</Key>
+                <Key>↑</Key>
+                <Key>↓</Key>
               </>
             }
             does="turn and tilt (hold to keep turning)"
@@ -66,8 +90,8 @@ export function HelpButton() {
           <Row
             keys={
               <>
-                <Kbd>[</Kbd>
-                <Kbd>]</Kbd>
+                <Key>[</Key>
+                <Key>]</Key>
               </>
             }
             does="spin anticlockwise, clockwise"
@@ -75,7 +99,7 @@ export function HelpButton() {
           <Row
             keys={
               <>
-                <Kbd>Shift</Kbd> + arrows
+                <Key>Shift</Key> + arrows
               </>
             }
             does="move the structure"
@@ -83,8 +107,8 @@ export function HelpButton() {
           <Row
             keys={
               <>
-                <Kbd>W</Kbd>
-                <Kbd>S</Kbd>
+                <Key>W</Key>
+                <Key>S</Key>
               </>
             }
             does="fly in, out (hold)"
@@ -92,9 +116,9 @@ export function HelpButton() {
           <Row
             keys={
               <>
-                <Kbd>A</Kbd>
-                <Kbd>D</Kbd> · <Kbd>Q</Kbd>
-                <Kbd>E</Kbd>
+                <Key>A</Key>
+                <Key>D</Key> · <Key>Q</Key>
+                <Key>E</Key>
               </>
             }
             does="fly left, right · down, up"
@@ -102,8 +126,8 @@ export function HelpButton() {
           <Row
             keys={
               <>
-                <Kbd>Shift</Kbd> + <Kbd>W</Kbd>
-                <Kbd>S</Kbd>
+                <Key>Shift</Key> + <Key>W</Key>
+                <Key>S</Key>
               </>
             }
             does="fly up, down"
@@ -111,18 +135,18 @@ export function HelpButton() {
           <Row
             keys={
               <>
-                <Kbd>+</Kbd>
-                <Kbd>−</Kbd> · <Kbd>0</Kbd>
+                <Key>+</Key>
+                <Key>−</Key> · <Key>0</Key>
               </>
             }
             does="zoom in, out · fit to window"
           />
-          <Row keys={<Kbd>i</Kbd>} does="show or hide the selection details" />
-          <Row keys={<Kbd>t</Kbd>} does="theme: auto, light, dark" />
+          <Row keys={<Key>i</Key>} does="show or hide the selection details" />
+          <Row keys={<Key>t</Key>} does="theme: auto, light, dark" />
           <Row
             keys={
               <>
-                <Kbd>?</Kbd> · <Kbd>Esc</Kbd>
+                <Key>?</Key> · <Key>Esc</Key>
               </>
             }
             does="this list · close a menu"

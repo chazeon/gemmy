@@ -2,8 +2,8 @@
 // Every tip in the overlay is this one component: Tip wraps any trigger, TipButton is a button with its tip.
 import { type ComponentProps, type ReactElement, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Kbd } from "@/components/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Key } from "./key";
 
 type Side = "top" | "right" | "bottom" | "left";
 
@@ -47,7 +47,7 @@ export function Tip({
             {text}
             <span className="inline-flex items-center gap-1">
               {shortcut.map((key) => (
-                <Kbd key={key}>{key}</Kbd>
+                <Key key={key}>{key}</Key>
               ))}
             </span>
           </span>

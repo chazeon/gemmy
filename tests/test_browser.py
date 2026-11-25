@@ -48,7 +48,7 @@ DRIVER_NO_WEBGL = 3  # the driver's exit code when WebGL 2 does not start
 # screen (home), so its run records home and then opens the stishovite card, which has the polyhedra to select.
 PAGES = [("view-stishovite", "/view-stishovite.html", None), ("site-front", "/site/index.html", "stishovite")]
 # The hosted site's examples, for a site build that does not write examples.json yet (scripts/build_site.sh and
-# gemmy.view.write_hosted_site are the owners of that file, so the test only fills it in when it is missing).
+# gemmy.site.write_hosted_site are the owners of that file, so the test only fills it in when it is missing).
 _EXAMPLES = [
     {"name": name, "title": title, "description": text, "scene": f"{name}/scene.json.gz"}
     for name, title, text in [
@@ -274,7 +274,7 @@ def _text_diff(expected: str, actual: str) -> str:
     return "\n".join(list(diff)[:200]) + "\n(GEMMY_UPDATE_GOLDEN=1 regenerates the goldens)"
 
 
-# The layout the top bar and the ☰ menu must have (the driver measures it at 1280 px and at a phone's 393 px). Each
+# The layout the top bar and the menu must have (the driver measures it at 1280 px and at a phone's 393 px). Each
 # check names what it measured, so a failure says the number, not just that it failed.
 LAYOUT_TOLERANCE_PX = 1.0
 PHONE_WIDTH_PX = 393
@@ -305,9 +305,9 @@ def _layout_failures(layout: dict) -> list[str]:
     for name, shot in (("desktop", desktop), ("phone", phone)):
         box, size = shot["open"]["menuBox"], shot["open"]["viewport"]
         if box is None:
-            failures.append(f"{name}: the ☰ menu did not open")
+            failures.append(f"{name}: the menu did not open")
         elif box["left"] < 0 or box["top"] < 0 or box["right"] > size["width"] or box["bottom"] > size["height"]:
-            failures.append(f"{name}: the ☰ menu's box {box} is not on the {size['width']}x{size['height']} screen")
+            failures.append(f"{name}: the menu's box {box} is not on the {size['width']}x{size['height']} screen")
     return failures
 
 

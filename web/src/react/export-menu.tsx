@@ -1,4 +1,4 @@
-// The Export menu, built as shadcn's DropdownMenu like the ☰ menu: the pictures (PNG with its transparency, SVG), the
+// The Export menu, built as shadcn's DropdownMenu like the menu: the pictures (PNG with its transparency, SVG), the
 // render settings (saved or copied as TOML or JSON, the render command) and, on the serve page, the item that sends the
 // view to Blender. Each item runs its action (ui/export.ts). The area it sits in, top right, also holds the theme button
 // (src/react/theme-button.tsx), so the two share one centre line.
@@ -22,8 +22,9 @@ import { ThemeButton } from "./theme-button";
 import { useSignal } from "./use-signal";
 import { GAP } from "./placement";
 import { nudge } from "./motion";
+import { MENU_ICON } from "./icons";
 
-const ICON = { size: 16, strokeWidth: 2, className: "text-muted-foreground" };
+const ROW_ICON = { ...MENU_ICON, className: "text-muted-foreground" };
 // A check keeps the menu open, so the background can be set and the picture taken in turn.
 const KEEP_OPEN = { onSelect: (event: Event) => event.preventDefault() };
 
@@ -62,7 +63,7 @@ function ExportMenu() {
           <DropdownMenuLabel>Picture</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuItem onSelect={run("png", transparent)}>
-              <Image {...ICON} />
+              <Image {...ROW_ICON} />
               PNG
               <DropdownMenuShortcut>2× the window</DropdownMenuShortcut>
             </DropdownMenuItem>
@@ -70,7 +71,7 @@ function ExportMenu() {
               Transparent background
             </DropdownMenuCheckboxItem>
             <DropdownMenuItem onSelect={run("svg")}>
-              <FileCode {...ICON} />
+              <FileCode {...ROW_ICON} />
               SVG
               <DropdownMenuShortcut>vector, text editable</DropdownMenuShortcut>
             </DropdownMenuItem>
@@ -79,23 +80,23 @@ function ExportMenu() {
           <DropdownMenuLabel>Render settings</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuItem onSelect={run("save-toml")}>
-              <FileCog {...ICON} />
+              <FileCog {...ROW_ICON} />
               Save as TOML
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("copy-toml")}>
-              <Copy {...ICON} />
+              <Copy {...ROW_ICON} />
               Copy as TOML
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("save-json")}>
-              <FileJson {...ICON} />
+              <FileJson {...ROW_ICON} />
               Save as JSON
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("copy-json")}>
-              <Copy {...ICON} />
+              <Copy {...ROW_ICON} />
               Copy as JSON
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("copy-command")}>
-              <Terminal {...ICON} />
+              <Terminal {...ROW_ICON} />
               Copy render command
             </DropdownMenuItem>
           </DropdownMenuGroup>
@@ -103,7 +104,7 @@ function ExportMenu() {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={run("render-view")}>
-                <Clapperboard {...ICON} />
+                <Clapperboard {...ROW_ICON} />
                 Use this view for the Blender render
               </DropdownMenuItem>
             </>

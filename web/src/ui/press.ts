@@ -1,6 +1,6 @@
 // A press that moves the view and keeps moving while it is held (camera/fly.ts): it steps at once, smoothly, and while
 // the press is held it goes on at the rate. A finger's press waits for a short hold first, so a swipe across a toolbar
-// scrolls it (the browser cancels the press) instead of turning the view. The React toolbar and the zoom column take
+// scrolls it (the browser cancels the press) instead of turning the view. The React toolbar and the zoom row take
 // their presses from here, through the hook in src/react/press.ts.
 import { type Held, type Motion, letGo, press } from "../camera/fly";
 

@@ -7,10 +7,9 @@ import { useEffect, useRef } from "react";
 import { infoFocus, infoOpen, toggleInfo } from "../ui/panels";
 import { HelpButton } from "./help";
 import { SHORTCUT } from "../ui/keyboard";
+import { ICON } from "./icons";
 import { TipButton } from "./tip";
 import { useSignal } from "./use-signal";
-
-const ICON = { size: 20, strokeWidth: 1.75 };
 
 export function CornerButtons() {
   const open = useSignal(infoOpen);

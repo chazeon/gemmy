@@ -11,20 +11,23 @@ import { Tip, TipButton } from "./tip";
 import { useSignal } from "./use-signal";
 import { QUARTER_TURN } from "./motion";
 
-// The strip's controls are the toolbar's height (36 px), so the top bar's controls share one centre line.
+// The strip's controls are h-9, the toolbar's control height, so the top bar's controls share one centre line.
 const CONTROL = "h-9 flex-none";
+// A tab's ✕ has no fill of its own, so the pill's background shows through, and it is muted until the pointer is on it.
+const CLOSE =
+  "size-6 shrink-0 bg-transparent text-muted-foreground transition-opacity hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent";
 
 export function TabStrip({ bar }: { bar: TabBarView }) {
   const ref = useRef<HTMLDivElement>(null);
   useOverflowFade(ref);
-  // The open tab is scrolled to the strip's middle, clear of the faded edges, as the lens chosen is (lens-column.tsx):
+  // The open tab is scrolled to the strip's middle, clear of the faded edges, as the lens chosen is (lens-row.tsx):
   // when the strip first shows and whenever another tab opens, not on every draw, so it does not undo the user's own
   // scrolling. The whole pill goes to the middle (its ✕ too), not only the label; a server's link is its own pill.
-  const openTab = `${bar.current} ${bar.tabs.length} ${bar.links.find((link) => link.current)?.href ?? ""}`;
+  const openTabKey = `${bar.current} ${bar.tabs.length} ${bar.links.find((link) => link.current)?.href ?? ""}`;
   const centred = useRef("");
   useLayoutEffect(() => {
-    if (centred.current === openTab) return;
-    centred.current = openTab;
+    if (centred.current === openTabKey) return;
+    centred.current = openTabKey;
     const current = ref.current?.querySelector('[aria-current="page"]');
     (current?.closest(".group\\/tab") ?? current)?.scrollIntoView({ block: "nearest", inline: "center" });
   });
@@ -36,7 +39,7 @@ export function TabStrip({ bar }: { bar: TabBarView }) {
     <div data-testid="tab-strip" className="flex min-w-0 flex-[0_1_auto] items-center gap-1">
       <div
         ref={ref}
-        className="tabs flex min-w-0 flex-[0_1_auto] items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="fade-row flex min-w-0 flex-[0_1_auto] items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {bar.links.map((link) => (
           <Button
@@ -129,7 +132,7 @@ function LocalTab({
           aria-label={`Close ${tab.label}`}
           tip={`Close ${tab.label}`}
           className={cn(
-            "size-6 shrink-0 bg-transparent text-muted-foreground transition-opacity hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent",
+            CLOSE,
             current
               ? "opacity-100"
               : "opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-0",

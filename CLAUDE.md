@@ -28,8 +28,8 @@ Outer process (may use numpy/scipy/ASE/pydantic):
   `lattice` (numpy: offsets, snap/wrap, box shifts, limits, convex hull) · `sites` (Site, snap/wrap, display box, limits, name matching, `point_key`) · `bonds` (neighbours, rules, detection, completion) · `polyhedra` · `selection` (labels/indices/shell_of; separate from `sites` because it needs `polyhedra`) · `labels` (sources + applying) · `displacements` · `materials` (element style, material variants, visibility) · `pipeline` (`SceneAssembler`, `PointTable`, `compile_structure`, `compile_scene`, `compile_to_json`).
 
 Render side (stdlib + bpy only; bpy imported lazily inside Blender code):
-- `render/`: `runner` (`render_plan`, `build_scene_with_backend`, the backend Protocols `Geometry`/`Stage`) · `looks` (look presets, named views, framing) · `materials` (scene material -> `ShaderSpec`) · `launch` (find and spawn Blender).
-- `view.py` (`gemmy view`, stdlib only): writes the viewer page from `viewer/` (built files, see `web/` below); `serve.py` is the live preview.
+- `render/`: `runner` (`render_plan`, `build_scene_with_backend`) · `protocols` (the backend Protocols `Geometry`/`Stage`, `AxesSpec`) · `looks` (look presets, named views, framing) · `materials` (scene material -> `ShaderSpec`) · `launch` (find and spawn Blender).
+- `view.py` (`gemmy view`, stdlib only): writes the viewer page from `viewer/` (built files, see `web/` below); `site.py` is the hosted site (`gemmy view --hosted`: one shared viewer, a page per scene); `serve.py` is the live preview.
 - `web/` (dev only, not in the wheel): the viewer. Plain TypeScript under `web/src` draws the canvas; the overlay is React in `web/src/react`, with shadcn/ui components in `web/src/components/ui` on Tailwind v4 (`tailwind.css`). `page.html` and `style.css` are the page's own. `npm --prefix web run build` writes the built `viewer.js`, `page.html` and `style.css` into `src/gemmy/viewer/`; never edit those built files. `npm --prefix web run check` is tsc. `web/test/entry.ts` is the pure part the node tests bundle (`tests/viewer_bundle.py`). `web/README.md` has the structure.
 - `render/blender/`: one mixin per concern: `atoms` (linked duplicates + Geometry Nodes instancing), `primitives`, `materials`, `world` (lights, backdrop, camera), `renderer` (device and engine choice, output), `overlay` (axes triad).
 - `scripts/blender_build_scene.py`: sys.path shim only.
@@ -50,7 +50,7 @@ Import rules are enforced by `tests/test_import_boundaries.py` (a table of rules
   (face index buffers into `points`), `primitives` (atoms, bonds, polyhedra, displacements; point and material ids
   only, never copied geometry or material structs). A point may carry `ref`, the atom reference users type in configs
   (`"5"` or `"5+1_0_0"`, relative to the wrapped in-cell atom; `selection.parse_site_ref`).
-- Backend Protocols: `render/runner.py`. Config format: `config.py` and `configs/default.json`.
+- Backend Protocols: `render/protocols.py`. Config format: `config.py` and `configs/default.json`.
 - Unknown config, settings or scene keys are errors (pydantic `extra="forbid"`); the error path names the key.
 - Validation happens in the outer process only; Blender reads already-validated JSON with `from_dict`.
 - Contract changes go in their own commit, never mixed with feature work. Update golden files

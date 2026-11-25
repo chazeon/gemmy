@@ -37,7 +37,7 @@ class Render:
     scene: Path
     """Path to intermediate scene JSON."""
     settings: Path | None = None
-    """JSON file with RenderSettings; flags override it."""
+    """JSON or TOML file with RenderSettings; flags override it."""
     plan_out: Path | None = None
     """Keep the resolved plan JSON here (default: temp file)."""
     blender: str | None = None

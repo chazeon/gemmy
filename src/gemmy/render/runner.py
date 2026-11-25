@@ -8,144 +8,30 @@ never probes a backend with `hasattr`.
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Protocol
+from typing import TypeVar
 
-from ..geom import arrow_span, bounds, cross, dash_segments, dot_centres, length, normalize, shrink
+from ..geom import arrow_span, bounds, cell_box_edges, cross, dash_segments, dot_centres, length, normalize, shrink
 from ..scene import MaterialStyle, SceneDocument, Vec3, load_scene
-from ..settings import Camera, Quality, RenderPlan
-from .looks import Look, ortho_scale
-from .materials import ShaderSpec, resolve_shader, shade_bands
+from ..settings import Camera, RenderPlan
+from .looks import ortho_scale
+from .materials import resolve_shader, shade_bands
+from .protocols import AxesSpec
+
+T = TypeVar("T")
+# The axis indicator's origin ball takes this material; the Cartesian axes are x, y and z.
+AXES_HUB_MATERIAL = "PBB_Axes_Hub"
+_CARTESIAN: tuple[Vec3, Vec3, Vec3] = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+# Dash and dot sizes, in bond radii, with a floor (Angstrom) so thin bonds still read as broken lines.
+DASH_LENGTH, DASH_GAP, DASH_MIN = 6.0, 4.0, 0.1
+DOT_RADIUS, DOT_SPACING, DOT_SPACING_MIN = 1.6, 8.0, 0.12
 
 
-@dataclasses.dataclass(frozen=True)
-class AxesSpec:
-    """The axis indicator: label, world direction (unit) and material name for each of three axes, each axis's
-    shader before any depth fade, the origin ball's material, and the colour the depth fade mixes toward."""
-
-    labels: tuple[str, str, str]
-    directions: tuple[Vec3, Vec3, Vec3]
-    materials: tuple[str, str, str]
-    size: float
-    margin: float
-    shaders: tuple[ShaderSpec, ShaderSpec, ShaderSpec]
-    hub: str  # material of the origin ball
-    background: Vec3  # the world colour as the frame shows it: an axis fades toward it
-    font: str | None = None  # label font file; None = Blender's built-in font
-
-
-class Geometry(Protocol):
-    """Everything that creates scene content. All methods are mandatory."""
-
-    def ensure_material(self, name: str, spec: ShaderSpec) -> None: ...
-
-    def add_atom(
-        self,
-        name: str,
-        center: Vec3,
-        radius: float,
-        material: str,
-        *,
-        segments: int,
-        ring_count: int,
-    ) -> None: ...
-
-    def add_atom_instances(
-        self,
-        name: str,
-        centers: list[Vec3],
-        radius: float,
-        material: str,
-        *,
-        segments: int,
-        ring_count: int,
-    ) -> None: ...
-
-    def add_cylinder(self, name: str, a: Vec3, b: Vec3, radius: float, material: str, *, outline: bool) -> None: ...
-
-    def add_dot(self, name: str, center: Vec3, radius: float, material: str) -> None:
-        """A small sphere with no outline (dotted bonds)."""
-
-    def add_arrow(
-        self,
-        name: str,
-        a: Vec3,
-        b: Vec3,
-        radius: float,
-        material: str,
-        *,
-        head_radius_ratio: float,
-        head_length_ratio: float,
-    ) -> None: ...
-
-    def add_cylinder_batch(
-        self, name: str, pieces: list[tuple[Vec3, Vec3, float]], material: str, *, outline: bool
-    ) -> None:
-        """Many cylinders (a, b, radius) of one material as one object (large scenes)."""
-
-    def add_dot_batch(self, name: str, dots: list[tuple[Vec3, float]], material: str) -> None:
-        """Many outline-free dots (centre, radius) of one material as one object."""
-
-    def add_arrow_batch(
-        self,
-        name: str,
-        arrows: list[tuple[Vec3, Vec3, float]],
-        material: str,
-        *,
-        head_radius_ratio: float,
-        head_length_ratio: float,
-    ) -> None:
-        """Many outline-free arrows (a, b, radius) of one material as one object."""
-
-    def add_mesh(
-        self,
-        name: str,
-        vertices: list[Vec3],
-        faces: list[tuple[int, int, int]],
-        material: str,
-        *,
-        edge_material: str | None,
-        edge_width: float,
-        ghost: bool,
-    ) -> None: ...
-
-    def add_mesh_batch(
-        self,
-        name: str,
-        parts: list[tuple[list[Vec3], list[tuple[int, int, int]]]],
-        material: str,
-        *,
-        edge_material: str | None,
-        edge_width: float,
-        ghost: bool,
-    ) -> None:
-        """Many polyhedra (vertices, faces) of one material as one flat-shaded mesh (large scenes)."""
-
-
-class Stage(Protocol):
-    """Look, lighting, camera and output. All methods are mandatory."""
-
-    def apply_look(self, look: Look) -> None: ...
-
-    def remove_default_cube(self) -> None: ...
-
-    def setup_soft_lighting(self, target: Vec3, extent: float, enabled: bool) -> None: ...
-
-    def setup_backdrop(self, target: Vec3, extent: float, enabled: bool) -> None: ...
-
-    def set_camera(self, camera: Camera, extent: float) -> None: ...
-
-    def set_axes_overlay(self, axes: AxesSpec | None) -> None: ...
-
-    def configure_renderer(self, quality: Quality) -> None: ...
-
-    def render_still(self, filepath: str) -> None: ...
-
-    def get_render_settings(self) -> dict[str, str | int]: ...
-
-
-class SceneBackend(Geometry, Stage, Protocol):
-    """The full backend contract the runner (builder.py) drives."""
+def _three(items: Sequence[T]) -> tuple[T, T, T]:
+    """The items of an axis triple as a tuple; a list of another length is a bug and fails here."""
+    first, second, third = items
+    return first, second, third
 
 
 def scene_bounds(scene: SceneDocument) -> tuple[Vec3, float]:
@@ -227,24 +113,6 @@ def _add_atoms(scene: SceneDocument, backend, point_map, quality) -> None:
         )
 
 
-_BOX_CORNERS = [(i, j, k) for i in (0, 1) for j in (0, 1) for k in (0, 1)]
-
-
-def cell_box_edges(cell) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
-    """The 12 edges of the display box as (start, end) in scene coordinates."""
-
-    def corner(c):
-        return tuple(cell.origin[x] + sum(c[a] * cell.vectors[a][x] for a in range(3)) for x in range(3))
-
-    edges = []
-    for a in _BOX_CORNERS:
-        for axis in range(3):
-            if a[axis] == 0:
-                b = tuple(1 if x == axis else a[x] for x in range(3))
-                edges.append((corner(a), corner(b)))
-    return edges
-
-
 def _add_cell_box(scene: SceneDocument, backend, plan: RenderPlan, center, extent: float) -> None:
     style = plan.cell_box
     if not style.show or scene.cell is None:
@@ -255,15 +123,12 @@ def _add_cell_box(scene: SceneDocument, backend, plan: RenderPlan, center, exten
     )
     # Line width is a fraction of the image height; the frame is ortho_scale wide (square-ish images).
     radius = 0.5 * style.width * ortho_scale(extent, plan.shots[0].camera.zoom)
-    for n, (a, b) in enumerate(cell_box_edges(scene.cell)):
+    for n, (a, b) in enumerate(cell_box_edges(scene.cell.origin, scene.cell.vectors)):
         local_a = tuple(a[i] - center[i] for i in range(3))
         local_b = tuple(b[i] - center[i] for i in range(3))
         backend.add_cylinder(
             name=f"cell_box_{n}", a=local_a, b=local_b, radius=radius, material="PBB_CellBox", outline=False
         )
-
-
-_CARTESIAN: tuple[Vec3, Vec3, Vec3] = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
 
 def _lattice_directions(vectors) -> tuple[Vec3, Vec3, Vec3]:
@@ -273,10 +138,7 @@ def _lattice_directions(vectors) -> tuple[Vec3, Vec3, Vec3]:
     for i in range(3):
         if length(vecs[i]) < 1e-9:
             vecs[i] = cross(vecs[(i + 1) % 3], vecs[(i + 2) % 3])
-    return tuple(normalize(v) for v in vecs)  # type: ignore[return-value]
-
-
-AXES_HUB_MATERIAL = "PBB_Axes_Hub"
+    return _three([normalize(v) for v in vecs])
 
 
 def _axes_spec(scene: SceneDocument, backend, plan: RenderPlan) -> AxesSpec | None:
@@ -305,15 +167,15 @@ def _axes_spec(scene: SceneDocument, backend, plan: RenderPlan) -> AxesSpec | No
     )
     background = tuple(channel * look.world_strength for channel in look.world_color)
     return AxesSpec(
-        labels,
-        directions,
-        tuple(materials),  # type: ignore[arg-type]
-        axes.size,
-        axes.margin,
-        tuple(shaders),  # type: ignore[arg-type]
-        AXES_HUB_MATERIAL,
-        background,  # type: ignore[arg-type]
-        axes.font,
+        labels=labels,
+        directions=directions,
+        materials=_three(materials),
+        size=axes.size,
+        margin=axes.margin,
+        shaders=_three(shaders),
+        hub=AXES_HUB_MATERIAL,
+        background=_three(background),
+        font=axes.font,
     )
 
 
@@ -341,11 +203,6 @@ def build_scene_with_backend(scene: SceneDocument, backend, plan: RenderPlan) ->
     backend.setup_backdrop(target, extent, plan.look.backdrop)
     backend.set_camera(_local_camera(plan.shots[0].camera, (cx, cy, cz)), extent)
     backend.set_axes_overlay(_axes_spec(scene, backend, plan))
-
-
-# Dash and dot sizes, in bond radii, with a floor (Angstrom) so thin bonds still read as broken lines.
-DASH_LENGTH, DASH_GAP, DASH_MIN = 6.0, 4.0, 0.1
-DOT_RADIUS, DOT_SPACING, DOT_SPACING_MIN = 1.6, 8.0, 0.12
 
 
 @dataclasses.dataclass(frozen=True)

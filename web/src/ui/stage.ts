@@ -49,7 +49,7 @@ export function updateScene(doc: Scene): void {
 }
 
 // ---- the Show flags ----
-// The ☰ menu's checks set the flags (react/main-menu.tsx); the objects they show follow them here. A new scene's objects
+// The menu's checks set the flags (react/main-menu.tsx); the objects they show follow them here. A new scene's objects
 // are hidden or shown by the flags too, since they follow `loaded`.
 export function wireStage(): void {
   Object.assign(controls, DRAG_FEEL);

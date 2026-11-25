@@ -23,7 +23,7 @@ HUB_OBJECT = "PBB_AxisHub"  # the origin ball; the name starts with PBB_Axis, so
 
 class AxesOverlayMixin:
     def set_axes_overlay(self, axes) -> None:
-        """Build (or, for None, remove) the indicator. `axes` is a `runner.AxesSpec`, validated upstream."""
+        """Build (or, for None, remove) the indicator. `axes` is a `protocols.AxesSpec`, validated upstream."""
         bpy = self._bpy
         for obj in [o for o in bpy.data.objects if o.name.startswith(("PBB_Axes_", "PBB_Axis"))]:
             bpy.data.objects.remove(obj, do_unlink=True)

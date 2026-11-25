@@ -1,9 +1,9 @@
 // The two panels that fold: the details card (to its (i) button, drawn by src/react/info-card.tsx) and the lens and zoom
-// column (to its aperture button, react/lens-column.tsx). On a phone only one may be open, so each one's opening closes
+// row (to its aperture button, react/lens-row.tsx). On a phone only one may be open, so each one's opening closes
 // the other: that rule lives here, with both.
 import { signal } from "@preact/signals-core";
 import { remembered } from "./storage";
-import { helpOpen } from "./menus";
+import { helpOpen } from "./help";
 
 // ---- phone or desktop ----
 // The phone breakpoint. web/style.css has the same 640 px in its phone @media rule; change both together.
@@ -34,7 +34,7 @@ export function infoChoice(): boolean | null {
 
 export function showInfo(open: boolean) {
   if (open && narrowScreen.matches) showViewControls(false); // a phone has room for one of them at the bottom
-  if (open) helpOpen.value = false; // the card and the help open in the same place (ui/menus.ts)
+  if (open) helpOpen.value = false; // the card and the help open in the same place (ui/help.ts)
   infoOpen.value = open;
 }
 // The (i) button and the card's close button: the user's own choice, remembered, and the focus moves to the control they
@@ -47,9 +47,9 @@ export function toggleInfo() {
   infoFocus.value = open ? "close" : "details";
 }
 
-// ---- the lens and zoom column ----
+// ---- the lens and zoom row ----
 // It folds into its aperture button: open on wide screens, folded on a phone, where it would cover the triad. The
-// column reads this signal (react/lens-column.tsx); the button's choice is remembered.
+// row reads this signal (react/lens-row.tsx); the button's choice is remembered.
 const VIEW_CONTROLS_KEY = "gemmy.view-controls-open";
 const viewStore = choiceStore(VIEW_CONTROLS_KEY);
 export const viewControlsOpen = signal(isOpen(viewStore.read()) ?? !narrowScreen.matches);
@@ -57,7 +57,7 @@ export const viewControlsOpen = signal(isOpen(viewStore.read()) ?? !narrowScreen
 function showViewControls(open: boolean) {
   viewControlsOpen.value = open;
 }
-// The aperture button: opens or folds the column. On a phone, opening it shuts the details card.
+// The aperture button: opens or folds the row. On a phone, opening it shuts the details card.
 export function toggleViewControls(): void {
   const open = !viewControlsOpen.value;
   if (open && narrowScreen.matches && infoOpen.value) showInfo(false);

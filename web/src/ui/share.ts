@@ -1,5 +1,5 @@
 // Sharing the view: the camera in the page's address (#view=...), restored when the first scene is shown, and the Copy
-// link item of the ☰ menu. The address is written when the camera has stopped moving, quietly (replaceState).
+// link item of the menu. The address is written when the camera has stopped moving, quietly (replaceState).
 import { setView, viewNow } from "../camera/view";
 import { VIEW_KEY, type ViewPose, decodeView, encodeView, poseOf, viewFromPose } from "../camera/viewhash";
 import { lens, loaded } from "../state";

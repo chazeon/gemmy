@@ -3,6 +3,7 @@
 import { Contrast, Moon, Sun } from "lucide-react";
 import { SHORTCUT } from "../ui/keyboard";
 import { cycleTheme, theme } from "../ui/theme";
+import { ICON } from "./icons";
 import { TipButton } from "./tip";
 import { useSignal } from "./use-signal";
 import { spin } from "./motion";
@@ -29,7 +30,7 @@ export function ThemeButton() {
       style={spin(1)}
       className="size-11 rounded-[var(--radius)] bg-[var(--bar)] text-[var(--fg)] shadow-[var(--shadow)]"
     >
-      <Icon size={20} strokeWidth={1.75} />
+      <Icon {...ICON} />
     </TipButton>
   );
 }

@@ -7,7 +7,7 @@ import inspect
 import pytest
 
 from gemmy.render.blender import BlenderBackend
-from gemmy.render.runner import Geometry, Stage
+from gemmy.render.protocols import Geometry, Stage
 from recording import RecordingBackend
 
 

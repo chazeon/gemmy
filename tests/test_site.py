@@ -16,16 +16,16 @@ from pathlib import Path
 
 import pytest
 
-from gemmy.view import EXAMPLES_FILE, GALLERY_KEYS, write_hosted_site
+from gemmy.site import EXAMPLES_FILE, GALLERY_KEYS, HASH_CHARS, write_hosted_site
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = sorted(p.parent.name for p in (ROOT / "examples").glob("*/config.toml"))
-# The examples in the order scripts/build_site.sh compiles them: the front page's tabs follow this order.
-BUILD_ORDER = re.search(r"for example in ([^;]+);", (ROOT / "scripts" / "build_site.sh").read_text()).group(1).split()
+# The committed examples in gallery order: the front page's tabs follow it.
+BUILD_ORDER = (ROOT / "scripts" / "examples.txt").read_text(encoding="utf-8").split()
 GEMMY = Path(sys.executable).with_name("gemmy")  # the console script of this environment
 # A page with its viewer inline is over 200 KB; the example pages are a few KB and load the shared viewer.
 PAGE_BYTES_LIMIT = 30_000
-HASH = r"[0-9a-f]{10}"  # gemmy.view.HASH_CHARS
+HASH = rf"[0-9a-f]{{{HASH_CHARS}}}"  # the hex digits of a shared file's name
 VIEWER_NAME = re.compile(rf"viewer\.({HASH})\.js")
 STYLE_NAME = re.compile(rf"style\.({HASH})\.css")
 # A reference to a file in a page (href or src), relative to the page's folder.
@@ -67,7 +67,7 @@ def test_the_shared_files_are_named_by_the_hash_of_their_content(site: Path) -> 
     for name in (viewer, style):
         match = VIEWER_NAME.fullmatch(name) or STYLE_NAME.fullmatch(name)
         assert match, name
-        assert hashlib.sha256((site / name).read_bytes()).hexdigest()[:10] == match.group(1)
+        assert hashlib.sha256((site / name).read_bytes()).hexdigest()[:HASH_CHARS] == match.group(1)
     assert not (site / "viewer.js").exists() and not (site / "style.css").exists()
 
 

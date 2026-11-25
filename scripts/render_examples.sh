@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render every example and copy the pictures into docs/images/ for the README.
+# Render the three README examples (nacl, ice-ih, stishovite) and copy their pictures into docs/images/ for the README.
 # Needs Blender (found automatically, or set $BLENDER) and ImageMagick. Scratch output goes to $OUT (default a temp dir).
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

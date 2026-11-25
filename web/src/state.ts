@@ -48,7 +48,7 @@ const EMPTY_SCENE: LoadedScene = {
 };
 export const loaded = signal<LoadedScene>(EMPTY_SCENE);
 
-// The Show toggles of the ☰ menu, and the outlines (ui/stage.ts binds each to what it shows).
+// The Show toggles of the menu, and the outlines (ui/stage.ts binds each to what it shows).
 export const showAtoms = signal(true);
 export const showBox = signal(true);
 export const outlines = signal(true);
@@ -61,7 +61,7 @@ export const fitValue = signal(1);
 // The projection in use, written with the lens by each camera move (camera/view.ts commit).
 export const projection = signal<Projection>("ortho");
 // The zoom readout's text ("100%", or "" until the stage has a size): the frame loop writes it (render/loop.ts), and the
-// lens column shows it (react/lens-column.tsx).
+// lens row shows it (react/lens-row.tsx).
 export const zoomLabel = signal("");
 
 // A redraw is wanted: requestRender sets the flag, the frame loop clears it when it draws.

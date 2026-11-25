@@ -8,13 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { type BondEnd, centreShown, centreShownAlong, type Readout, readout } from "../ui/readout";
 import { SHORTCUT } from "../ui/keyboard";
 import { infoFocus, infoOpen, toggleInfo } from "../ui/panels";
+import { AXES, axisColour } from "./axis-view-icon";
+import { Group } from "./group";
+import { ICON_SMALL, MENU_ICON } from "./icons";
 import { TipButton } from "./tip";
 import { useSignal } from "./use-signal";
 import { PANEL_MOTION, usePresence } from "./presence";
-import { LOOK } from "../config";
 
 const COPY_FEEDBACK_MS = 1500;
-const ICON = 16;
 
 // The card while the details are open (the (i) button in the corner island, react/corner-buttons.tsx, is hidden then).
 export function InfoCard() {
@@ -179,7 +180,7 @@ function CopyRef({ text }: { text: string }) {
   const tip = { idle: "Copy the reference", copied: "Copied", failed: "Copy failed" }[state];
   return (
     <TipButton variant="ghost" size="icon-xs" aria-label="Copy the reference" tip={tip} onClick={copy}>
-      {state === "copied" ? <Check size={ICON} /> : <Copy size={ICON} />}
+      {state === "copied" ? <Check {...MENU_ICON} /> : <Copy {...MENU_ICON} />}
     </TipButton>
   );
 }
@@ -189,8 +190,7 @@ function CopyRef({ text }: { text: string }) {
 // each with a short glide. The letters are the axis font's, in the triad's colours on hover.
 function ViewButtons() {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: a div keeps the buttons' row; a fieldset is a form control
-    <div role="group" aria-label="View" className="flex items-center rounded-md border border-border">
+    <Group label="View" className="flex items-center rounded-md border border-border">
       <TipButton
         variant="ghost"
         size="icon-sm"
@@ -200,9 +200,9 @@ function ViewButtons() {
         onClick={centreShown}
         className="size-7 rounded-none first:rounded-l-md"
       >
-        <ScanBox size={ICON} strokeWidth={1.75} />
+        <ScanBox {...ICON_SMALL} />
       </TipButton>
-      {AXES.map((axis, i) => (
+      {AXES.map((axis) => (
         <TipButton
           key={axis}
           variant="ghost"
@@ -210,16 +210,15 @@ function ViewButtons() {
           aria-label={`Look along ${axis} at this object`}
           tip={`Look along ${axis} at this object`}
           onClick={() => centreShownAlong(axis)}
-          style={{ "--axis": LOOK.axisColors[i] } as CSSProperties}
+          style={{ "--axis": axisColour(axis) } as CSSProperties}
           className="group/view relative size-7 rounded-none border-l border-border last:rounded-r-md"
         >
-          <Scan size={ICON} strokeWidth={1.75} />
+          <Scan {...ICON_SMALL} />
           <span className="absolute inset-0 flex items-center justify-center pb-px text-[11px] leading-none italic [font-family:var(--label)] group-hover/view:text-(--axis)">
             {axis}
           </span>
         </TipButton>
       ))}
-    </div>
+    </Group>
   );
 }
-const AXES = ["a", "b", "c"] as const;

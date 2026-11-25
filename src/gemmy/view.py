@@ -1,5 +1,5 @@
 """`gemmy view`: write a scene as one self-contained HTML page (three.js from a pinned CDN, no Blender), several scenes
-as a static site of such pages, or a hosted site (`write_hosted_site`) that shares one viewer and loads each scene file.
+as a static site of such pages. The hosted site (gemmy.site) renders its pages with the functions below.
 
 Stdlib only. The page is `viewer/page.html`; its stylesheet and script are the other built files in `viewer/`
 (`viewer.js` is the TypeScript viewer in `web/`, built by `npm --prefix web run build`; never edit the built files). It
@@ -10,41 +10,37 @@ see-through polyhedra).
 from __future__ import annotations
 
 import base64
-import gzip
-import hashlib
 import html
 import json
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from .datafile import read_data
 from .render import looks
 from .scene import SCENE_SCHEMA_VERSION, SceneDocument, check_references, from_dict
 from .settings import Axes
 
 VIEWER = Path(__file__).with_name("viewer")
-_PLACEHOLDER = re.compile(
-    r"__(TITLE|SUBTITLE|SCENE_JSON|SCENE_FILE|MODE|DEFAULT_SCENES|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__"
-)
-# The elements of page.html that a linked page replaces with references to the site's shared files.
-_INLINE_STYLE = "<style>\n/*__STYLE__*/</style>"
-_INLINE_SCRIPT = '<script type="module">\n//__SCRIPT__</script>'
-# A hosted site: the scene files and the pages' references to the shared viewer, relative to the page's folder.
-HOSTED_SCENE_FILE = "scene.json.gz"
-_SITE_ROOT = "../"  # from a scene's folder, or from view/, back to the site root
-HASH_CHARS = 10  # hex digits of a shared file's SHA-256 in its name: a new build never gets an old file's name
-# The gallery: each scene's folder holds GALLERY_FILE (its title and description); the site root gets EXAMPLES_FILE, the
-# list of the scenes in order for the start screen: {name, title, description, scene}.
-GALLERY_FILE = "gallery.json"
-GALLERY_KEYS = ("title", "description")
-EXAMPLES_FILE = "examples.json"
-# The start screen's picture of a scene: pre-rendered PNGs (scripts/render_thumbnails.sh) in a folder with <scene
-# name>.png, copied into the scene's folder as THUMBNAIL_FILE and named by examples.json's "thumbnail".
-THUMBNAIL_FILE = "thumbnail.png"
+# The placeholders of page.html and viewer.js (`__NAME__`), filled by render_page and shared_script. The constants are
+# the ones both fill, so they are listed once and both patterns are built from that list.
+_CONSTANT_PLACEHOLDERS = ("CONSTANTS_JSON", "AXIS_FONTS_JSON")
+_PAGE_PLACEHOLDERS = ("TITLE", "SUBTITLE", "SCENE_JSON", "SCENE_FILE", "MODE", "DEFAULT_SCENES", "TABS")
+
+
+def _placeholder_pattern(names: tuple[str, ...]) -> re.Pattern[str]:
+    return re.compile(rf"__({'|'.join(names)})__")
+
+
+_CONSTANT_PLACEHOLDER = _placeholder_pattern(_CONSTANT_PLACEHOLDERS)
+_PAGE_PLACEHOLDER = _placeholder_pattern(_CONSTANT_PLACEHOLDERS + _PAGE_PLACEHOLDERS)
+# The marks in page.html that a linked page replaces with references to the site's shared files. Each mark is the
+# text the page carries; _template finds it by the same text.
+_STYLE_MARK = "/*__STYLE__*/"
+_SCRIPT_MARK = "//__SCRIPT__"
+_INLINE_STYLE = f"<style>\n{_STYLE_MARK}</style>"
+_INLINE_SCRIPT = f'<script type="module">\n{_SCRIPT_MARK}</script>'
 
 
 def scene_json_for_html(data: Mapping[str, Any]) -> str:
@@ -115,14 +111,14 @@ def _template(assets: tuple[str, str] | None) -> str:
     if assets is None:
         style = (VIEWER / "style.css").read_text(encoding="utf-8")
         script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
-        return page.replace("/*__STYLE__*/", style).replace("//__SCRIPT__", script)
+        return page.replace(_STYLE_MARK, style).replace(_SCRIPT_MARK, script)
     style_href, script_href = (html.escape(href) for href in assets)
     return page.replace(_INLINE_STYLE, f'<link rel="stylesheet" href="{style_href}">').replace(
         _INLINE_SCRIPT, f'<script type="module" src="{script_href}"></script>'
     )
 
 
-def _page(
+def render_page(
     scene_text: str,
     title: str,
     subtitle: str,
@@ -149,7 +145,7 @@ def _page(
         "TABS": _tabs(tabs, tab),
     }
     # One pass, so text inside the scene or the title is never mistaken for a placeholder.
-    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], _template(assets))
+    return _PAGE_PLACEHOLDER.sub(lambda m: values[m.group(1)], _template(assets))
 
 
 def validate_scene_dict(scene: Mapping[str, Any]) -> None:
@@ -169,7 +165,7 @@ def render_viewer(
 
     `scene_file` is how the copied `gemmy render` command names the scene; `tabs` link to sibling pages."""
     validate_scene_dict(scene)
-    return _page(scene_json_for_html(scene), title, subtitle, scene_file, tabs, tab, "scene")
+    return render_page(scene_json_for_html(scene), title, subtitle, scene_file, tabs, tab, "scene")
 
 
 def render_live_page(
@@ -177,7 +173,7 @@ def render_live_page(
 ) -> str:
     """A page with no scene embedded: it fetches scene.json and follows events, relative to its own URL (see
     `gemmy.serve`). With several `tabs` it links to the others."""
-    return _page("", title, subtitle, scene_file, tabs, tab, "live")
+    return render_page("", title, subtitle, scene_file, tabs, tab, "live")
 
 
 def render_loader_page(
@@ -186,7 +182,12 @@ def render_loader_page(
     """A page with no scene: it opens one from the address (?scene=, ?gist=), the default scenes, a URL typed in, or a
     dropped file (see web/src/ui/loader.ts). With no `assets` it needs no server and no other file than the viewer's
     own."""
-    return _page("", title, "", mode="load", default_scenes=default_scenes, assets=assets)
+    return render_page("", title, "", mode="load", default_scenes=default_scenes, assets=assets)
+
+
+def read_scene(path: str | Path) -> dict[str, Any]:
+    """The scene file's JSON (not validated: see validate_scene_dict)."""
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def write_viewer(
@@ -195,7 +196,7 @@ def write_viewer(
     """Write the viewer page. `scene` is a scene.json path or an already loaded dict."""
     if isinstance(scene, (str, Path)):
         path = Path(scene)
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = read_scene(path)
         title = title or path.stem
         scene_file = path.name
     else:
@@ -208,7 +209,7 @@ def write_viewer(
     return out
 
 
-def _scene_names(paths: Sequence[Path]) -> list[str]:
+def scene_names(paths: Sequence[Path]) -> list[str]:
     """The page names of scene files: their names without the extension, all different."""
     names = [path.stem for path in paths]
     if len(set(names)) < len(names):
@@ -221,10 +222,10 @@ def write_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = ""
     them, and `out/index.html` that opens the first. Links are relative, so `out` can be served under any path.
     Every scene is checked before anything is written. Returns `out/index.html`."""
     paths = [Path(scene) for scene in scenes]
-    names = _scene_names(paths)
+    names = scene_names(paths)
     tabs = [(name, name) for name in names]
     pages = [
-        render_viewer(json.loads(path.read_text(encoding="utf-8")), name, subtitle, path.name, tabs, k)
+        render_viewer(read_scene(path), name, subtitle, path.name, tabs, k)
         for k, (path, name) in enumerate(zip(paths, names, strict=True))
     ]
     out = Path(out)
@@ -241,121 +242,8 @@ def write_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = ""
     return index
 
 
-def _shared_script() -> str:
+def shared_script() -> str:
     """viewer.js for a hosted site: the text every page of the build would inline, its two placeholders filled."""
     script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
     values = _constant_values()
-    return re.sub(r"__(CONSTANTS_JSON|AXIS_FONTS_JSON)__", lambda m: values[m.group(1)], script)
-
-
-@dataclass(frozen=True)
-class _SharedFiles:
-    """The hosted site's shared viewer files, with the names they are published under (their content's hash)."""
-
-    script: str  # viewer.<hash>.js
-    script_bytes: bytes
-    style: str  # style.<hash>.css
-    style_bytes: bytes
-
-    def hrefs(self, folder: str) -> tuple[str, str]:
-        """The (style, script) hrefs for a page `folder` steps down from the site root ("" for the root)."""
-        return f"{folder}{self.style}", f"{folder}{self.script}"
-
-
-def _hashed_name(stem: str, extension: str, data: bytes) -> str:
-    """`stem.<hash>.extension`, the hash being the first HASH_CHARS hex digits of the data's SHA-256. The name changes
-    exactly when the content does, so a cached copy of an older build is never served under the new name."""
-    return f"{stem}.{hashlib.sha256(data).hexdigest()[:HASH_CHARS]}.{extension}"
-
-
-def _shared_files() -> _SharedFiles:
-    script = _shared_script().encode("utf-8")
-    style = (VIEWER / "style.css").read_bytes()
-    return _SharedFiles(
-        script=_hashed_name("viewer", "js", script),
-        script_bytes=script,
-        style=_hashed_name("style", "css", style),
-        style_bytes=style,
-    )
-
-
-def _gallery_entries(folder: Path, names: Sequence[str], thumbnails: Path) -> list[dict[str, str]]:
-    """examples.json's entries, in scene order: each scene's title and description from `folder/<name>/gallery.json`,
-    and its thumbnail from `thumbnails/<name>.png`. Every scene needs both, with exactly those keys and string
-    values."""
-    entries = []
-    for name in names:
-        path = folder / name / GALLERY_FILE
-        if not path.is_file():
-            raise ValueError(f"no gallery entry for scene {name}: expected {path}")
-        data = read_data(path)
-        if not isinstance(data, dict) or sorted(data) != sorted(GALLERY_KEYS):
-            raise ValueError(f"{path} must be an object with exactly the keys {', '.join(GALLERY_KEYS)}")
-        if not all(isinstance(data[key], str) for key in GALLERY_KEYS):
-            raise ValueError(f"{path}: {' and '.join(GALLERY_KEYS)} must be strings")
-        picture = thumbnails / f"{name}.png"
-        if not picture.is_file():
-            raise ValueError(f"no thumbnail for scene {name}: expected {picture}")
-        entries.append(
-            {
-                "name": name,
-                **{key: data[key] for key in GALLERY_KEYS},
-                "scene": f"{name}/{HOSTED_SCENE_FILE}",
-                "thumbnail": f"{name}/{THUMBNAIL_FILE}",
-            }
-        )
-    return entries
-
-
-def write_hosted_site(
-    scenes: Sequence[str | Path],
-    out: str | Path,
-    subtitle: str = "",
-    gallery: str | Path | None = None,
-    thumbnails: str | Path | None = None,
-) -> Path:
-    """A hosted site (GitHub Pages): one viewer and one stylesheet at the root, named by their content's hash
-    (viewer.<hash>.js, style.<hash>.css), shared by every page. Per scene, a folder with `scene.json.gz` (gzip, no
-    timestamp, so the same scene gives the same bytes; not hashed, since a stale copy of a scene is harmless) and an
-    index.html that opens it, a small page with the viewer's default scene. `view/index.html` is the viewer with no
-    scene, which opens any scene by address or file. `index.html` is the front page. With `gallery` (a folder
-    with <scene name>/gallery.json for each scene), it is the start screen, which lists the scenes from examples.json
-    (written alongside, the scenes in order as {name, title, description, scene, thumbnail}) and opens one when chosen;
-    each scene's folder then gets its thumbnail (`thumbnails`, a folder with <scene name>.png). A gallery needs
-    thumbnails, and the other way round. Without `gallery`, there is no examples.json, so the front page opens every
-    scene as a default tab, in order. Every scene is checked before anything is written; links are relative, so the
-    site works under any path. Returns `out/index.html`."""
-    paths = [Path(scene) for scene in scenes]
-    names = _scene_names(paths)
-    if (gallery is None) != (thumbnails is None):
-        raise ValueError("a gallery needs thumbnails, and thumbnails need a gallery (--gallery and --thumbnails)")
-    entries = None if gallery is None else _gallery_entries(Path(gallery), names, Path(thumbnails))
-    texts = [path.read_text(encoding="utf-8") for path in paths]
-    for text in texts:
-        validate_scene_dict(json.loads(text))
-    shared = _shared_files()
-    out = Path(out)
-    out.mkdir(parents=True, exist_ok=True)
-    (out / shared.script).write_bytes(shared.script_bytes)
-    (out / shared.style).write_bytes(shared.style_bytes)
-    assets = shared.hrefs(_SITE_ROOT)
-    tabs = [(name, name) for name in names]
-    for k, (path, name, text) in enumerate(zip(paths, names, texts, strict=True)):
-        folder = out / name
-        folder.mkdir(parents=True, exist_ok=True)
-        (folder / HOSTED_SCENE_FILE).write_bytes(gzip.compress(text.encode("utf-8"), mtime=0))
-        if thumbnails is not None:
-            (folder / THUMBNAIL_FILE).write_bytes((Path(thumbnails) / f"{name}.png").read_bytes())
-        page = _page(
-            "", name, subtitle, path.name, tabs, k, mode="load", default_scenes=[HOSTED_SCENE_FILE], assets=assets
-        )
-        (folder / "index.html").write_text(page, encoding="utf-8")
-    (out / "view").mkdir(exist_ok=True)
-    (out / "view" / "index.html").write_text(render_loader_page(assets=assets), encoding="utf-8")
-    scenes_at_root = [f"{name}/{HOSTED_SCENE_FILE}" for name in names]
-    front = render_loader_page("gemmy", assets=shared.hrefs(""), default_scenes=scenes_at_root)
-    index = out / "index.html"
-    index.write_text(front, encoding="utf-8")
-    if entries is not None:
-        (out / EXAMPLES_FILE).write_text(json.dumps(entries, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return index
+    return _CONSTANT_PLACEHOLDER.sub(lambda m: values[m.group(1)], script)

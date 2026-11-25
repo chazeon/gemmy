@@ -35,6 +35,7 @@ RULES = (
             "settings.py",
             "datafile.py",
             "view.py",
+            "site.py",
             "serve.py",
             "render/*.py",
             "render/blender/*.py",

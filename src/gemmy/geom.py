@@ -321,6 +321,25 @@ def shrink(vertices: Sequence[Vec3], scale: float) -> list[Vec3]:
     return [tuple(c[i] + (v[i] - c[i]) * scale for i in range(3)) for v in vertices]  # type: ignore[misc]
 
 
+_BOX_CORNERS = [(i, j, k) for i in (0, 1) for j in (0, 1) for k in (0, 1)]
+
+
+def cell_box_edges(origin: Vec3, vectors: Sequence[Vec3]) -> list[tuple[Vec3, Vec3]]:
+    """The 12 edges of a cell's display box as (start, end) in scene coordinates. A corner is the origin plus the
+    box vectors weighted by its 0/1 coordinates."""
+
+    def corner(c):
+        return tuple(origin[x] + sum(c[a] * vectors[a][x] for a in range(3)) for x in range(3))
+
+    edges = []
+    for a in _BOX_CORNERS:
+        for axis in range(3):
+            if a[axis] == 0:
+                b = tuple(1 if x == axis else a[x] for x in range(3))
+                edges.append((corner(a), corner(b)))
+    return edges
+
+
 # ---- unit meshes ------------------------------------------------------------------------------------------
 # Shared by separate objects (placed by location, rotation, scale) and by merged meshes (placed by `place_mesh`).
 # All are plain (vertices, faces) with faces as index tuples; caps are n-gons, like Blender's own primitives.

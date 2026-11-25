@@ -8,7 +8,7 @@ import { CornerButtons } from "./corner-buttons";
 import { ExportArea } from "./export-menu";
 import { Home } from "./home";
 import { InfoCard } from "./info-card";
-import { LensColumn } from "./lens-column";
+import { LensRow } from "./lens-row";
 import { TopBar } from "./top-bar";
 
 const TIP_DELAY_MS = 300;
@@ -20,7 +20,7 @@ function Overlay() {
       <Home />
       <TopBar />
       <ExportArea />
-      <LensColumn />
+      <LensRow />
       <InfoCard />
       <CornerButtons />
     </TooltipProvider>

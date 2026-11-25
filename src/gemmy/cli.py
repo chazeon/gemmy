@@ -4,7 +4,9 @@ import dataclasses
 import json
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 
 def _extract_user_argv(argv: list[str] | None = None) -> list[str]:
@@ -93,87 +95,101 @@ def _config_name(config: Path) -> str:
     return config.resolve().parent.name if config.stem == "config" else config.stem
 
 
+def run_compile(args) -> int:
+    from .compile.pipeline import compile_to_json
+
+    try:
+        scene = compile_to_json(args.config, args.out, args.poscar)
+    except ValueError as exc:  # no structure named, or an invalid config: the message says which key
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    print(
+        f"Compiled scene -> {args.out} "
+        f"(points={len(scene.points)}, atoms={len(scene.primitives.atoms)}, "
+        f"bonds={len(scene.primitives.bonds)}, polyhedra={len(scene.primitives.polyhedra)}, "
+        f"displacements={len(scene.primitives.displacements)})"
+    )
+    return 0
+
+
+def _view_argument_error(args) -> str | None:
+    """The reason `gemmy view` cannot run with these arguments, or None. The gallery's pairing (--gallery and
+    --thumbnails go together) is checked by write_hosted_site, which takes both."""
+    if not args.scenes:
+        return "give a scene (gemmy view scene.json --out page.html)."
+    if len(args.scenes) > 1 and args.title is not None:
+        return "--title takes one scene; with several, each page is named after its file."
+    if (args.gallery is not None or args.thumbnails is not None) and not args.hosted:
+        return "--gallery and --thumbnails need --hosted."
+    return None
+
+
+def run_view(args) -> int:
+    from .site import write_hosted_site
+    from .view import write_site, write_viewer
+
+    error = _view_argument_error(args)
+    if error is not None:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    try:
+        if args.hosted:
+            out = write_hosted_site(args.scenes, args.out, args.subtitle, args.gallery, args.thumbnails)
+        elif len(args.scenes) == 1:
+            out = write_viewer(args.scenes[0], args.out, args.title, args.subtitle)
+        else:
+            out = write_site(args.scenes, args.out, args.subtitle)
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    print(f"Wrote viewer -> {out}")
+    return 0
+
+
+def run_render(args) -> int:
+    """`gemmy render`: resolve the plan. With --no-run it is written (to --plan-out, else next to the scene); with
+    Blender it is written once, to --plan-out or a temp file that is gone when Blender has read it."""
+    from .render.launch import BlenderNotFoundError, find_blender, run_plan_in_blender
+
+    try:
+        settings = resolve_settings(args)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    plan_json = json.dumps(dataclasses.asdict(settings.resolve(str(Path(args.scene).resolve()))), indent=2)
+    if not args.run:
+        plan_path = Path(args.plan_out or f"{args.scene}.plan.json")
+        plan_path.write_text(plan_json, encoding="utf-8")
+        print(f"Resolved render plan -> {plan_path}")
+        return 0
+    try:
+        blender = find_blender(args.blender)
+    except BlenderNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    with tempfile.TemporaryDirectory(prefix="gemmy-") as tmp:
+        plan_path = Path(args.plan_out) if args.plan_out else Path(tmp) / "plan.json"
+        plan_path.write_text(plan_json, encoding="utf-8")
+        return run_plan_in_blender(blender, str(plan_path), gui=args.gui)
+
+
+def _commands() -> dict[type, Callable[[Any], int]]:
+    """The run function of each parsed command. Their imports stay inside them: `gemmy view` never loads the numbers."""
+    from .cli_args import Compile, Render, Serve, View
+
+    return {Compile: run_compile, Render: run_render, View: run_view, Serve: run_serve}
+
+
 def main(argv: list[str] | None = None) -> int:
     user_argv = _extract_user_argv(argv)
     if user_argv[:1] == ["_run-plan"]:
         # Entry used inside Blender, where pydantic is unavailable: tyro is not installed there.
         return run_plan(user_argv[user_argv.index("--plan") + 1])
 
-    from .cli_args import Compile, Serve, View, parse
+    from .cli_args import parse
 
     args = parse(user_argv)
-
-    if isinstance(args, Compile):
-        from .compile.pipeline import compile_to_json
-
-        try:
-            scene = compile_to_json(args.config, args.out, args.poscar)
-        except ValueError as exc:  # no structure named, or an invalid config: the message says which key
-            print(f"error: {exc}", file=sys.stderr)
-            return 2
-        print(
-            f"Compiled scene -> {args.out} "
-            f"(points={len(scene.points)}, atoms={len(scene.primitives.atoms)}, "
-            f"bonds={len(scene.primitives.bonds)}, polyhedra={len(scene.primitives.polyhedra)}, "
-            f"displacements={len(scene.primitives.displacements)})"
-        )
-        return 0
-
-    if isinstance(args, View):
-        from .view import write_hosted_site, write_site, write_viewer
-
-        if not args.scenes:
-            print("error: give a scene (gemmy view scene.json --out page.html).", file=sys.stderr)
-            return 2
-        if len(args.scenes) > 1 and args.title is not None:
-            print("error: --title takes one scene; with several, each page is named after its file.", file=sys.stderr)
-            return 2
-        if (args.gallery is not None or args.thumbnails is not None) and not args.hosted:
-            print("error: --gallery and --thumbnails need --hosted.", file=sys.stderr)
-            return 2
-        try:
-            if args.hosted:
-                out = write_hosted_site(args.scenes, args.out, args.subtitle, args.gallery, args.thumbnails)
-            elif len(args.scenes) == 1:
-                out = write_viewer(args.scenes[0], args.out, args.title, args.subtitle)
-            else:
-                out = write_site(args.scenes, args.out, args.subtitle)
-        except (OSError, ValueError, TypeError) as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 2
-        print(f"Wrote viewer -> {out}")
-        return 0
-
-    if isinstance(args, Serve):
-        return run_serve(args)
-
-    else:
-        from .render.launch import BlenderNotFoundError, find_blender, run_plan_in_blender
-
-        try:
-            settings = resolve_settings(args)
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 2
-        plan_json = json.dumps(dataclasses.asdict(settings.resolve(str(Path(args.scene).resolve()))), indent=2)
-        blender = None
-        if args.run:
-            try:
-                blender = find_blender(args.blender)
-            except BlenderNotFoundError as exc:
-                print(f"error: {exc}", file=sys.stderr)
-                return 2
-        if args.plan_out or not args.run:
-            plan_path = Path(args.plan_out or str(args.scene) + ".plan.json")
-            plan_path.write_text(plan_json, encoding="utf-8")
-            if not args.run:
-                print(f"Resolved render plan -> {plan_path}")
-                return 0
-            return run_plan_in_blender(blender, str(plan_path), gui=args.gui)
-        with tempfile.TemporaryDirectory(prefix="gemmy-") as tmp:
-            plan_path = Path(tmp) / "plan.json"
-            plan_path.write_text(plan_json, encoding="utf-8")
-            return run_plan_in_blender(blender, str(plan_path), gui=args.gui)
+    return _commands()[type(args)](args)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 // Captures the gallery thumbnails: each example's page, opened in headless Chrome at 480 x 320 (captured at 2x),
-// light theme, the stage alone at the default view, with the cell box hidden (its item in the ☰ menu, as a reader would turn it
+// light theme, the stage alone at the default view, with the cell box hidden (its item in the menu, as a reader would turn it
 // off) and the axis triad hidden (a style for this capture only). The picture is transparent: Chrome's default background
 // is alpha 0 for the capture, and the page's backgrounds (body, main, stage) are transparent in the capture's style, so the
 // WebGL canvas (cleared to alpha 0) shows nothing behind the structure. Writes <out>/<name>.png at 2x;
@@ -38,7 +38,7 @@ async function devtoolsPort(profile, chrome) {
   throw new Error("Chrome did not open its DevTools port");
 }
 
-// The cell box is off in the picture: its toggle in the ☰ panel, switched off as a reader would. The trigger is pressed
+// The cell box is off in the picture: its toggle in the menu, switched off as a reader would. The trigger is pressed
 // with the mouse, the toggle is clicked once the panel is open, and the trigger shuts it.
 async function hideCellBox(send, evaluate) {
   const press = async (selector) => {

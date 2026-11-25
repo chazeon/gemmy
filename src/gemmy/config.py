@@ -224,6 +224,18 @@ class SceneConfig(Frozen):
         }
 
 
+def referenced_files(raw: Any, *, structure: bool = True) -> list[str]:
+    """The file names a compile config names, as written (relative to the config's folder): its structure (unless
+    `structure` is False, when another structure file is given), its label file and its displacement file. Works on
+    the raw config, before validation, so a config that does not validate still names what it names."""
+    if not isinstance(raw, dict):
+        return []
+    sections = [(raw, "structure")] if structure else []
+    sections += [(raw.get("labels"), "file"), (raw.get("displacements"), "data_file")]
+    names = [section.get(key) for section, key in sections if isinstance(section, dict)]
+    return [name for name in names if isinstance(name, str) and name]
+
+
 def scene_config_from_dict(data: dict[str, Any]) -> SceneConfig:
     """Validate a config dict (raises ``pydantic.ValidationError``, a ValueError, with key paths)."""
     cfg = SceneConfig.model_validate(data)

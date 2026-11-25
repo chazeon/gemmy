@@ -16,7 +16,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-examples=(nacl methane-clathrate-si ice-ih stishovite dry-ice uio-66 c60 c60-cage dna-1bna glut1-4pyp nav17-6j8i nucleosome-1kx5 apoferritin)  # the committed examples, never examples/private/
+examples=($(<"$root/scripts/examples.txt"))  # the committed examples in gallery order, never examples/private/
 scenes=()
 for example in "${examples[@]}"; do
   $gemmy compile "$root/examples/$example/config.toml" --out "$scratch/$example.json" >/dev/null

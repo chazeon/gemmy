@@ -14,7 +14,7 @@
 @source "./src";
 
 /* The buttons of the overlay take no native frame, and the viewer's font and colour. Scoped to #overlay (page.html), where
-   only React draws, and to the popovers, which Radix draws in a portal outside it (the ☰ panel's rows), so the page's
+   only React draws, and to the popovers, which Radix draws in a portal outside it (the menu's rows), so the page's
    own buttons (style.css) keep theirs; a utility (a border, a background) still wins. */
 @layer base {
   #overlay button, [data-radix-popper-content-wrapper] button {

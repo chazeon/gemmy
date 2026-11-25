@@ -11,7 +11,7 @@
 #   <example>/scene.json.gz      its compiled scene, gzipped (not hashed: a stale copy of a scene is harmless)
 #   <example>/thumbnail.png      its gallery picture (docs/images/gallery/<example>.png)
 #   .nojekyll                     serve the files as they are, without Jekyll
-# for each committed example (the list in scripts/build_site.sh, never examples/private/). The pusher checks this set.
+# for each committed example (the list in scripts/examples.txt, never examples/private/). The pusher checks this set.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tree="$(mktemp -d)"

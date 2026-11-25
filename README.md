@@ -170,10 +170,10 @@ On the published site, the front page <https://chazeon.github.io/gemmy/> is the 
   relative one works on a site. The host must allow cross-origin reads (CORS), as GitHub's raw files and gists do.
   Plain JSON and gzip (`.json.gz`, detected by its first bytes) both load. Several `scene=` are tabs.
 - **Gists.** A secret gist works by its id. The first `.json` or `.json.gz` file is shown unless `file=` names one.
-- **Files.** Drop a `.json` or `.json.gz` anywhere on the page, or use ☰ → Open local file…. The file is read in the browser
+- **Files.** Drop a `.json` or `.json.gz` anywhere on the page, or use Menu → Open local file…. The file is read in the browser
   and never uploaded.
 - **The view.** The camera is in the address too: `#view=persp;lens=50;eye=…;at=…;up=…` (or `ortho;zoom=…`), to four
-  significant figures. ☰ → Copy link copies the scene's address with this view. An embedded or a local scene cannot go
+  significant figures. Menu → Copy link copies the scene's address with this view. An embedded or a local scene cannot go
   in a link, so the link then has the view only and opens the page at it.
 - **Size.** A download or a decompressed scene may be at most 200 MB.
 
@@ -360,7 +360,7 @@ Never edit the built files in `src/gemmy/viewer/`.
   - `config.py`, the compile config with pydantic validation;
   - `compile/`, structure → scene;
   - `render/`, which contains `runner.py`, `looks.py`, the bundled axis font in `fonts/`, and the `blender/` backend;
-  - `view.py`, `viewer/` (the built page, its style and script; the source is in `web/`) and `serve.py`, the web viewer, static site and live preview;
+  - `view.py`, `viewer/` (the built page, its style and script; the source is in `web/`), `site.py`, the hosted site, and `serve.py`, the web viewer, static site and live preview;
   - `cli.py`.
 
   [CLAUDE.md](CLAUDE.md) has the full module map and the rules that keep the compile and render sides apart.

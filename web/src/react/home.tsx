@@ -2,7 +2,6 @@
 // the first screen, where a scroll reveals it. The state and the actions are in ui/home.ts; this draws them. The screen is
 // the first item of the overlay's grid (#home in style.css spans the whole window), so the islands drawn after it keep
 // their own clicks.
-import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { FileUp, Link, SquareArrowUpRightExit } from "lucide-react";
@@ -18,24 +17,25 @@ import {
   openServed,
   takeFocusRequest,
 } from "../ui/home";
+import { ICON, ICON_SMALL } from "./icons";
 import { useSignal } from "./use-signal";
 
 // The fade at the window's bottom edge: its opacity follows the distance still to scroll, so it is full while more of the
 // page is below and goes at the end. Set on the scroll, not in React state, so a scroll does not draw the screen again.
 const FADE_PX = 64;
-function useBottomFade(
-  scroller: RefObject<HTMLDivElement | null>,
-  content: RefObject<HTMLDivElement | null>,
-  fade: RefObject<HTMLDivElement | null>,
-) {
+// The hook makes the refs the screen draws with: the scrolling window, the content it measures and the fade itself.
+function useBottomFade() {
+  const scroller = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const shade = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = scroller.current;
-    const shade = fade.current;
+    const fade = shade.current;
     const body = content.current;
-    if (!element || !shade || !body) return;
+    if (!element || !fade || !body) return;
     const update = () => {
       const below = element.scrollHeight - element.scrollTop - element.clientHeight;
-      shade.style.opacity = String(Math.min(1, Math.max(0, below / FADE_PX)));
+      fade.style.opacity = String(Math.min(1, Math.max(0, below / FADE_PX)));
     };
     update();
     element.addEventListener("scroll", update, { passive: true });
@@ -46,7 +46,8 @@ function useBottomFade(
       element.removeEventListener("scroll", update);
       resized.disconnect();
     };
-  }, [scroller, content, fade]);
+  }, []);
+  return { scroller, content, shade };
 }
 
 export function Home() {
@@ -57,74 +58,12 @@ export function Home() {
 
 function HomeScreen({ state }: { state: CardState }) {
   const found = useSignal(gallery);
-  const address = useRef<HTMLInputElement>(null);
-  const scroller = useRef<HTMLDivElement>(null);
-  const content = useRef<HTMLDivElement>(null);
-  const shade = useRef<HTMLDivElement>(null);
-  useBottomFade(scroller, content, shade);
-  // New tab asks for the address box; the request is taken once, after the screen is drawn.
-  useEffect(() => {
-    if (takeFocusRequest()) address.current?.focus();
-  });
-
+  const { scroller, content, shade } = useBottomFade();
   return (
     <div id="home" ref={scroller} data-testid="home">
       <div ref={content}>
         <div className="home-first">
-          <Card className="home-card w-full max-w-[420px] gap-4 rounded-(--radius) border-border py-5 shadow-(--shadow)">
-            <CardHeader className="gap-1">
-              <CardTitle className="text-[15px]">Open a scene</CardTitle>
-              <CardDescription className="text-xs">A gemmy scene.json, from this computer or the web</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <button
-                type="button"
-                onClick={openFile}
-                className="grid cursor-pointer justify-items-center gap-1 rounded-lg border border-dashed border-border px-4 py-5 text-center transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                <FileUp size={20} strokeWidth={1.75} className="mb-1 text-muted-foreground" />
-                <span className="text-sm font-medium">Choose a file</span>
-                <span className="text-xs text-muted-foreground">or drop a scene.json or .json.gz anywhere</span>
-              </button>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
-                <span className="h-px flex-1 bg-border" />
-                or
-                <span className="h-px flex-1 bg-border" />
-              </div>
-              <form
-                className="flex h-9 items-center gap-2 rounded-md border border-border pr-1 pl-3 transition-shadow focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  openAddress(address.current?.value ?? "");
-                }}
-              >
-                <Link size={16} strokeWidth={1.75} className="shrink-0 text-muted-foreground" />
-                <input
-                  ref={address}
-                  id="scene-address"
-                  type="text"
-                  inputMode="url"
-                  autoComplete="off"
-                  aria-label="Scene URL, or gist address or id"
-                  placeholder="Scene URL or gist"
-                  className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none [font-family:inherit] placeholder:text-muted-foreground"
-                />
-                <Button type="submit" size="sm" className="h-7 px-3">
-                  Open
-                </Button>
-              </form>
-              {state.status !== "" && (
-                <p role="status" className="m-0 text-xs text-muted-foreground">
-                  {state.status}
-                </p>
-              )}
-              {state.error !== null && (
-                <p role="alert" className="m-0 font-mono text-xs break-words whitespace-pre-wrap text-destructive">
-                  {state.error}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <OpenCard state={state} />
           {state.served !== null && (
             <Button variant="secondary" className="home-served" onClick={openServed}>
               Served by gemmy serve: {state.served}
@@ -135,6 +74,71 @@ function HomeScreen({ state }: { state: CardState }) {
       </div>
       <div ref={shade} className="home-fade" aria-hidden="true" />
     </div>
+  );
+}
+
+// The Open card: a file to choose or drop, or one address box for a scene URL or a gist, with the status and the error
+// of the last try. New tab asks for the address box; the request is taken once, after the card is drawn.
+function OpenCard({ state }: { state: CardState }) {
+  const address = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (takeFocusRequest()) address.current?.focus();
+  });
+  return (
+    <Card className="home-card w-full max-w-[420px] gap-4 rounded-(--radius) border-border py-5 shadow-(--shadow)">
+      <CardHeader className="gap-1">
+        <CardTitle className="text-[15px]">Open a scene</CardTitle>
+        <CardDescription className="text-xs">A gemmy scene.json, from this computer or the web</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <button
+          type="button"
+          onClick={openFile}
+          className="grid cursor-pointer justify-items-center gap-1 rounded-lg border border-dashed border-border px-4 py-5 text-center transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <FileUp {...ICON} className="mb-1 text-muted-foreground" />
+          <span className="text-sm font-medium">Choose a file</span>
+          <span className="text-xs text-muted-foreground">or drop a scene.json or .json.gz anywhere</span>
+        </button>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+          <span className="h-px flex-1 bg-border" />
+          or
+          <span className="h-px flex-1 bg-border" />
+        </div>
+        <form
+          className="flex h-9 items-center gap-2 rounded-md border border-border pr-1 pl-3 transition-shadow focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25"
+          onSubmit={(event) => {
+            event.preventDefault();
+            openAddress(address.current?.value ?? "");
+          }}
+        >
+          <Link {...ICON_SMALL} className="shrink-0 text-muted-foreground" />
+          <input
+            ref={address}
+            id="scene-address"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            aria-label="Scene URL, or gist address or id"
+            placeholder="Scene URL or gist"
+            className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none [font-family:inherit] placeholder:text-muted-foreground"
+          />
+          <Button type="submit" size="sm" className="h-7 px-3">
+            Open
+          </Button>
+        </form>
+        {state.status !== "" && (
+          <p role="status" className="m-0 text-xs text-muted-foreground">
+            {state.status}
+          </p>
+        )}
+        {state.error !== null && (
+          <p role="alert" className="m-0 font-mono text-xs break-words whitespace-pre-wrap text-destructive">
+            {state.error}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -155,8 +159,9 @@ function ExamplesGallery({ found }: { found: Gallery }) {
   );
 }
 
-// A card: the picture fills it, the title sits on a small frosted label at its foot, and the description (on hover or
-// focus, always on a touch screen) on a label above it.
+// A card: the picture fills it, and the title stays steady at the bottom left in a soft halo of the card's background.
+// On hover or focus a cover comes up under the title, and the description and the open icon show beside it. A touch
+// screen has no hover, so it shows the title alone (style.css hides the description there).
 function ExampleCard({ found, example }: { found: Gallery; example: Example }) {
   return (
     <li className="flex min-w-0">
@@ -169,7 +174,7 @@ function ExampleCard({ found, example }: { found: Gallery; example: Example }) {
           <span className="description">{example.description}</span>
           <span className="title-row">
             <strong className="title">{example.title}</strong>
-            <SquareArrowUpRightExit className="go" size={20} strokeWidth={1.75} aria-hidden="true" />
+            <SquareArrowUpRightExit className="go" {...ICON} aria-hidden="true" />
           </span>
         </span>
       </button>

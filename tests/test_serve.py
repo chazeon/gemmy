@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from gemmy.cli import main
-from gemmy.serve import Preview, compile_build, make_server, scene_file_build
+from gemmy.serve import Preview, PreviewServer, compile_build, scene_file_build
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 POLL = 0.02
@@ -31,7 +31,7 @@ class Running:
     def __init__(self, *previews: Preview) -> None:
         self.previews = previews
         self.preview = previews[0]
-        self.server = make_server(previews, "127.0.0.1", 0)
+        self.server = PreviewServer(("127.0.0.1", 0), previews)
         self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
         self.thread = threading.Thread(target=lambda: self.server.serve_forever(0.02), daemon=True)
 

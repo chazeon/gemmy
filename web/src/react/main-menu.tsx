@@ -1,5 +1,5 @@
-// The ☰ panel: a shadcn Popover that drops down from the ☰ button and stays open while the scene is used (a click
-// elsewhere does not shut it); the ☰ button or Escape shuts it. The Scene actions come first, then checks for the Show
+// The menu: a shadcn Popover that drops down from the menu button and stays open while the scene is used (a click
+// elsewhere does not shut it); the menu button or Escape shuts it. The Scene actions come first, then checks for the Show
 // flags and a choice of the outline width, drawn as the menu's rows were. Open local file and New tab shut it, as they
 // take the user elsewhere. The viewer's state stays in its signals (state.ts, ui/outline-scale.ts); the panel reads
 // them and calls their setters.
@@ -13,6 +13,8 @@ import { focusUrl } from "../ui/home";
 import { openNewTab, openSceneFile, openUrlUnavailable } from "../ui/loader";
 import { chooseOutlineScale, outlineScale } from "../ui/outline-scale";
 import { copyLink } from "../ui/share";
+import { Group } from "./group";
+import { ICON, MENU_ICON } from "./icons";
 import { ISLAND_MENU } from "./placement";
 import { TipButton } from "./tip";
 import { useSignal } from "./use-signal";
@@ -29,7 +31,7 @@ const ROW =
 
 export function MainMenu() {
   const [open, setOpen] = useState(false);
-  // New tab's focus goes to the start screen's address box once the panel has shut, not back to the ☰ button.
+  // New tab's focus goes to the start screen's address box once the panel has shut, not back to the menu button.
   const leaveFocus = useRef(false);
   const atoms = useSignal(showAtoms);
   const shownOutlines = useSignal(outlines);
@@ -40,14 +42,8 @@ export function MainMenu() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <TipButton
-          id="menu-button"
-          variant={open ? "secondary" : "ghost"}
-          size="icon"
-          aria-label="Menu"
-          tip="Menu: open a scene; show or hide atoms, outlines, cell box; the outline width"
-        >
-          {open ? <PanelTopClose size={20} strokeWidth={1.75} /> : <PanelTopOpen size={20} strokeWidth={1.75} />}
+        <TipButton id="menu-button" variant={open ? "secondary" : "ghost"} size="icon" aria-label="Menu" tip="Menu">
+          {open ? <PanelTopClose {...ICON} /> : <PanelTopOpen {...ICON} />}
         </TipButton>
       </PopoverTrigger>
       <PopoverContent
@@ -56,7 +52,7 @@ export function MainMenu() {
         sideOffset={ISLAND_MENU.sideOffset}
         alignOffset={ISLAND_MENU.alignOffset}
         aria-label="Menu"
-        className="w-56 p-1"
+        className="box-border max-h-(--radix-popover-content-available-height) w-56 overflow-y-auto p-1"
         onInteractOutside={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => {
           if (leaveFocus.current) {
@@ -129,11 +125,10 @@ export function MainMenu() {
 // A labelled run of rows. The checks and the choice are toggle buttons (aria-pressed): one pressed of the choice's.
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: a div keeps the rows' layout; a fieldset is a form control
-    <div role="group" aria-label={label}>
+    <Group label={label}>
       <div className="px-2 py-1.5 text-sm font-medium">{label}</div>
       {children}
-    </div>
+    </Group>
   );
 }
 
@@ -152,7 +147,7 @@ function Action({
 }) {
   return (
     <button type="button" className={ROW} onClick={onClick} disabled={disabled} title={title}>
-      <Icon size={16} strokeWidth={2} className="text-muted-foreground" />
+      <Icon {...MENU_ICON} className="text-muted-foreground" />
       {children}
     </button>
   );

@@ -18,8 +18,8 @@ Biome's import sorting (`organizeImports`) is off: the imports stay in the order
 
 ## Who draws what
 
-- **React** (`src/react/`) draws every control over the canvas: the top bar (the ☰ button with the page's name, or the tab
-  strip in its place, and the view toolbar), Export and the theme button, the lens and zoom column, the selection card, the
+- **React** (`src/react/`) draws every control over the canvas: the top bar (the menu button with the page's name, or the tab
+  strip in its place, and the view toolbar), Export and the theme button, the lens and zoom row, the selection card, the
   corner buttons, the keyboard help and the start screen. `overlay.tsx` mounts them into `#overlay` in page.html
   (`display: contents`, so each island is a grid item of `#ui`).
 - **Plain TypeScript** does the rest and never imports React: the scene's loading and framing (`scene/`), the camera and its
@@ -102,16 +102,16 @@ restores it once the first scene is shown; Copy link is there too. `src/ui/stage
 `gemmy view --hosted` (scripts/build_site.sh) writes one viewer and one stylesheet at the site root, named by the first
 10 hex digits of their SHA-256 (`viewer.<hash>.js`, `style.<hash>.css`). Every page references those names, so a new
 build never gets an old, cached file under the same name. The names are computed in one place
-(`gemmy.view._shared_files`), and the page writers take them as hrefs. The scene files (`scene.json.gz`) are not hashed.
+(`gemmy.site`), and the page writers take them as hrefs. The scene files (`scene.json.gz`) are not hashed.
 The front page (`index.html`) is the viewer too: a page with `examples.json` beside it opens the start screen (home), and
 its default scenes are not opened. `view/` is the viewer with no scene (home, with the examples from the site root), and
 each example's page has its own scene as its one default.
 
 ## Where things are
 
-- `react/`: one file per area of the overlay. `overlay.tsx` mounts them. `top-bar.tsx` (the ☰ button and the name or the tab
-  strip, and the island of the toolbar), `main-menu.tsx` (the ☰ menu), `tab-strip.tsx`, `toolbar.tsx` (the views and the
-  turn pad), `export-menu.tsx` (Export), `theme-button.tsx`, `lens-column.tsx`, `info-card.tsx` (the selection card),
+- `react/`: one file per area of the overlay. `overlay.tsx` mounts them. `top-bar.tsx` (the menu button and the name or the tab
+  strip, and the island of the toolbar), `main-menu.tsx` (the menu), `tab-strip.tsx`, `toolbar.tsx` (the views and the
+  turn pad), `export-menu.tsx` (Export), `theme-button.tsx`, `lens-row.tsx`, `info-card.tsx` (the selection card),
   `corner-buttons.tsx` (the (i) and ? buttons), `help.tsx` (the keyboard help), `home.tsx` (the start screen), `tip-button.tsx`
   (a button with its tip). Hooks: `use-signal.ts` (reads a signal), `press.ts` (a button that repeats while held) and
   `overflow.ts` (the fade of a scrolling row).
@@ -122,7 +122,7 @@ each example's page has its own scene as its one default.
   `views.ts` (the look-along views), `share.ts` (the view in the address, Copy link), `loader.ts` (the tabs and how each
   source loads), `tab-bar.ts` (the tab strip's state) and `tab-model.ts` (the tab list, as plain data), `home.ts` (the start
   screen's state), `live.ts` (the gemmy serve page), `export.ts` (the Export actions), `toast.ts`, `theme.ts`,
-  `outline-scale.ts`, `overflow.ts` (the edges of a scrolling row), `menus.ts` (the keyboard help's open state), `storage.ts`
+  `outline-scale.ts`, `overflow.ts` (the edges of a scrolling row), `help.ts` (the keyboard help's open state), `storage.ts`
   (remembered choices), `tooltip.ts` (the hover tips) and `dom.ts` (`byId`, and the page's name).
 - `scene/`: the scene document's loading (above), `load.ts` builds the three.js objects, `bounds.ts` the framing.
 - `camera/`: the view, the pivot, the fly and glide moves, the framing numbers (shared with the Blender render).

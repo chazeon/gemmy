@@ -23,13 +23,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from .datafile import read_data
-from .view import render_live_page, validate_scene_dict
+from .datafile import DataFileError, read_data
+from .view import read_scene, render_live_page, validate_scene_dict
 
 Stamp = tuple[tuple[str, int | None, int | None], ...]
 
 
 def _stamp(paths: list[Path]) -> Stamp:
+    """Each file's (path, mtime, size): a file that appears or goes changes the stamp, since its values become None."""
     out = []
     for path in paths:
         try:
@@ -41,6 +42,7 @@ def _stamp(paths: list[Path]) -> Stamp:
 
 
 def _message(exc: BaseException) -> str:
+    """The error as the page shows it: its type and its text."""
     text = str(exc).strip()
     return f"{type(exc).__name__}: {text}" if text else type(exc).__name__
 
@@ -52,7 +54,7 @@ def scene_file_build(path: Path) -> tuple[Callable[[], dict[str, Any]], Callable
     """Serve a fixed scene.json: re-read and validate it when it changes."""
 
     def build() -> dict[str, Any]:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = read_scene(path)
         validate_scene_dict(data)
         return data
 
@@ -72,18 +74,15 @@ def compile_build(
         return scene_to_dict(compile_scene_from_files(config, poscar))
 
     def watch() -> list[Path]:
+        from .config import referenced_files  # pydantic: imported here, not with the server
+
         paths = [config] + ([poscar] if poscar is not None else [])
         try:
             raw = read_data(config)
-            named = [raw.get("structure")] if poscar is None else []
-            for section, key in (("labels", "file"), ("displacements", "data_file")):
-                named.append((raw.get(section) or {}).get(key))
-            for name in named:
-                if isinstance(name, str) and name:
-                    paths.append(config.resolve().parent / name)
-        except Exception:  # noqa: BLE001  # an unreadable config is reported by build(); watch what we know
-            pass
-        return paths
+        except DataFileError:  # build() reports an unreadable config; until it reads, watch the config alone
+            return paths
+        names = referenced_files(raw, structure=poscar is None)
+        return paths + [config.resolve().parent / name for name in names]
 
     return build, watch
 
@@ -120,6 +119,20 @@ class BlenderRender:
 # ---- the live state ----
 
 
+IDLE, RENDERING = "idle", "rendering"
+
+
+@dataclasses.dataclass(frozen=True)
+class RenderState:
+    """The render step as the status event reports it; the page reads these keys (web/src/ui/live.ts)."""
+
+    enabled: bool  # a Blender render is set up for this server
+    state: str = IDLE  # RENDERING while Blender works
+    output: str = "image"  # the image's path, as the page names it
+    time: str | None = None  # the clock time of the last good render
+    error: str | None = None  # the last render's failure, if it failed
+
+
 class Preview:
     def __init__(
         self,
@@ -146,13 +159,7 @@ class Preview:
         self._scene: bytes | None = None
         self._version: str | None = None
         self._error: str | None = None
-        self._render_state = {
-            "enabled": render is not None,
-            "state": "idle",
-            "output": render_output,
-            "time": None,
-            "error": None,
-        }
+        self._render_state = RenderState(enabled=render is not None, output=render_output)
         self._render_pending = False
         self._tmp = tempfile.TemporaryDirectory(prefix="gemmy-serve-")
         self._threads: list[threading.Thread] = []
@@ -168,7 +175,15 @@ class Preview:
             return self._status_locked()
 
     def _status_locked(self) -> dict[str, Any]:
-        return {"version": self._version, "error": self._error, "render": dict(self._render_state)}
+        return {"version": self._version, "error": self._error, "render": dataclasses.asdict(self._render_state)}
+
+    def wait_for_change(self, last: int, timeout: float) -> tuple[int, dict[str, Any]]:
+        """Wait until the state moves past sequence number `last`, or `timeout` seconds pass. Returns the current
+        sequence number and status; the caller sends a status event when the number is not `last`."""
+        with self.cond:
+            if self.seq == last:
+                self.cond.wait(timeout)
+            return self.seq, self._status_locked()
 
     def _changed(self) -> None:  # call with the lock held
         self.seq += 1
@@ -233,7 +248,7 @@ class Preview:
                     return
                 self._render_pending = False  # a compile during this render sets it again: one more render
                 path.write_bytes(self._scene or b"{}")
-                self._render_state.update(state="rendering", error=None)
+                self._render_state = dataclasses.replace(self._render_state, state=RENDERING, error=None)
                 self._changed()
             error = None
             try:
@@ -242,9 +257,8 @@ class Preview:
                 error = _message(exc)
                 print(f"render error: {error}", file=sys.stderr, flush=True)
             with self.cond:
-                self._render_state.update(state="idle", error=error)
-                if error is None:
-                    self._render_state["time"] = time.strftime("%H:%M:%S")
+                done_at = time.strftime("%H:%M:%S") if error is None else self._render_state.time
+                self._render_state = dataclasses.replace(self._render_state, state=IDLE, time=done_at, error=error)
                 self._changed()
 
     # -- lifecycle
@@ -343,13 +357,10 @@ class _Handler(BaseHTTPRequestHandler):
         last = -1
         try:
             while not preview.closed:
-                with preview.cond:
-                    if preview.seq == last:
-                        preview.cond.wait(15)
-                    current, payload = preview.seq, json.dumps(preview._status_locked())
-                if current != last:
-                    last = current
-                    self.wfile.write(f"event: status\ndata: {payload}\n\n".encode())
+                seq, status = preview.wait_for_change(last, 15)
+                if seq != last:
+                    last = seq
+                    self.wfile.write(f"event: status\ndata: {json.dumps(status)}\n\n".encode())
                 else:
                     self.wfile.write(b": keepalive\n\n")
                 self.wfile.flush()
@@ -365,14 +376,10 @@ class PreviewServer(ThreadingHTTPServer):
         self.previews = list(previews)
 
 
-def make_server(previews: Sequence[Preview], host: str = "127.0.0.1", port: int = 8000) -> PreviewServer:
-    return PreviewServer((host, port), previews)
-
-
 def serve(previews: Sequence[Preview], host: str, port: int, open_browser: bool = False) -> int:
     """Run until Ctrl-C. Port 0 picks a free port; the URL printed is the real one."""
     try:
-        server = make_server(previews, host, port)
+        server = PreviewServer((host, port), previews)
     except OSError as exc:
         print(f"error: cannot listen on {host}:{port}: {exc}", file=sys.stderr)
         return 2

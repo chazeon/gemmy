@@ -49,7 +49,7 @@ const SNAP = `(() => ({
   info: document.getElementById("info-body")?.textContent.slice(0, 300) ?? null,
 }))()`;
 
-// The ☰ menu's state, while it is open: its checks, and the choices (outline width, theme) that are checked. Null when
+// The menu's state, while it is open: its checks, and the choices (outline width, theme) that are checked. Null when
 // the menu is shut (its items are not in the page then).
 const MENU = `(() => {
   const menu = document.getElementById("main-panel");
@@ -63,7 +63,7 @@ const MENU = `(() => {
 
 // The layout the test checks (tests/test_browser.py): the controls of the top bar (the menu island and the tool island)
 // and their centre lines, the lens and zoom row's centre line, the page's sideways scroll, and
-// the box round the ☰ menu's items (none when the menu is shut).
+// the box round the menu's items (none when the menu is shut).
 const LAYOUT = `(() => {
   const shown = (el) => el.getClientRects().length > 0;
   const centre = (el) => { const r = el.getBoundingClientRect(); return (r.top + r.bottom) / 2; };
@@ -141,7 +141,7 @@ async function runPage(browser, page) {
     await settle();
     const after = await glCounts();
     const state = await evaluate(SNAP);
-    // The ☰ menu, when it is open for this step: its state is kept, and the menu is shut for the next step.
+    // The menu, when it is open for this step: its state is kept, and the menu is shut for the next step.
     const menu = await evaluate(MENU);
     if (menu) {
       state.menu = menu;
@@ -152,7 +152,7 @@ async function runPage(browser, page) {
     steps.push(step);
     console.error(`${page.name} ${name} ${JSON.stringify(step.draws)} ${Date.now() - started} ms`);
   }
-  // A press at the centre of an element, as a user's mouse makes it (the ☰ menu opens on a press, not a click).
+  // A press at the centre of an element, as a user's mouse makes it (the menu opens on a press, not a click).
   const mouseClick = async (selector) => {
     const { x, y } =
       await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
@@ -161,7 +161,7 @@ async function runPage(browser, page) {
     await s("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
     await s("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", buttons: 0, clickCount: 1 });
   };
-  // The ☰ menu: opened and shut by its button, pressed with the mouse.
+  // The menu: opened and shut by its button, pressed with the mouse.
   const openMainMenu = async () => {
     if (await evaluate(MENU)) return;
     await mouseClick('[aria-label="Menu"]');
@@ -176,7 +176,7 @@ async function runPage(browser, page) {
     evaluate(`(() => { const el = [...document.querySelectorAll('#main-panel [aria-label="${section}"] [aria-pressed]')]
       .find((item) => item.textContent.trim() === ${JSON.stringify(text)});
       if (!el) throw new Error(${JSON.stringify(`no menu item ${text}`)}); el.click(); return true; })()`);
-  // The Export menu: a shadcn dropdown, opened by a press on its button (as the ☰ menu), and an item picked by its text
+  // The Export menu: a shadcn dropdown, opened by a press on its button (as the menu), and an item picked by its text
   // (an item's text is its label and its note, so the label is the start of it).
   const openExportMenu = async () => {
     await mouseClick("#export-button");
@@ -190,6 +190,9 @@ async function runPage(browser, page) {
   await s("Runtime.enable");
   await s("Page.addScriptToEvaluateOnNewDocument", { source: HOOK });
   await s("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  // The goldens are recorded in the light theme. The page's Auto theme follows the system's scheme, so the scheme is
+  // set here, not taken from the machine (a Mac in Dark mode failed every step's "dark" field).
+  await s("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
   // Every page starts from empty storage: the viewer keeps its menu choices in localStorage.
   await s("Storage.clearDataForOrigin", {
     origin: new URL(base).origin,
@@ -303,7 +306,7 @@ async function runPage(browser, page) {
     ),
   );
   // The layout, at the desktop width and at a phone's: the top bar's controls share a centre line, the page does not scroll
-  // sideways, and the ☰ menu's panel lies on the screen (open, then shut again). Not a golden: it is read, not compared.
+  // sideways, and the menu's panel lies on the screen (open, then shut again). Not a golden: it is read, not compared.
   const layout = {};
   for (const [name, width, height] of [
     ["desktop", 1280, 800],
@@ -312,7 +315,7 @@ async function runPage(browser, page) {
     await s("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 640 });
     await settle();
     const shut = await evaluate(LAYOUT);
-    // The column unfolded (a phone starts with it folded): its controls are measured open, then it is folded again.
+    // The row unfolded (a phone starts with it folded): its controls are measured open, then it is folded again.
     const folded = await evaluate(`document.getElementById("view-toggle").getAttribute("aria-expanded") === "false"`);
     if (folded) {
       await clickJs("#view-toggle");

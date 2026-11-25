@@ -326,3 +326,11 @@ def test_triad_draw_away_axes_go_under_the_ball_farthest_first() -> None:
     draw = g.triad_draw([-1.0, 0.3, -0.5], fade_max=0.35)
     assert draw.order == (0, 2, 1) and draw.behind == 2  # order[:2] under the ball, axis 1 over it
     assert draw.fades == pytest.approx((0.35, 0.0, 0.175))  # straight away is the full fade, half-away half of it
+
+
+def test_cell_box_has_twelve_edges_on_the_cell_corners() -> None:
+    edges = g.cell_box_edges((1.0, 0.0, 0.0), [(2.0, 0.0, 0.0), (0.0, 3.0, 0.0), (0.0, 0.0, 4.0)])
+    assert len(edges) == 12
+    corners = {point for edge in edges for point in edge}
+    assert len(corners) == 8
+    assert (1.0, 0.0, 0.0) in corners and (3.0, 3.0, 4.0) in corners

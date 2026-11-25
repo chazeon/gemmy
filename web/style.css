@@ -1,7 +1,7 @@
-  /* The layout, after Excalidraw: the 3D stage fills the window and the controls float over it as islands. Menu and
-     name (or tabs) top-left, view tools top-centre, Export top-right, messages under them, zoom and lens in the
-     bottom-left corner beside the abc triad (which stays where the Blender render draws it), help and the selection
-     details bottom-right. Phones get their own arrangement at the end of this file. */
+  /* The layout, after Excalidraw: the 3D stage fills the window and the controls float over it as islands. The menu
+     button and the name (or the tabs) top-left, the view tools top-centre, Export top-right, messages under them, the
+     lens and zoom row bottom-left under the abc triad (which stays where the Blender render draws it), help and the
+     selection details bottom-right. Phones get their own arrangement at the end of this file. */
 
   /* ---- tokens: colours for the light theme, then the dark theme (two selectors: the system's and the page's own) ---- */
   :root {
@@ -31,7 +31,9 @@
     --radius-small: 8px; /* buttons and tabs inside an island */
     /* a gallery card's corner radius (the thumbnail is clipped by the card's own corners) */
     --card-radius: var(--radius);
-    --button-step: 48px; /* a 40 px round button and its 8 px gap */
+    /* an island: a 36 px button in its 4 px padding; the gap between islands */
+    --island: 44px;
+    --gap: 8px;
     /* the window's inset on each side: the margin, or the device's safe area where it is larger (a notch) */
     --inset-top: max(var(--edge), env(safe-area-inset-top, 0px));
     --inset-right: max(var(--edge), env(safe-area-inset-right, 0px));
@@ -67,7 +69,7 @@
     position: fixed; inset: 0; z-index: 2; pointer-events: none; box-sizing: border-box;
     padding: var(--inset-top) var(--inset-right)
       var(--inset-bottom) var(--inset-left);
-    display: grid; gap: 8px; align-items: start;
+    display: grid; gap: var(--gap); align-items: start;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-rows: auto auto 1fr auto;
     grid-template-areas: "left center right" "msgs msgs msgs" ". . ." "bottom bottom bottom";
@@ -78,22 +80,25 @@
     background: var(--bar); border-radius: var(--radius); box-shadow: var(--shadow);
   }
   .island::-webkit-scrollbar { display: none; }
-  #msgs { grid-area: msgs; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  /* The islands are a layer over the start screen (z 0, #home): they are positioned, so they paint above its positioned
+     cards as the gallery scrolls under them. */
+  #menu-island, #tools, #export-area, #corner-buttons { position: relative; z-index: 1; }
+  #msgs { grid-area: msgs; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--gap); }
 
   /* ---- scrolling toolbars: on a phone the tool row scrolls sideways, and a finger may pan it from a button. A faded
      edge marks buttons hidden past it, on every island and on the tab strip ---- */
-  :is(.island, .tabs).more-right { --fade: linear-gradient(to left, var(--fade-floor), #000 var(--fade-width)); }
-  :is(.island, .tabs).more-left { --fade: linear-gradient(to right, var(--fade-floor), #000 var(--fade-width)); }
-  :is(.island, .tabs).more-left.more-right {
+  :is(.island, .fade-row).more-right { --fade: linear-gradient(to left, var(--fade-floor), #000 var(--fade-width)); }
+  :is(.island, .fade-row).more-left { --fade: linear-gradient(to right, var(--fade-floor), #000 var(--fade-width)); }
+  :is(.island, .fade-row).more-left.more-right {
     --fade: linear-gradient(to right, var(--fade-floor), #000 var(--fade-width), #000 calc(100% - var(--fade-width)), var(--fade-floor));
   }
-  :is(.island, .tabs):is(.more-left, .more-right) { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
+  :is(.island, .fade-row):is(.more-left, .more-right) { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
 
-  /* ---- the bottom-left row (react/lens-column.tsx): the aperture button in the corner, then the lenses, the zoom and
+  /* ---- the bottom-left row (react/lens-row.tsx): the aperture button in the corner, then the lenses, the zoom and
      fit in one island, under the triad (which stays where the Blender render draws it) ---- */
   #lens-column {
-    position: fixed; left: var(--inset-left); bottom: var(--inset-bottom);
-    pointer-events: none; display: flex; align-items: center; gap: 8px;
+    position: fixed; left: var(--inset-left); right: var(--inset-right); bottom: var(--inset-bottom);
+    pointer-events: none; display: flex; align-items: center; gap: var(--gap);
   }
   /* the bottom-right island (react/corner-buttons.tsx): the grid's bottom row, on the right */
   #corner-buttons { grid-row: 4; grid-column: 3; justify-self: end; align-self: end; }
@@ -116,7 +121,7 @@
   /* The selection card (src/react/info-card.tsx) is drawn by React in the island layer, above the corner island: its
      corner here, one 8 px gap above the 44 px island, as the help opens (react/placement.ts). Its look is its shadcn
      classes. */
-  #info { position: absolute; z-index: 2; right: var(--inset-right); bottom: calc(var(--inset-bottom) + 44px + 8px);
+  #info { position: absolute; z-index: 2; right: var(--inset-right); bottom: calc(var(--inset-bottom) + var(--island) + var(--gap));
     width: min(300px, calc(100% - 32px)); pointer-events: auto; }
 
   /* ---- live mode (gemmy serve): compile errors and Blender state, under the top islands; and the progress pill ---- */
@@ -140,11 +145,8 @@
      and spans the whole grid, so it covers the window, with the islands drawn over it. It scrolls. The first screen (the
      window's height) holds the Open card, centred; the gallery starts --peek above the first screen's bottom edge, so its
      top shows there, and the fade (.home-fade) at that edge follows the scroll. ---- */
-  /* The start screen is a layer of its own (z 0) under the bar's islands (z 1): its cards are positioned and masked, so
-     without the layers they would paint over the islands, which are not positioned, as the gallery scrolls under them. */
-  #home { position: relative; z-index: 0; }
-  #menu-island, #tools, #export-area, #corner-buttons { position: relative; z-index: 1; }
   #home {
+    position: relative; z-index: 0; /* a layer of its own, under the islands (see #ui) */
     --gutter: 24px;
     --peek: 96px;
     grid-column: 1 / -1; grid-row: 1 / -1; align-self: stretch; contain: size; box-sizing: border-box; min-height: 0;
@@ -207,9 +209,9 @@
     /* the padding is room for the halo inside the box that clips a long title to "…"; the margin takes it back */
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 24px; margin: -24px;
     font-size: 17px; font-weight: 600; line-height: 1.3; color: var(--fg); /* the halo is the card's own background, so the theme's text reads on it */
+    /* the card's background as a halo: dense next to the letters, fading out over about 24 px */
     text-shadow: 0 0 2px var(--thumb), 0 0 3px var(--thumb), 0 0 5px var(--thumb), 0 0 6px var(--thumb),
-      0 0 10px var(--thumb), 0 0 12px var(--thumb), 0 0 16px var(--thumb), 0 0 20px var(--thumb), 0 0 24px var(--thumb),
-      0 0 24px var(--thumb);
+      0 0 10px var(--thumb), 0 0 12px var(--thumb), 0 0 16px var(--thumb), 0 0 20px var(--thumb), 0 0 24px var(--thumb);
     transition: color 160ms ease-out, text-shadow 160ms ease-out;
   }
   .example .description {
@@ -223,8 +225,9 @@
   .example:is(:hover, :focus-visible) .description { opacity: 1; transform: none; }
   .example:is(:hover, :focus-visible) .go path { transform: none; }
   @media (hover: none) { .example .description { display: none; } }
+  /* #home makes this rule outweigh the card's own transitions, so no !important is needed */
   @media (prefers-reduced-motion: reduce) {
-    .example, .example *, .example .go path { transition: none !important; }
+    #home .example, #home .example * { transition: none; }
   }
   /* With no scene (the start screen) the scene's controls go; the Export button hides itself (a utility class, as its
      own display is a utility that would win over this layer), and the theme button stays. */
@@ -257,7 +260,8 @@
       grid-template-areas: "left right" "center center" "bottom help" "msgs msgs" ". .";
     }
     #corner-buttons { grid-area: help; align-self: start; }
-    #info { left: var(--inset-left); width: auto; } /* above the corner island and the lens column */
+    #info { left: var(--inset-left); width: auto; } /* above the corner island and the lens row */
     #home { --gutter: 16px; }
+    .page-from { display: none; } /* the name's line under it (top-bar.tsx), which the phone has no room for */
     .examples { gap: 10px; }
   }

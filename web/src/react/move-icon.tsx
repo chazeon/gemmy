@@ -1,7 +1,7 @@
 // A move button's icon: the structure where it was (a dashed square) and where it goes (a solid square over it, filled
 // with the button's colour so the dashes under it do not show), with Lucide's long thin arrow (move-up) beside them.
 // Drawn for up and mirrored, not turned, for the others, so the arrow keeps its side: right of the squares for up and
-// down, under them for left and right. The fill follows the button's hover through --halo (set by the button). On
+// down, under them for left and right. The fill follows the button's hover through --cutout (set by the button). On
 // hover (the button is group/move) the solid square slides on along the arrow and the arrow with it, while the dashed
 // one stays where the structure was; drawn in the icon's own frame, so the mirroring turns the motion too.
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ export function MoveIcon({ dx, dy }: { dx: number; dy: number }) {
         x="2.5"
         y="3"
         rx="1.5"
-        className={cn("fill-(--halo)", SLIDE, "group-hover/move:-translate-y-[2.5px]")}
+        className={cn("fill-(--cutout)", SLIDE, "group-hover/move:-translate-y-[2.5px]")}
       />
       <g className={cn(SLIDE, "group-hover/move:-translate-y-[1.5px]")}>
         <path d="M15.5 6 18.5 3 21.5 6" />

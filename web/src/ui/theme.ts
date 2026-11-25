@@ -25,7 +25,7 @@ function applyToPage(choice: ThemeChoice): void {
 }
 
 const stored = remembered<ThemeChoice>(THEME_KEY, (raw) => (isThemeChoice(raw) ? raw : AUTO));
-// The choice in use: the ☰ menu and the box's colour follow it.
+// The choice in use: the menu and the box's colour follow it.
 export const theme = signal<ThemeChoice>(stored.read());
 applyToPage(theme.peek());
 

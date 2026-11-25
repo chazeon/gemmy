@@ -8,21 +8,23 @@ import type { CSSProperties } from "react";
 import { LOOK } from "../config";
 
 export type Axis = "a" | "b" | "c";
+export const AXES: readonly Axis[] = ["a", "b", "c"];
+// An axis's colour in the triad (LOOK.axisColors), for the hover and focus states of its buttons.
+export const axisColour = (axis: Axis): string => LOOK.axisColors[AXES.indexOf(axis)];
 
 // The letter's top edge, in px from the button's top; its left edge is the same for all three. b is set 0.7 px lower
 // than a and c: b has an ascender, so at the same size it looks bigger than the x-height letters, and the lower set puts
 // it on the same line as them.
 const LETTER_TOP: Record<Axis, number> = { a: 4.5, b: 5.2, c: 4.5 };
 const LETTER_LEFT = 19.5;
-const AXIS_INDEX: Record<Axis, number> = { a: 0, b: 1, c: 2 };
 
 // Lucide's move-3d paths (the in-plane axes, then the stub); the paths are the same as Lucide's, only split.
 const PLANE = ["M5 3v16h16", "m2 6 3-3 3 3", "m18 16 3 3-3 3"];
 const STUB = "m5 19 6-6";
 
 export function AxisViewIcon({ axis }: { axis: Axis }) {
-  // The axis colour, for the hover and focus states (a CSS variable, so the classes can use it).
-  const colour = { "--axis": LOOK.axisColors[AXIS_INDEX[axis]] } as CSSProperties;
+  // The axis colour as a CSS variable, so the classes can use it.
+  const colour = { "--axis": axisColour(axis) } as CSSProperties;
   return (
     <>
       <svg

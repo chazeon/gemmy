@@ -75,7 +75,7 @@ export function pageCamera() {
 }
 // The zoom the readout shows (view-state.ts shownZoom): what the user sees, and what the zoom buttons act on.
 export const shownNow = (): number => shownZoom(viewNow(), extentNow());
-// The zoom that frames the structure in the current projection (the readout's percentage is of it).
+// The zoom that frames the structure in the current projection: the readout's multiple (1×) is the zoom over this.
 export const fitFor = (width: number, height: number): number =>
   fitZoomFor(view.projection, view.lens, extentNow(), { width, height });
 
