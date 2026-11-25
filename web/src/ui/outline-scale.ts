@@ -2,6 +2,7 @@
 // the automatic width). The choice is kept per browser under OUTLINE_SCALE_KEY, as the theme is (theme.ts). The Outlines
 // toggle still turns every outline off; this only scales them.
 import { setOutlineScale } from "../render/draw";
+import { requestRender } from "../state";
 
 const OUTLINE_SCALE_KEY = "gemmy.outline-scale";
 // Thin, Normal and Bold, the values the menu's segments carry (data-outline-scale).
@@ -48,5 +49,6 @@ export function chooseOutlineScale(scale: number): void {
   current = scale;
   storeScale(scale);
   setOutlineScale(scale);
+  requestRender(); // the viewer draws on demand: the new width shows now, not when the camera next moves
   for (const listener of listeners) listener(scale);
 }

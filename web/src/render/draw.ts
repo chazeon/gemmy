@@ -17,11 +17,11 @@ const NUMBERS_PER_MATRIX = 16; // a column-major 4x4 matrix, as instancing.ts wr
 // The outline shell's offset in clip space per unit of w. The full image height is 2 clip units, so this is about
 // 0.0018 of the height on each side; trace/passes.ts uses the same number. Blender's counterpart is look.outline_width
 // (looks.py:38, 0.0022 of the height, as a line width).
-const OUTLINE_THICKNESS = 0.0035;
+export const OUTLINE_THICKNESS = 0.0035;
 // The outline is at most this share of the shape's on-screen radius (outlineWidth in OUTLINE_VERTEX_SHADER). Where
 // atoms are a few pixels across, a constant width would be most of the shape, so it thins with them. Shapes with a
 // radius above about OUTLINE_THICKNESS / OUTLINE_SIZE_FRACTION (about 1.5% of the image height) keep the constant width.
-const OUTLINE_SIZE_FRACTION = 0.12;
+export const OUTLINE_SIZE_FRACTION = 0.12;
 const FACE_OFFSET_FACTOR = 1; // polyhedron faces are pushed back a little (polygonOffset), so their edge lines draw over them
 const FACE_OFFSET_UNITS = 1;
 const ATOM_SEGMENTS = { width: 48, height: 24 }; // smooth spheres for the atoms; no counterpart in geom.py

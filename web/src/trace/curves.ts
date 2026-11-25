@@ -2,9 +2,10 @@
 // Béziers (Schneider's algorithm, fit-curve). Corners stay sharp because every piece starts and ends on one, so the
 // neighbouring pieces meet there with their own tangents.
 import fitCurve from "fit-curve";
-import { fmt } from "../export/markup";
+import { MathUtils } from "three";
+import { fmt, fmtPt } from "../export/markup";
 
-// ---- constants (output CSS pixels, unless named otherwise) ----
+// Lengths are CSS px unless a name says otherwise.
 const RESAMPLE_PX = 0.25; // spacing of the points the fit sees
 const CORNER_ANGLE_DEG = 50; // a turn sharper than this is a corner: the curve is split there
 const CORNER_WINDOW_PX = 1; // the turn is measured across this much arc, so a corner is one turn, not a staircase of small ones
@@ -13,6 +14,11 @@ const FIT_ERROR_PX = 0.3; // the largest distance between a fitted curve and the
 
 export type Pt = [number, number];
 
+// Path data for straight spans: each "M p L q".
+export function segmentsPath(spans: [Pt, Pt][]): string {
+  return spans.map(([p, q]) => `M${fmtPt(p)}L${fmtPt(q)}`).join("");
+}
+
 // SVG path data for a closed ring: M, then the fitted curves, then Z.
 export function closedPath(points: Pt[]): string {
   return pathFrom(points, true);
@@ -20,22 +26,24 @@ export function closedPath(points: Pt[]): string {
 
 // The fitted curve commands of an open line, without the leading M: for a stretch that continues from a point already set.
 export function fitCommands(points: Pt[]): string {
-  const line = resample(points, false, RESAMPLE_PX);
-  if (line.length < 2) return "";
-  const corners = cornerIndices(turningAngles(line, false), false);
-  return linePieces(line, corners).map(fitPiece).join("");
+  return smoothPieces(points, false).map(fitPiece).join("");
 }
 
+// SVG path data from a point: M, then the fitted curves, then Z for a ring.
 function pathFrom(points: Pt[], closed: boolean): string {
-  const line = resample(points, closed, RESAMPLE_PX);
-  if (line.length < 2) return "";
-  const turns = turningAngles(line, closed);
-  const corners = cornerIndices(turns, closed);
-  const pieces = closed ? ringPieces(line, corners) : linePieces(line, corners);
+  const pieces = smoothPieces(points, closed);
+  if (pieces.length === 0) return "";
   const [x0, y0] = pieces[0][0];
-  let d = `M${fmt(x0)} ${fmt(y0)}`;
-  for (const piece of pieces) d += fitPiece(piece);
+  const d = `M${fmt(x0)} ${fmt(y0)}${pieces.map(fitPiece).join("")}`;
   return closed ? `${d}Z` : d;
+}
+
+// The pieces of a line or ring that each fit one smooth curve: resampled, then cut at the corners.
+function smoothPieces(points: Pt[], closed: boolean): Pt[][] {
+  const line = resample(points, closed, RESAMPLE_PX);
+  if (line.length < 2) return [];
+  const corners = cornerIndices(turningAngles(line, closed), closed);
+  return closed ? ringPieces(line, corners) : linePieces(line, corners);
 }
 
 // Points at a fixed arc-length spacing. A closed ring is walked back to its start, and the start is not repeated.
@@ -75,7 +83,7 @@ function turningAngles(line: Pt[], closed: boolean): number[] {
     const ay = line[i][1] - line[before][1];
     const bx = line[after][0] - line[i][0];
     const by = line[after][1] - line[i][1];
-    turns[i] = (Math.atan2(ax * by - ay * bx, ax * bx + ay * by) * 180) / Math.PI;
+    turns[i] = MathUtils.radToDeg(Math.atan2(ax * by - ay * bx, ax * bx + ay * by));
     turns[i] = Math.abs(turns[i]);
   }
   return turns;

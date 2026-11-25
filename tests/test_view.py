@@ -72,7 +72,8 @@ def test_invalid_scene_is_rejected() -> None:
 def test_template_pins_three_and_uses_no_other_host() -> None:
     page = render_viewer(SCENE, "t")
     hosts = set(re.findall(r"https://([^/\"']+)", page))
-    assert hosts == {"cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"}
+    # api.github.com is the gist loader (web/src/scene/fetch.ts): it is called only for ?gist=, never on its own.
+    assert hosts == {"cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com", "api.github.com"}
     assert all("three@0.160.0" in u for u in re.findall(r"https://cdn\.jsdelivr\.net/\S+", page) if "three" in u)
 
 

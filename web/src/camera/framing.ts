@@ -15,6 +15,9 @@ export const baseDistance = (extent: number): number => Math.max(GEMMY.distanceF
 // The width of an orthographic frame at zoom 1 (looks.ortho_scale). Also the size of the ortho margin: a sphere of
 // radius orthoSide / 2 is the whole structure plus that margin.
 export const orthoSide = (extent: number): number => Math.max(GEMMY.orthoFactor * extent, GEMMY.orthoMin);
+// An orthographic view sits this many structure sizes from its target. The structure lies within half an extent of the
+// target, so 8 clears it with room to spare, and stays well inside the far plane (ORTHO_FAR_EXTENTS, scene/load.ts).
+export const ORTHO_VIEW_DISTANCE = 8;
 
 // Blender gives an orthographic camera at zoom 1 a frame whose LARGER side spans orthoSide (ortho_scale). The camera's
 // own zoom then divides it, so this is the half size of the view at zoom 1.

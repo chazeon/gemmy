@@ -4,8 +4,8 @@
 // back to.
 import * as THREE from "three";
 import {
-  baseDistance, centreDistance, clipPlanesAround, depthOfCentre, dollyPosition, fitZoom, fitZoomPersp, flyShift, orthoSide,
-  viewForward,
+  ORTHO_VIEW_DISTANCE, baseDistance, centreDistance, clipPlanesAround, depthOfCentre, dollyPosition, fitZoom, fitZoomPersp,
+  flyShift, orthoSide, viewForward,
 } from "./framing";
 import { controls, perspCamera, stage } from "../render/draw";
 import { camera, extent, lens, requestRender, setFitValue } from "../state";
@@ -14,12 +14,9 @@ import { cancelGlide, glideView } from "./glide";
 // The zoom range, shared with the trackball's dolly limits (scene/load.ts).
 export const ZOOM_MIN = 0.05;
 export const ZOOM_MAX = 40;
-// An orthographic camera sits this many structure sizes from the target: far enough to clear the structure, and
-// inside the far plane (scene/load.ts sets it to ORTHO_FAR_EXTENTS).
+// The orthographic camera's far plane, in structure sizes from the camera (scene/load.ts sets it). It lies well beyond
+// where an orthographic view sits (ORTHO_VIEW_DISTANCE, framing.ts).
 export const ORTHO_FAR_EXTENTS = 40;
-// An orthographic view sits this many structure sizes from the target. The structure lies within half an extent of
-// the target, so 8 clears it with room to spare, and stays well inside the far plane above.
-const ORTHO_VIEW_DISTANCE = 8;
 
 // A clip plane moves the projection matrix only when it has changed by more than this, so an idle camera does no work.
 const CLIP_CHANGE_TOLERANCE = 1e-6;
@@ -147,7 +144,9 @@ export const zoom = (factor: number): void => setShownZoom(shownZoom() * factor)
 
 // The view that frames an object of `size` centred on `centre` (scene units, the origin is the structure's middle), by
 // the fit maths: the target goes to the centre and the camera keeps its view direction. Perspective puts the camera at
-// the distance its zoom gives; orthographic keeps the camera's distance and sets the zoom (zoom is undefined then).
+// the distance its zoom gives. Orthographic sets the zoom (zoom is undefined then) and puts the camera at the standard
+// orthographic distance, not the distance it had: a camera left far away could pass the far plane and show nothing. The
+// distance does not change an orthographic picture, so only the direction is kept.
 function framedView(centre: THREE.Vector3, size: number): { target: THREE.Vector3; position: THREE.Vector3; zoom?: number } {
   const width = stage.clientWidth, height = stage.clientHeight;
   const zoomWanted = frameZoom(size, width, height);
@@ -156,8 +155,11 @@ function framedView(centre: THREE.Vector3, size: number): { target: THREE.Vector
     const distance = baseDistance(size) / zoomWanted;
     return { target: centre, position: centre.clone().addScaledVector(towardsCamera, distance) };
   }
-  const offset = camera.position.clone().sub(controls.target);
-  return { target: centre, position: centre.clone().add(offset), zoom: zoomWanted };
+  // A camera exactly on the target has no direction, so it keeps the one it looks along (from behind the target).
+  const towardsCamera = camera.position.clone().sub(controls.target);
+  if (towardsCamera.lengthSq() === 0) towardsCamera.set(0, 0, 1).applyQuaternion(camera.quaternion);
+  const position = centre.clone().addScaledVector(towardsCamera.normalize(), extent * ORTHO_VIEW_DISTANCE);
+  return { target: centre, position, zoom: zoomWanted };
 }
 
 // Fit the structure to the window: the target goes to the middle and the zoom to the fit (at once, not a glide).

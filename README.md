@@ -15,7 +15,10 @@ gemmy render --scene scene.json --look.preset 3to2d --out picture.png
 
 Try the web viewer on the examples: **https://chazeon.github.io/gemmy/**
 
-<img src="docs/images/viewer.png" width="640" alt="The web viewer: the three examples as tabs, stishovite with an octahedron selected">
+<p align="center">
+  <img src="docs/images/viewer-desktop.png" height="380" alt="The web viewer on a desktop browser: the three examples as tabs, ice Ih selected with an oxygen atom and its info card">
+  <img src="docs/images/viewer-phone.png" height="380" alt="The web viewer on a phone: ice Ih with an oxygen atom selected, its info card over the axis triad">
+</p>
 
 Blender renders of the examples (`3to2d` look):
 
@@ -130,10 +133,10 @@ The previewer for editing a config by hand: save `config.toml` and the page upda
 The Export menu saves what is on screen:
 
 - **PNG**: twice the window size, with the triad, on the page background or transparent.
-- **SVG**: vector output built from the scene, sorted back to front:
-  - atoms as circles, or in perspective the exact outline of each sphere, with a dark toon band;
-  - polyhedra as faces and edges;
-  - bonds, arrows and the cell box;
+- **SVG**: vector output of the view. three.js renders the object ids, the toon shading, the outlines and the lines, and
+  decides what is visible. Each visible boundary is traced from those renders and snapped to the exact circle, ellipse
+  or line it lies on in the scene; a boundary that matches none of them is a fitted Bézier. The drawing holds:
+  - atoms (exact discs, with a dark toon band), polyhedra, bonds, arrows and the cell box;
   - the triad, as editable text with the font embedded.
 - **Render settings** (TOML or JSON, Save or Copy) and **Render command** (Copy): the view as `gemmy render`
   settings, so Blender renders it as framed on screen. They hold the look preset, camera projection, lens,
@@ -148,12 +151,40 @@ The Export menu saves what is on screen:
     gemmy view scene.json --out stishovite.html --title Stishovite --subtitle "rutile-type SiO2"
     gemmy view nacl.json ice-ih.json stishovite.json --out site/
 
-Several scenes make a small site: `site/<name>/index.html` per scene, with tabs between them, and `site/index.html`
-opening the first. The links are relative, so the folder works under any path. `scripts/build_site.sh` builds the
-examples this way into `site/`; copy that to any static host.
+Several scenes without `--hosted` make a small site with the scenes embedded: `site/<name>/index.html` per scene, with
+tabs between them. The links are relative, so the folder works under any path.
+
+### Sharing a scene
+
+The viewer can open a scene from an address, a gist or a file, so a scene can be shared without building a page for it.
+On the published site, <https://chazeon.github.io/gemmy/view/> opens with no scene; these are the ways to fill it:
+
+    https://chazeon.github.io/gemmy/view/?scene=https://example.org/ice-ih.json.gz
+    https://chazeon.github.io/gemmy/view/?scene=../nacl/scene.json.gz&scene=../ice-ih/scene.json.gz   # tabs
+    https://chazeon.github.io/gemmy/view/?gist=0123abcd                  # the first .json or .json.gz file
+    https://chazeon.github.io/gemmy/view/?gist=0123abcd&file=ice.json.gz  # or the file named
+
+- **Addresses.** `scene=` takes any http or https address the browser may read; it is resolved against the page, so a
+  relative one works on a site. The host must allow cross-origin reads (CORS), as GitHub's raw files and gists do.
+  Plain JSON and gzip (`.json.gz`, detected by its first bytes) both load. Several `scene=` are tabs.
+- **Gists.** A secret gist works by its id. The first `.json` or `.json.gz` file is shown unless `file=` names one.
+- **Files.** Drop a `.json` or `.json.gz` anywhere on the page, or use ☰ → Open scene…. The file is read in the browser
+  and never uploaded.
+- **The view.** The camera is in the address too: `#view=persp;lens=50;eye=…;at=…;up=…` (or `ortho;zoom=…`), to four
+  significant figures. ☰ → Copy link copies the scene's address with this view. An embedded or a local scene cannot go
+  in a link, so the link then has the view only and opens the page at it.
+- **Size.** A download or a decompressed scene may be at most 200 MB.
+
+The scene is checked before it is drawn: its `schema_version` must be the one this gemmy writes.
+
+`gemmy view --hosted` writes the site the examples are published as, the way GitHub Pages serves it: the viewer and its
+stylesheet once at the root, named `viewer.<hash>.js` and `style.<hash>.css` (the hash is of their content, so an update
+is never served from a cache as the old file), `<example>/scene.json.gz` and a small `<example>/index.html` for each example, the viewer
+with no scene at `view/`, and a front page. `scripts/build_site.sh` builds it from the committed examples into `site/`.
 
 The examples are published with GitHub Pages at https://chazeon.github.io/gemmy/ from the `gh-pages` branch (Settings →
-Pages → Deploy from a branch → `gh-pages`, `/ (root)`). To update it:
+Pages → Deploy from a branch → `gh-pages`, `/ (root)`). To update it, see the list of its files in
+`scripts/update_pages.sh`:
 
     scripts/update_pages.sh       # rebuild the site and commit it to gh-pages (no Blender)
     git push github gh-pages

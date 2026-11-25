@@ -2,7 +2,7 @@
 // the Show toggles, the tooltips and the keys that do the same things. The camera moves themselves are in camera/view.ts.
 import * as THREE from "three";
 import { GEMMY, LOOK, RATE, STEP } from "../config";
-import { baseDistance, perspToOrthoZoom, orthoToPerspZoom } from "../camera/framing";
+import { ORTHO_VIEW_DISTANCE, baseDistance, perspToOrthoZoom, orthoToPerspZoom } from "../camera/framing";
 import { controls, key, orthoCamera, perspCamera, stage } from "../render/draw";
 import { beginRotation, releasePivot } from "../camera/pivot";
 import { resize } from "../render/loop";
@@ -12,6 +12,7 @@ import { FLY, flying, setShiftHeld } from "../camera/fly";
 import { helpPopover } from "./menus";
 import { toggleInfo } from "./panels";
 import { select } from "./picking";
+import { closeUrlForm } from "./loader";
 import { cycleTheme } from "./theme";
 import { byId, clamp, closestOf } from "./dom";
 
@@ -43,7 +44,6 @@ for (const button of document.querySelectorAll<HTMLElement>("[data-view]")) {
 // again. An orthographic camera sits this many structure extents away: only its size, not its distance, sets the scale.
 const ORTHO_LENS = Infinity;
 const ORTHO_TAG = "inf"; // the data-lens value of the orthographic button
-const ORTHO_CAMERA_DISTANCE = 8;
 const FIT_EPSILON = 1e-9; // zoom this close to the fitted value counts as fitted
 
 const lensGroup = byId("lens-group");
@@ -60,7 +60,7 @@ function syncLensButtons() {
 }
 
 // Switches between perspective (with a focal length) and orthographic, keeping the framing and the view.
-function switchProjection(mode: "persp" | "ortho", newLens = lens) {
+export function switchProjection(mode: "persp" | "ortho", newLens = lens) {
   if ((mode === "persp") === isPersp() && newLens === lens) return;
   const view = captureView();
   setLens(newLens);
@@ -103,7 +103,7 @@ function installCamera(next: THREE.PerspectiveCamera | THREE.OrthographicCamera,
 // How far the camera sits from the target so that the framing stays the same across the switch.
 function cameraDistance(persp: boolean, orthoZoom: number): number {
   if (persp) return baseDistance(extent) / orthoToPerspZoom(extent, lens, orthoZoom);
-  return extent * ORTHO_CAMERA_DISTANCE;
+  return extent * ORTHO_VIEW_DISTANCE;
 }
 
 function addLensButton(focalLength: number) {
@@ -335,6 +335,9 @@ window.addEventListener("keydown", (e) => {
 
 window.addEventListener("keydown", (e) => {
   setShiftHeld(e.shiftKey);
+  // Esc first closes the URL card back to the scene behind it (a menu, open, takes the Esc first: menus.ts). It is read
+  // before the typing check, since the card's input is a field.
+  if (e.key === "Escape" && !escapeClosesMenu && closeUrlForm()) return;
   if (isTyping(e)) return;
   if (e.key === "Escape") {
     // Esc closes an open menu first (menus.ts), and then the selection stays.

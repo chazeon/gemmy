@@ -10,6 +10,10 @@ export const span = (a: Vec, b: Vec): number => Math.hypot(b[0] - a[0], b[1] - a
 export const vdot = (a: Vec, b: Vec): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 // a minus b, component by component.
 export const vsub = (a: Vec, b: Vec): number[] => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+// a plus b, component by component.
+export const vadd = (a: Vec, b: Vec): number[] => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+// a times the number k, component by component.
+export const vscale = (a: Vec, k: number): number[] => [a[0] * k, a[1] * k, a[2] * k];
 // The cross product: perpendicular to both a and b, with length |a||b| sin(angle).
 export const vcross = (a: Vec, b: Vec): number[] => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 // The unit vector along a. A zero vector stays zero (its length is taken as 1).

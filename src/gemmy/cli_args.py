@@ -64,6 +64,9 @@ class View:
     """Page title, one scene only (default: the scene file name without extension)."""
     subtitle: str = ""
     """Line under the title."""
+    hosted: bool = False
+    """Write a hosted site instead (--out is its folder, as for GitHub Pages): one shared viewer, a scene.json.gz per
+    scene and a small page for each, view/ for any scene by address or file, and a front page. Needs a web server."""
 
 
 @dataclass(frozen=True)

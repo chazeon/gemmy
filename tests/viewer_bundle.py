@@ -39,6 +39,7 @@ def module_url() -> str:
             "--bundle",
             "--format=esm",
             "--platform=neutral",
+            "--main-fields=module,main",
             f"--outfile={out}",
             "--log-level=warning",
         ],

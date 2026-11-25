@@ -7,6 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>gemmy preview (__TITLE__)</title>
 <meta name="gemmy-scene-file" content="__SCENE_FILE__">
+<meta name="gemmy-mode" content="__MODE__">
+<meta name="gemmy-default-scene" content="__DEFAULT_SCENE__"><!-- the loader opens this when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
 <script>
   // The theme, set before the first paint so a dark page never flashes light. It reads the key that web/src/ui/theme.ts
   // writes (gemmy.theme) and sets data-theme only for Light or Dark; Auto leaves it off, so the system's scheme applies.
@@ -37,6 +39,21 @@
       aria-controls="info" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div id="info-body" aria-live="polite"></div>
   </section>
+  <!-- the loader's empty state (web/src/ui/loader.ts): shown when the page has no scene yet -->
+  <section id="empty" aria-labelledby="empty-title" hidden>
+    <button type="button" class="tool" id="empty-close" title="Close (Esc)" aria-label="Close" hidden><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <h2 id="empty-title">No scene open</h2>
+    <p>Drop a scene.json or scene.json.gz anywhere on this page, or:</p>
+    <button type="button" id="empty-open">Open scene…</button>
+    <form id="empty-url">
+      <label for="scene-url">Or a scene URL</label>
+      <input type="url" id="scene-url" placeholder="Address of a scene.json.gz" autocomplete="off">
+      <button type="submit">Open</button>
+    </form>
+    <p id="empty-status" role="status"></p>
+    <p id="empty-error" class="err" role="alert" hidden></p>
+  </section>
+  <input type="file" id="scene-file" accept=".json,.gz,application/json,application/gzip" hidden>
 </main>
 
 <!-- The floating controls, laid out by the grid in style.css: menu and name, the view tools, Export, messages, the
@@ -109,6 +126,7 @@
   <div id="msgs">
     <section id="banner" hidden>
       <p class="err" role="alert" hidden></p>
+      <p id="follow-note" role="status" hidden></p>
     </section>
     <p id="toast" role="status" hidden></p>
   </div>
@@ -146,6 +164,10 @@
   <button type="button" class="mcheck" id="toggle-atoms" aria-pressed="true">Atoms</button>
   <button type="button" class="mcheck" id="toggle-outline" aria-pressed="true">Outlines</button>
   <button type="button" class="mcheck" id="toggle-box" aria-pressed="true">Cell box</button>
+  <p class="mhead">Scene</p>
+  <button type="button" class="mcheck" id="open-scene">Open scene…</button>
+  <button type="button" class="mcheck" id="open-url">Open URL…</button>
+  <button type="button" class="mcheck" id="copy-link">Copy link</button>
   <p class="mhead">Outline width</p>
   <div class="segment" role="group" aria-label="Outline width">
     <button type="button" data-outline-scale="0.5" aria-pressed="false">Thin</button>

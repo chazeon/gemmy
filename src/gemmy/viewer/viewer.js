@@ -387,15 +387,18 @@ var lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
 var span = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
 var vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 var vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+var vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+var vscale = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
 var vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 function vunit(a) {
-  const length = Math.hypot(...a) || 1;
-  return a.map((x) => x / length);
+  const length2 = Math.hypot(...a) || 1;
+  return a.map((x) => x / length2);
 }
 
 // src/camera/framing.ts
 var baseDistance = (extent3) => Math.max(GEMMY.distanceFactor * extent3, GEMMY.distanceMin);
 var orthoSide = (extent3) => Math.max(GEMMY.orthoFactor * extent3, GEMMY.orthoMin);
+var ORTHO_VIEW_DISTANCE = 8;
 function orthoFrame(extent3, width, height) {
   const side = orthoSide(extent3);
   const larger = Math.max(width, height);
@@ -466,44 +469,44 @@ function renderCommand(view, sceneFile) {
 }
 function triadLayout(dirs, width, height) {
   const T = GEMMY.triad;
-  const length = T.size * Math.min(width, height);
+  const length2 = T.size * Math.min(width, height);
   const origin = [T.margin * width, height - T.margin * height];
-  const items = dirs.map((d, index) => triadItem(d, index, origin, length)).sort((p, q) => p.depth - q.depth);
+  const items = dirs.map((d, index) => triadItem(d, index, origin, length2)).sort((p, q) => p.depth - q.depth);
   return {
     origin,
     items,
-    lineWidth: 2 * T.arrowRadius * length,
-    fontSize: T.labelSize * length,
-    dotRadius: DOT_RADIUS * length,
-    length
+    lineWidth: 2 * T.arrowRadius * length2,
+    fontSize: T.labelSize * length2,
+    dotRadius: DOT_RADIUS * length2,
+    length: length2
   };
 }
 var LABEL_FLAT_MIN = 0.15;
 var HEAD_FLAT_MIN = 0.08;
 var DIAGONAL = Math.SQRT1_2;
 var DOT_RADIUS = 0.0875;
-function triadItem(d, index, origin, length) {
+function triadItem(d, index, origin, length2) {
   const T = GEMMY.triad;
   const flat = Math.hypot(d[0], d[1]);
   const onScreen2 = flat > LABEL_FLAT_MIN;
   const [ux, uy] = labelDirection(d, flat, onScreen2);
-  const labelRadius = length * (1 + T.labelReach * T.arrowRadius);
+  const labelRadius = length2 * (1 + T.labelReach * T.arrowRadius);
   const reach = onScreen2 ? labelRadius * flat : 0;
-  const pad = T.labelPad * length;
+  const pad = T.labelPad * length2;
   const label = { x: origin[0] + (reach + pad) * ux, y: origin[1] - (reach + pad) * uy };
-  return flat > HEAD_FLAT_MIN ? { index, depth: d[2], label, ...triadArrow(d, flat, origin, length) } : { index, depth: d[2], label };
+  return flat > HEAD_FLAT_MIN ? { index, depth: d[2], label, ...triadArrow(d, flat, origin, length2) } : { index, depth: d[2], label };
 }
 function labelDirection(d, flat, onScreen2) {
   return onScreen2 ? [d[0] / flat, d[1] / flat] : [DIAGONAL, DIAGONAL];
 }
 var SHAFT_INTO_HEAD = 0.5;
-function triadArrow(d, flat, [ox, oy], length) {
+function triadArrow(d, flat, [ox, oy], length2) {
   const T = GEMMY.triad;
-  const tip2 = [ox + d[0] * length, oy - d[1] * length];
+  const tip2 = [ox + d[0] * length2, oy - d[1] * length2];
   const tx = d[0] / flat;
   const ty = -d[1] / flat;
-  const headLength = T.headLengthRatio * length;
-  const headHalf = T.headRadiusRatio * T.arrowRadius * length;
+  const headLength = T.headLengthRatio * length2;
+  const headHalf = T.headRadiusRatio * T.arrowRadius * length2;
   const base = [tip2[0] - tx * headLength, tip2[1] - ty * headLength];
   return {
     shaftEnd: [tip2[0] - tx * headLength * SHAFT_INTO_HEAD, tip2[1] - ty * headLength * SHAFT_INTO_HEAD],
@@ -857,7 +860,7 @@ function makeToonGradient() {
 }
 
 // src/ui/ui.ts
-import * as THREE12 from "three";
+import * as THREE13 from "three";
 
 // src/ui/picking.ts
 import * as THREE6 from "three";
@@ -908,7 +911,6 @@ function cancelGlide() {
 var ZOOM_MIN = 0.05;
 var ZOOM_MAX = 40;
 var ORTHO_FAR_EXTENTS = 40;
-var ORTHO_VIEW_DISTANCE = 8;
 var CLIP_CHANGE_TOLERANCE = 1e-6;
 var isPersp = () => camera === perspCamera;
 var currentZoom = () => isPersp() ? baseDistance(extent) / distance() : camera.zoom;
@@ -996,12 +998,14 @@ function framedView(centre2, size) {
   const width = stage.clientWidth, height = stage.clientHeight;
   const zoomWanted = frameZoom(size, width, height);
   if (isPersp()) {
-    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
+    const towardsCamera2 = camera.position.clone().sub(controls.target).normalize();
     const distance2 = baseDistance(size) / zoomWanted;
-    return { target: centre2, position: centre2.clone().addScaledVector(towardsCamera, distance2) };
+    return { target: centre2, position: centre2.clone().addScaledVector(towardsCamera2, distance2) };
   }
-  const offset = camera.position.clone().sub(controls.target);
-  return { target: centre2, position: centre2.clone().add(offset), zoom: zoomWanted };
+  const towardsCamera = camera.position.clone().sub(controls.target);
+  if (towardsCamera.lengthSq() === 0) towardsCamera.set(0, 0, 1).applyQuaternion(camera.quaternion);
+  const position = centre2.clone().addScaledVector(towardsCamera.normalize(), extent * ORTHO_VIEW_DISTANCE);
+  return { target: centre2, position, zoom: zoomWanted };
 }
 function fit() {
   cancelGlide();
@@ -1434,7 +1438,7 @@ function drawTriad(canvas = triadCanvas, ctx = triadContext, dpr = Math.min(wind
 }
 function latticeInView() {
   const inverse = camera.quaternion.clone().invert();
-  return lattice.map((vector) => vector.clone().applyQuaternion(inverse).toArray());
+  return lattice.map((vector2) => vector2.clone().applyQuaternion(inverse).toArray());
 }
 function drawAxis(ctx, item, origin, fontSize) {
   const color = LOOK.axisColors[item.index];
@@ -1527,7 +1531,7 @@ applyTheme();
 frame();
 
 // src/trace/traced.ts
-import * as THREE11 from "three";
+import * as THREE12 from "three";
 
 // src/export/markup.ts
 import { Color as Color2, LinearSRGBColorSpace, SRGBColorSpace as SRGBColorSpace2 } from "three";
@@ -1535,6 +1539,7 @@ var SVG_PRECISION = 100;
 var escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 var escapeAttr = (s) => escapeText(s).replace(/"/g, "&quot;");
 var fmt2 = (x) => Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0";
+var fmtPt = (p) => `${fmt2(p[0])} ${fmt2(p[1])}`;
 var pointList = (list) => list.map((p) => `${fmt2(p.x)},${fmt2(p.y)}`).join(" ");
 function attrText(attrs) {
   return Object.entries(attrs).filter((entry) => entry[1] !== void 0 && entry[1] !== false).map(([name, value]) => ` ${name}="${typeof value === "number" ? fmt2(value) : escapeAttr(value)}"`).join("");
@@ -1658,30 +1663,33 @@ function triadSvg(ctx) {
 
 // src/trace/curves.ts
 var import_fit_curve = __toESM(require_fit_curve());
+import { MathUtils as MathUtils3 } from "three";
 var RESAMPLE_PX = 0.25;
 var CORNER_ANGLE_DEG = 50;
 var CORNER_WINDOW_PX = 1;
 var WINDOW_SAMPLES = Math.max(1, Math.round(CORNER_WINDOW_PX / RESAMPLE_PX));
 var FIT_ERROR_PX = 0.3;
+function segmentsPath(spans) {
+  return spans.map(([p, q]) => `M${fmtPt(p)}L${fmtPt(q)}`).join("");
+}
 function closedPath(points2) {
   return pathFrom(points2, true);
 }
 function fitCommands(points2) {
-  const line = resample(points2, false, RESAMPLE_PX);
-  if (line.length < 2) return "";
-  const corners = cornerIndices(turningAngles(line, false), false);
-  return linePieces(line, corners).map(fitPiece).join("");
+  return smoothPieces(points2, false).map(fitPiece).join("");
 }
 function pathFrom(points2, closed) {
-  const line = resample(points2, closed, RESAMPLE_PX);
-  if (line.length < 2) return "";
-  const turns = turningAngles(line, closed);
-  const corners = cornerIndices(turns, closed);
-  const pieces = closed ? ringPieces(line, corners) : linePieces(line, corners);
+  const pieces = smoothPieces(points2, closed);
+  if (pieces.length === 0) return "";
   const [x0, y0] = pieces[0][0];
-  let d = `M${fmt2(x0)} ${fmt2(y0)}`;
-  for (const piece of pieces) d += fitPiece(piece);
+  const d = `M${fmt2(x0)} ${fmt2(y0)}${pieces.map(fitPiece).join("")}`;
   return closed ? `${d}Z` : d;
+}
+function smoothPieces(points2, closed) {
+  const line = resample(points2, closed, RESAMPLE_PX);
+  if (line.length < 2) return [];
+  const corners = cornerIndices(turningAngles(line, closed), closed);
+  return closed ? ringPieces(line, corners) : linePieces(line, corners);
 }
 function resample(points2, closed, spacing) {
   const ring = closed ? [...points2, points2[0]] : points2;
@@ -1716,7 +1724,7 @@ function turningAngles(line, closed) {
     const ay = line[i][1] - line[before][1];
     const bx = line[after][0] - line[i][0];
     const by = line[after][1] - line[i][1];
-    turns[i] = Math.atan2(ax * by - ay * bx, ax * bx + ay * by) * 180 / Math.PI;
+    turns[i] = MathUtils3.radToDeg(Math.atan2(ax * by - ay * bx, ax * bx + ay * by));
     turns[i] = Math.abs(turns[i]);
   }
   return turns;
@@ -1766,17 +1774,40 @@ function fitPiece(piece) {
   return curves.map(([, c1, c2, end]) => `C${fmt2(c1[0])} ${fmt2(c1[1])} ${fmt2(c2[0])} ${fmt2(c2[1])} ${fmt2(end[0])} ${fmt2(end[1])}`).join("");
 }
 
-// src/trace/exact.ts
+// src/trace/candidates.ts
 import * as THREE7 from "three";
-var SEGMENT_MARGIN_PX = 2;
+
+// src/trace/ellipse.ts
+import { MathUtils as MathUtils4 } from "three";
 var MIN_RADIUS_PX = 1e-6;
-function ellipseFromBasis(c, a, b) {
-  const p = a[0] * a[0] + b[0] * b[0];
-  const q = a[0] * a[1] + b[0] * b[1];
-  const s = a[1] * a[1] + b[1] * b[1];
-  const mean = (p + s) / 2;
-  const spread = Math.sqrt(((p - s) / 2) ** 2 + q * q);
-  return { cx: c[0], cy: c[1], rx: Math.sqrt(mean + spread), ry: Math.sqrt(Math.max(mean - spread, 0)), phi: 0.5 * Math.atan2(2 * q, p - s) };
+var QUARTER_TURN = Math.PI / 2;
+function arcTo(e, from, to, pts) {
+  const t0 = paramOf(e, from);
+  let prev = t0;
+  let swept = 0;
+  for (const p of pts) {
+    const t = paramOf(e, p);
+    swept += wrapPi(t - prev);
+    prev = t;
+  }
+  const dir = swept >= 0 ? 1 : -1;
+  return arcSeries(e, t0, dir, Math.abs(swept), to);
+}
+function fullEllipseArcs(e, start) {
+  return arcSeries(e, paramOf(e, start), 1, 2 * Math.PI, start);
+}
+function arcSeries(e, t0, dir, span2, end) {
+  const pieces = Math.max(1, Math.ceil(span2 / QUARTER_TURN));
+  const sweep = dir > 0 ? 1 : 0;
+  let d = "";
+  for (let k = 1; k <= pieces; k++) {
+    const point = k === pieces ? end : pointAt(e, t0 + dir * span2 * k / pieces);
+    d += `A${fmt2(e.rx)} ${fmt2(e.ry)} ${fmt2(MathUtils4.radToDeg(e.phi))} 0 ${sweep} ${fmtPt(point)}`;
+  }
+  return d;
+}
+function wrapPi(t) {
+  return t - 2 * Math.PI * Math.round(t / (2 * Math.PI));
 }
 function pointAt(e, t) {
   const x = e.rx * Math.cos(t);
@@ -1806,11 +1837,28 @@ function ellipseRms(e, pts) {
   }
   return Math.sqrt(sum / pts.length);
 }
+function ellipseFromBasis(c, a, b) {
+  const p = a[0] * a[0] + b[0] * b[0];
+  const q = a[0] * a[1] + b[0] * b[1];
+  const s = a[1] * a[1] + b[1] * b[1];
+  const mean = (p + s) / 2;
+  const spread = Math.sqrt(((p - s) / 2) ** 2 + q * q);
+  return { cx: c[0], cy: c[1], rx: Math.sqrt(mean + spread), ry: Math.sqrt(Math.max(mean - spread, 0)), phi: 0.5 * Math.atan2(2 * q, p - s) };
+}
+
+// src/trace/candidates.ts
+var SEGMENT_MARGIN_PX = 2;
+var MIN_SPAN_PX = 1e-6;
+var PARALLEL_COS = 1e-6;
+var HALF_AXIS = 0.5;
+function curveRms(curve, pts) {
+  return curve.kind === "line" ? lineRms(curve.a, curve.b, pts) : ellipseRms(curve.e, pts);
+}
 function lineRms(a, b, pts) {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
   const len = Math.hypot(dx, dy);
-  if (len < MIN_RADIUS_PX) return Infinity;
+  if (len < MIN_SPAN_PX) return Infinity;
   let sum = 0;
   for (const p of pts) {
     const along = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len;
@@ -1823,42 +1871,8 @@ function lineRms(a, b, pts) {
 function onLine(a, b, p) {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
-  const t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / Math.max(dx * dx + dy * dy, MIN_RADIUS_PX);
+  const t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / Math.max(dx * dx + dy * dy, MIN_SPAN_PX);
   return [a[0] + t * dx, a[1] + t * dy];
-}
-function curveRms(curve, pts) {
-  return curve.kind === "line" ? lineRms(curve.a, curve.b, pts) : ellipseRms(curve.e, pts);
-}
-function arcTo(e, from, to, pts) {
-  const t0 = paramOf(e, from);
-  let prev = t0;
-  let swept = 0;
-  for (const p of pts) {
-    const t = paramOf(e, p);
-    swept += wrapPi(t - prev);
-    prev = t;
-  }
-  const dir = swept >= 0 ? 1 : -1;
-  return arcSeries(e, t0, dir, Math.abs(swept), to);
-}
-function fullEllipseArcs(e, start) {
-  return arcSeries(e, paramOf(e, start), 1, 2 * Math.PI, start);
-}
-function arcSeries(e, t0, dir, span2, end) {
-  const pieces = Math.max(1, Math.ceil(span2 / (Math.PI / 2)));
-  const sweep = dir > 0 ? 1 : 0;
-  let d = "";
-  for (let k = 1; k <= pieces; k++) {
-    const point = k === pieces ? end : pointAt(e, t0 + dir * span2 * k / pieces);
-    d += `A${num(e.rx)} ${num(e.ry)} ${num(e.phi * 180 / Math.PI)} 0 ${sweep} ${num(point[0])} ${num(point[1])}`;
-  }
-  return d;
-}
-function wrapPi(t) {
-  return t - 2 * Math.PI * Math.round(t / (2 * Math.PI));
-}
-function num(x) {
-  return String(Math.round(x * 100) / 100 || 0);
 }
 function sphereCurves(view, centre2, radius) {
   const image = view.sphereImage(view.toCam(centre2), radius);
@@ -1867,7 +1881,7 @@ function sphereCurves(view, centre2, radius) {
 function cylinderCurves(matrix, screen) {
   const col = (i) => new THREE7.Vector3(matrix[4 * i], matrix[4 * i + 1], matrix[4 * i + 2]);
   const centre2 = new THREE7.Vector3(matrix[12], matrix[13], matrix[14]);
-  const axis = col(1).multiplyScalar(0.5);
+  const axis = col(1).multiplyScalar(HALF_AXIS);
   const ends = [centre2.clone().sub(axis), centre2.clone().add(axis)];
   const caps = ends.map((end) => {
     const c = screen(end);
@@ -1880,7 +1894,7 @@ function cylinderCurves(matrix, screen) {
   const dx = pb[0] - pa[0];
   const dy = pb[1] - pa[1];
   const len = Math.hypot(dx, dy);
-  if (len < MIN_RADIUS_PX) return caps.map((e) => ({ kind: "ellipse", e }));
+  if (len < MIN_SPAN_PX) return caps.map((e) => ({ kind: "ellipse", e }));
   const n = [-dy / len, dx / len];
   const support = (e) => Math.hypot(e.rx * Math.cos(e.phi) * n[0] + e.rx * Math.sin(e.phi) * n[1], e.ry * Math.sin(e.phi) * n[0] - e.ry * Math.cos(e.phi) * n[1]);
   const sa = support(caps[0]);
@@ -1897,7 +1911,7 @@ function edgeCurves(edges, screen) {
 }
 function sectionCurve(centre2, radius, face, screen) {
   const [p0, p1, p2] = face;
-  const n = new THREE7.Vector3().subVectors(p1, p0).cross(new THREE7.Vector3().subVectors(p2, p0)).normalize();
+  const n = new THREE7.Triangle(p0, p1, p2).getNormal(new THREE7.Vector3());
   const d = n.dot(new THREE7.Vector3().subVectors(centre2, p0));
   if (Math.abs(d) >= radius) return null;
   const foot = centre2.clone().addScaledVector(n, -d);
@@ -1911,13 +1925,13 @@ function sectionCurve(centre2, radius, face, screen) {
 }
 function cylinderSectionCurve(matrix, face, screen) {
   const [p0, p1, p2] = face;
-  const n = new THREE7.Vector3().subVectors(p1, p0).cross(new THREE7.Vector3().subVectors(p2, p0)).normalize();
+  const n = new THREE7.Triangle(p0, p1, p2).getNormal(new THREE7.Vector3());
   const c = new THREE7.Vector3(matrix[12], matrix[13], matrix[14]);
   const axisFull = new THREE7.Vector3(matrix[4], matrix[5], matrix[6]);
   const radius = new THREE7.Vector3(matrix[0], matrix[1], matrix[2]).length();
   const dir = axisFull.clone().normalize();
   const cosAlpha = Math.abs(n.dot(dir));
-  if (cosAlpha < MIN_RADIUS_PX) return null;
+  if (cosAlpha < PARALLEL_COS) return null;
   const t = n.dot(new THREE7.Vector3().subVectors(p0, c)) / n.dot(dir);
   const centre2 = c.clone().addScaledVector(dir, t);
   const along = dir.clone().addScaledVector(n, -dir.dot(n)).normalize();
@@ -1928,57 +1942,186 @@ function cylinderSectionCurve(matrix, face, screen) {
   return { kind: "ellipse", e: ellipseFromBasis(o, [a[0] - o[0], a[1] - o[1]], [b[0] - o[0], b[1] - o[1]]) };
 }
 
-// src/trace/edges.ts
+// src/trace/buffers.ts
+var BACKGROUND_DEPTH = 2;
+var litKey = (id) => 2 * id;
+var darkKey = (id) => 2 * id + 1;
+var idOf = (key2) => key2 >> 1;
+var Passes = class {
+  constructor(width, height, keys, depth, shell, lineId) {
+    this.width = width;
+    this.height = height;
+    this.keys = keys;
+    this.depth = depth;
+    this.shell = shell;
+    this.lineId = lineId;
+  }
+  keyAt(x, y) {
+    return this.read(this.keys, x, y);
+  }
+  shellAt(x, y) {
+    return this.read(this.shell, x, y) === 1;
+  }
+  lineIdAt(x, y) {
+    return this.read(this.lineId, x, y);
+  }
+  read(values, x, y) {
+    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return 0;
+    return values[y * this.width + x];
+  }
+};
+var OUT_OF_RANGE = 1 << 30;
+function objectBoxes(passes, count2) {
+  const { keys, depth, width } = passes;
+  const pixels = new Uint32Array(count2 + 1);
+  const boxes = new Int32Array((count2 + 1) * 4);
+  const nearest = new Float64Array(count2 + 1).fill(BACKGROUND_DEPTH);
+  for (let id = 0; id <= count2; id++) boxes.set([OUT_OF_RANGE, OUT_OF_RANGE, -1, -1], 4 * id);
+  for (let p = 0; p < keys.length; p++) {
+    const k = keys[p];
+    if (k === 0) continue;
+    const id = idOf(k);
+    const b = 4 * id;
+    nearest[id] = Math.min(nearest[id], depth[p]);
+    pixels[id]++;
+    const x = p % width;
+    const y = (p - x) / width;
+    if (x < boxes[b]) boxes[b] = x;
+    if (y < boxes[b + 1]) boxes[b + 1] = y;
+    if (x > boxes[b + 2]) boxes[b + 2] = x;
+    if (y > boxes[b + 3]) boxes[b + 3] = y;
+  }
+  return { boxes, nearest, pixels };
+}
+function boxOf(boxes, id) {
+  return { x0: boxes[4 * id], y0: boxes[4 * id + 1], x1: boxes[4 * id + 2], y1: boxes[4 * id + 3] };
+}
+function keyAtCentre(passes, p) {
+  return idOf(passes.keyAt(Math.floor(p.x), Math.floor(p.y)));
+}
+
+// src/trace/measure.ts
 import * as THREE8 from "three";
+
+// node_modules/d3-polygon/dist/d3-polygon.mjs
+function area(polygon) {
+  var i = -1, n = polygon.length, a, b = polygon[n - 1], area3 = 0;
+  while (++i < n) {
+    a = b;
+    b = polygon[i];
+    area3 += a[1] * b[0] - a[0] * b[1];
+  }
+  return area3 / 2;
+}
+function length(polygon) {
+  var i = -1, n = polygon.length, b = polygon[n - 1], xa, ya, xb = b[0], yb = b[1], perimeter = 0;
+  while (++i < n) {
+    xa = xb;
+    ya = yb;
+    b = polygon[i];
+    xb = b[0];
+    yb = b[1];
+    xa -= xb;
+    ya -= yb;
+    perimeter += Math.hypot(xa, ya);
+  }
+  return perimeter;
+}
+
+// src/trace/measure.ts
+function nearestFace(faces, p, screen) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const f of faces) {
+    const d = triangleDistance(p, screen(f[0]), screen(f[1]), screen(f[2]));
+    if (d < bestDist) {
+      bestDist = d;
+      best = [f[0], f[1], f[2]];
+    }
+  }
+  return best;
+}
+function triangleDistance(p, a, b, c) {
+  const sign = (u, v, w) => (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
+  const s1 = sign(a, b, p);
+  const s2 = sign(b, c, p);
+  const s3 = sign(c, a, p);
+  if (s1 >= 0 && s2 >= 0 && s3 >= 0 || s1 <= 0 && s2 <= 0 && s3 <= 0) return 0;
+  return Math.min(segmentDistance(p, a, b), segmentDistance(p, b, c), segmentDistance(p, c, a));
+}
+function segmentDistance(p, a, b) {
+  const point = new THREE8.Vector3(p[0], p[1], 0);
+  const segment = new THREE8.Line3(new THREE8.Vector3(a[0], a[1], 0), new THREE8.Vector3(b[0], b[1], 0));
+  const nearest = segment.distance() > 0 ? segment.closestPointToPoint(point, true, new THREE8.Vector3()) : segment.start;
+  return nearest.distanceTo(point);
+}
+function ringArea(ring, scale) {
+  return Math.abs(area(ring)) / (scale * scale);
+}
+function ringPerimeter(ring, scale) {
+  return length(ring) / scale;
+}
+
+// src/trace/edges.ts
+import * as THREE9 from "three";
 var HARD_EDGE_DEG = 1;
 var SAMPLE_SPACING_PX = 0.5;
 var MAX_SAMPLES_PER_IMAGE_EDGE = 4;
 var NDC_DEPTH_MIN = -1;
 var NDC_DEPTH_MAX = 1;
-function visibleSpans(a, b, project, lineIds, id, width, height, scale) {
-  const pa = project(a);
-  const pb = project(b);
-  if (!onScreen(pa) || !onScreen(pb)) return [];
-  const outputLength = Math.hypot(pb.x - pa.x, pb.y - pa.y) / scale;
-  const sampleLimit = MAX_SAMPLES_PER_IMAGE_EDGE * (width + height) / SAMPLE_SPACING_PX;
-  const count2 = Math.min(sampleLimit, Math.max(1, Math.ceil(outputLength / SAMPLE_SPACING_PX)));
-  const visible = (t) => {
-    const p = project(a.clone().lerp(b, t));
-    return showsId(lineIds, id, width, height, Math.floor(p.x), Math.floor(p.y));
-  };
-  const out = [];
+function runsWhere(count2, on) {
+  const runs = [];
   let start = -1;
   for (let k = 0; k <= count2; k++) {
-    const on = visible(k / count2);
-    if (on && start < 0) start = k;
-    if ((!on || k === count2) && start >= 0) {
-      const end = on ? k : k - 1;
-      out.push([cssAt(a, b, start / count2, project, scale), cssAt(a, b, end / count2, project, scale)]);
+    const now = on(k);
+    if (now && start < 0) start = k;
+    if ((!now || k === count2) && start >= 0) {
+      runs.push([start, now ? k : k - 1]);
       start = -1;
     }
   }
-  return out;
+  return runs;
 }
+var LinePass = class {
+  constructor(project, passes, scale) {
+    this.project = project;
+    this.passes = passes;
+    this.scale = scale;
+  }
+  // The visible spans of the segment a-b of line `id`, as CSS px segments.
+  spansOf(a, b, id) {
+    const pa = this.project(a);
+    const pb = this.project(b);
+    if (!onScreen(pa) || !onScreen(pb)) return [];
+    const outputLength = Math.hypot(pb.x - pa.x, pb.y - pa.y) / this.scale;
+    const sampleLimit = MAX_SAMPLES_PER_IMAGE_EDGE * (this.passes.width + this.passes.height) / SAMPLE_SPACING_PX;
+    const count2 = Math.min(sampleLimit, Math.max(1, Math.ceil(outputLength / SAMPLE_SPACING_PX)));
+    const visible = (k) => {
+      const p = this.project(a.clone().lerp(b, k / count2));
+      return this.shows(id, Math.floor(p.x), Math.floor(p.y));
+    };
+    return runsWhere(count2, visible).map(([first, last]) => [this.cssAt(a, b, first / count2), this.cssAt(a, b, last / count2)]);
+  }
+  // Whether any pixel of the 3x3 block around (x, y) shows line `id`.
+  shows(id, x, y) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (this.passes.lineIdAt(x + dx, y + dy) === id) return true;
+      }
+    }
+    return false;
+  }
+  cssAt(a, b, t) {
+    const p = this.project(a.clone().lerp(b, t));
+    return [p.x / this.scale, p.y / this.scale];
+  }
+};
 function onScreen(p) {
   return Number.isFinite(p.x) && Number.isFinite(p.y) && p.depth >= NDC_DEPTH_MIN && p.depth <= NDC_DEPTH_MAX;
 }
-function showsId(lineIds, id, width, height, x, y) {
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const px = x + dx;
-      const py = y + dy;
-      if (px >= 0 && py >= 0 && px < width && py < height && lineIds[py * width + px] === id) return true;
-    }
-  }
-  return false;
-}
-function cssAt(a, b, t, project, scale) {
-  const p = project(a.clone().lerp(b, t));
-  return [p.x / scale, p.y / scale];
-}
 function hardEdges(topo, points2) {
-  const v = topo.point_ids.map((id) => new THREE8.Vector3(...points2.get(id)));
-  const normals = topo.faces.map(([i, j, k]) => new THREE8.Vector3().subVectors(v[j], v[i]).cross(new THREE8.Vector3().subVectors(v[k], v[i])).normalize());
+  const v = topo.point_ids.map((id) => new THREE9.Vector3(...points2.get(id)));
+  const normals = topo.faces.map(([i, j, k]) => new THREE9.Triangle(v[i], v[j], v[k]).getNormal(new THREE9.Vector3()));
   const sides = /* @__PURE__ */ new Map();
   topo.faces.forEach(([i, j, k], f) => {
     for (const [p, q] of [[i, j], [j, k], [k, i]]) {
@@ -1987,17 +2130,17 @@ function hardEdges(topo, points2) {
       sides.get(key2).faces.push(normals[f]);
     }
   });
-  const sharp = Math.cos(HARD_EDGE_DEG * Math.PI / 180);
+  const hardEdgeCosine = Math.cos(THREE9.MathUtils.degToRad(HARD_EDGE_DEG));
   const edges = [];
   for (const side of sides.values()) {
-    const hard = side.faces.length === 1 || Math.abs(side.faces[0].dot(side.faces[1])) < sharp;
+    const hard = side.faces.length === 1 || Math.abs(side.faces[0].dot(side.faces[1])) < hardEdgeCosine;
     if (hard) edges.push([v[side.i], v[side.j]]);
   }
   return edges;
 }
 function cellEdges(cell) {
-  const [a, b, c] = cell.vectors.map((vec) => new THREE8.Vector3(...vec));
-  const origin = new THREE8.Vector3(...cell.origin);
+  const [a, b, c] = cell.vectors.map((vec) => new THREE9.Vector3(...vec));
+  const origin = new THREE9.Vector3(...cell.origin);
   const corner = (n) => origin.clone().addScaledVector(a, n & 1).addScaledVector(b, n >> 1 & 1).addScaledVector(c, n >> 2 & 1);
   const edges = [];
   for (let n = 0; n < 8; n++) {
@@ -2289,10 +2432,10 @@ var slice2 = array2.slice;
 function ascending2(a, b) {
   return a - b;
 }
-function area(ring) {
-  var i = 0, n = ring.length, area2 = ring[n - 1][1] * ring[0][0] - ring[n - 1][0] * ring[0][1];
-  while (++i < n) area2 += ring[i - 1][1] * ring[i][0] - ring[i - 1][0] * ring[i][1];
-  return area2;
+function area2(ring) {
+  var i = 0, n = ring.length, area3 = ring[n - 1][1] * ring[0][0] - ring[n - 1][0] * ring[0][1];
+  while (++i < n) area3 += ring[i - 1][1] * ring[i][0] - ring[i - 1][0] * ring[i][1];
+  return area3;
 }
 var constant = (x) => () => x;
 function contains(ring, hole) {
@@ -2359,7 +2502,7 @@ function Contours() {
     var polygons = [], holes = [];
     isorings(values, v, function(ring) {
       smooth(ring, values, v);
-      if (area(ring) > 0) polygons.push([ring]);
+      if (area2(ring) > 0) polygons.push([ring]);
       else holes.push(ring);
     });
     holes.forEach(function(hole) {
@@ -2492,14 +2635,14 @@ function smooth1(x, v0, v1, value) {
 var FIELD_RADIUS_PX = 1;
 var FIELD_BORDER_PX = 2;
 var ISO_LEVEL = 0.5;
-function regionRings(keys, width, box2, match) {
+function regionRings(passes, box2, match) {
   if (box2.x1 < box2.x0) return [];
   const cols = box2.x1 - box2.x0 + 1 + 2 * FIELD_BORDER_PX;
   const rows = box2.y1 - box2.y0 + 1 + 2 * FIELD_BORDER_PX;
   const mask = new Float64Array(cols * rows);
   for (let y = box2.y0; y <= box2.y1; y++) {
     for (let x = box2.x0; x <= box2.x1; x++) {
-      if (match(keys[y * width + x])) mask[(y - box2.y0 + FIELD_BORDER_PX) * cols + (x - box2.x0 + FIELD_BORDER_PX)] = 1;
+      if (match(passes.keys[y * passes.width + x])) mask[(y - box2.y0 + FIELD_BORDER_PX) * cols + (x - box2.x0 + FIELD_BORDER_PX)] = 1;
     }
   }
   const field = boxBlur(boxBlur(mask, cols, rows, FIELD_RADIUS_PX, true), cols, rows, FIELD_RADIUS_PX, false);
@@ -2518,12 +2661,12 @@ function regionRings(keys, width, box2, match) {
 function boxBlur(src, cols, rows, radius, horizontal) {
   const out = new Float64Array(cols * rows);
   const weight = 1 / (2 * radius + 1);
-  const length = horizontal ? cols : rows;
+  const length2 = horizontal ? cols : rows;
   for (let line = 0; line < (horizontal ? rows : cols); line++) {
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < length2; i++) {
       let sum = 0;
       for (let k = -radius; k <= radius; k++) {
-        const j = Math.min(length - 1, Math.max(0, i + k));
+        const j = Math.min(length2 - 1, Math.max(0, i + k));
         sum += horizontal ? src[line * cols + j] : src[j * cols + line];
       }
       if (horizontal) out[line * cols + i] = sum * weight;
@@ -2534,7 +2677,7 @@ function boxBlur(src, cols, rows, radius, horizontal) {
 }
 
 // src/trace/objects.ts
-import * as THREE9 from "three";
+import * as THREE10 from "three";
 
 // src/geom/dashes.ts
 function dashSegments(a, b, dash, gap) {
@@ -2611,10 +2754,10 @@ function addDots(groups, a, b, radius, material) {
 }
 function addDisplacement(groups, d, pos) {
   const start = pos.get(d.start_point_id);
-  const vector = d.vector;
+  const vector2 = d.vector;
   const atomIsTip = d.anchor === "tip";
-  const tail = atomIsTip ? vsub(start, vector) : start;
-  const tip2 = atomIsTip ? start : start.map((x, i) => x + vector[i]);
+  const tail = atomIsTip ? vsub(start, vector2) : start;
+  const tip2 = atomIsTip ? start : start.map((x, i) => x + vector2[i]);
   const drawnAsArrow = (d.mode ?? "arrow").toLowerCase() === "arrow";
   const radius = ARROW.radius;
   if (drawnAsArrow) addArrow(groups, tail, tip2, radius);
@@ -2698,16 +2841,16 @@ function pointPositions(data2) {
 function sphereMatrix(c, r) {
   return [r, 0, 0, 0, 0, r, 0, 0, 0, 0, r, 0, c[0], c[1], c[2], 1];
 }
-function alongMatrix(centre2, d, radius, length) {
+function alongMatrix(centre2, d, radius, length2) {
   const { x, z } = rotationFromY(d);
   return [
     x[0] * radius,
     x[1] * radius,
     x[2] * radius,
     0,
-    d[0] * length,
-    d[1] * length,
-    d[2] * length,
+    d[0] * length2,
+    d[1] * length2,
+    d[2] * length2,
     0,
     z[0] * radius,
     z[1] * radius,
@@ -2732,36 +2875,40 @@ function rotationFromY(d) {
 }
 
 // src/trace/objects.ts
+var roleOf = (mesh) => mesh.userData;
 function buildIdMeshes(data2, material, keep = () => true) {
   const objects = [];
-  const meshes = [];
-  const shells = [];
-  const thin = [];
-  for (const group of instanceGroups(data2)) {
-    const first = objects.length + 1;
-    const kept = [];
-    const dropped = [];
-    group.refs.forEach((_, i) => {
-      const obj = { kind: group.shape, material: group.material, alpha: 1, outlined: group.outlined, centre: instanceCentre(group.matrices, i), matrix: group.matrices.slice(16 * i, 16 * i + 16) };
-      objects.push(obj);
-      (keep(obj) ? kept : dropped).push(i);
-    });
-    if (kept.length) {
-      const mesh = instanceSet(group, first, kept, material);
-      mesh.userData = { shape: group.shape };
-      meshes.push(mesh);
-      if (group.outlined) {
-        const shell = instanceSet(group, first, kept, material);
-        shell.userData = { shape: group.shape, shell: true };
-        shells.push(shell);
-      }
-    }
-    if (dropped.length) {
-      const mesh = instanceSet(group, first, dropped, material);
-      mesh.userData = { shape: group.shape, thin: true };
-      thin.push(mesh);
+  const parts = { meshes: [], shells: [], thin: [] };
+  for (const group of instanceGroups(data2)) addInstanceGroup(group, objects, parts, material, keep);
+  addPolyhedra(data2, objects, parts, material);
+  return { objects, ...parts };
+}
+function addInstanceGroup(group, objects, parts, material, keep) {
+  const first = objects.length + 1;
+  const kept = [];
+  const dropped = [];
+  group.refs.forEach((_, i) => {
+    const obj = { kind: group.shape, material: group.material, alpha: 1, outlined: group.outlined, centre: instanceCentre(group.matrices, i), matrix: group.matrices.slice(16 * i, 16 * i + 16) };
+    objects.push(obj);
+    (keep(obj) ? kept : dropped).push(i);
+  });
+  if (kept.length) {
+    const mesh = instanceSet(group, first, kept, material);
+    mesh.userData = { shape: group.shape, role: "solid" };
+    parts.meshes.push(mesh);
+    if (group.outlined) {
+      const shell = instanceSet(group, first, kept, material);
+      shell.userData = { shape: group.shape, role: "shell" };
+      parts.shells.push(shell);
     }
   }
+  if (dropped.length) {
+    const mesh = instanceSet(group, first, dropped, material);
+    mesh.userData = { shape: group.shape, role: "thin" };
+    parts.thin.push(mesh);
+  }
+}
+function addPolyhedra(data2, objects, parts, material) {
   const points2 = new Map(data2.points.map((p) => [p.id, p.position]));
   const polyBase = objects.length;
   data2.primitives.polyhedra.forEach((poly, index) => {
@@ -2778,20 +2925,19 @@ function buildIdMeshes(data2, material, keep = () => true) {
   for (const group of polyhedronGroups(data2)) {
     const ids = new Float32Array(group.owner.length * 3);
     group.owner.forEach((p, t) => ids.fill(polyBase + p + 1, t * 3, t * 3 + 3));
-    const geometry = new THREE9.BufferGeometry();
-    geometry.setAttribute("position", new THREE9.Float32BufferAttribute(group.positions, 3));
-    geometry.setAttribute("objectId", new THREE9.BufferAttribute(ids, 1));
+    const geometry = new THREE10.BufferGeometry();
+    geometry.setAttribute("position", new THREE10.Float32BufferAttribute(group.positions, 3));
+    geometry.setAttribute("objectId", new THREE10.BufferAttribute(ids, 1));
     geometry.computeVertexNormals();
-    const mesh = new THREE9.Mesh(geometry, material);
-    mesh.userData = { shape: "polyhedron" };
-    meshes.push(mesh);
+    const mesh = new THREE10.Mesh(geometry, material);
+    mesh.userData = { shape: "polyhedron", role: "solid" };
+    parts.meshes.push(mesh);
     if (group.material && (data2.materials[group.material].alpha ?? 1) >= 1) {
-      const shell = new THREE9.Mesh(geometry, material);
-      shell.userData = { shape: "polyhedron", shell: true };
-      shells.push(shell);
+      const shell = new THREE10.Mesh(geometry, material);
+      shell.userData = { shape: "polyhedron", role: "shell" };
+      parts.shells.push(shell);
     }
   }
-  return { objects, meshes, shells, thin };
 }
 function instanceCentre(matrices, i) {
   return [matrices[16 * i + 12], matrices[16 * i + 13], matrices[16 * i + 14]];
@@ -2801,15 +2947,14 @@ function instanceSet(group, first, indices, material) {
   indices.forEach((i, k) => ids[k] = first + i);
   const matrices = indices.flatMap((i) => group.matrices.slice(16 * i, 16 * i + 16));
   const geometry = SHAPES[group.shape]();
-  geometry.setAttribute("objectId", new THREE9.InstancedBufferAttribute(ids, 1));
+  geometry.setAttribute("objectId", new THREE10.InstancedBufferAttribute(ids, 1));
   return instanced(geometry, material, matrices);
 }
 
 // src/trace/passes.ts
-import * as THREE10 from "three";
+import * as THREE11 from "three";
 var TOON_STEPS2 = 16;
 var DEPTH_SCALE = 16777215;
-var BACKGROUND_DEPTH = 2;
 var ID_VERTEX = `
     attribute float objectId;
     flat varying float vObject;
@@ -2872,32 +3017,35 @@ function passMaterial(pass, faces) {
   const offset = faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR2, polygonOffsetUnits: FACE_OFFSET_UNITS2 } : {};
   switch (pass) {
     case "id":
-      return new THREE10.ShaderMaterial({ vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, ...offset });
+      return new THREE11.ShaderMaterial({ vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, ...offset });
     case "band":
-      return new THREE10.ShaderMaterial({
+      return new THREE11.ShaderMaterial({
         vertexShader: BAND_VERTEX,
         fragmentShader: BAND_FRAGMENT,
-        uniforms: { lightDir: { value: new THREE10.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } },
+        uniforms: { lightDir: { value: new THREE11.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } },
         ...offset
       });
     case "depth":
-      return new THREE10.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, ...offset });
+      return new THREE11.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, ...offset });
   }
 }
 function idScene(meshes) {
-  const group = new THREE10.Group();
+  const group = new THREE11.Group();
   group.position.copy(root.position);
   group.add(...meshes);
-  const scene2 = new THREE10.Scene();
+  const scene2 = new THREE11.Scene();
   scene2.add(group);
   return scene2;
 }
-var OUTLINE_THICKNESS2 = 35e-4;
-var OUTLINE_SIZE_FRACTION2 = 0.12;
+var CHANNEL_ON = 128;
+function unpack24(bytes, offset) {
+  return bytes[offset] + 256 * bytes[offset + 1] + 65536 * bytes[offset + 2];
+}
+var UNCAPPED_RADIUS = 1e9;
 var SHELL_VERTEX = `
     uniform float outlineThickness;
     uniform float outlineScale;
-    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION2.toFixed(3)}
+    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)}
     float outlineWidth(float clipW, float radius) {
       float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
       return min(outlineThickness, capWidth);
@@ -2905,7 +3053,7 @@ var SHELL_VERTEX = `
     void main() {
       vec4 local = vec4(position, 1.0);
       vec3 normalLocal = normal;
-      float radius = 1e9;
+      float radius = ${UNCAPPED_RADIUS.toFixed(1)};
       #ifdef USE_INSTANCING
         mat3 instanceRotation = mat3(instanceMatrix);
         normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
@@ -2926,24 +3074,23 @@ var ZERO_FRAGMENT = `
     void main() {
       gl_FragColor = vec4(0.0);
     }`;
-var shellMaterial = () => new THREE10.ShaderMaterial({
+var shellMaterial = (outlineScale2) => new THREE11.ShaderMaterial({
   vertexShader: SHELL_VERTEX,
   fragmentShader: SHELL_FRAGMENT,
-  side: THREE10.BackSide,
-  uniforms: { outlineThickness: { value: OUTLINE_THICKNESS2 }, outlineScale: { value: 1 } }
+  side: THREE11.BackSide,
+  uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale2 } }
 });
-var occluderMaterial = (faces) => new THREE10.ShaderMaterial({
+var occluderMaterial = (faces) => new THREE11.ShaderMaterial({
   vertexShader: PLAIN_VERTEX,
   fragmentShader: ZERO_FRAGMENT,
   ...faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR2, polygonOffsetUnits: FACE_OFFSET_UNITS2 } : {}
 });
-function renderPasses(meshes, shells, thin, lines, cssWidth, cssHeight, scale) {
+function renderPasses(groups, cssWidth, cssHeight, scale, outlineScale2) {
+  const { meshes, shells, thin, lines } = groups;
   const width = cssWidth * scale;
   const height = cssHeight * scale;
-  const keys = new Uint32Array(width * height);
-  const depth = new Float32Array(width * height).fill(BACKGROUND_DEPTH);
-  const shell = new Uint8Array(width * height);
-  const lineId = new Uint32Array(width * height);
+  const count2 = width * height;
+  const passes = new Passes(width, height, new Uint32Array(count2), new Float32Array(count2).fill(BACKGROUND_DEPTH), new Uint8Array(count2), new Uint32Array(count2));
   const all = [...meshes, ...shells, ...thin, ...lines];
   const scene2 = idScene(all);
   const materials = {
@@ -2951,68 +3098,76 @@ function renderPasses(meshes, shells, thin, lines, cssWidth, cssHeight, scale) {
     band: [passMaterial("band", false), passMaterial("band", true)],
     depth: [passMaterial("depth", false), passMaterial("depth", true)]
   };
-  const pick = (pass) => (mesh) => materials[pass][mesh.userData.shape === "polyhedron" ? 1 : 0];
-  const maskShell = shellMaterial();
+  const pick = (pass) => (mesh) => materials[pass][roleOf(mesh).shape === "polyhedron" ? 1 : 0];
+  const maskShell = shellMaterial(outlineScale2);
   const maskPlain = occluderMaterial(false);
   const maskFaces = occluderMaterial(true);
-  const maskPick = (mesh) => mesh.userData.shell ? maskShell : mesh.userData.shape === "polyhedron" ? maskFaces : maskPlain;
+  const maskPick = (mesh) => roleOf(mesh).role === "shell" ? maskShell : roleOf(mesh).shape === "polyhedron" ? maskFaces : maskPlain;
   const lineIdMaterial = passMaterial("id", false);
-  const linePick = (mesh) => mesh.userData.line || mesh.userData.thin ? lineIdMaterial : mesh.userData.shape === "polyhedron" ? maskFaces : maskPlain;
+  const linePick = (mesh) => {
+    const role = roleOf(mesh);
+    return role.role === "line" || role.role === "thin" ? lineIdMaterial : role.shape === "polyhedron" ? maskFaces : maskPlain;
+  };
   const show2 = (pass) => {
     for (const m of shells) m.visible = pass === "mask";
     for (const m of [...thin, ...lines]) m.visible = pass === "line";
   };
   const tile = renderer.capabilities.maxTextureSize;
   camera.updateMatrixWorld();
-  for (let y0 = 0; y0 < height; y0 += tile) {
-    for (let x0 = 0; x0 < width; x0 += tile) {
-      const tw = Math.min(tile, width - x0);
-      const th = Math.min(tile, height - y0);
-      camera.setViewOffset(width, height, x0, y0, tw, th);
-      show2("id");
-      const ids = readPass(scene2, all, pick("id"), tw, th);
-      show2("band");
-      const bands = readPass(scene2, all, pick("band"), tw, th);
-      show2("depth");
-      const depths = readPass(scene2, all, pick("depth"), tw, th);
-      show2("mask");
-      const masks = readPass(scene2, all, maskPick, tw, th);
-      show2("line");
-      const lines32 = readPass(scene2, all, linePick, tw, th);
-      for (let row = 0; row < th; row++) {
-        const topRow = th - 1 - row;
-        for (let col = 0; col < tw; col++) {
-          const src = (row * tw + col) * 4;
-          const dst = (y0 + topRow) * width + x0 + col;
-          shell[dst] = masks[src] >= 128 ? 1 : 0;
-          lineId[dst] = lines32[src] + 256 * lines32[src + 1] + 65536 * lines32[src + 2];
-          const id = ids[src] + 256 * ids[src + 1] + 65536 * ids[src + 2];
-          if (id === 0) continue;
-          const dark = bands[src] < 128 ? 1 : 0;
-          keys[dst] = 2 * id + dark;
-          depth[dst] = (depths[src] + 256 * depths[src + 1] + 65536 * depths[src + 2]) / DEPTH_SCALE;
-        }
+  try {
+    for (let y0 = 0; y0 < height; y0 += tile) {
+      for (let x0 = 0; x0 < width; x0 += tile) {
+        const tw = Math.min(tile, width - x0);
+        const th = Math.min(tile, height - y0);
+        camera.setViewOffset(width, height, x0, y0, tw, th);
+        show2("id");
+        const ids = readPass(scene2, all, pick("id"), tw, th);
+        show2("band");
+        const bands = readPass(scene2, all, pick("band"), tw, th);
+        show2("depth");
+        const depths = readPass(scene2, all, pick("depth"), tw, th);
+        show2("mask");
+        const masks = readPass(scene2, all, maskPick, tw, th);
+        show2("line");
+        const lineIds = readPass(scene2, all, linePick, tw, th);
+        storeTile(passes, { x0, y0, tw, th, ids, bands, depths, masks, lineIds });
       }
     }
+  } finally {
+    renderer.setRenderTarget(null);
+    camera.clearViewOffset();
+    for (const material of [...Object.values(materials).flat(), maskShell, maskPlain, maskFaces, lineIdMaterial]) material.dispose();
   }
-  camera.clearViewOffset();
-  for (const pair of Object.values(materials)) for (const material of pair) material.dispose();
-  maskShell.dispose();
-  maskPlain.dispose();
-  maskFaces.dispose();
-  lineIdMaterial.dispose();
-  return { keys, depth, shell, lineId, width, height };
+  return passes;
+}
+function storeTile(out, t) {
+  for (let row = 0; row < t.th; row++) {
+    const topRow = t.th - 1 - row;
+    for (let col = 0; col < t.tw; col++) {
+      const src = (row * t.tw + col) * 4;
+      const dst = (t.y0 + topRow) * out.width + t.x0 + col;
+      out.shell[dst] = t.masks[src] >= CHANNEL_ON ? 1 : 0;
+      out.lineId[dst] = unpack24(t.lineIds, src);
+      const id = unpack24(t.ids, src);
+      if (id === 0) continue;
+      out.keys[dst] = t.bands[src] < CHANNEL_ON ? darkKey(id) : litKey(id);
+      out.depth[dst] = unpack24(t.depths, src) / DEPTH_SCALE;
+    }
+  }
 }
 function readPass(scene2, all, materialOf, tw, th) {
   for (const mesh of all) mesh.material = materialOf(mesh);
-  const target = new THREE10.WebGLRenderTarget(tw, th, { depthBuffer: true, minFilter: THREE10.NearestFilter, magFilter: THREE10.NearestFilter, generateMipmaps: false });
-  renderer.setRenderTarget(target);
-  renderer.render(scene2, camera);
-  const pixels = new Uint8Array(tw * th * 4);
-  renderer.readRenderTargetPixels(target, 0, 0, tw, th, pixels);
-  renderer.setRenderTarget(null);
-  target.dispose();
-  return pixels;
+  const target = new THREE11.WebGLRenderTarget(tw, th, { depthBuffer: true, minFilter: THREE11.NearestFilter, magFilter: THREE11.NearestFilter, generateMipmaps: false });
+  try {
+    renderer.setRenderTarget(target);
+    renderer.render(scene2, camera);
+    const pixels = new Uint8Array(tw * th * 4);
+    renderer.readRenderTargetPixels(target, 0, 0, tw, th, pixels);
+    return pixels;
+  } finally {
+    renderer.setRenderTarget(null);
+    target.dispose();
+  }
 }
 function disposeMeshes(meshes) {
   for (const mesh of meshes) mesh.geometry.dispose();
@@ -3029,96 +3184,95 @@ var SNAP_TOL_RENDER_PX = 0.6;
 var BAND_OFFSETS_PX = [0.5, 1, 1.5];
 var FLAG_HALF_WINDOW = 3;
 var BACKGROUND = 0;
-function labelAt(x, y, id, keys, width, height) {
+function stretchesOf(ring, id, passes, scale) {
+  const labels = fillGaps(ring.map(([x, y]) => labelAt(x, y, id, passes)));
+  if (labels === null) return { stretches: [], whole: false };
+  const css = ring.map(([x, y]) => [x / scale, y / scale]);
+  const ctx = { id, passes, scale };
+  if (labels.every((l) => l === labels[0])) return wholeRing(css, labels[0], ctx);
+  const [pts, rotatedLabels] = rotateToChange(css, labels);
+  return { stretches: splitAtLabelChanges(pts, rotatedLabels, ctx), whole: false };
+}
+function wholeRing(css, label, ctx) {
+  const flags = shellFlags(css, true, ctx);
+  if (flags.every((f) => f === flags[0])) return { stretches: [{ pts: css, label, outlined: flags[0] }], whole: true };
+  return { stretches: cyclicRuns(css, flags, label), whole: false };
+}
+function fillGaps(labels) {
+  const first = labels.find((l) => l !== null);
+  if (first === void 0) return null;
+  let prev = first;
+  return labels.map((l) => {
+    if (l === null) return prev;
+    prev = l;
+    return l;
+  });
+}
+function rotateToChange(css, labels) {
+  const start = labels.findIndex((l, i) => l !== labels[(i - 1 + labels.length) % labels.length]);
+  return [[...css.slice(start), ...css.slice(0, start)], [...labels.slice(start), ...labels.slice(0, start)]];
+}
+function splitAtLabelChanges(pts, labels, ctx) {
+  const stretches = [];
+  for (let i = 0; i < pts.length; ) {
+    let j = i;
+    while (j + 1 < pts.length && labels[j + 1] === labels[i]) j++;
+    const span2 = pts.slice(i, j + 1);
+    for (const piece of runsOf(span2, shellFlags(span2, false, ctx))) {
+      stretches.push({ pts: piece.pts, label: labels[i], outlined: piece.outlined });
+    }
+    i = j + 1;
+  }
+  return stretches;
+}
+function labelAt(x, y, id, passes) {
   const left = Math.floor(x - 0.5);
   const top = Math.floor(y - 0.5);
   let inside = false;
-  const votes = /* @__PURE__ */ new Map();
+  const votes = [];
   for (let dy = 0; dy <= 1; dy++) {
     for (let dx = 0; dx <= 1; dx++) {
-      const px = left + dx;
-      const py = top + dy;
-      const key2 = px >= 0 && py >= 0 && px < width && py < height ? keys[py * width + px] : 0;
-      if (key2 !== 0 && key2 >> 1 === id) {
+      const key2 = passes.keyAt(left + dx, top + dy);
+      if (key2 !== 0 && idOf(key2) === id) {
         inside = true;
         continue;
       }
-      const label = key2 === 0 ? BACKGROUND : key2 >> 1;
-      votes.set(label, (votes.get(label) ?? 0) + 1);
+      votes.push(key2 === 0 ? BACKGROUND : idOf(key2));
     }
   }
-  if (!inside || votes.size === 0) return null;
-  let best = -1;
+  return inside ? mostCommon(votes) : null;
+}
+function mostCommon(values) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  let best = null;
   let bestCount = 0;
-  for (const [label, count2] of votes) {
+  for (const [value, count2] of counts) {
     if (count2 > bestCount) {
-      best = label;
+      best = value;
       bestCount = count2;
     }
   }
   return best;
-}
-function stretchesOf(ring, id, keys, width, height, scale, shell) {
-  const labels = ring.map(([x, y]) => labelAt(x, y, id, keys, width, height));
-  const first = labels.find((l) => l !== null);
-  if (first === void 0) return { stretches: [], whole: false };
-  let prev = first;
-  for (let i = 0; i < labels.length; i++) {
-    if (labels[i] === null) labels[i] = prev;
-    else prev = labels[i];
-  }
-  const css = ring.map(([x, y]) => [x / scale, y / scale]);
-  const ctx = { id, keys, width, height, scale, shell };
-  if (labels.every((l) => l === labels[0])) {
-    const flags = shellFlags(css, true, ctx);
-    if (flags.every((f) => f === flags[0])) return { stretches: [{ pts: css, label: labels[0], outlined: flags[0] }], whole: true };
-    return { stretches: cyclicRuns(css, flags, labels[0]), whole: false };
-  }
-  const start = labels.findIndex((l, i) => l !== labels[(i - 1 + labels.length) % labels.length]);
-  const rotated = [...css.slice(start), ...css.slice(0, start)];
-  const rotatedLabels = [...labels.slice(start), ...labels.slice(0, start)];
-  const stretches = [];
-  for (let i = 0; i < rotated.length; ) {
-    let j = i;
-    while (j + 1 < rotated.length && rotatedLabels[j + 1] === rotatedLabels[i]) j++;
-    for (const piece of runsOf(rotated.slice(i, j + 1), shellFlags(rotated.slice(i, j + 1), false, ctx))) {
-      stretches.push({ pts: piece.pts, label: rotatedLabels[i], outlined: piece.outlined });
-    }
-    i = j + 1;
-  }
-  return { stretches, whole: false };
 }
 function shellFlags(pts, closed, ctx) {
   const n = pts.length;
   const raw = pts.map((p, i) => {
     const a = closed ? pts[(i - 1 + n) % n] : pts[Math.max(0, i - 1)];
     const b = closed ? pts[(i + 1) % n] : pts[Math.min(n - 1, i + 1)];
-    const tx = b[0] - a[0];
-    const ty = b[1] - a[1];
-    const len = Math.hypot(tx, ty) || 1;
-    let nx = ty / len;
-    let ny = -tx / len;
-    if (ownAt([p[0] + nx / ctx.scale, p[1] + ny / ctx.scale], ctx)) {
-      nx = -nx;
-      ny = -ny;
-    }
+    const [nx, ny] = outwardNormal(p, a, b, ctx);
     let hits = 0;
     for (const d of BAND_OFFSETS_PX) if (shellAt([p[0] + nx * d / ctx.scale, p[1] + ny * d / ctx.scale], ctx)) hits++;
     return hits * 2 > BAND_OFFSETS_PX.length;
   });
   return majority(raw, closed);
 }
-function ownAt(p, ctx) {
-  const x = Math.floor(p[0] * ctx.scale);
-  const y = Math.floor(p[1] * ctx.scale);
-  if (x < 0 || y < 0 || x >= ctx.width || y >= ctx.height) return false;
-  const key2 = ctx.keys[y * ctx.width + x];
-  return key2 !== 0 && key2 >> 1 === ctx.id;
-}
-function shellAt(p, ctx) {
-  const x = Math.floor(p[0] * ctx.scale);
-  const y = Math.floor(p[1] * ctx.scale);
-  return x >= 0 && y >= 0 && x < ctx.width && y < ctx.height && ctx.shell[y * ctx.width + x] === 1;
+function outwardNormal(p, a, b, ctx) {
+  const tx = b[0] - a[0];
+  const ty = b[1] - a[1];
+  const len = Math.hypot(tx, ty) || 1;
+  const n = [ty / len, -tx / len];
+  return ownAt([p[0] + n[0] / ctx.scale, p[1] + n[1] / ctx.scale], ctx) ? [-n[0], -n[1]] : n;
 }
 function majority(flags, closed) {
   const n = flags.length;
@@ -3133,6 +3287,14 @@ function majority(flags, closed) {
     }
     return count2 * 2 > seen;
   });
+}
+var pixelOf = (p, ctx) => [Math.floor(p[0] * ctx.scale), Math.floor(p[1] * ctx.scale)];
+function ownAt(p, ctx) {
+  const key2 = ctx.passes.keyAt(...pixelOf(p, ctx));
+  return key2 !== 0 && idOf(key2) === ctx.id;
+}
+function shellAt(p, ctx) {
+  return ctx.passes.shellAt(...pixelOf(p, ctx));
 }
 function runsOf(pts, flags) {
   const out = [];
@@ -3172,27 +3334,25 @@ function ringPaths(stretches, whole, candidates, tol) {
   const pieces = [];
   stretches.forEach((st, index) => {
     const start = cur;
-    const best = bests[index];
-    let cmd;
-    if (best?.kind === "line") {
-      const end = onLine(best.a, best.b, st.pts[st.pts.length - 1]);
-      cmd = `L${fmtPt(end)}`;
-      cur = end;
-    } else if (best?.kind === "ellipse") {
-      const from = pointAt(best.e, paramOf(best.e, start));
-      const end = pointAt(best.e, paramOf(best.e, st.pts[st.pts.length - 1]));
-      cmd = arcTo(best.e, from, end, st.pts);
-      cur = end;
-    } else {
-      const pts = [start, ...st.pts.slice(1)];
-      cmd = fitCommands(pts);
-      cur = st.pts[st.pts.length - 1];
-    }
-    d += cmd;
-    pieces.push({ start, cmd, outlined: st.outlined });
+    const piece = pieceFor(st, bests[index], start);
+    cur = piece.end;
+    d += piece.cmd;
+    pieces.push({ start, cmd: piece.cmd, outlined: st.outlined });
   });
   d += "Z";
   return { fill: d, outline: outlineOf2(pieces) };
+}
+function pieceFor(st, best, start) {
+  const last = st.pts[st.pts.length - 1];
+  if (best?.kind === "line") {
+    const end = onLine(best.a, best.b, last);
+    return { cmd: `L${fmtPt(end)}`, end };
+  }
+  if (best?.kind === "ellipse") {
+    const end = pointAt(best.e, paramOf(best.e, last));
+    return { cmd: arcTo(best.e, pointAt(best.e, paramOf(best.e, start)), end, st.pts), end };
+  }
+  return { cmd: fitCommands([start, ...st.pts.slice(1)]), end: last };
 }
 function outlineOf2(pieces) {
   let out = "";
@@ -3231,271 +3391,72 @@ function startOn(curve, p) {
 function startOf(e, p) {
   return fmtPt(pointAt(e, paramOf(e, p)));
 }
-function fmtPt(p) {
-  return `${Math.round(p[0] * 100) / 100 || 0} ${Math.round(p[1] * 100) / 100 || 0}`;
-}
 
 // src/trace/traced.ts
 var TRACE_SCALE = 2;
 var SEAM_TRAP_PX = 0.5;
+var SEAM_STROKE_WIDTH = 2 * SEAM_TRAP_PX;
 var THIN_AS_LINE_PX = 3;
-var OUTLINE_SIZE_FRACTION3 = 0.12;
-var OUTLINE_FRACTION = 35e-4;
 var EDGE_WIDTH = 1;
 var BOX_LINE_WIDTH = 1;
-var OUT_OF_RANGE = 1 << 30;
+var SILHOUETTE_SAMPLES = 48;
 var MIN_REGION_PX = 4;
 var MIN_STRIP_PX = 1;
 var MIN_SILHOUETTE_PX = 1;
-var NEAREST_START = 2;
-function buildTracedSvg(o) {
+var MIN_PERIMETER_PX = 1e-9;
+var Layers = class {
+  clips = [];
+  fills = [];
+  outlines = [];
+  paths = 0;
+  counted(markup) {
+    this.paths++;
+    return markup;
+  }
+};
+function buildTracedSvg(options) {
   const started = performance.now();
-  const scale = TRACE_SCALE;
-  const view = makeView(o);
-  const radiusPx = (obj) => {
-    if (!obj.matrix) return null;
-    const unit = obj.kind === "cylinder" ? Math.hypot(obj.matrix[0], obj.matrix[1], obj.matrix[2]) : obj.kind === "sphere" || obj.kind === "dot" ? obj.matrix[0] : null;
-    return unit === null ? null : unit * view.pxPerUnit(view.toCam(vec3(obj.centre)));
-  };
-  const isThin = (obj) => (obj.kind === "cylinder" || obj.kind === "dot") && (radiusPx(obj) ?? Infinity) * 2 < THIN_AS_LINE_PX;
-  const { objects, meshes, shells, thin } = buildIdMeshes(o.data, passMaterial("id", false), (obj) => !isThin(obj));
-  const shown2 = (mesh) => o.show.atoms || mesh.userData.shape !== "sphere";
-  const points2 = new Map(o.data.points.map((p) => [p.id, p.position]));
-  const topologies = new Map(o.data.topologies.map((t) => [t.id, t]));
+  const view = makeView(options);
+  const prepared = prepareScene(options, view);
+  try {
+    const shown2 = (mesh) => options.show.atoms || roleOf(mesh).shape !== "sphere";
+    const { built, lines } = prepared;
+    const passes = renderPasses(
+      { meshes: built.meshes.filter(shown2), shells: built.shells.filter(shown2), thin: built.thin, lines },
+      options.width,
+      options.height,
+      TRACE_SCALE,
+      options.outlineScale
+    );
+    const frame3 = makeFrame(options, view, prepared, passes);
+    const layers = new Layers();
+    for (const { id, obj } of drawOrder(frame3)) {
+      if (obj.kind !== "polyhedron" && isThin(view, obj)) traceThin(frame3, layers, id, obj);
+      else traceObject(frame3, layers, id, obj);
+    }
+    const text = documentText(frame3, layers);
+    return { text, paths: layers.paths, ms: performance.now() - started };
+  } finally {
+    disposeMeshes([...prepared.built.meshes, ...prepared.built.shells, ...prepared.built.thin, ...prepared.lines]);
+  }
+}
+function prepareScene(options, view) {
+  const built = buildIdMeshes(options.data, passMaterial("id", false), (obj) => !isThin(view, obj));
+  const points2 = new Map(options.data.points.map((p) => [p.id, p.position]));
+  const topologies = new Map(options.data.topologies.map((t) => [t.id, t]));
   const edgeSpans = [];
-  let nextId = objects.length + 1;
-  objects.forEach((obj, index) => {
+  let nextId = built.objects.length + 1;
+  built.objects.forEach((obj, index) => {
     if (obj.kind !== "polyhedron") return;
-    const poly = o.data.primitives.polyhedra[obj.poly];
+    const poly = options.data.primitives.polyhedra[obj.poly];
     for (const [a, b] of hardEdges(topologies.get(poly.topology_id), points2)) edgeSpans.push({ owner: index + 1, a, b, id: nextId++ });
   });
   const boxId = nextId;
-  const boxEdges = o.show.box && o.data.cell ? cellEdges(o.data.cell) : [];
+  const boxEdges = options.show.box && options.data.cell ? cellEdges(options.data.cell) : [];
   const edgeLines = lineSet(edgeSpans.map((e) => [e.a, e.b, e.id]));
   const boxLines = lineSet(boxEdges.map(([a, b]) => [a, b, boxId]));
   const lines = [edgeLines, boxLines].filter((set) => set.geometry.getAttribute("position").count > 0);
-  const { keys, depth, shell, lineId, width, height } = renderPasses(meshes.filter(shown2), shells.filter(shown2), thin, lines, o.width, o.height, scale);
-  const { boxes, nearest, pixels } = objectBoxes(keys, depth, width, objects.length);
-  const project = projector(width, height);
-  const screen = (p) => {
-    const s = view.toScreen(view.toCam(p));
-    return [s.x, s.y];
-  };
-  const tol = snapTolerance(scale);
-  const edgeHex = srgbHex(LOOK.outline);
-  const outlineHex = linearHex(LOOK.outline);
-  const outlineWidth = OUTLINE_FRACTION * o.height;
-  const spansOf = (a, b, id) => visibleSpans(a, b, project, lineId, id, width, height, scale);
-  const ownCache = /* @__PURE__ */ new Map();
-  const own = (id) => {
-    if (!ownCache.has(id)) ownCache.set(id, ownCurves(o, objects[id - 1], view, screen, topologies, points2));
-    return ownCache.get(id);
-  };
-  const faceCache = /* @__PURE__ */ new Map();
-  const facesOf = (poly) => {
-    if (!faceCache.has(poly)) {
-      const p = o.data.primitives.polyhedra[poly];
-      const topo = topologies.get(p.topology_id);
-      faceCache.set(poly, topo.faces.map(([i, j, k]) => [i, j, k].map((q) => vec3(points2.get(topo.point_ids[q])))));
-    }
-    return faceCache.get(poly);
-  };
-  const crossing = (id, label, mid) => {
-    const a = objects[id - 1];
-    const b = objects[label - 1];
-    const [poly, other] = a.kind === "polyhedron" ? [a, b] : b.kind === "polyhedron" ? [b, a] : [null, null];
-    if (!poly || !other) return [];
-    const face = nearestFace(facesOf(poly.poly), mid, screen);
-    if (!face) return [];
-    if (other.kind === "sphere" || other.kind === "dot") {
-      const c = sectionCurve(vec3(other.centre), other.matrix[0], face, screen);
-      return c ? [c] : [];
-    }
-    if (other.kind === "cylinder" && other.matrix) {
-      const c = cylinderSectionCurve(other.matrix, face, screen);
-      return c ? [c] : [];
-    }
-    return [];
-  };
-  const order = objects.map((obj, i) => ({ id: i + 1, nearestDepth: isThin(obj) ? project(vec3(obj.centre)).depth : nearest[i + 1], obj })).sort((p, q) => q.nearestDepth - p.nearestDepth);
-  const clips = [];
-  let paths = 0;
-  const fills = [];
-  const outlines2 = [];
-  for (const { id, obj } of order) {
-    if (isThin(obj)) {
-      const thin2 = thinMarkup(obj, o, project, lineId, id, width, height, scale, radiusPx(obj) ?? 0);
-      if (thin2) {
-        fills.push(thin2);
-        paths++;
-      }
-      continue;
-    }
-    const box3 = boxOf(boxes, id);
-    if (box3.x1 < box3.x0) continue;
-    const rgb = obj.material === null ? arrowColor() : colorOf(o, obj.material);
-    const lit = srgbHex(rgb);
-    const dark = shadedBand(rgb, LOOK.dark);
-    const common = { "fill-rule": "evenodd", ...obj.alpha < 1 ? { "fill-opacity": obj.alpha } : {} };
-    const outlined = o.outlines && obj.outlined;
-    let body2 = "";
-    let fillD = "";
-    let outlineD = "";
-    const regionPx = pixels[id] / (scale * scale);
-    const centre2 = project(vec3(obj.centre));
-    let unionRings = regionRings(keys, width, box3, (k) => k >> 1 === id);
-    let silhouette = "";
-    if (regionPx < MIN_REGION_PX) {
-      const exact = own(id).find((c) => c.kind === "ellipse");
-      if (exact && exact.kind === "ellipse" && keyAtCentre(keys, width, centre2) === id && regionPx >= MIN_SILHOUETTE_PX) {
-        silhouette = closedPath(sampleEllipse(exact.e));
-      }
-      unionRings = [];
-    } else {
-      unionRings = unionRings.filter((ring) => ringArea(ring, scale) >= MIN_REGION_PX);
-    }
-    if (silhouette) fillD += silhouette;
-    for (const ring of unionRings) {
-      const { stretches, whole } = stretchesOf(ring, id, keys, width, height, scale, shell);
-      const parts = ringPaths(stretches, whole, (st) => candidatesFor(id, st, own, crossing), tol);
-      fillD += parts.fill;
-      outlineD += parts.outline;
-    }
-    const clipId = `k${id}`;
-    if (fillD) {
-      const stroke = { stroke: lit, "stroke-width": 2 * SEAM_TRAP_PX, "stroke-linejoin": "round" };
-      body2 += el("path", { d: fillD, fill: lit, ...stroke, ...common });
-      paths++;
-      clips.push(el("clipPath", { id: clipId }, el("path", { d: fillD, "clip-rule": "evenodd" })));
-    }
-    const bandRings = regionRings(keys, width, box3, (k) => k === 2 * id + 1).filter((ring) => ringArea(ring, scale) >= MIN_REGION_PX && ringArea(ring, scale) / Math.max(ringPerimeter(ring, scale), 1e-9) >= MIN_STRIP_PX);
-    const shade = bandRings.map((ring) => closedPath(toCss(ring, scale))).join("");
-    if (shade) {
-      const stroke = { stroke: dark, "stroke-width": 2 * SEAM_TRAP_PX, "stroke-linejoin": "round" };
-      body2 += el("path", { d: shade, fill: dark, ...stroke, ...common, "clip-path": fillD ? `url(#${clipId})` : void 0 });
-      paths++;
-    }
-    if (obj.kind === "polyhedron") {
-      const d = edgeSpans.filter((e) => e.owner === id).flatMap((e) => spansOf(e.a, e.b, e.id)).map(([p, q]) => `M${fmt2(p[0])} ${fmt2(p[1])}L${fmt2(q[0])} ${fmt2(q[1])}`).join("");
-      if (d) {
-        body2 += el("path", { d, fill: "none", stroke: edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" });
-        paths++;
-      }
-    }
-    fills.push(el("g", {}, body2));
-    if (outlined && outlineD) {
-      const r = radiusPx(obj);
-      const strokeWidth = r === null ? outlineWidth / 2 : Math.min(outlineWidth / 2, 2 * OUTLINE_SIZE_FRACTION3 * r);
-      outlines2.push(el("path", { d: outlineD, fill: "none", stroke: outlineHex, "stroke-width": strokeWidth, "stroke-linejoin": "round" }));
-      paths++;
-    }
-  }
-  disposeMeshes([...meshes, ...shells, ...thin, ...lines]);
-  let box2 = "";
-  if (o.show.box && o.data.cell) {
-    const d = boxEdges.flatMap(([a, b]) => spansOf(a, b, boxId)).map(([p, q]) => `M${fmt2(p[0])} ${fmt2(p[1])}L${fmt2(q[0])} ${fmt2(q[1])}`).join("");
-    if (d) {
-      box2 = el("path", { d, fill: "none", stroke: o.boxColor, "stroke-width": BOX_LINE_WIDTH });
-      paths++;
-    }
-  }
-  const body = `${el("defs", {}, clips.join(""))}
-${fills.join("\n")}
-${box2}
-${outlines2.join("\n")}
-${triadSvg({ o, view })}`;
-  const style = textEl("style", {}, axisFontFace(["700"]));
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: o.width, height: o.height, viewBox: `0 0 ${o.width} ${o.height}` }, `
-${style}
-${body}
-`);
-  const text = `${svg}
-`;
-  return { text, paths, ms: performance.now() - started };
-}
-function thinMarkup(obj, o, project, lineId, id, width, height, scale, radiusPx) {
-  const rgb = obj.material === null ? arrowColor() : colorOf(o, obj.material);
-  const lit = srgbHex(rgb);
-  const m = obj.matrix;
-  const c = vec3(obj.centre);
-  if (obj.kind === "dot") {
-    const p = project(c);
-    if (!onScreen(p)) return "";
-    if (!showsId(lineId, id, width, height, Math.floor(p.x), Math.floor(p.y))) return "";
-    return el("circle", { cx: p.x / scale, cy: p.y / scale, r: radiusPx, fill: lit });
-  }
-  const axis = new THREE11.Vector3(m[4], m[5], m[6]).multiplyScalar(0.5);
-  const stretches = visibleSpans(c.clone().sub(axis), c.clone().add(axis), project, lineId, id, width, height, scale);
-  const d = stretches.map(([p, q]) => `M${fmt2(p[0])} ${fmt2(p[1])}L${fmt2(q[0])} ${fmt2(q[1])}`).join("");
-  return d ? el("path", { d, fill: "none", stroke: lit, "stroke-width": 2 * radiusPx, "stroke-linecap": "round" }) : "";
-}
-function candidatesFor(id, st, own, crossing) {
-  if (st.label <= 0) return own(id);
-  const mid = st.pts[Math.floor(st.pts.length / 2)];
-  return [...own(id), ...own(st.label), ...crossing(id, st.label, mid)];
-}
-function ownCurves(o, obj, view, screen, topologies, points2) {
-  if ((obj.kind === "sphere" || obj.kind === "dot") && obj.matrix) return sphereCurves(view, vec3(obj.centre), obj.matrix[0]);
-  if (obj.kind === "cylinder" && obj.matrix) return cylinderCurves(obj.matrix, screen);
-  if (obj.kind === "polyhedron") {
-    const poly = o.data.primitives.polyhedra[obj.poly];
-    const topo = topologies.get(poly.topology_id);
-    return edgeCurves(hardEdges(topo, points2), screen);
-  }
-  return [];
-}
-function nearestFace(faces, p, screen) {
-  let best = null;
-  let bestDist = Infinity;
-  for (const f of faces) {
-    const d = triangleDistance(p, screen(f[0]), screen(f[1]), screen(f[2]));
-    if (d < bestDist) {
-      bestDist = d;
-      best = [f[0], f[1], f[2]];
-    }
-  }
-  return best;
-}
-function triangleDistance(p, a, b, c) {
-  const sign = (u, v, w) => (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
-  const s1 = sign(a, b, p);
-  const s2 = sign(b, c, p);
-  const s3 = sign(c, a, p);
-  if (s1 >= 0 && s2 >= 0 && s3 >= 0 || s1 <= 0 && s2 <= 0 && s3 <= 0) return 0;
-  return Math.min(segmentDistance(p, a, b), segmentDistance(p, b, c), segmentDistance(p, c, a));
-}
-function segmentDistance(p, a, b) {
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / Math.max(dx * dx + dy * dy, 1e-12)));
-  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
-}
-function toCss(ring, scale) {
-  return ring.map(([x, y]) => [x / scale, y / scale]);
-}
-function objectBoxes(keys, depth, width, count2) {
-  const pixels = new Uint32Array(count2 + 1);
-  const boxes = new Int32Array((count2 + 1) * 4);
-  const nearest = new Float64Array(count2 + 1).fill(NEAREST_START);
-  for (let id = 0; id <= count2; id++) boxes.set([OUT_OF_RANGE, OUT_OF_RANGE, -1, -1], 4 * id);
-  for (let p = 0; p < keys.length; p++) {
-    const k = keys[p];
-    if (k === 0) continue;
-    const id = k >> 1;
-    const b = 4 * id;
-    nearest[id] = Math.min(nearest[id], depth[p]);
-    pixels[id]++;
-    const x = p % width;
-    const y = (p - x) / width;
-    if (x < boxes[b]) boxes[b] = x;
-    if (y < boxes[b + 1]) boxes[b + 1] = y;
-    if (x > boxes[b + 2]) boxes[b + 2] = x;
-    if (y > boxes[b + 3]) boxes[b + 3] = y;
-  }
-  return { boxes, nearest, pixels };
-}
-function boxOf(boxes, id) {
-  return { x0: boxes[4 * id], y0: boxes[4 * id + 1], x1: boxes[4 * id + 2], y1: boxes[4 * id + 3] };
+  return { built, points: points2, topologies, edgeSpans, boxEdges, boxId, lines };
 }
 function lineSet(segments) {
   const positions = new Float32Array(segments.length * 6);
@@ -3504,44 +3465,213 @@ function lineSet(segments) {
     positions.set([a.x, a.y, a.z, b.x, b.y, b.z], 6 * k);
     ids.set([id, id], 2 * k);
   });
-  const geometry = new THREE11.BufferGeometry();
-  geometry.setAttribute("position", new THREE11.BufferAttribute(positions, 3));
-  geometry.setAttribute("objectId", new THREE11.BufferAttribute(ids, 1));
-  const set = new THREE11.LineSegments(geometry, new THREE11.LineBasicMaterial());
-  set.userData = { line: true };
+  const geometry = new THREE12.BufferGeometry();
+  geometry.setAttribute("position", new THREE12.BufferAttribute(positions, 3));
+  geometry.setAttribute("objectId", new THREE12.BufferAttribute(ids, 1));
+  const set = new THREE12.LineSegments(geometry, new THREE12.LineBasicMaterial());
+  set.userData = { role: "line" };
   return set;
 }
-function keyAtCentre(keys, width, p) {
-  const x = Math.floor(p.x);
-  const y = Math.floor(p.y);
-  return keys[y * width + x] >> 1;
+function makeFrame(options, view, prepared, passes) {
+  const project = projector(passes.width, passes.height);
+  return {
+    options,
+    view,
+    prepared,
+    passes,
+    stats: objectBoxes(passes, prepared.built.objects.length),
+    project,
+    linePass: new LinePass(project, passes, TRACE_SCALE),
+    curves: makeCurveLookup(options, view, prepared),
+    tol: snapTolerance(TRACE_SCALE),
+    edgeHex: srgbHex(LOOK.outline),
+    outlineHex: linearHex(LOOK.outline),
+    // The live view's outline is OUTLINE_THICKNESS of the image height; a centred stroke of half of it shows its visible width.
+    outlineWidth: OUTLINE_THICKNESS * options.height
+  };
 }
-function ringArea(ring, scale) {
-  let twice = 0;
-  for (let i = 0; i < ring.length; i++) {
-    const [x0, y0] = ring[i];
-    const [x1, y1] = ring[(i + 1) % ring.length];
-    twice += x0 * y1 - x1 * y0;
+function drawOrder(f) {
+  return f.prepared.built.objects.map((obj, i) => ({ id: i + 1, nearestDepth: isThin(f.view, obj) ? f.project(vec3(obj.centre)).depth : f.stats.nearest[i + 1], obj })).sort((p, q) => q.nearestDepth - p.nearestDepth);
+}
+function traceObject(f, layers, id, obj) {
+  const box2 = boxOf(f.stats.boxes, id);
+  if (box2.x1 < box2.x0) return;
+  const rgb = fillRgb(f.options, obj);
+  const lit = srgbHex(rgb);
+  const dark = shadedBand(rgb, LOOK.dark);
+  const common = { "fill-rule": "evenodd", ...obj.alpha < 1 ? { "fill-opacity": obj.alpha } : {} };
+  const region = regionFill(f, id, obj, box2);
+  let body = "";
+  if (region.fill) {
+    body += layers.counted(seamTrapped(region.fill, lit, common));
+    layers.clips.push(el("clipPath", { id: `k${id}` }, el("path", { d: region.fill, "clip-rule": "evenodd" })));
   }
-  return Math.abs(twice) / 2 / (scale * scale);
-}
-function ringPerimeter(ring, scale) {
-  let total = 0;
-  for (let i = 0; i < ring.length; i++) {
-    const [x0, y0] = ring[i];
-    const [x1, y1] = ring[(i + 1) % ring.length];
-    total += Math.hypot(x1 - x0, y1 - y0);
+  const band = darkBandPath(f, id, box2);
+  if (band) body += layers.counted(seamTrapped(band, dark, { ...common, "clip-path": region.fill ? `url(#k${id})` : void 0 }));
+  if (obj.kind === "polyhedron") {
+    const d = polyhedronEdgePath(f, id);
+    if (d) body += layers.counted(el("path", { d, fill: "none", stroke: f.edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" }));
   }
-  return total / scale;
+  layers.fills.push(el("g", {}, body));
+  if (f.options.outlines && obj.outlined && region.outline) layers.outlines.push(layers.counted(outlineMarkup(f, obj, region.outline)));
 }
-function sampleEllipse(e) {
-  const steps = 48;
-  return Array.from({ length: steps }, (_, i) => {
-    const t = 2 * Math.PI * i / steps;
-    const x = e.rx * Math.cos(t);
-    const y = e.ry * Math.sin(t);
-    return [e.cx + x * Math.cos(e.phi) - y * Math.sin(e.phi), e.cy + x * Math.sin(e.phi) + y * Math.cos(e.phi)];
+function regionFill(f, id, obj, box2) {
+  const { passes, stats } = f;
+  const regionPx = stats.pixels[id] / (TRACE_SCALE * TRACE_SCALE);
+  let regionRingsOf = regionRings(passes, box2, (k) => idOf(k) === id);
+  let fill = "";
+  if (regionPx < MIN_REGION_PX) {
+    const exact = f.curves.own(id).find((c) => c.kind === "ellipse");
+    const centre2 = f.project(vec3(obj.centre));
+    if (exact && exact.kind === "ellipse" && keyAtCentre(passes, centre2) === id && regionPx >= MIN_SILHOUETTE_PX) {
+      fill = closedPath(silhouettePoints(exact.e));
+    }
+    regionRingsOf = [];
+  } else {
+    regionRingsOf = regionRingsOf.filter((ring) => ringArea(ring, TRACE_SCALE) >= MIN_REGION_PX);
+  }
+  let outline = "";
+  for (const ring of regionRingsOf) {
+    const { stretches, whole } = stretchesOf(ring, id, passes, TRACE_SCALE);
+    const parts = ringPaths(stretches, whole, (st) => f.curves.candidatesFor(id, st), f.tol);
+    fill += parts.fill;
+    outline += parts.outline;
+  }
+  return { fill, outline };
+}
+function darkBandPath(f, id, box2) {
+  const { passes } = f;
+  const rings = regionRings(passes, box2, (k) => k === darkKey(id)).filter((ring) => ringArea(ring, TRACE_SCALE) >= MIN_REGION_PX && ringArea(ring, TRACE_SCALE) / Math.max(ringPerimeter(ring, TRACE_SCALE), MIN_PERIMETER_PX) >= MIN_STRIP_PX);
+  return rings.map((ring) => closedPath(toCss(ring, TRACE_SCALE))).join("");
+}
+function toCss(ring, scale) {
+  return ring.map(([x, y]) => [x / scale, y / scale]);
+}
+function polyhedronEdgePath(f, id) {
+  return segmentsPath(f.prepared.edgeSpans.filter((e) => e.owner === id).flatMap((e) => f.linePass.spansOf(e.a, e.b, e.id)));
+}
+function outlineMarkup(f, obj, d) {
+  const r = radiusPx(f.view, obj);
+  const width = r === null ? f.outlineWidth / 2 : Math.min(f.outlineWidth / 2, 2 * OUTLINE_SIZE_FRACTION * r);
+  const strokeWidth = f.options.outlineScale * width;
+  return el("path", { d, fill: "none", stroke: f.outlineHex, "stroke-width": strokeWidth, "stroke-linejoin": "round" });
+}
+function fillRgb(options, obj) {
+  return obj.material === null ? arrowColor() : colorOf(options, obj.material);
+}
+function seamTrapped(d, colour, extra) {
+  return el("path", { d, fill: colour, stroke: colour, "stroke-width": SEAM_STROKE_WIDTH, "stroke-linejoin": "round", ...extra });
+}
+function traceThin(f, layers, id, obj) {
+  const lit = srgbHex(fillRgb(f.options, obj));
+  const radius = radiusPx(f.view, obj) ?? 0;
+  const thinSvg = obj.kind === "dot" ? dotMarkup(obj, lit, id, f.linePass, radius) : barMarkup(obj, lit, id, f.linePass, radius);
+  if (thinSvg) layers.fills.push(layers.counted(thinSvg));
+}
+function dotMarkup(obj, lit, id, lines, radius) {
+  const p = lines.project(vec3(obj.centre));
+  if (!onScreen(p)) return "";
+  if (!lines.shows(id, Math.floor(p.x), Math.floor(p.y))) return "";
+  return el("circle", { cx: p.x / lines.scale, cy: p.y / lines.scale, r: radius, fill: lit });
+}
+function barMarkup(obj, lit, id, lines, radius) {
+  const m = obj.matrix;
+  const c = vec3(obj.centre);
+  const axis = new THREE12.Vector3(m[4], m[5], m[6]).multiplyScalar(HALF_AXIS);
+  const d = segmentsPath(lines.spansOf(c.clone().sub(axis), c.clone().add(axis), id));
+  return d ? el("path", { d, fill: "none", stroke: lit, "stroke-width": 2 * radius, "stroke-linecap": "round" }) : "";
+}
+function documentText(f, layers) {
+  const { options, view } = f;
+  const body = `${el("defs", {}, layers.clips.join(""))}
+${layers.fills.join("\n")}
+${cellBoxMarkup(f, layers)}
+${layers.outlines.join("\n")}
+${triadSvg({ o: options, view })}`;
+  const style = textEl("style", {}, axisFontFace(["700"]));
+  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: options.width, height: options.height, viewBox: `0 0 ${options.width} ${options.height}` }, `
+${style}
+${body}
+`);
+  return `${svg}
+`;
+}
+function cellBoxMarkup(f, layers) {
+  const { options, prepared } = f;
+  if (!options.show.box || !options.data.cell) return "";
+  const d = segmentsPath(prepared.boxEdges.flatMap(([a, b]) => f.linePass.spansOf(a, b, prepared.boxId)));
+  return d ? layers.counted(el("path", { d, fill: "none", stroke: options.boxColor, "stroke-width": BOX_LINE_WIDTH })) : "";
+}
+function makeCurveLookup(options, view, prepared) {
+  const screen = screenOf(view);
+  const { built, points: points2 } = prepared;
+  const own = memo((id) => {
+    const obj = built.objects[id - 1];
+    if (obj.kind === "polyhedron") return edgeCurves(hardEdges(topologyOf(options, prepared, obj.poly), points2), screen);
+    if (obj.kind === "sphere" || obj.kind === "dot") return sphereCurves(view, vec3(obj.centre), obj.matrix[0]);
+    if (obj.kind === "cylinder") return cylinderCurves(obj.matrix, screen);
+    return [];
   });
+  const facesOf = memo((poly) => {
+    const topo = topologyOf(options, prepared, poly);
+    return topo.faces.map(([i, j, k]) => [i, j, k].map((q) => vec3(points2.get(topo.point_ids[q]))));
+  });
+  const sectionOfFace = (poly, other, mid) => {
+    const face = nearestFace(facesOf(poly.poly), mid, screen);
+    return face ? sectionCurves(other, face, screen) : [];
+  };
+  const crossing = (id, label, mid) => {
+    const a = built.objects[id - 1];
+    const b = built.objects[label - 1];
+    if (a.kind === "polyhedron" && b.kind !== "polyhedron") return sectionOfFace(a, b, mid);
+    if (b.kind === "polyhedron" && a.kind !== "polyhedron") return sectionOfFace(b, a, mid);
+    return [];
+  };
+  const candidatesFor = (id, st) => {
+    if (st.label <= 0) return own(id);
+    const mid = st.pts[Math.floor(st.pts.length / 2)];
+    return [...own(id), ...own(st.label), ...crossing(id, st.label, mid)];
+  };
+  return { own, candidatesFor };
+}
+function sectionCurves(other, face, screen) {
+  if (other.kind === "sphere" || other.kind === "dot") {
+    const c = sectionCurve(vec3(other.centre), other.matrix[0], face, screen);
+    return c ? [c] : [];
+  }
+  if (other.kind === "cylinder") {
+    const c = cylinderSectionCurve(other.matrix, face, screen);
+    return c ? [c] : [];
+  }
+  return [];
+}
+function topologyOf(options, prepared, poly) {
+  return prepared.topologies.get(options.data.primitives.polyhedra[poly].topology_id);
+}
+function memo(compute) {
+  const cache = /* @__PURE__ */ new Map();
+  return (key2) => {
+    if (!cache.has(key2)) cache.set(key2, compute(key2));
+    return cache.get(key2);
+  };
+}
+function screenOf(view) {
+  return (p) => {
+    const s = view.toScreen(view.toCam(p));
+    return [s.x, s.y];
+  };
+}
+function silhouettePoints(e) {
+  return Array.from({ length: SILHOUETTE_SAMPLES }, (_, i) => pointAt(e, 2 * Math.PI * i / SILHOUETTE_SAMPLES));
+}
+function radiusPx(view, obj) {
+  if (obj.kind === "polyhedron") return null;
+  const m = obj.matrix;
+  const unit = obj.kind === "cylinder" ? Math.hypot(m[0], m[1], m[2]) : obj.kind === "sphere" || obj.kind === "dot" ? m[0] : null;
+  return unit === null ? null : unit * view.pxPerUnit(view.toCam(vec3(obj.centre)));
+}
+function isThin(view, obj) {
+  return (obj.kind === "cylinder" || obj.kind === "dot") && (radiusPx(view, obj) ?? Infinity) * 2 < THIN_AS_LINE_PX;
 }
 
 // src/ui/theme.ts
@@ -3624,7 +3754,340 @@ function chooseOutlineScale(scale) {
   current3 = scale;
   storeScale(scale);
   setOutlineScale(scale);
+  requestRender();
   for (const listener of listeners2) listener(scale);
+}
+
+// src/scene/read.ts
+var SCENE_FILE = /\.json(\.gz)?$/i;
+var MEGABYTE = 1024 * 1024;
+var MAX_SCENE_BYTES = 200 * MEGABYTE;
+var GZIP_FIRST_BYTE = 31;
+var GZIP_SECOND_BYTE = 139;
+var SceneError = class extends Error {
+};
+var messageOf = (error) => error instanceof Error ? error.message : String(error);
+var isObject = (value) => typeof value === "object" && value !== null;
+function isGzip(bytes) {
+  return bytes[0] === GZIP_FIRST_BYTE && bytes[1] === GZIP_SECOND_BYTE;
+}
+async function readCapped(stream, what) {
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  for (; ; ) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_SCENE_BYTES) {
+      await reader.cancel();
+      throw new SceneError(`${what} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, at);
+    at += chunk.byteLength;
+  }
+  return all;
+}
+async function sceneText(bytes) {
+  if (!isGzip(bytes)) return new TextDecoder().decode(bytes);
+  let plain;
+  try {
+    const unzipped = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    plain = await readCapped(unzipped, "The decompressed scene");
+  } catch (error) {
+    if (error instanceof SceneError) throw error;
+    throw new SceneError(`The gzip data could not be read: ${messageOf(error)}`);
+  }
+  return new TextDecoder().decode(plain);
+}
+async function sceneFromBytes(bytes) {
+  return parseScene(await sceneText(bytes));
+}
+async function sceneFromFile(file) {
+  if (!SCENE_FILE.test(file.name)) throw new SceneError(`${file.name} is not a .json or .json.gz scene file.`);
+  if (file.size > MAX_SCENE_BYTES) throw new SceneError(`${file.name} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
+  return sceneFromBytes(new Uint8Array(await file.arrayBuffer()));
+}
+function parseScene(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new SceneError(`The scene is not valid JSON: ${messageOf(error)}`);
+  }
+  return checkScene(value);
+}
+function checkScene(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SceneError("The JSON is not a gemmy scene (it is not an object).");
+  }
+  const { schema_version: version } = value;
+  if (version !== GEMMY.sceneSchemaVersion) {
+    throw new SceneError(
+      `This scene has schema_version ${String(version)}; this viewer reads version ${GEMMY.sceneSchemaVersion}. Compile it again with this gemmy.`
+    );
+  }
+  const doc = value;
+  if (!Array.isArray(doc.points) || !isObject(doc.primitives) || !isObject(doc.materials)) {
+    throw new SceneError("The JSON has a schema_version but no points, primitives and materials: it is not a gemmy scene.");
+  }
+  return doc;
+}
+
+// src/scene/gist.ts
+function pickGistFile(files, wanted) {
+  const all = Object.values(files);
+  if (wanted !== null) {
+    const named = all.find((file) => file.filename === wanted);
+    if (!named) throw new Error(`The gist has no file named "${wanted}".`);
+    return named;
+  }
+  const scene2 = all.find((file) => SCENE_FILE.test(file.filename));
+  if (!scene2) throw new Error("The gist has no .json or .json.gz file.");
+  return scene2;
+}
+
+// src/scene/source.ts
+var SCENE_PARAM = "scene";
+var GIST_PARAM = "gist";
+var FILE_PARAM = "file";
+var GIST_ID = /^[A-Za-z0-9]+$/;
+var WEB_PROTOCOLS = ["http:", "https:"];
+var SourceError = class extends Error {
+};
+function parseSources(search, base) {
+  const query = new URLSearchParams(search);
+  const urls = query.getAll(SCENE_PARAM);
+  const gist = query.get(GIST_PARAM);
+  if (gist !== null && urls.length > 0) throw new SourceError("Give scene= or gist=, not both.");
+  if (gist !== null) {
+    if (!GIST_ID.test(gist)) throw new SourceError(`gist= should be a gist id (letters and digits), got "${gist}".`);
+    return [{ kind: "gist", id: gist, file: query.get(FILE_PARAM) || null }];
+  }
+  return urls.map((value) => ({ kind: "url", url: resolveWebUrl(value, base) }));
+}
+function resolveWebUrl(value, base) {
+  if (value.trim() === "") throw new SourceError("scene= needs a URL.");
+  let url;
+  try {
+    url = new URL(value.trim(), base);
+  } catch {
+    throw new SourceError(`"${value}" is not a URL.`);
+  }
+  if (!WEB_PROTOCOLS.includes(url.protocol)) throw new SourceError(`Only http and https scene URLs can be opened, not "${value}".`);
+  return url.href;
+}
+function pathSegments(url) {
+  return new URL(url).pathname.split("/").filter(Boolean).map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  });
+}
+function sourceName(url) {
+  return pathSegments(url).at(-1) ?? url;
+}
+function tabLabel(source) {
+  if (source.kind === "gist") return source.file ?? `gist ${source.id}`;
+  const segments = pathSegments(source.url);
+  const stem = (segments.at(-1) ?? source.url).replace(SCENE_FILE, "");
+  return stem === "scene" ? segments.at(-2) ?? stem : stem;
+}
+
+// src/scene/fetch.ts
+var GIST_API = "https://api.github.com/gists/";
+var GIST_ACCEPT = "application/vnd.github+json";
+async function get(url, accept) {
+  let response;
+  try {
+    response = await fetch(url, { headers: accept ? { Accept: accept } : {}, referrerPolicy: "no-referrer" });
+  } catch {
+    throw new SceneError(`Could not fetch ${url}: the network failed, or the server does not allow this page to read it (CORS).`);
+  }
+  if (!response.ok) {
+    const status = [response.status, response.statusText].filter(Boolean).join(" ");
+    throw new SceneError(`The server answered ${status} for ${url}.`);
+  }
+  return response;
+}
+async function fetchScene(url) {
+  const response = await get(url);
+  if (!response.body) throw new SceneError(`${url} sent no data.`);
+  return sceneFromBytes(await readCapped(response.body, `The scene at ${url}`));
+}
+async function fetchGist(id, file) {
+  const response = await get(GIST_API + encodeURIComponent(id), GIST_ACCEPT);
+  let gist;
+  try {
+    gist = await response.json();
+  } catch {
+    throw new SceneError(`GitHub sent no gist data for ${id}.`);
+  }
+  const picked = pickGistFile(gist.files ?? {}, file);
+  const raw = resolveWebUrl(picked.raw_url, GIST_API);
+  return { name: picked.filename, doc: await fetchScene(raw) };
+}
+
+// src/ui/loader.ts
+var empty = byId("empty");
+var emptyStatus = byId("empty-status");
+var emptyError = byId("empty-error");
+var urlForm = byId("empty-url");
+var urlInput = byId("scene-url");
+var fileInput = byId("scene-file");
+var closeButton = byId("empty-close");
+var messageOf2 = (error) => error instanceof Error ? error.message : String(error);
+var sceneOpen = false;
+function showCard() {
+  empty.hidden = false;
+  closeButton.hidden = !sceneOpen;
+  document.body.classList.add("no-scene");
+}
+function hideCard() {
+  empty.hidden = true;
+  emptyStatus.textContent = "";
+  emptyError.hidden = true;
+  document.body.classList.remove("no-scene");
+}
+function busy(text) {
+  showCard();
+  emptyError.hidden = true;
+  emptyStatus.textContent = text;
+}
+function fail(text) {
+  showCard();
+  emptyStatus.textContent = "";
+  emptyError.textContent = text;
+  emptyError.hidden = false;
+}
+function labelOf(source) {
+  return source.kind === "gist" ? `gist ${source.id}` : source.url;
+}
+function linkMaking(source, byDefault) {
+  const link = new URL(location.href);
+  link.hash = "";
+  const query = byDefault ? {} : source.kind === "gist" ? { gist: source.id, ...source.file === null ? {} : { file: source.file } } : { scene: source.url };
+  link.search = new URLSearchParams(query).toString();
+  return link.href;
+}
+async function loadSource(source, byDefault) {
+  if (source.kind === "gist") {
+    const { name, doc } = await fetchGist(source.id, source.file);
+    return { doc, name, from: labelOf(source), link: linkMaking(source, byDefault) };
+  }
+  return { doc: await fetchScene(source.url), name: sourceName(source.url), from: source.url, link: linkMaking(source, byDefault) };
+}
+async function present(label, loading, show2) {
+  busy(`Loading ${label}\u2026`);
+  try {
+    show2(await loading());
+    sceneOpen = true;
+    hideCard();
+  } catch (error) {
+    fail(`Could not load ${label}: ${messageOf2(error)}`);
+  }
+}
+function fromFile(file, show2) {
+  return present(file.name, async () => ({ doc: await sceneFromFile(file), name: file.name, from: "local file", link: null }), show2);
+}
+function sourcesToOpen() {
+  const sources = parseSources(location.search, location.href);
+  const defaultScene = document.querySelector('meta[name="gemmy-default-scene"]')?.content ?? "";
+  if (sources.length > 0 || defaultScene === "") return { sources, byDefault: false };
+  return { sources: [{ kind: "url", url: resolveWebUrl(defaultScene, location.href) }], byDefault: true };
+}
+function startLoader(show2) {
+  let opening;
+  try {
+    opening = sourcesToOpen();
+  } catch (error) {
+    fail(messageOf2(error));
+    return;
+  }
+  const { sources, byDefault } = opening;
+  if (sources.length === 0) {
+    showCard();
+  } else if (sources.length === 1) {
+    const [only] = sources;
+    void present(labelOf(only), () => loadSource(only, byDefault), show2);
+  } else {
+    openTabs(sources, show2);
+  }
+}
+function openTabs(sources, show2) {
+  const bar = document.createElement("nav");
+  bar.className = "tabs";
+  bar.setAttribute("aria-label", "Scenes");
+  const loaded = /* @__PURE__ */ new Map();
+  const buttons = sources.map((source, k) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = tabLabel(source);
+    button.addEventListener("click", () => choose(k));
+    bar.appendChild(button);
+    return button;
+  });
+  const choose = (k) => {
+    buttons.forEach((button, j) => {
+      if (j === k) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
+    void present(labelOf(sources[k]), async () => {
+      const shown2 = loaded.get(k) ?? await loadSource(sources[k], false);
+      loaded.set(k, shown2);
+      return shown2;
+    }, show2);
+  };
+  byId("menu-island").insertBefore(bar, document.querySelector(".name"));
+  choose(0);
+}
+function showUrlForm() {
+  showCard();
+  urlInput.focus();
+}
+function closeUrlForm() {
+  if (empty.hidden || !sceneOpen) return false;
+  hideCard();
+  return true;
+}
+function attachOpeners(show2) {
+  closeButton.addEventListener("click", () => closeUrlForm());
+  window.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    document.body.classList.add("dragging");
+  });
+  window.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget === null) document.body.classList.remove("dragging");
+  });
+  window.addEventListener("drop", (event) => {
+    event.preventDefault();
+    document.body.classList.remove("dragging");
+    const file = event.dataTransfer?.files[0];
+    if (file) void fromFile(file, show2);
+  });
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = "";
+    if (file) void fromFile(file, show2);
+  });
+  byId("open-scene").addEventListener("click", () => fileInput.click());
+  byId("empty-open").addEventListener("click", () => fileInput.click());
+  urlForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const url = resolveWebUrl(urlInput.value, location.href);
+      location.search = new URLSearchParams({ scene: url }).toString();
+    } catch (error) {
+      fail(messageOf2(error));
+    }
+  });
 }
 
 // src/ui/menus.ts
@@ -3732,15 +4195,21 @@ function exportSvg() {
       height: stage.clientHeight,
       show,
       outlines,
+      outlineScale: outlineScale(),
       lattice: lattice.map((v) => v.toArray()),
       boxColor
     });
   } catch (error) {
     say(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`, true);
     return;
+  } finally {
+    requestRender();
   }
   download("view.svg", new Blob([result.text], { type: "image/svg+xml" }));
-  requestRender();
+  if (result.paths === 0) {
+    say("Saved view.svg, but nothing in this view is visible: the file has no shapes.", true);
+    return;
+  }
   say(`Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`);
 }
 var EXPORTS = {
@@ -3817,7 +4286,11 @@ function popover(button, panel) {
 }
 var exportMenu = byId("export-menu");
 var exportPopover = popover(byId("export-button"), exportMenu);
-popover(byId("menu-button"), byId("main-menu"));
+var mainMenu = popover(byId("menu-button"), byId("main-menu"));
+byId("open-url").addEventListener("click", () => {
+  mainMenu.close();
+  showUrlForm();
+});
 var themeSegments = [...document.querySelectorAll("[data-theme-choice]")];
 function showThemeChoice(choice) {
   for (const segment of themeSegments) segment.setAttribute("aria-pressed", String(segment.dataset.themeChoice === choice));
@@ -3864,21 +4337,20 @@ window.addEventListener("resize", () => {
 var DRAG_FEEL = { rotateSpeed: 3, zoomSpeed: 1.2, panSpeed: 0.8, staticMoving: true };
 Object.assign(controls, DRAG_FEEL);
 function viewDirection(azimuthDeg, elevationDeg) {
-  const a = THREE12.MathUtils.degToRad(azimuthDeg), e = THREE12.MathUtils.degToRad(elevationDeg);
-  return new THREE12.Vector3(Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e));
+  const a = THREE13.MathUtils.degToRad(azimuthDeg), e = THREE13.MathUtils.degToRad(elevationDeg);
+  return new THREE13.Vector3(Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e));
 }
 var VIEWS = {
   a: () => viewFrom(lattice[0], lattice[2]),
   b: () => viewFrom(lattice[1], lattice[2]),
   c: () => viewFrom(lattice[2], lattice[1]),
-  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE12.Vector3(0, 0, 1))
+  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE13.Vector3(0, 0, 1))
 };
 for (const button of document.querySelectorAll("[data-view]")) {
   button.addEventListener("click", () => VIEWS[button.dataset.view ?? ""]());
 }
 var ORTHO_LENS = Infinity;
 var ORTHO_TAG = "inf";
-var ORTHO_CAMERA_DISTANCE = 8;
 var FIT_EPSILON = 1e-9;
 var lensGroup = byId("lens-group");
 function isLensOn(button) {
@@ -3890,11 +4362,11 @@ function syncLensButtons() {
     button.setAttribute("aria-pressed", String(isLensOn(button)));
   }
 }
-function switchProjection(mode, newLens = lens) {
-  if (mode === "persp" === isPersp() && newLens === lens) return;
+function switchProjection(mode2, newLens = lens) {
+  if (mode2 === "persp" === isPersp() && newLens === lens) return;
   const view = captureView();
   setLens(newLens);
-  installCamera(mode === "persp" ? perspCamera : orthoCamera, view);
+  installCamera(mode2 === "persp" ? perspCamera : orthoCamera, view);
   syncLensButtons();
   requestRender();
 }
@@ -3908,7 +4380,7 @@ function captureView() {
   };
 }
 function installCamera(next, view) {
-  const persp = next instanceof THREE12.PerspectiveCamera;
+  const persp = next instanceof THREE13.PerspectiveCamera;
   next.up.copy(camera.up);
   setCamera(next);
   camera.add(key, key.target);
@@ -3922,7 +4394,7 @@ function installCamera(next, view) {
 }
 function cameraDistance(persp, orthoZoom) {
   if (persp) return baseDistance(extent) / orthoToPerspZoom(extent, lens, orthoZoom);
-  return extent * ORTHO_CAMERA_DISTANCE;
+  return extent * ORTHO_VIEW_DISTANCE;
 }
 function addLensButton(focalLength) {
   const ortho = focalLength === ORTHO_LENS;
@@ -4108,6 +4580,7 @@ window.addEventListener("keydown", (e) => {
 }, { capture: true });
 window.addEventListener("keydown", (e) => {
   setShiftHeld(e.shiftKey);
+  if (e.key === "Escape" && !escapeClosesMenu && closeUrlForm()) return;
   if (isTyping(e)) return;
   if (e.key === "Escape") {
     if (!escapeClosesMenu) {
@@ -4142,7 +4615,7 @@ wireShowToggle("toggle-box", (on) => {
 });
 
 // src/scene/load.ts
-import * as THREE13 from "three";
+import * as THREE14 from "three";
 function load(doc, bounds) {
   disposeScene();
   select(null);
@@ -4151,23 +4624,23 @@ function load(doc, bounds) {
   setPolyhedra(doc.primitives.polyhedra);
   frame2(bounds, doc.cell);
   addAtomsBondsAndArrows();
-  addPolyhedra();
+  addPolyhedra2();
   addCellBox(doc.cell);
   resize();
 }
 function frame2(bounds, cell) {
   setCentre(bounds.centre);
   setExtent(bounds.extent);
-  if (cell) setLattice(cell.vectors.map((vec) => new THREE13.Vector3(...vec).normalize()));
+  if (cell) setLattice(cell.vectors.map((vec) => new THREE14.Vector3(...vec).normalize()));
   root.position.set(-centre[0], -centre[1], -centre[2]);
   orthoCamera.far = extent * ORTHO_FAR_EXTENTS;
   controls.minDistance = baseDistance(extent) / ZOOM_MAX;
   controls.maxDistance = baseDistance(extent) / ZOOM_MIN;
 }
 function addAtomsBondsAndArrows() {
-  setAtomGroup(new THREE13.Group());
-  const bondGroup = new THREE13.Group();
-  setOutlineGroup(new THREE13.Group());
+  setAtomGroup(new THREE14.Group());
+  const bondGroup = new THREE14.Group();
+  setOutlineGroup(new THREE14.Group());
   outlineGroup.visible = outlines;
   const shapes = /* @__PURE__ */ new Map();
   for (const g of instanceGroups(data)) {
@@ -4186,23 +4659,23 @@ function addAtomsBondsAndArrows() {
   atomGroup.visible = show.atoms;
   root.add(atomGroup, bondGroup, outlineGroup);
 }
-function addPolyhedra() {
-  setPolyGroup(new THREE13.Group());
+function addPolyhedra2() {
+  setPolyGroup(new THREE14.Group());
   setPolyTargets(new Array(polyhedra.length));
   for (const g of polyhedronGroups(data)) {
     const ghost = (data.materials[g.material].alpha ?? 1) < 1;
-    const geometry = new THREE13.BufferGeometry();
-    geometry.setAttribute("position", new THREE13.Float32BufferAttribute(g.positions, 3));
+    const geometry = new THREE14.BufferGeometry();
+    geometry.setAttribute("position", new THREE14.Float32BufferAttribute(g.positions, 3));
     geometry.computeVertexNormals();
-    const mesh = new THREE13.Mesh(geometry, toon(g.material, { faces: true, ghost }));
+    const mesh = new THREE14.Mesh(geometry, toon(g.material, { faces: true, ghost }));
     mesh.userData = { owner: g.owner };
     if (ghost) mesh.renderOrder = 1;
     for (const [index, first, count2] of g.ranges) {
       polyTargets[index] = { kind: "polyhedron", poly: polyhedra[index], ghost, mesh, first, count: count2 };
     }
-    const edgeGeometry = new THREE13.BufferGeometry();
-    edgeGeometry.setAttribute("position", new THREE13.Float32BufferAttribute(g.edges, 3));
-    polyGroup.add(mesh, new THREE13.LineSegments(edgeGeometry, edgeMaterial));
+    const edgeGeometry = new THREE14.BufferGeometry();
+    edgeGeometry.setAttribute("position", new THREE14.Float32BufferAttribute(g.edges, 3));
+    polyGroup.add(mesh, new THREE14.LineSegments(edgeGeometry, edgeMaterial));
     if (!ghost) outlineGroup.add(outlineOf(mesh));
   }
   root.add(polyGroup);
@@ -4219,9 +4692,9 @@ function addCellBox(cell) {
       positions.push(...corners[n], ...corners[n | bit]);
     }
   }
-  const boxGeometry = new THREE13.BufferGeometry();
-  boxGeometry.setAttribute("position", new THREE13.Float32BufferAttribute(positions, 3));
-  const cellBox = new THREE13.LineSegments(boxGeometry, boxMaterial);
+  const boxGeometry = new THREE14.BufferGeometry();
+  boxGeometry.setAttribute("position", new THREE14.Float32BufferAttribute(positions, 3));
+  const cellBox = new THREE14.LineSegments(boxGeometry, boxMaterial);
   setBox(cellBox);
   cellBox.visible = show.box;
   root.add(cellBox);
@@ -4233,32 +4706,195 @@ function cellCorner(cell, n) {
   );
 }
 
+// src/camera/viewhash.ts
+var VIEW_KEY2 = "view";
+var SIGNIFICANT_DIGITS = 4;
+var FIELD_SEPARATOR = ";";
+var VECTOR_SEPARATOR = ",";
+var VECTOR_LENGTH = 3;
+function roundFigures(x) {
+  return Number(x.toPrecision(SIGNIFICANT_DIGITS));
+}
+var numberText = (x) => String(roundFigures(x));
+var vectorText = (v) => v.map(numberText).join(VECTOR_SEPARATOR);
+function encodeView(pose) {
+  const size = pose.projection === "persp" ? `lens=${numberText(pose.lens)}` : `zoom=${numberText(pose.zoom)}`;
+  return [pose.projection, size, `eye=${vectorText(pose.eye)}`, `at=${vectorText(pose.at)}`, `up=${vectorText(pose.up)}`].join(FIELD_SEPARATOR);
+}
+function decodeView(text) {
+  const [projection, ...rest] = text.split(FIELD_SEPARATOR);
+  if (projection !== "persp" && projection !== "ortho") return null;
+  const fields = new URLSearchParams(rest.join("&"));
+  const vector2 = (name) => {
+    const parts = (fields.get(name) ?? "").split(VECTOR_SEPARATOR).map(Number);
+    return parts.length === VECTOR_LENGTH && parts.every(Number.isFinite) ? parts : null;
+  };
+  const size = Number(fields.get(projection === "persp" ? "lens" : "zoom"));
+  const eye = vector2("eye"), at = vector2("at"), up = vector2("up");
+  if (!(size > 0) || !Number.isFinite(size) || !eye || !at || !up) return null;
+  return {
+    projection,
+    lens: projection === "persp" ? size : 0,
+    zoom: projection === "ortho" ? size : 1,
+    eye,
+    at,
+    up
+  };
+}
+function placedPose(pose, extent3, limits) {
+  const numbers = [...pose.eye, ...pose.at, ...pose.up, pose.zoom];
+  if (!numbers.every(Number.isFinite)) return null;
+  const separation = span(pose.eye, pose.at);
+  if (separation === 0 || Math.hypot(...pose.up) === 0) return null;
+  const direction = vunit(vsub(pose.eye, pose.at));
+  const distance2 = pose.projection === "ortho" ? extent3 * ORTHO_VIEW_DISTANCE : Math.min(Math.max(separation, limits.minDistance), limits.maxDistance);
+  return {
+    eye: vadd(pose.at, vscale(direction, distance2)),
+    at: [...pose.at],
+    up: vunit(pose.up),
+    zoom: pose.zoom
+  };
+}
+
+// src/ui/toast.ts
+var DEFAULT_MS = 6e3;
+var toast = byId("toast");
+function note(text, ms = DEFAULT_MS) {
+  toast.textContent = text;
+  toast.hidden = false;
+  setTimeout(() => {
+    toast.hidden = true;
+  }, ms);
+}
+
+// src/ui/share.ts
+var SETTLE_MS = 200;
+var NOTE_MS = 5e3;
+var vector = (v) => [v.x, v.y, v.z];
+function currentPose() {
+  return {
+    projection: isPersp() ? "persp" : "ortho",
+    lens,
+    zoom: camera.zoom,
+    eye: vector(camera.position),
+    at: vector(controls.target),
+    up: vector(camera.up)
+  };
+}
+function applyPose(pose) {
+  const placed = placedPose(pose, extent, controls);
+  if (!placed) {
+    VIEWS.rotated();
+    return;
+  }
+  switchProjection(pose.projection, pose.projection === "persp" ? pose.lens : lens);
+  camera.position.fromArray(placed.eye);
+  controls.target.fromArray(placed.at);
+  camera.up.fromArray(placed.up);
+  camera.lookAt(controls.target);
+  if (pose.projection === "ortho") {
+    camera.zoom = placed.zoom;
+    camera.updateProjectionMatrix();
+  }
+  writeAddress(encodeView(currentPose()));
+  requestRender();
+}
+var pending = readAddressPose();
+function readAddressPose() {
+  const text = new URLSearchParams(location.hash.slice(1)).get(VIEW_KEY2);
+  return text === null ? null : decodeView(text);
+}
+function takePendingPose() {
+  const pose = pending;
+  pending = null;
+  return pose;
+}
+function writeAddress(text) {
+  const url = new URL(location.href);
+  url.hash = `${VIEW_KEY2}=${text}`;
+  history.replaceState(history.state, "", url.href);
+}
+var watching = false;
+function watchView() {
+  if (watching) return;
+  watching = true;
+  let written = encodeView(currentPose());
+  let previous = written;
+  setInterval(() => {
+    const now = encodeView(currentPose());
+    if (now === previous && now !== written) {
+      written = now;
+      writeAddress(now);
+    }
+    previous = now;
+  }, SETTLE_MS);
+}
+var sceneLink = null;
+function setSceneLink(link) {
+  sceneLink = link;
+}
+function copyLink() {
+  const url = new URL(sceneLink ?? location.href);
+  url.hash = `${VIEW_KEY2}=${encodeView(currentPose())}`;
+  const said = sceneLink === null ? "Copied the view only: an embedded or local scene cannot go in a link, so the link opens this page at this view." : "Copied the link: this scene, at this view.";
+  const refused = () => note("Could not copy the link: the browser refused the clipboard.", NOTE_MS);
+  try {
+    navigator.clipboard.writeText(url.href).then(() => note(said, NOTE_MS), refused);
+  } catch {
+    refused();
+  }
+}
+byId("copy-link").addEventListener("click", copyLink);
+
 // src/main.ts
-function openScene(doc) {
+function openScene(doc, view = null) {
   load(doc, sceneBounds(doc));
-  VIEWS.rotated();
+  if (view) applyPose(view);
+  else VIEWS.rotated();
   const middle = [...polyTargets].sort((p, q) => dist(points.get(p.poly.center_point_id).position, centre) - dist(points.get(q.poly.center_point_id).position, centre))[0];
   select(middle ?? null);
   showInfo(infoChoice ?? (Boolean(middle) && !narrowScreen.matches));
+  watchView();
+}
+function showLoaded(shown2) {
+  setSceneLink(shown2.link);
+  openScene(shown2.doc, takePendingPose());
+  document.querySelector(".name h1").textContent = shown2.name;
+  document.querySelector(".name .sub").textContent = shown2.from;
+  document.title = `gemmy: ${shown2.name}`;
 }
 var embedded = document.getElementById("scene-data").textContent.trim();
+var mode = document.querySelector('meta[name="gemmy-mode"]')?.content;
+var following = mode === "live";
+function showDropped(shown2) {
+  following = false;
+  showLoaded(shown2);
+  const note2 = document.getElementById("follow-note");
+  note2.textContent = `Showing ${shown2.name} \u2014 reload to follow the server again`;
+  note2.hidden = false;
+  document.getElementById("banner").hidden = false;
+}
 if (embedded) {
-  openScene(JSON.parse(embedded));
-} else {
+  openScene(JSON.parse(embedded), takePendingPose());
+} else if (mode === "live") {
   describe(null);
   resize();
   const banner = document.getElementById("banner");
-  const errorLine = banner.querySelector(".err"), toast = document.getElementById("toast");
+  const errorLine = banner.querySelector(".err"), toast2 = document.getElementById("toast");
+  const followNote = document.getElementById("follow-note");
+  const openUrl = document.getElementById("open-url");
+  openUrl.disabled = true;
+  openUrl.title = "Not on a gemmy serve page: it has no loader for an address (drop a file, or Open scene\u2026)";
   let seen = null, opened = false, renderedAt, toastTimer;
   const showToast = (text, stay) => {
     clearTimeout(toastTimer);
-    toast.textContent = text;
-    toast.hidden = false;
-    toast.classList.remove("fade");
+    toast2.textContent = text;
+    toast2.hidden = false;
+    toast2.classList.remove("fade");
     if (!stay) toastTimer = setTimeout(() => {
-      toast.classList.add("fade");
+      toast2.classList.add("fade");
       toastTimer = setTimeout(() => {
-        toast.hidden = true;
+        toast2.hidden = true;
       }, 400);
     }, 3e3);
   };
@@ -4283,10 +4919,10 @@ if (embedded) {
     renderViewItem.hidden = !r?.enabled;
     errorLine.textContent = [s.error, r?.error ? `Blender error: ${r.error}` : ""].filter(Boolean).join("\n\n");
     errorLine.hidden = !errorLine.textContent;
-    banner.hidden = errorLine.hidden;
+    banner.hidden = errorLine.hidden && followNote.hidden;
     if (r?.state === "rendering") showToast(`Rendering ${r.output}\u2026`, true);
     else if (r?.time && r.time !== renderedAt && renderedAt !== void 0) showToast(`${r.output} updated`);
-    else if (toast.textContent.startsWith("Rendering")) toast.hidden = true;
+    else if (toast2.textContent.startsWith("Rendering")) toast2.hidden = true;
     renderedAt = r?.time ?? null;
   };
   const refresh = async () => {
@@ -4298,7 +4934,7 @@ if (embedded) {
         load(doc, sceneBounds(doc));
         requestRender();
       } else {
-        openScene(doc);
+        openScene(doc, takePendingPose());
         opened = true;
       }
     } catch (error) {
@@ -4310,9 +4946,12 @@ if (embedded) {
   events.addEventListener("status", (e) => {
     const s = JSON.parse(e.data);
     showStatus(s);
-    if (s.version && s.version !== seen) {
+    if (following && s.version && s.version !== seen) {
       seen = s.version;
       refresh();
     }
   });
+} else {
+  startLoader(showLoaded);
 }
+attachOpeners((shown2) => mode === "live" ? showDropped(shown2) : showLoaded(shown2));

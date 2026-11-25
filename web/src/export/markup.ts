@@ -17,6 +17,9 @@ const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, "&quot;");
 // written as 0 rather than as text that is not a number.
 export const fmt = (x: number): string => (Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0");
 
+// A point as an SVG coordinate pair, "x y".
+export const fmtPt = (p: readonly number[]): string => `${fmt(p[0])} ${fmt(p[1])}`;
+
 // Point lists: "x,y" pairs for polygons.
 export const pointList = (list: Vector2[]): string => list.map((p) => `${fmt(p.x)},${fmt(p.y)}`).join(" ");
 

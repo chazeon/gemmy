@@ -120,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if isinstance(args, View):
-        from .view import write_site, write_viewer
+        from .view import write_hosted_site, write_site, write_viewer
 
         if not args.scenes:
             print("error: give a scene (gemmy view scene.json --out page.html).", file=sys.stderr)
@@ -129,7 +129,9 @@ def main(argv: list[str] | None = None) -> int:
             print("error: --title takes one scene; with several, each page is named after its file.", file=sys.stderr)
             return 2
         try:
-            if len(args.scenes) == 1:
+            if args.hosted:
+                out = write_hosted_site(args.scenes, args.out, args.subtitle)
+            elif len(args.scenes) == 1:
                 out = write_viewer(args.scenes[0], args.out, args.title, args.subtitle)
             else:
                 out = write_site(args.scenes, args.out, args.subtitle)

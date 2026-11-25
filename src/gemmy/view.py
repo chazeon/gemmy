@@ -1,5 +1,5 @@
-"""`gemmy view`: write a scene as one self-contained HTML page (three.js from a pinned CDN, no Blender), or several
-scenes as a static site of such pages.
+"""`gemmy view`: write a scene as one self-contained HTML page (three.js from a pinned CDN, no Blender), several scenes
+as a static site of such pages, or a hosted site (`write_hosted_site`) that shares one viewer and loads each scene file.
 
 Stdlib only. The page is `viewer/page.html`; its stylesheet and script are the other built files in `viewer/`
 (`viewer.js` is the TypeScript viewer in `web/`, built by `npm --prefix web run build`; never edit the built files). It
@@ -10,20 +10,32 @@ see-through polyhedra).
 from __future__ import annotations
 
 import base64
+import gzip
+import hashlib
 import html
 import json
 import re
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 from .render import looks
-from .scene import SceneDocument, check_references, from_dict
+from .scene import SCENE_SCHEMA_VERSION, SceneDocument, check_references, from_dict
 from .settings import Axes
 
 VIEWER = Path(__file__).with_name("viewer")
-_PLACEHOLDER = re.compile(r"__(TITLE|SUBTITLE|SCENE_JSON|SCENE_FILE|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__")
+_PLACEHOLDER = re.compile(
+    r"__(TITLE|SUBTITLE|SCENE_JSON|SCENE_FILE|MODE|DEFAULT_SCENE|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__"
+)
+# The elements of page.html that a linked page replaces with references to the site's shared files.
+_INLINE_STYLE = "<style>\n/*__STYLE__*/</style>"
+_INLINE_SCRIPT = '<script type="module">\n//__SCRIPT__</script>'
+# A hosted site: the scene files and the pages' references to the shared viewer, relative to the page's folder.
+HOSTED_SCENE_FILE = "scene.json.gz"
+_SITE_ROOT = "../"  # from a scene's folder, or from view/, back to the site root
+HASH_CHARS = 10  # hex digits of a shared file's SHA-256 in its name: a new build never gets an old file's name
 
 
 def scene_json_for_html(data: Mapping[str, Any]) -> str:
@@ -36,6 +48,7 @@ def render_constants() -> dict[str, Any]:
     """The numbers the page shares with the Blender render (camera framing, lens, axis triad), from one place."""
     axes = Axes()
     return {
+        "sceneSchemaVersion": SCENE_SCHEMA_VERSION,
         "distanceFactor": looks.DISTANCE_FACTOR,
         "distanceMin": looks.DISTANCE_MIN,
         "orthoFactor": looks.ORTHO_FACTOR,
@@ -63,6 +76,11 @@ def _axis_fonts() -> dict[str, str]:
     return {weight: base64.b64encode(Path(path).read_bytes()).decode("ascii") for weight, path in faces.items()}
 
 
+def _constant_values() -> dict[str, str]:
+    """The two placeholders of viewer.js (and of the page): the same values for every page of a build."""
+    return {"CONSTANTS_JSON": json.dumps(render_constants()), "AXIS_FONTS_JSON": json.dumps(_axis_fonts())}
+
+
 def _tabs(tabs: Sequence[tuple[str, str]], current: int) -> str:
     """Links between sibling pages, one (label, folder) each: `gemmy serve` previews or a `gemmy view` site.
 
@@ -78,13 +96,19 @@ def _tabs(tabs: Sequence[tuple[str, str]], current: int) -> str:
     return f'<nav class="tabs" aria-label="Structures">{links}</nav>'
 
 
-def _template() -> str:
-    """The built page with its stylesheet and script inserted. This runs before the placeholders are filled, so
-    scene text that contains a placeholder name is never mistaken for a marker."""
+def _template(assets: tuple[str, str] | None) -> str:
+    """The built page with its stylesheet and script inserted, or (with `assets`, the hrefs of the site's shared
+    style and viewer) referenced. This runs before the placeholders are filled, so scene text that contains a
+    placeholder name is never mistaken for a marker."""
     page = (VIEWER / "page.html").read_text(encoding="utf-8")
-    style = (VIEWER / "style.css").read_text(encoding="utf-8")
-    script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
-    return page.replace("/*__STYLE__*/", style).replace("//__SCRIPT__", script)
+    if assets is None:
+        style = (VIEWER / "style.css").read_text(encoding="utf-8")
+        script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
+        return page.replace("/*__STYLE__*/", style).replace("//__SCRIPT__", script)
+    style_href, script_href = (html.escape(href) for href in assets)
+    return page.replace(_INLINE_STYLE, f'<link rel="stylesheet" href="{style_href}">').replace(
+        _INLINE_SCRIPT, f'<script type="module" src="{script_href}"></script>'
+    )
 
 
 def _page(
@@ -94,18 +118,26 @@ def _page(
     scene_file: str = "scene.json",
     tabs: Sequence[tuple[str, str]] = (),
     tab: int = 0,
+    mode: str = "scene",
+    default_scene: str = "",
+    assets: tuple[str, str] | None = None,
 ) -> str:
+    """The page with its placeholders filled. `mode` tells the viewer what to do when no scene is embedded: "live"
+    (follow gemmy serve) or "load" (the loader), and `default_scene` is the scene the loader opens then (a URL
+    relative to the page). An embedded scene is always shown. `assets` (the hrefs of the shared style and viewer) makes
+    the page use the site's shared files instead of carrying its own (see _template)."""
     values = {
+        **_constant_values(),
         "TITLE": html.escape(title),
         "SUBTITLE": html.escape(subtitle),
         "SCENE_JSON": scene_text,
         "SCENE_FILE": html.escape(scene_file),
-        "CONSTANTS_JSON": json.dumps(render_constants()),
-        "AXIS_FONTS_JSON": json.dumps(_axis_fonts()),
+        "MODE": mode,
+        "DEFAULT_SCENE": html.escape(default_scene),
         "TABS": _tabs(tabs, tab),
     }
     # One pass, so text inside the scene or the title is never mistaken for a placeholder.
-    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], _template())
+    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], _template(assets))
 
 
 def validate_scene_dict(scene: Mapping[str, Any]) -> None:
@@ -125,7 +157,7 @@ def render_viewer(
 
     `scene_file` is how the copied `gemmy render` command names the scene; `tabs` link to sibling pages."""
     validate_scene_dict(scene)
-    return _page(scene_json_for_html(scene), title, subtitle, scene_file, tabs, tab)
+    return _page(scene_json_for_html(scene), title, subtitle, scene_file, tabs, tab, "scene")
 
 
 def render_live_page(
@@ -133,7 +165,13 @@ def render_live_page(
 ) -> str:
     """A page with no scene embedded: it fetches scene.json and follows events, relative to its own URL (see
     `gemmy.serve`). With several `tabs` it links to the others."""
-    return _page("", title, subtitle, scene_file, tabs, tab)
+    return _page("", title, subtitle, scene_file, tabs, tab, "live")
+
+
+def render_loader_page(title: str = "Scene viewer", assets: tuple[str, str] | None = None) -> str:
+    """A page with no scene: it opens one from the address (?scene=, ?gist=), a URL typed in, or a dropped file (see
+    web/src/ui/loader.ts). With no `assets` it needs no server and no other file than the viewer's own."""
+    return _page("", title, "", mode="load", assets=assets)
 
 
 def write_viewer(
@@ -155,14 +193,20 @@ def write_viewer(
     return out
 
 
+def _scene_names(paths: Sequence[Path]) -> list[str]:
+    """The page names of scene files: their names without the extension, all different."""
+    names = [path.stem for path in paths]
+    if len(set(names)) < len(names):
+        raise ValueError(f"scene file names must differ, they name the pages: {', '.join(names)}")
+    return names
+
+
 def write_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = "") -> Path:
     """A static site: `out/<name>/index.html` per scene file (name: the file name without extension), tabs between
     them, and `out/index.html` that opens the first. Links are relative, so `out` can be served under any path.
     Every scene is checked before anything is written. Returns `out/index.html`."""
     paths = [Path(scene) for scene in scenes]
-    names = [path.stem for path in paths]
-    if len(set(names)) < len(names):
-        raise ValueError(f"scene file names must differ, they name the pages: {', '.join(names)}")
+    names = _scene_names(paths)
     tabs = [(name, name) for name in names]
     pages = [
         render_viewer(json.loads(path.read_text(encoding="utf-8")), name, subtitle, path.name, tabs, k)
@@ -179,4 +223,106 @@ def write_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = ""
         f'<meta http-equiv="refresh" content="0; url={first}/">\n<a href="{first}/">{html.escape(names[0])}</a>\n',
         encoding="utf-8",
     )
+    return index
+
+
+def _shared_script() -> str:
+    """viewer.js for a hosted site: the text every page of the build would inline, its two placeholders filled."""
+    script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
+    values = _constant_values()
+    return re.sub(r"__(CONSTANTS_JSON|AXIS_FONTS_JSON)__", lambda m: values[m.group(1)], script)
+
+
+@dataclass(frozen=True)
+class _SharedFiles:
+    """The hosted site's shared viewer files, with the names they are published under (their content's hash)."""
+
+    script: str  # viewer.<hash>.js
+    script_bytes: bytes
+    style: str  # style.<hash>.css
+    style_bytes: bytes
+
+    def hrefs(self, folder: str) -> tuple[str, str]:
+        """The (style, script) hrefs for a page `folder` steps down from the site root ("" for the root)."""
+        return f"{folder}{self.style}", f"{folder}{self.script}"
+
+
+def _hashed_name(stem: str, extension: str, data: bytes) -> str:
+    """`stem.<hash>.extension`, the hash being the first HASH_CHARS hex digits of the data's SHA-256. The name changes
+    exactly when the content does, so a cached copy of an older build is never served under the new name."""
+    return f"{stem}.{hashlib.sha256(data).hexdigest()[:HASH_CHARS]}.{extension}"
+
+
+def _shared_files() -> _SharedFiles:
+    script = _shared_script().encode("utf-8")
+    style = (VIEWER / "style.css").read_bytes()
+    return _SharedFiles(
+        script=_hashed_name("viewer", "js", script),
+        script_bytes=script,
+        style=_hashed_name("style", "css", style),
+        style_bytes=style,
+    )
+
+
+def _landing(names: Sequence[str], subtitle: str, style_href: str) -> str:
+    """The site's front page: each example, its own page and the viewer with its scene, and every example as tabs.
+    It uses the viewer's stylesheet for its colours and fonts; the stylesheet makes the body a fixed stage, so the
+    front page gives the body its own height and lets it scroll."""
+    items = "".join(
+        f'<li><a href="{html.escape(quote(name))}/">{html.escape(name)}</a> · '
+        f'<a href="{html.escape(_viewer_link([name]))}">in the viewer</a></li>'
+        for name in names
+    )
+    everything = html.escape(_viewer_link(names))
+    note = f"<p>{html.escape(subtitle)}</p>" if subtitle else ""
+    return (
+        '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>gemmy examples</title>\n'
+        f'<link rel="stylesheet" href="{html.escape(style_href)}">\n'
+        "<style>body{height:auto;overflow:auto;font:16px/1.5 system-ui,sans-serif;max-width:36rem;margin:0 auto;"
+        "padding:16px}a{color:#3861cc}li{margin:.3rem 0}</style>\n"
+        f"<h1>gemmy examples</h1>\n{note}\n"
+        f"<ul>{items}</ul>\n"
+        f'<p><a href="{everything}">All examples as tabs</a>, or the <a href="view/">viewer</a> for any scene file.'
+        "</p>\n"
+    )
+
+
+def _viewer_link(names: Sequence[str]) -> str:
+    """The viewer's address with the scenes of the named examples (relative to the site's front page)."""
+    scenes = [f"{_SITE_ROOT}{quote(name)}/{HOSTED_SCENE_FILE}" for name in names]
+    return "view/?" + "&".join(f"scene={quote(scene, safe='/.')}" for scene in scenes)
+
+
+def write_hosted_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = "") -> Path:
+    """A hosted site (GitHub Pages): one viewer and one stylesheet at the root, named by their content's hash
+    (viewer.<hash>.js, style.<hash>.css), shared by every page. Per scene, a folder with `scene.json.gz` (gzip, no
+    timestamp, so the same scene gives the same bytes; not hashed, since a stale copy of a scene is harmless) and an
+    index.html that opens it, a small page with the viewer's default scene. `view/index.html` is the viewer with no
+    scene, which opens any scene by address or file. `index.html` is the front page. Every scene is checked before
+    anything is written; links are relative, so the site works under any path. Returns `out/index.html`."""
+    paths = [Path(scene) for scene in scenes]
+    names = _scene_names(paths)
+    texts = [path.read_text(encoding="utf-8") for path in paths]
+    for text in texts:
+        validate_scene_dict(json.loads(text))
+    shared = _shared_files()
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / shared.script).write_bytes(shared.script_bytes)
+    (out / shared.style).write_bytes(shared.style_bytes)
+    assets = shared.hrefs(_SITE_ROOT)
+    tabs = [(name, name) for name in names]
+    for k, (path, name, text) in enumerate(zip(paths, names, texts, strict=True)):
+        folder = out / name
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / HOSTED_SCENE_FILE).write_bytes(gzip.compress(text.encode("utf-8"), mtime=0))
+        page = _page(
+            "", name, subtitle, path.name, tabs, k, mode="load", default_scene=HOSTED_SCENE_FILE, assets=assets
+        )
+        (folder / "index.html").write_text(page, encoding="utf-8")
+    (out / "view").mkdir(exist_ok=True)
+    (out / "view" / "index.html").write_text(render_loader_page(assets=assets), encoding="utf-8")
+    index = out / "index.html"
+    index.write_text(_landing(names, subtitle, shared.style), encoding="utf-8")
     return index

@@ -9,6 +9,7 @@ import { camera, centre, data, extent, lattice, lens, outlines, requestRender, s
 import { byId, clamp, closestOf } from "./dom";
 import { ThemeChoice, currentTheme, isThemeChoice, onThemeChange, setTheme } from "./theme";
 import { chooseOutlineScale, onOutlineScaleChange, outlineScale } from "./outline-scale";
+import { showUrlForm } from "./loader";
 
 // ---- what the Export menu saves ----
 const PNG_SCALE = 2; // the PNG is twice the window in each direction, whatever the screen's own pixel ratio
@@ -106,15 +107,20 @@ function exportSvg() {
   try {
     result = buildTracedSvg({
       data, centre, extent, quaternion: camera.quaternion.toArray(), zoom: currentZoom(), target: controls.target.toArray(),
-      projection: projectionName(), lens, width: stage.clientWidth, height: stage.clientHeight, show, outlines,
+      projection: projectionName(), lens, width: stage.clientWidth, height: stage.clientHeight, show, outlines, outlineScale: outlineScale(),
       lattice: lattice.map((v) => v.toArray()), boxColor,
     });
   } catch (error) {
     say(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`, true);
     return;
+  } finally {
+    requestRender(); // the passes drew into the GPU's buffers: the live view is redrawn either way
   }
   download("view.svg", new Blob([result.text], { type: "image/svg+xml" }));
-  requestRender();
+  if (result.paths === 0) {
+    say("Saved view.svg, but nothing in this view is visible: the file has no shapes.", true);
+    return;
+  }
   say(`Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`);
 }
 
@@ -212,7 +218,12 @@ function popover(button: HTMLElement, panel: HTMLElement): Popover {
 // ---- the popovers in use ----
 export const exportMenu = byId("export-menu");
 export const exportPopover = popover(byId("export-button"), exportMenu);
-popover(byId("menu-button"), byId("main-menu"));
+const mainMenu = popover(byId("menu-button"), byId("main-menu"));
+// Open URL… closes the menu and shows the URL card over the scene (loader.ts).
+byId("open-url").addEventListener("click", () => {
+  mainMenu.close();
+  showUrlForm();
+});
 
 // ---- the theme row of the ☰ menu ----
 // Three segments, Auto, Light and Dark; the one in use is pressed. A key press (T) can change the choice while the menu

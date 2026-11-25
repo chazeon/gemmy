@@ -93,6 +93,7 @@ export interface Scene {
 
 // The numbers gemmy.view puts in the page (gemmy.view.render_constants).
 export interface Constants {
+  sceneSchemaVersion: number; // the scene format this viewer reads (scene.py SCENE_SCHEMA_VERSION)
   distanceFactor: number;
   distanceMin: number;
   orthoFactor: number;

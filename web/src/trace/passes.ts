@@ -8,15 +8,15 @@
 // The keys combine the first two: key = 2 * id + dark, so each object has a lit key and a dark key; key 0 is background.
 import * as THREE from "three";
 import { LOOK } from "../config";
-import { renderer, root } from "../render/draw";
+import { OUTLINE_SIZE_FRACTION, OUTLINE_THICKNESS, renderer, root } from "../render/draw";
 import { camera } from "../state";
+import { BACKGROUND_DEPTH, Passes, darkKey, litKey } from "./buffers";
+import { roleOf } from "./objects";
 
-// ---- constants ----
 // draw.ts builds its toon gradient with this many texels. The band pass must put the lit/dark edge where the gradient
 // does, so the same count gives the same cut (see LIT_CUT).
 const TOON_STEPS = 16;
 const DEPTH_SCALE = 16777215; // 2^24 - 1: the depth is packed into the three bytes of a pixel
-const BACKGROUND_DEPTH = 2; // the depth of a pixel with no object: beyond any NDC depth in [0, 1]
 
 // The id pass: a flat colour per object, no lighting, no tone mapping, no antialiasing. The id is split into bytes, low
 // byte first, and written as exact 0..255 values (the render target is 8-bit and colour management is off for it).
@@ -121,19 +121,18 @@ function idScene(meshes: Drawable[]): THREE.Scene {
   return scene;
 }
 
-interface Passes {
-  keys: Uint32Array; // per pixel, top row first: 0 background, else 2 * id + dark
-  lineId: Uint32Array; // per pixel, from the line pass: the id of the thin bond, edge or box line that is the nearest surface here (0: none)
-  depth: Float32Array; // per pixel: the nearest object's NDC depth in 0..1, or BACKGROUND_DEPTH
-  shell: Uint8Array; // per pixel: 1 where the live view's outline shell is the visible surface, else 0
-  width: number;
-  height: number;
+// A pass writes 0 or 255 for its flags; a byte at or above this reads as set.
+const CHANNEL_ON = 128;
+
+// The three bytes at `offset`, low byte first: the packing the id and depth shaders write.
+function unpack24(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] + 256 * bytes[offset + 1] + 65536 * bytes[offset + 2];
 }
 
 // The outline shell, ported from render/draw.ts (outlineMaterial and its vertex shader): the back faces pushed out, with the
 // on-screen-size cap. Only its visibility is read here, so the fragment writes a plain red 1.
-const OUTLINE_THICKNESS = 0.0035; // draw.ts OUTLINE_THICKNESS (not exported there)
-const OUTLINE_SIZE_FRACTION = 0.12; // draw.ts OUTLINE_SIZE_FRACTION (not exported there)
+// An object that is not instanced has no radius, so its cap never binds: a radius this large stands for that.
+const UNCAPPED_RADIUS = 1e9;
 const SHELL_VERTEX = `
     uniform float outlineThickness;
     uniform float outlineScale;
@@ -145,7 +144,7 @@ const SHELL_VERTEX = `
     void main() {
       vec4 local = vec4(position, 1.0);
       vec3 normalLocal = normal;
-      float radius = 1e9;
+      float radius = ${UNCAPPED_RADIUS.toFixed(1)};
       #ifdef USE_INSTANCING
         mat3 instanceRotation = mat3(instanceMatrix);
         normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
@@ -168,11 +167,11 @@ const ZERO_FRAGMENT = `
     }`;
 
 // The shell's material: the back faces only, as in the live view.
-const shellMaterial = (): THREE.ShaderMaterial => new THREE.ShaderMaterial({
+const shellMaterial = (outlineScale: number): THREE.ShaderMaterial => new THREE.ShaderMaterial({
   vertexShader: SHELL_VERTEX,
   fragmentShader: SHELL_FRAGMENT,
   side: THREE.BackSide,
-  uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: 1 } },
+  uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale } },
 });
 
 // The mask's occluders: the normal geometry writes depth and outputs 0, so a shell only shows where nothing nearer covers it.
@@ -186,19 +185,26 @@ const occluderMaterial = (faces: boolean): THREE.ShaderMaterial => new THREE.Sha
 // Drawn objects: meshes and line segments. A drawable's id is its objectId attribute; `kind` says which pass shows it.
 export type Drawable = THREE.Mesh | THREE.LineSegments;
 
-// Renders `cssWidth` x `cssHeight` at `scale` times the stage, tile by tile when the GPU's texture limit is smaller.
+// The drawable groups renderPasses shows in each pass:
 //   meshes: the objects of the id, band and depth passes (and the occluders of the other passes);
 //   shells: the live view's outline shells, in the mask pass only;
 //   thin: thin bonds and dots (drawn as lines), in the line pass only, with their table ids;
 //   lines: the polyhedron edges and the cell box, in the line pass only, with their own ids.
-// Each tile gets five passes; the readback is bottom-up, so rows are flipped here.
-export function renderPasses(meshes: THREE.Mesh[], shells: THREE.Mesh[], thin: THREE.Mesh[], lines: THREE.LineSegments[], cssWidth: number, cssHeight: number, scale: number): Passes {
+export interface Groups {
+  meshes: THREE.Mesh[];
+  shells: THREE.Mesh[];
+  thin: THREE.Mesh[];
+  lines: THREE.LineSegments[];
+}
+
+// Renders `cssWidth` x `cssHeight` at `scale` times the stage, tile by tile when the GPU's texture limit is smaller. Each
+// tile gets five passes; the readback is bottom-up, so storeTile flips the rows.
+export function renderPasses(groups: Groups, cssWidth: number, cssHeight: number, scale: number, outlineScale: number): Passes {
+  const { meshes, shells, thin, lines } = groups;
   const width = cssWidth * scale;
   const height = cssHeight * scale;
-  const keys = new Uint32Array(width * height);
-  const depth = new Float32Array(width * height).fill(BACKGROUND_DEPTH);
-  const shell = new Uint8Array(width * height);
-  const lineId = new Uint32Array(width * height);
+  const count = width * height;
+  const passes = new Passes(width, height, new Uint32Array(count), new Float32Array(count).fill(BACKGROUND_DEPTH), new Uint8Array(count), new Uint32Array(count));
   // One scene for every pass: each group is switched on for the passes that use it.
   const all: Drawable[] = [...meshes, ...shells, ...thin, ...lines];
   const scene = idScene(all);
@@ -208,14 +214,17 @@ export function renderPasses(meshes: THREE.Mesh[], shells: THREE.Mesh[], thin: T
     band: [passMaterial("band", false), passMaterial("band", true)],
     depth: [passMaterial("depth", false), passMaterial("depth", true)],
   };
-  const pick = (pass: Pass) => (mesh: Drawable) => materials[pass][mesh.userData.shape === "polyhedron" ? 1 : 0];
-  const maskShell = shellMaterial();
+  const pick = (pass: Pass) => (mesh: Drawable) => materials[pass][roleOf(mesh).shape === "polyhedron" ? 1 : 0];
+  const maskShell = shellMaterial(outlineScale);
   const maskPlain = occluderMaterial(false);
   const maskFaces = occluderMaterial(true);
-  const maskPick = (mesh: Drawable) => (mesh.userData.shell ? maskShell : mesh.userData.shape === "polyhedron" ? maskFaces : maskPlain);
+  const maskPick = (mesh: Drawable) => (roleOf(mesh).role === "shell" ? maskShell : roleOf(mesh).shape === "polyhedron" ? maskFaces : maskPlain);
   // The line pass: occluders are the normal geometry (zero output); thin bonds and lines write their ids.
   const lineIdMaterial = passMaterial("id", false);
-  const linePick = (mesh: Drawable) => (mesh.userData.line || mesh.userData.thin ? lineIdMaterial : mesh.userData.shape === "polyhedron" ? maskFaces : maskPlain);
+  const linePick = (mesh: Drawable) => {
+    const role = roleOf(mesh);
+    return role.role === "line" || role.role === "thin" ? lineIdMaterial : role.shape === "polyhedron" ? maskFaces : maskPlain;
+  };
   // Which groups are on in each pass.
   const show = (pass: "id" | "band" | "depth" | "mask" | "line") => {
     for (const m of shells) m.visible = pass === "mask";
@@ -223,57 +232,78 @@ export function renderPasses(meshes: THREE.Mesh[], shells: THREE.Mesh[], thin: T
   };
   const tile = renderer.capabilities.maxTextureSize;
   camera.updateMatrixWorld();
-  for (let y0 = 0; y0 < height; y0 += tile) {
-    for (let x0 = 0; x0 < width; x0 += tile) {
-      const tw = Math.min(tile, width - x0);
-      const th = Math.min(tile, height - y0);
-      camera.setViewOffset(width, height, x0, y0, tw, th); // the full image's camera, looking at this tile only
-      show("id");
-      const ids = readPass(scene, all, pick("id"), tw, th);
-      show("band");
-      const bands = readPass(scene, all, pick("band"), tw, th);
-      show("depth");
-      const depths = readPass(scene, all, pick("depth"), tw, th);
-      show("mask");
-      const masks = readPass(scene, all, maskPick, tw, th);
-      show("line");
-      const lines32 = readPass(scene, all, linePick, tw, th);
-      for (let row = 0; row < th; row++) {
-        const topRow = th - 1 - row; // readRenderTargetPixels is bottom-up
-        for (let col = 0; col < tw; col++) {
-          const src = (row * tw + col) * 4;
-          const dst = (y0 + topRow) * width + x0 + col;
-          shell[dst] = masks[src] >= 128 ? 1 : 0;
-          lineId[dst] = lines32[src] + 256 * lines32[src + 1] + 65536 * lines32[src + 2];
-          const id = ids[src] + 256 * ids[src + 1] + 65536 * ids[src + 2];
-          if (id === 0) continue;
-          const dark = bands[src] < 128 ? 1 : 0; // the band pass writes 1 for lit, so the dark keys are the odd ones
-          keys[dst] = 2 * id + dark;
-          depth[dst] = (depths[src] + 256 * depths[src + 1] + 65536 * depths[src + 2]) / DEPTH_SCALE;
-        }
+  try {
+    for (let y0 = 0; y0 < height; y0 += tile) {
+      for (let x0 = 0; x0 < width; x0 += tile) {
+        const tw = Math.min(tile, width - x0);
+        const th = Math.min(tile, height - y0);
+        camera.setViewOffset(width, height, x0, y0, tw, th); // the full image's camera, looking at this tile only
+        show("id");
+        const ids = readPass(scene, all, pick("id"), tw, th);
+        show("band");
+        const bands = readPass(scene, all, pick("band"), tw, th);
+        show("depth");
+        const depths = readPass(scene, all, pick("depth"), tw, th);
+        show("mask");
+        const masks = readPass(scene, all, maskPick, tw, th);
+        show("line");
+        const lineIds = readPass(scene, all, linePick, tw, th);
+        storeTile(passes, { x0, y0, tw, th, ids, bands, depths, masks, lineIds });
       }
     }
+  } finally {
+    // A failed pass must not leave the live view with a tile's camera or a render target bound.
+    renderer.setRenderTarget(null);
+    camera.clearViewOffset();
+    for (const material of [...Object.values(materials).flat(), maskShell, maskPlain, maskFaces, lineIdMaterial]) material.dispose();
   }
-  camera.clearViewOffset();
-  for (const pair of Object.values(materials)) for (const material of pair) material.dispose();
-  maskShell.dispose();
-  maskPlain.dispose();
-  maskFaces.dispose();
-  lineIdMaterial.dispose();
-  return { keys, depth, shell, lineId, width, height };
+  return passes;
+}
+
+// The readbacks of one tile, at (x0, y0) of the full image, tw by th pixels.
+interface Tile {
+  x0: number;
+  y0: number;
+  tw: number;
+  th: number;
+  ids: Uint8Array;
+  bands: Uint8Array;
+  depths: Uint8Array;
+  masks: Uint8Array;
+  lineIds: Uint8Array;
+}
+
+// Copies a tile's readbacks into the passes: each pixel's object and band become its key, the rows are flipped to top-first.
+function storeTile(out: Passes, t: Tile): void {
+  for (let row = 0; row < t.th; row++) {
+    const topRow = t.th - 1 - row; // readRenderTargetPixels is bottom-up
+    for (let col = 0; col < t.tw; col++) {
+      const src = (row * t.tw + col) * 4;
+      const dst = (t.y0 + topRow) * out.width + t.x0 + col;
+      out.shell[dst] = t.masks[src] >= CHANNEL_ON ? 1 : 0;
+      out.lineId[dst] = unpack24(t.lineIds, src);
+      const id = unpack24(t.ids, src);
+      if (id === 0) continue;
+      out.keys[dst] = t.bands[src] < CHANNEL_ON ? darkKey(id) : litKey(id);
+      out.depth[dst] = unpack24(t.depths, src) / DEPTH_SCALE;
+    }
+  }
 }
 
 // One pass over one tile: every drawable drawn with `materialOf`, the pixels read back as RGBA bytes (bottom row first).
 function readPass(scene: THREE.Scene, all: Drawable[], materialOf: (mesh: Drawable) => THREE.Material, tw: number, th: number): Uint8Array {
   for (const mesh of all) mesh.material = materialOf(mesh);
   const target = new THREE.WebGLRenderTarget(tw, th, { depthBuffer: true, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false });
-  renderer.setRenderTarget(target);
-  renderer.render(scene, camera);
-  const pixels = new Uint8Array(tw * th * 4);
-  renderer.readRenderTargetPixels(target, 0, 0, tw, th, pixels);
-  renderer.setRenderTarget(null);
-  target.dispose();
-  return pixels;
+  try {
+    renderer.setRenderTarget(target);
+    renderer.render(scene, camera);
+    const pixels = new Uint8Array(tw * th * 4);
+    renderer.readRenderTargetPixels(target, 0, 0, tw, th, pixels);
+    return pixels;
+  } finally {
+    renderer.setRenderTarget(null);
+    target.dispose();
+  }
 }
 
 // The meshes are built for this export alone, so their geometry goes when the export is done.
@@ -283,7 +313,14 @@ export function disposeMeshes(meshes: Drawable[]): void {
 
 // Maps a scene point to the render's pixel grid: x and y in render-scale pixels (y down), and the NDC depth in 0..1, by the
 // same camera and structure transform the passes used.
-export function projector(width: number, height: number): (p: THREE.Vector3) => { x: number; y: number; depth: number } {
+export interface Projected {
+  x: number; // render px, y down
+  y: number;
+  depth: number; // NDC depth mapped to 0..1
+}
+export type Project = (p: THREE.Vector3) => Projected;
+
+export function projector(width: number, height: number): Project {
   return (p) => {
     const ndc = p.clone().add(root.position).applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
     return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height, depth: ndc.z / 2 + 0.5 };

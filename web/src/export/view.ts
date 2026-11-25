@@ -22,12 +22,13 @@ export interface ViewOptions {
   lens?: number; // mm, perspective only
 }
 
-interface SphereImage {
+// An ellipse on screen: its centre, radii and the angle of the rx axis.
+export interface Ellipse {
   cx: number;
   cy: number;
   rx: number;
   ry: number;
-  phi: number; // angle of the rx axis on screen
+  phi: number;
 }
 
 export interface View {
@@ -38,7 +39,7 @@ export interface View {
   toScreen(c: Vector3): Vector2; // camera space -> screen pixels (y down)
   depth(c: Vector3): number; // sort key: the distance to the eye, negated, so larger is nearer
   pxPerUnit(c: Vector3): number; // pixels per angstrom at that point, for radii
-  sphereImage(c: Vector3, r: number): SphereImage | null;
+  sphereImage(c: Vector3, r: number): Ellipse | null;
 }
 
 // The numbers of a perspective view that the sphere formulas need.
@@ -80,7 +81,7 @@ export function makeView(o: ViewOptions): View {
     return new Vector2(W / 2 + c.x * k, H / 2 - c.y * k);
   };
   const depth = (c: Vector3) => (persp ? -Math.hypot(c.x, c.y, eyeZ - c.z) : c.z);
-  const sphereImage = (c: Vector3, r: number): SphereImage | null => {
+  const sphereImage = (c: Vector3, r: number): Ellipse | null => {
     if (!persp) {
       const s = toScreen(c);
       return { cx: s.x, cy: s.y, rx: r * scale, ry: r * scale, phi: 0 };
@@ -94,7 +95,7 @@ export function makeView(o: ViewOptions): View {
 // about the line to the centre meets the image plane at radial angles theta -/+ alpha, which fixes the major axis and
 // the centre (it is NOT the projected centre); the minor axis is where the cone meets the line across it. Null when
 // the sphere reaches the eye plane.
-function perspectiveSphereImage(c: Vector3, r: number, pinhole: Pinhole): SphereImage | null {
+function perspectiveSphereImage(c: Vector3, r: number, pinhole: Pinhole): Ellipse | null {
   const { eyeZ, focal, W, H } = pinhole;
   const t = eyeZ - c.z;
   const rho = Math.hypot(c.x, c.y);

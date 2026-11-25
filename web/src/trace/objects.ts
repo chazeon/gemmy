@@ -7,17 +7,40 @@ import { instanced, SHAPES } from "../render/draw";
 import { type InstanceGroup, instanceGroups, polyhedronGroups } from "../render/instancing";
 import type { Scene, Vec3 } from "../types";
 
-export interface TracedObject {
-  kind: string; // the instance shape ("sphere" atoms, "cylinder" bonds and arrow shafts, "dot", "cone") or "polyhedron"
+interface Common {
   material: string | null; // the material id; null for arrows
   alpha: number; // below 1 for a ghost polyhedron, drawn with this fill opacity
   outlined: boolean; // gets an outline in the SVG (the live view's outline shell)
   centre: Vec3; // scene position, for the back-to-front sort
-  poly?: number; // for a polyhedron: its index in data.primitives.polyhedra
-  matrix?: number[]; // for an instance: its 16 matrix numbers (a sphere's radius, a cylinder's axis, see exact.ts)
 }
 
-interface IdMeshes {
+// An instance of one shape: an atom, a bond, a dot, or an arrow part. Its matrix is the 16 numbers of the instance (a
+// sphere's radius, a cylinder's axis, see candidates.ts).
+export interface InstanceObject extends Common {
+  kind: InstanceGroup["shape"];
+  matrix: number[];
+}
+
+// A polyhedron: `poly` is its index in data.primitives.polyhedra.
+export interface PolyhedronObject extends Common {
+  kind: "polyhedron";
+  poly: number;
+}
+
+export type TracedObject = InstanceObject | PolyhedronObject;
+
+// What a mesh is for: a solid (drawn by the id, band and depth passes), its outline shell, a thin shape, or a line set.
+export type Role = "solid" | "shell" | "thin" | "line";
+
+// A mesh's userData: its role, and the shape it draws (a polyhedron's faces take the polygon offset in the passes).
+export interface MeshRole {
+  role: Role;
+  shape?: string;
+}
+
+export const roleOf = (mesh: THREE.Object3D): MeshRole => mesh.userData as MeshRole;
+
+export interface IdMeshes {
   objects: TracedObject[];
   meshes: THREE.Mesh[]; // each carries the per-object id as the attribute `objectId`; its material is set by the pass
   shells: THREE.Mesh[]; // the live view's outline shells of the outlined objects (the mask pass only)
@@ -29,37 +52,45 @@ interface IdMeshes {
 // no pixels. Their ids stay reserved, so the table index still gives the id.
 export function buildIdMeshes(data: Scene, material: THREE.Material, keep: (obj: TracedObject) => boolean = () => true): IdMeshes {
   const objects: TracedObject[] = [];
-  const meshes: THREE.Mesh[] = [];
-  const shells: THREE.Mesh[] = [];
-  const thin: THREE.Mesh[] = [];
-  for (const group of instanceGroups(data)) {
-    const first = objects.length + 1; // the id of instance 0
-    const kept: number[] = [];
-    const dropped: number[] = [];
-    group.refs.forEach((_, i) => {
-      const obj: TracedObject = { kind: group.shape, material: group.material, alpha: 1, outlined: group.outlined, centre: instanceCentre(group.matrices, i), matrix: group.matrices.slice(16 * i, 16 * i + 16) };
-      objects.push(obj);
-      (keep(obj) ? kept : dropped).push(i);
-    });
-    if (kept.length) {
-      const mesh = instanceSet(group, first, kept, material);
-      mesh.userData = { shape: group.shape };
-      meshes.push(mesh);
-      if (group.outlined) {
-        // The live view's outline shell: the same geometry and matrices, drawn back-face (see passes.ts).
-        const shell = instanceSet(group, first, kept, material);
-        shell.userData = { shape: group.shape, shell: true };
-        shells.push(shell);
-      }
-    }
-    if (dropped.length) {
-      const mesh = instanceSet(group, first, dropped, material);
-      mesh.userData = { shape: group.shape, thin: true };
-      thin.push(mesh);
+  const parts: MeshParts = { meshes: [], shells: [], thin: [] };
+  for (const group of instanceGroups(data)) addInstanceGroup(group, objects, parts, material, keep);
+  addPolyhedra(data, objects, parts, material);
+  return { objects, ...parts };
+}
+
+type MeshParts = Omit<IdMeshes, "objects">;
+
+// One instanced group: its objects (in table order), its kept instances as a mesh (and its outline shell), and the rest as
+// thin meshes.
+function addInstanceGroup(group: InstanceGroup, objects: TracedObject[], parts: MeshParts, material: THREE.Material, keep: (obj: TracedObject) => boolean): void {
+  const first = objects.length + 1; // the id of instance 0
+  const kept: number[] = [];
+  const dropped: number[] = [];
+  group.refs.forEach((_, i) => {
+    const obj: TracedObject = { kind: group.shape, material: group.material, alpha: 1, outlined: group.outlined, centre: instanceCentre(group.matrices, i), matrix: group.matrices.slice(16 * i, 16 * i + 16) };
+    objects.push(obj);
+    (keep(obj) ? kept : dropped).push(i);
+  });
+  if (kept.length) {
+    const mesh = instanceSet(group, first, kept, material);
+    mesh.userData = { shape: group.shape, role: "solid" } satisfies MeshRole;
+    parts.meshes.push(mesh);
+    if (group.outlined) {
+      // The live view's outline shell: the same geometry and matrices, drawn back-face (see passes.ts).
+      const shell = instanceSet(group, first, kept, material);
+      shell.userData = { shape: group.shape, role: "shell" } satisfies MeshRole;
+      parts.shells.push(shell);
     }
   }
+  if (dropped.length) {
+    const mesh = instanceSet(group, first, dropped, material);
+    mesh.userData = { shape: group.shape, role: "thin" } satisfies MeshRole;
+    parts.thin.push(mesh);
+  }
+}
 
-  // Polyhedra: one object each, numbered after the instanced objects in scene order. Their triangles carry the id.
+// Polyhedra: one object each, numbered after the instanced objects in scene order. Their triangles carry the id.
+function addPolyhedra(data: Scene, objects: TracedObject[], parts: MeshParts, material: THREE.Material): void {
   const points = new Map(data.points.map((p) => [p.id, p.position] as const));
   const polyBase = objects.length; // polyhedron p has id polyBase + p + 1
   data.primitives.polyhedra.forEach((poly, index) => {
@@ -81,16 +112,15 @@ export function buildIdMeshes(data: Scene, material: THREE.Material, keep: (obj:
     geometry.setAttribute("objectId", new THREE.BufferAttribute(ids, 1));
     geometry.computeVertexNormals(); // not indexed, so each face keeps its own normal, as the live view
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.userData = { shape: "polyhedron" };
-    meshes.push(mesh);
+    mesh.userData = { shape: "polyhedron", role: "solid" } satisfies MeshRole;
+    parts.meshes.push(mesh);
     // A see-through polyhedron (alpha < 1) has no shell in the live view.
     if (group.material && (data.materials[group.material].alpha ?? 1) >= 1) {
       const shell = new THREE.Mesh(geometry, material);
-      shell.userData = { shape: "polyhedron", shell: true };
-      shells.push(shell);
+      shell.userData = { shape: "polyhedron", role: "shell" } satisfies MeshRole;
+      parts.shells.push(shell);
     }
   }
-  return { objects, meshes, shells, thin };
 }
 
 // The translation column of instance i's matrix (16 numbers, column-major): where the instance sits.
