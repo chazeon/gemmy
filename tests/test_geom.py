@@ -303,3 +303,26 @@ def test_place_mesh_scales_rotates_and_offsets() -> None:
     assert min(ys) == pytest.approx(0.0) and max(ys) == pytest.approx(2.0)
     assert max(abs(v[0]) for v in vertices[:n]) == pytest.approx(0.1)
     assert faces[len(g.unit_cylinder()[1])][0] >= n and min(v[0] for v in vertices[n:]) == pytest.approx(4.0)
+
+
+def test_disc_outline_is_on_its_circle() -> None:
+    points = g.disc(0.5, 8)
+    assert len(points) == 8 and points[0] == pytest.approx((0.5, 0.0))
+    assert all(math.hypot(x, y) == pytest.approx(0.5) for x, y in points)
+
+
+def test_triad_draw_straight_on_has_no_fade_and_no_axis_behind_the_ball() -> None:
+    draw = g.triad_draw([0.5, 0.9, 0.2], fade_max=0.35)
+    assert draw.order == (2, 0, 1) and draw.behind == 0
+    assert draw.fades == (0.0, 0.0, 0.0)
+
+
+def test_triad_draw_edge_on_is_not_faded_and_draws_over_the_ball() -> None:
+    draw = g.triad_draw([0.0, -0.0, 0.3], fade_max=0.35)  # exactly edge-on counts as towards the viewer
+    assert draw.behind == 0 and draw.fades == (0.0, 0.0, 0.0)
+
+
+def test_triad_draw_away_axes_go_under_the_ball_farthest_first() -> None:
+    draw = g.triad_draw([-1.0, 0.3, -0.5], fade_max=0.35)
+    assert draw.order == (0, 2, 1) and draw.behind == 2  # order[:2] under the ball, axis 1 over it
+    assert draw.fades == pytest.approx((0.35, 0.0, 0.175))  # straight away is the full fade, half-away half of it

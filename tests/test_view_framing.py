@@ -12,12 +12,14 @@ from typing import Any
 
 import pytest
 
+from gemmy.geom import triad_draw
 from gemmy.render.looks import (
     AXES_ARROW_RADIUS,
     AXES_HEAD_LENGTH_RATIO,
     AXES_HEAD_RADIUS_RATIO,
     AXES_LABEL_PAD,
     AXES_LABEL_REACH,
+    DEPTH_FADE_MAX,
 )
 from viewer_bundle import available, header
 
@@ -105,6 +107,24 @@ def test_items_are_sorted_far_first(tmp_path: Path) -> None:
     assert [item["index"] for item in layout["items"]] == [1, 0, 2]
 
 
+def test_axes_pointing_away_are_faded_and_counted_behind_the_ball(tmp_path: Path) -> None:
+    layout = _triad([[1, 0, 0.5], [0, 1, -0.8], [0, 0, 0.9]], tmp_path)
+    fades = {item["index"]: item["fade"] for item in layout["items"]}
+    assert layout["behind"] == 1
+    assert fades[1] == pytest.approx(0.8 * DEPTH_FADE_MAX) and fades[0] == 0.0 and fades[2] == 0.0
+
+
+def test_page_draw_order_and_fade_are_the_python_ones(tmp_path: Path) -> None:
+    # The page's triadLayout and geom.triad_draw must agree on the order, the count under the ball and the fades.
+    dirs = [[0.6, 0.0, -0.8], [0.0, 0.6, 0.8], [0.8, 0.0, 0.6]]
+    layout = _triad(dirs, tmp_path)
+    expected = triad_draw([d[2] for d in dirs], DEPTH_FADE_MAX)
+    assert [item["index"] for item in layout["items"]] == list(expected.order)
+    assert layout["behind"] == expected.behind
+    for item in layout["items"]:
+        assert item["fade"] == pytest.approx(expected.fades[item["index"]])
+
+
 def test_arrow_head_is_a_triangle_on_the_axis_with_blenders_proportions(tmp_path: Path) -> None:
     layout = _triad([[1, 0, 0]], tmp_path)
     item = layout["items"][0]
@@ -187,45 +207,47 @@ console.log(JSON.stringify({
     assert out["length"] == pytest.approx(7.5, abs=1e-9)
 
 
-# A camera turned off the view axis, with its target off the structure's centre: the case a pivot creates.
+# A view turned off the view axis, with its target off the structure's centre: the case a pivot creates.
 TURN = [0.21, 0.32, 0.09]
 TURN_W = math.sqrt(1 - sum(x * x for x in TURN))
 ORIENTATION = [*TURN, TURN_W]
 TARGET = [-3.0, 4.0, 1.0]
 EXTENT = 9.0
+VIEW = {"target": TARGET, "orientation": ORIENTATION, "zoom": 1.3, "projection": "persp", "lens": 50}
 
 
-def test_pivot_along_the_view_ray_keeps_the_exported_camera(tmp_path: Path) -> None:
-    # The page pivots the target with pivotTarget (camera/framing.ts, used by camera/pivot.ts) and then exports
-    # zoom = baseDistance / distance to the new target. The implied camera position, target + forward * baseDistance /
-    # zoom, must not move, while the target and the zoom do.
-    args = {"quaternion": ORIENTATION, "target": TARGET, "extent": EXTENT, "zoom": 1.3, "hit": 6.2}
+def test_pivot_keeps_the_camera_and_moves_the_target_onto_the_hit(tmp_path: Path) -> None:
+    # The pivot (view-state.ts pivoted) moves the target along the view ray to the hit and sets the zoom from the new
+    # distance. The camera position and the orientation do not change, so the picture does not.
+    args = {"view": VIEW, "extent": EXTENT, "hit": 6.2}
     body = """
-const { quaternion, target, extent, zoom, hit } = args;
-const base = baseDistance(extent);
-const position = cameraPosition(quaternion, target, zoom, extent);
-const pivot = pivotTarget(position, quaternion, target, hit, 0);
-const pivotZoom = base / span(position, pivot);
-const after = cameraPosition(quaternion, pivot, pivotZoom, extent);
-console.log(JSON.stringify({ before: position, after, target, pivot, zoom, pivotZoom }));
+const { view, extent, hit } = args;
+const before = cameraPosition(view, extent);
+const next = pivoted(view, hit, 0, extent);
+console.log(JSON.stringify({
+  before, after: cameraPosition(next, extent), target: view.target, pivot: next.target,
+  zoom: view.zoom, next: next.zoom,
+  orientation: next.orientation,
+}));
 """
     out = _run(body, args, tmp_path)
     assert out["after"] == pytest.approx(out["before"], abs=1e-9)
+    assert out["orientation"] == pytest.approx(ORIENTATION, abs=1e-12)
     assert out["pivot"] != pytest.approx(out["target"], abs=1e-6)
-    assert out["pivotZoom"] != pytest.approx(out["zoom"], abs=1e-6)
+    assert out["next"] != pytest.approx(out["zoom"], abs=1e-6)  # the readout follows the new distance
 
 
 def test_pivot_clamps_a_near_hit_to_minimum_distance_and_skips_a_far_one(tmp_path: Path) -> None:
-    # A hit nearer than minDistance pivots at minDistance, on the same ray. A hit not nearer than the
-    # target is no pivot.
-    args = {"quaternion": ORIENTATION, "target": TARGET, "extent": EXTENT, "zoom": 1.3}
+    # A hit nearer than minDistance pivots at minDistance, on the same ray. A hit not nearer than
+    # the target is no pivot.
+    args = {"view": VIEW, "extent": EXTENT}
     body = """
-const { quaternion, target, extent, zoom } = args;
-const position = cameraPosition(quaternion, target, zoom, extent);
-const near = pivotTarget(position, quaternion, target, 0.2, 1.5);
-const far = pivotTarget(position, quaternion, target, span(position, target) + 1, 1.5);
-const onRay = vdot(vunit(vsub(near, position)), viewForward(quaternion));
-console.log(JSON.stringify({ nearDistance: span(position, near), far, onRay }));
+const { view, extent } = args;
+const position = cameraPosition(view, extent);
+const near = pivoted(view, 0.2, 1.5, extent);
+const far = pivoted(view, span(position, view.target) + 1, 1.5, extent);
+const onRay = vdot(vunit(vsub(near.target, position)), viewForward(view.orientation));
+console.log(JSON.stringify({ nearDistance: span(position, near.target), far, onRay }));
 """
     out = _run(body, args, tmp_path)
     assert out["nearDistance"] == pytest.approx(1.5, abs=1e-9)
@@ -233,58 +255,154 @@ console.log(JSON.stringify({ nearDistance: span(position, near), far, onRay }));
     assert out["onRay"] == pytest.approx(1.0, abs=1e-9)
 
 
-def test_dolly_moves_the_camera_along_its_view_line_and_round_trips_the_export(tmp_path: Path) -> None:
-    # The zoom buttons (camera/view.ts setShownZoom) slide the camera along its view line: the target and the
-    # direction hold, the distance from the centre becomes the wanted one, and the exported zoom of the result
-    # reproduces it.
-    # hold, the distance from the centre becomes the wanted one, and the exported zoom of the result reproduces it.
-    args = {"quaternion": ORIENTATION, "target": TARGET, "extent": EXTENT, "zoom": 1.3, "factor": 1.1}
+def test_releasing_the_pivot_keeps_the_camera_and_puts_the_target_at_the_centres_depth(tmp_path: Path) -> None:
+    args = {"view": VIEW, "extent": EXTENT}
     body = """
-const { quaternion, target, extent, zoom, factor } = args;
-const base = baseDistance(extent);
-const position = cameraPosition(quaternion, target, zoom, extent);
-// The zoom buttons work on the shown zoom, base / centre distance: one press multiplies it by the factor.
-const wanted = centreDistance(position) / factor;
-const moved = dollyPosition(position, target, wanted, 0, Infinity);
-const exported = cameraPosition(quaternion, target, base / span(moved, target), extent);
-const direction = (p) => vunit(vsub(p, target));
+const { view, extent } = args;
+const before = cameraPosition(view, extent);
+const next = released(view, extent, 0.5, 1000);
+const depth = depthOfCentre(before, view.orientation);
 console.log(JSON.stringify({
-  centreBefore: centreDistance(position),
-  centreAfter: centreDistance(moved),
-  wanted,
-  sameLine: vdot(direction(position), direction(moved)),
-  roundTrip: exported,
-  moved,
+  before, after: cameraPosition(next, extent), depth, target: next.target, zoom: next.zoom,
 }));
 """
     out = _run(body, args, tmp_path)
-    assert out["centreAfter"] == pytest.approx(out["wanted"], abs=1e-9)
-    assert out["centreAfter"] < out["centreBefore"]
+    assert out["after"] == pytest.approx(out["before"], abs=1e-9)
+    assert span_of(out["target"], out["before"]) == pytest.approx(out["depth"], abs=1e-9)
+
+
+def span_of(a: list, b: list) -> float:
+    return math.dist(a, b)
+
+
+def test_rotating_turns_the_camera_about_the_target_at_the_same_distance(tmp_path: Path) -> None:
+    args = {"view": VIEW, "extent": EXTENT, "degrees": 25}
+    body = """
+const { view, extent, degrees } = args;
+const next = rotated(view, [0, 1, 0], degrees);
+console.log(JSON.stringify({ before: span(cameraPosition(view, extent), view.target),
+  after: span(cameraPosition(next, extent), next.target), target: next.target, moved: cameraPosition(next, extent) }));
+"""
+    out = _run(body, args, tmp_path)
+    assert out["after"] == pytest.approx(out["before"], abs=1e-9)
+    assert out["target"] == pytest.approx(TARGET)
+
+
+def test_a_zoom_is_the_base_distance_over_the_camera_distance(tmp_path: Path) -> None:
+    args = {"view": VIEW, "extent": EXTENT}
+    body = """
+const { view, extent } = args;
+const distance = span(cameraPosition(view, extent), view.target);
+console.log(JSON.stringify({ distance, back: baseDistance(extent) / distance }));
+"""
+    out = _run(body, args, tmp_path)
+    assert out["back"] == pytest.approx(VIEW["zoom"], abs=1e-9)
+
+
+def test_orientation_from_a_basis_looks_along_back_with_up_on_screen(tmp_path: Path) -> None:
+    body = """
+const back = [0.3, -0.5, 0.8];
+const up = [0, 0, 1];
+const q = orientationFromBasis(back, up);
+const z = applyQuaternion(q, [0, 0, 1]), y = applyQuaternion(q, [0, 1, 0]);
+const along = vscale(vunit(back), vdot(up, vunit(back)));
+const want = vunit(vsub(up, along));
+console.log(JSON.stringify({ z: vunit(back), got: z, up: y, want, length: Math.hypot(...q) }));
+"""
+    out = _run(body, {}, tmp_path)
+    assert out["got"] == pytest.approx(out["z"], abs=1e-12)
+    assert out["up"] == pytest.approx(out["want"], abs=1e-12)
+    assert out["length"] == pytest.approx(1.0, abs=1e-12)
+
+
+def test_orientation_from_a_basis_with_up_along_the_sightline_is_finite_and_looks_back(tmp_path: Path) -> None:
+    body = """
+const back = [1, 0, 0];
+const q = orientationFromBasis(back, [1, 0, 0]);
+const z = applyQuaternion(q, [0, 0, 1]);
+console.log(JSON.stringify({ q, z, length: Math.hypot(...q) }));
+"""
+    out = _run(body, {}, tmp_path)
+    assert all(math.isfinite(x) for x in out["q"])
+    assert out["length"] == pytest.approx(1.0, abs=1e-12)
+    assert out["z"] == pytest.approx([1, 0, 0], abs=1e-3)
+
+
+def test_switching_projection_keeps_the_framing_and_a_fitted_view_stays_fitted(tmp_path: Path) -> None:
+    args = {"view": VIEW, "extent": EXTENT, "width": 1000, "height": 600}
+    body = """
+const { view, extent, width, height } = args;
+const frame = { width, height };
+const ortho = withProjection(view, "ortho", 50, extent, frame);
+const back = withProjection(ortho, "persp", 50, extent, frame);
+const fitted = fitZoomFor("persp", 50, extent, frame);
+const atFit = withProjection(zoomedTo(view, fitted, extent), "ortho", 50, extent, frame);
+const want = fitZoomFor("ortho", 50, extent, frame);
+console.log(JSON.stringify({ back: back.zoom, orthoZoom: ortho.zoom, fitted: atFit.zoom, want }));
+"""
+    out = _run(body, args, tmp_path)
+    assert out["back"] == pytest.approx(VIEW["zoom"], abs=1e-9)
+    assert out["fitted"] == pytest.approx(out["want"], abs=1e-9)
+
+
+def test_a_glide_starts_and_ends_at_its_two_views(tmp_path: Path) -> None:
+    args = {"from": VIEW, "to": {**VIEW, "target": [0, 0, 0], "zoom": 2.5}}
+    body = """
+const start = interpolated(args.from, args.to, 0), end = interpolated(args.from, args.to, 1);
+const half = interpolated(args.from, args.to, 0.5);
+console.log(JSON.stringify({
+  start: start.zoom, end: end.zoom, half: half.zoom, target: end.target, mid: half.target,
+}));
+"""
+    out = _run(body, args, tmp_path)
+    assert out["start"] == pytest.approx(VIEW["zoom"]) and out["end"] == pytest.approx(2.5)
+    assert out["half"] == pytest.approx((VIEW["zoom"] * 2.5) ** 0.5)  # the zoom moves by a constant ratio
+    assert out["target"] == pytest.approx([0, 0, 0]) and out["mid"] == pytest.approx([-1.5, 2.0, 0.5])
+
+
+def test_the_readout_holds_still_through_a_pivot_and_its_release(tmp_path: Path) -> None:
+    # The readout is the base distance over the camera's distance from the structure's centre, so the pivot (which moves
+    # only the target) and its release (which slides the target along the view line) leave it unchanged.
+    args = {"view": VIEW, "extent": EXTENT, "hit": 6.2}
+    body = """
+const { view, extent, hit } = args;
+const before = shownZoom(view, extent);
+const pivot = pivoted(view, hit, 0, extent);
+const released_ = released(pivot, extent, 0.5, 1000);
+console.log(JSON.stringify({ before, pivot: shownZoom(pivot, extent), released: shownZoom(released_, extent) }));
+"""
+    out = _run(body, args, tmp_path)
+    assert out["pivot"] == pytest.approx(out["before"], abs=1e-9)
+    assert out["released"] == pytest.approx(out["before"], abs=1e-9)
+
+
+def test_the_zoom_buttons_set_the_readout_and_keep_the_target(tmp_path: Path) -> None:
+    # The zoom buttons slide the camera along its view line: the readout becomes the wanted one, the target and the
+    # direction hold, and the camera's own zoom follows the new distance.
+    args = {"view": VIEW, "extent": EXTENT, "wanted": 1.1}
+    body = """
+const { view, extent, wanted } = args;
+const moved = zoomedTo(view, wanted, extent);
+const direction = (v) => vunit(vsub(cameraPosition(v, extent), v.target));
+console.log(JSON.stringify({
+  shown: shownZoom(moved, extent), target: moved.target, targetBefore: view.target,
+  sameLine: vdot(direction(view), direction(moved)), zoom: moved.zoom,
+}));
+"""
+    out = _run(body, args, tmp_path)
+    assert out["shown"] == pytest.approx(1.1, abs=1e-9)
+    assert out["target"] == pytest.approx(out["targetBefore"], abs=1e-12)
     assert out["sameLine"] == pytest.approx(1.0, abs=1e-9)
-    assert out["roundTrip"] == pytest.approx(out["moved"], abs=1e-9)
+    assert out["zoom"] != pytest.approx(VIEW["zoom"], abs=1e-6)
 
 
-def test_dolly_stops_at_the_closest_approach_when_the_line_misses_the_centre(tmp_path: Path) -> None:
-    # The view line runs at distance 10 from the origin, so a wanted distance of 5 is unreachable: the camera
-    # stops at the line's nearest point to the origin, (10, 0, 0), and no nearer.
-    # line's nearest point to the origin, (10, 0, 0), and no nearer.
+def test_a_dolly_past_the_line_s_nearest_point_stops_there(tmp_path: Path) -> None:
+    # A view line that misses the structure's centre by 10 cannot reach a readout that needs a distance of 5: the camera
+    # stops at the line's nearest point to the origin, and no nearer.
     body = """
-const moved = dollyPosition([10, 10, 0], [10, -5, 0], 5, 0, Infinity);
-console.log(JSON.stringify({ moved, centre: centreDistance(moved) }));
+const view = { target: [10, -5, 0], orientation: [0, 0, 0, 1], zoom: 1, projection: "persp", lens: 50 };
+const moved = dollied({ ...view, target: [10, -5, 0] }, 1000, 1);
+console.log(JSON.stringify({ centre: Math.hypot(...cameraPosition(moved, 1)) }));
 """
     out = _run(body, {}, tmp_path)
-    assert out["moved"] == pytest.approx([10.0, 0.0, 0.0], abs=1e-9)
-    assert out["centre"] == pytest.approx(10.0, abs=1e-9)
-
-
-def test_dolly_is_null_at_the_target_and_clamped_to_the_trackball_minimum(tmp_path: Path) -> None:
-    # A camera on its target has no view line to slide along (null). A wanted distance that would take the camera inside
-    # minDistance from the target stops it at minDistance, on the same line.
-    body = """
-const atTarget = dollyPosition([1, 2, 3], [1, 2, 3], 2, 0, Infinity);
-const clamped = dollyPosition([30, 0, 0], [0, 0, 0], 2, 5, 100);
-console.log(JSON.stringify({ atTarget, clamped }));
-"""
-    out = _run(body, {}, tmp_path)
-    assert out["atTarget"] is None
-    assert out["clamped"] == pytest.approx([5.0, 0.0, 0.0], abs=1e-9)
+    assert out["centre"] >= 10 - 1e-9

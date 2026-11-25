@@ -1,14 +1,18 @@
-// The instance matrices and merged triangle lists of a scene, built by pure functions (no THREE, no DOM). The node test
-// entry (test/entry.ts) bundles this file, so it must stay free of both.
+// The instance matrices and merged triangle lists of a scene, built by pure functions (no DOM). The node test entry
+// (test/entry.ts) bundles this file.
 //
 // Everything drawn is a unit shape placed by a 4x4 matrix: a sphere of radius 1, and a cylinder and a cone of radius 1
 // and height 1 along +y, centred. One draw call then covers every instance that shares a shape and a material.
+import { MathUtils, Matrix4, Quaternion, Vector3 } from "three";
 import { ARROW, DASH, DOT, EPS } from "../config";
 import { dashSegments, dotCentres } from "../geom/dashes";
 import { lerp, span, vcross, vdot, vsub, vunit } from "../geom/vector";
-import type { AtomPrimitive, BondPrimitive, DisplacementPrimitive, Scene, Topology, Vec3 } from "../types";
+import type { AtomPrimitive, BondPrimitive, DisplacementPrimitive, Material, Scene, Topology, Vec3 } from "../types";
 
 // ---- constants ----
+// The numbers in one instance's matrix: a column-major 4x4 matrix, as alongMatrix and sphereMatrix write it.
+export const MATRIX_SIZE = 16;
+const UP = new Vector3(0, 1, 0); // the unit cylinder and cone point along +y
 // Arrow proportions, the rules of geom.arrow_parts on the Blender side.
 const HEAD_MIN_RADII = 3; // the head is at least three arrow radii long
 const HEAD_MAX_SHARE = 0.8; // and at most 80% of the arrow
@@ -16,7 +20,8 @@ const SHAFT_MIN_SHARE = 0.2; // the shaft keeps at least 20% of the arrow
 const HEAD_CENTRE_SHARE = 0.5; // the head's centre is half its own length past the end of the shaft
 // A displacement drawn as a line (mode "line") is a cylinder this share of the arrow radius.
 const LINE_RADIUS_SHARE = 0.7;
-// Polyhedron edges are drawn where the two faces on either side meet at more than this angle (degrees).
+// Polyhedron edges are drawn where the two faces on either side meet at more than this angle (degrees): the live view
+// and the SVG trace both use hardEdges.
 const HARD_EDGE_ANGLE_DEG = 1;
 
 // The kinds of instanced mesh, by shape and material. `outlined` is whether the mesh gets an outline shell.
@@ -30,7 +35,7 @@ export interface InstanceGroup {
 
 // All polyhedra of one material as one triangle soup. `owner` gives, per triangle, the index of its polyhedron, and
 // `ranges` lists [polyhedron index, first triangle, triangle count] for each polyhedron, in order.
-export interface PolyhedronGroup {
+interface PolyhedronGroup {
   material: string;
   positions: number[];
   edges: number[];
@@ -43,22 +48,63 @@ interface Face {
   n: number[]; // the outward unit normal
 }
 
-// Every instance of the scene, grouped by what one draw call can share. shape: "sphere" (atoms), "cylinder" (bonds,
-// dashes, arrow shafts), "dot" (dotted bonds), "cone" (arrow heads). refs[i] is what instance i stands for: the atom,
-// or null. Dashes and dots get no outline.
-export function instanceGroups(data: Scene): InstanceGroup[] {
-  const pos = pointPositions(data);
-  const groups = new Map<string, InstanceGroup>();
-  const { atoms, bonds = [], displacements = [] } = data.primitives;
-  for (const atom of atoms) {
-    addInstance(groups, "sphere", atom.material_id, true, sphereMatrix(pos.get(atom.point_id)!, atom.radius), atom);
+// Collects the instances of a scene into groups, by what one draw call can share: the shape, the material and whether
+// the instance is outlined. refs[i] is what instance i stands for: the atom, or null. Dashes and dots get no outline.
+class InstanceCollector {
+  private readonly groups = new Map<string, InstanceGroup>();
+
+  // Adds one instance to its group, creating the group the first time.
+  add(
+    shape: InstanceGroup["shape"],
+    material: string | null,
+    outlined: boolean,
+    matrix: readonly number[],
+    ref: AtomPrimitive | null = null,
+  ): void {
+    const key = `${shape}|${material}|${outlined}`;
+    let group = this.groups.get(key);
+    if (!group) {
+      group = { shape, material, outlined, matrices: [], refs: [] };
+      this.groups.set(key, group);
+    }
+    group.matrices.push(...matrix);
+    group.refs.push(ref);
   }
-  for (const bond of bonds) addBond(groups, bond, pos);
-  for (const d of displacements) addDisplacement(groups, d, pos);
-  return [...groups.values()];
+
+  // A cylinder from a to b, centred on the midpoint. Two coincident ends draw nothing.
+  cylinder(
+    a: readonly number[],
+    b: readonly number[],
+    radius: number,
+    material: string | null,
+    outlined: boolean,
+  ): void {
+    const len = span(a, b);
+    if (len <= EPS) return;
+    this.add("cylinder", material, outlined, alongMatrix(lerp(a, b, 0.5), vunit(vsub(b, a)), radius, len));
+  }
+
+  groupList(): InstanceGroup[] {
+    return [...this.groups.values()];
+  }
 }
 
-// All polyhedra of one material as one triangle soup: flat faces wound outwards, plus their hard edges as line segments.
+// Every instance of the scene, grouped by what one draw call can share: "sphere" (atoms), "cylinder" (bonds, dashes,
+// arrow shafts), "dot" (dotted bonds), "cone" (arrow heads).
+export function instanceGroups(data: Scene): InstanceGroup[] {
+  const pos = pointPositions(data);
+  const collector = new InstanceCollector();
+  const { atoms, bonds, displacements } = data.primitives;
+  for (const atom of atoms) {
+    collector.add("sphere", atom.material_id, true, sphereMatrix(pos.get(atom.point_id)!, atom.radius), atom);
+  }
+  for (const bond of bonds) addBond(collector, bond, pos);
+  for (const d of displacements) addDisplacement(collector, d, pos);
+  return collector.groupList();
+}
+
+// All polyhedra of one material as one triangle soup: flat faces wound outwards, plus their hard edges as line
+// segments.
 export function polyhedronGroups(data: Scene): PolyhedronGroup[] {
   const pos = pointPositions(data);
   const topologies = new Map<string, Topology>(data.topologies.map((t) => [t.id, t]));
@@ -70,99 +116,60 @@ export function polyhedronGroups(data: Scene): PolyhedronGroup[] {
     const first = group.owner.length;
     const faces = outwardFaces(v, topo.faces);
     addFaces(group, faces, v, index);
-    addHardEdges(group, faces, v);
+    for (const [a, b] of hardEdges(topo, pos)) group.edges.push(...a, ...b);
     group.ranges.push([index, first, faces.length]);
   });
   return [...groups.values()];
 }
 
 // ---- instances: bonds and displacements ----
-function addBond(groups: Map<string, InstanceGroup>, bond: BondPrimitive, pos: Map<string, Vec3>): void {
+function addBond(collector: InstanceCollector, bond: BondPrimitive, pos: Map<string, Vec3>): void {
   const a = pos.get(bond.a_point_id)!;
   const b = pos.get(bond.b_point_id)!;
   const style = bond.style ?? "solid";
-  if (style === "dashed") addDashes(groups, a, b, bond.radius, bond.material_id);
-  else if (style === "dotted") addDots(groups, a, b, bond.radius, bond.material_id);
-  else addCylinder(groups, a, b, bond.radius, bond.material_id, true);
+  if (style === "dashed") addDashes(collector, a, b, bond.radius, bond.material_id);
+  else if (style === "dotted") addDots(collector, a, b, bond.radius, bond.material_id);
+  else collector.cylinder(a, b, bond.radius, bond.material_id, true);
 }
 
 // A dashed bond: cylinders of a dash length in bond radii (with a floor), each followed by a gap.
-function addDashes(groups: Map<string, InstanceGroup>, a: Vec3, b: Vec3, radius: number, material: string): void {
+function addDashes(collector: InstanceCollector, a: Vec3, b: Vec3, radius: number, material: string): void {
   const dash = Math.max(DASH.length * radius, DASH.min);
   const gap = (dash * DASH.gap) / DASH.length;
-  for (const [start, end] of dashSegments(a, b, dash, gap)) addCylinder(groups, start, end, radius, material, false);
+  for (const [start, end] of dashSegments(a, b, dash, gap)) collector.cylinder(start, end, radius, material, false);
 }
 
 // A dotted bond: spheres along the bond, spaced in bond radii (with a floor).
-function addDots(groups: Map<string, InstanceGroup>, a: Vec3, b: Vec3, radius: number, material: string): void {
+function addDots(collector: InstanceCollector, a: Vec3, b: Vec3, radius: number, material: string): void {
   const spacing = Math.max(DOT.spacing * radius, DOT.spacingMin);
   for (const centre of dotCentres(a, b, spacing)) {
-    addInstance(groups, "dot", material, false, sphereMatrix(centre, DOT.radius * radius));
+    collector.add("dot", material, false, sphereMatrix(centre, DOT.radius * radius));
   }
 }
 
-// A displacement from its start atom. With anchor "tip" the atom is the arrow's tip; with "tail" it is the tail.
-function addDisplacement(groups: Map<string, InstanceGroup>, d: DisplacementPrimitive, pos: Map<string, Vec3>): void {
+// A displacement from its start atom. With anchor "tip" the atom is the arrow's tip; with "tail" it is the tail. The
+// scene's per-displacement radius is not used: the viewer takes Blender's default ArrowStyle radius (ARROW.radius).
+function addDisplacement(collector: InstanceCollector, d: DisplacementPrimitive, pos: Map<string, Vec3>): void {
   const start = pos.get(d.start_point_id)!;
-  const vector = d.vector;
   const atomIsTip = d.anchor === "tip";
-  const tail = atomIsTip ? vsub(start, vector) : start;
-  const tip = atomIsTip ? start : start.map((x, i) => x + vector[i]);
-  const drawnAsArrow = (d.mode ?? "arrow").toLowerCase() === "arrow"; // same test as runner.py:370
-  // Blender's default ArrowStyle.radius (0.05) replaces the scene's per-displacement radius (runner.py:371); this page
-  // takes no settings, so it is always used.
-  const radius = ARROW.radius;
-  if (drawnAsArrow) addArrow(groups, tail, tip, radius);
-  else addCylinder(groups, tail, tip, radius * LINE_RADIUS_SHARE, null, true);
+  const tail = atomIsTip ? vsub(start, d.vector) : start;
+  const tip = atomIsTip ? start : start.map((x, i) => x + d.vector[i]);
+  if ((d.mode ?? "arrow").toLowerCase() === "arrow") addArrow(collector, tail, tip, ARROW.radius);
+  else collector.cylinder(tail, tip, ARROW.radius * LINE_RADIUS_SHARE, null, true);
 }
 
-// An arrow from a to b: a shaft cylinder and a cone head, the head's length as in geom.arrow_parts.
-function addArrow(groups: Map<string, InstanceGroup>, a: readonly number[], b: readonly number[], radius: number): void {
+// An arrow from a to b: a shaft cylinder and a cone head, the head's length as in geom.arrow_parts. Blender draws arrows
+// without an outline; the viewer outlines them (known difference, fixed separately).
+function addArrow(collector: InstanceCollector, a: readonly number[], b: readonly number[], radius: number): void {
   const len = span(a, b);
   if (len <= EPS) return;
   const dir: number[] = vunit(vsub(b, a));
   const headLen = Math.min(Math.max(len * ARROW.headLengthRatio, radius * HEAD_MIN_RADII), len * HEAD_MAX_SHARE);
   const shaftLen = Math.max(len - headLen, len * SHAFT_MIN_SHARE);
   const shaftEnd = a.map((x, i) => x + dir[i] * shaftLen);
-  // Blender draws arrows without an outline; the viewer outlines them (known difference, fixed separately).
-  addCylinder(groups, a, shaftEnd, radius, null, true);
+  collector.cylinder(a, shaftEnd, radius, null, true);
   const headCentre = shaftEnd.map((x, i) => x + dir[i] * headLen * HEAD_CENTRE_SHARE);
-  addInstance(groups, "cone", null, true, alongMatrix(headCentre, dir, radius * ARROW.headRadiusRatio, headLen));
-}
-
-// A cylinder from a to b, centred on the midpoint. Two coincident ends draw nothing.
-function addCylinder(
-  groups: Map<string, InstanceGroup>,
-  a: readonly number[],
-  b: readonly number[],
-  radius: number,
-  material: string | null,
-  outlined: boolean,
-): void {
-  const len = span(a, b);
-  if (len <= EPS) return;
-  const dir = vunit(vsub(b, a));
-  const midpoint = lerp(a, b, 0.5);
-  addInstance(groups, "cylinder", material, outlined, alongMatrix(midpoint, dir, radius, len));
-}
-
-// Adds one instance to the group for its (shape, material, outlined), creating the group the first time.
-function addInstance(
-  groups: Map<string, InstanceGroup>,
-  shape: InstanceGroup["shape"],
-  material: string | null,
-  outlined: boolean,
-  matrix: readonly number[],
-  ref: AtomPrimitive | null = null,
-): void {
-  const key = `${shape}|${material}|${outlined}`;
-  let group = groups.get(key);
-  if (!group) {
-    group = { shape, material, outlined, matrices: [], refs: [] };
-    groups.set(key, group);
-  }
-  group.matrices.push(...matrix);
-  group.refs.push(ref);
+  collector.add("cone", null, true, alongMatrix(headCentre, dir, radius * ARROW.headRadiusRatio, headLen));
 }
 
 // ---- polyhedra ----
@@ -197,8 +204,10 @@ function addFaces(group: PolyhedronGroup, faces: Face[], v: Vec3[], index: numbe
   }
 }
 
-// The hard edges of a polyhedron: an edge with one face (a boundary), or whose two faces meet at a sharp angle.
-function addHardEdges(group: PolyhedronGroup, faces: Face[], v: Vec3[]): void {
+// The hard edges of a polyhedron, each once: an edge with one face (a boundary), or whose two faces meet at a sharp angle.
+export function hardEdges(topo: Topology, points: Map<string, Vec3>): [Vec3, Vec3][] {
+  const v = topo.point_ids.map((id) => points.get(id)!);
+  const faces = outwardFaces(v, topo.faces);
   const sides = new Map<string, { i: number; j: number; faces: Face[] }>();
   for (const f of faces) {
     for (let e = 0; e < 3; e++) {
@@ -209,13 +218,18 @@ function addHardEdges(group: PolyhedronGroup, faces: Face[], v: Vec3[]): void {
       sides.get(key)!.faces.push(f);
     }
   }
-  const sharpAngle = Math.cos((HARD_EDGE_ANGLE_DEG * Math.PI) / 180);
+  const sharpAngle = Math.cos(MathUtils.degToRad(HARD_EDGE_ANGLE_DEG));
+  const edges: [Vec3, Vec3][] = [];
   for (const side of sides.values()) {
     const boundary = side.faces.length === 1;
     const sharp = !boundary && vdot(side.faces[0].n, side.faces[1].n) < sharpAngle;
-    if (boundary || sharp) group.edges.push(...v[side.i], ...v[side.j]);
+    if (boundary || sharp) edges.push([v[side.i], v[side.j]]);
   }
+  return edges;
 }
+
+// A see-through material (alpha below 1): its polyhedra are drawn as ghosts, with no outline shell.
+export const isGhost = (material: Material): boolean => material.alpha < 1;
 
 // ---- matrices ----
 function pointPositions(data: Scene): Map<string, Vec3> {
@@ -229,26 +243,7 @@ function sphereMatrix(c: readonly number[], r: number): number[] {
 
 // The unit cylinder or cone placed along the unit vector d: `length` long, `radius` across, centred on `centre`.
 export function alongMatrix(centre: readonly number[], d: readonly number[], radius: number, length: number): number[] {
-  const { x, z } = rotationFromY(d);
-  return [
-    x[0] * radius, x[1] * radius, x[2] * radius, 0,
-    d[0] * length, d[1] * length, d[2] * length, 0,
-    z[0] * radius, z[1] * radius, z[2] * radius, 0,
-    centre[0], centre[1], centre[2], 1,
-  ];
-}
-
-// The rotation that takes +y to the unit vector d, given by its x and z columns (Rodrigues' formula about y x d).
-// For d = -y there is no single axis, so the rotation is a half turn about x.
-function rotationFromY(d: readonly number[]): { x: number[]; z: number[] } {
-  // The rotation axis y x d lies in the xz plane: axisX and axisZ are its components. cosAngle is d.y.
-  const axisX = d[2];
-  const axisZ = -d[0];
-  const cosAngle = d[1];
-  if (cosAngle <= -1 + EPS) return { x: [1, 0, 0], z: [0, 0, -1] };
-  const k = 1 / (1 + cosAngle);
-  return {
-    x: [1 - k * axisZ * axisZ, -d[0], k * axisX * axisZ],
-    z: [k * axisX * axisZ, -d[2], 1 - k * axisX * axisX],
-  };
+  const turn = new Quaternion().setFromUnitVectors(UP, new Vector3(...d));
+  const scale = new Vector3(radius, length, radius);
+  return new Matrix4().compose(new Vector3(...centre), turn, scale).toArray();
 }

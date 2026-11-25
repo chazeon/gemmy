@@ -4,7 +4,11 @@ import { polygonArea, polygonLength } from "d3-polygon";
 import type { Pt } from "./curves";
 
 // The face of a polyhedron nearest to a screen point (its projected triangle, distance 0 when the point is inside).
-export function nearestFace(faces: THREE.Vector3[][], p: Pt, screen: (q: THREE.Vector3) => Pt): [THREE.Vector3, THREE.Vector3, THREE.Vector3] | null {
+export function nearestFace(
+  faces: THREE.Vector3[][],
+  p: Pt,
+  screen: (q: THREE.Vector3) => Pt,
+): [THREE.Vector3, THREE.Vector3, THREE.Vector3] | null {
   let best: [THREE.Vector3, THREE.Vector3, THREE.Vector3] | null = null;
   let bestDist = Infinity;
   for (const f of faces) {
@@ -30,7 +34,8 @@ function triangleDistance(p: Pt, a: Pt, b: Pt, c: Pt): number {
 function segmentDistance(p: Pt, a: Pt, b: Pt): number {
   const point = new THREE.Vector3(p[0], p[1], 0);
   const segment = new THREE.Line3(new THREE.Vector3(a[0], a[1], 0), new THREE.Vector3(b[0], b[1], 0));
-  const nearest = segment.distance() > 0 ? segment.closestPointToPoint(point, true, new THREE.Vector3()) : segment.start;
+  const nearest =
+    segment.distance() > 0 ? segment.closestPointToPoint(point, true, new THREE.Vector3()) : segment.start;
   return nearest.distanceTo(point);
 }
 

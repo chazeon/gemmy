@@ -1,5 +1,5 @@
-// The toolbars that scroll (the tool row on a phone, the tab strip): a faded edge says that more buttons are hidden that
-// way. A strip made later (the loader's tab bar) is watched with the same call, once its content is in place.
+// The toolbars that scroll (the tool row on a phone, the tab strip): a faded edge says that more buttons are hidden
+// that way. A strip made later (the loader's tab bar) is watched with the same call, once its content is in place.
 const EDGE_SLACK_PX = 2; // a scroll position this close to an end counts as the end (sub-pixel rounding)
 const watched = new Set<HTMLElement>();
 

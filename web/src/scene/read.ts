@@ -6,7 +6,7 @@ import type { Scene } from "../types";
 export const SCENE_FILE = /\.json(\.gz)?$/i; // the names a scene file can have
 const MEGABYTE = 1024 * 1024;
 // The most a scene may take, downloaded or decompressed. A scene is far smaller; this only stops a runaway download.
-export const MAX_SCENE_BYTES = 200 * MEGABYTE;
+const MAX_SCENE_BYTES = 200 * MEGABYTE;
 const GZIP_FIRST_BYTE = 0x1f;
 const GZIP_SECOND_BYTE = 0x8b;
 
@@ -66,7 +66,8 @@ export async function sceneFromBytes(bytes: Uint8Array): Promise<Scene> {
 // A local .json or .json.gz file, read in this page; it is never uploaded.
 export async function sceneFromFile(file: File): Promise<Scene> {
   if (!SCENE_FILE.test(file.name)) throw new SceneError(`${file.name} is not a .json or .json.gz scene file.`);
-  if (file.size > MAX_SCENE_BYTES) throw new SceneError(`${file.name} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
+  if (file.size > MAX_SCENE_BYTES)
+    throw new SceneError(`${file.name} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
   return sceneFromBytes(new Uint8Array(await file.arrayBuffer()));
 }
 
@@ -82,7 +83,7 @@ export function parseScene(text: string): Scene {
 
 // The checks before anything is built. gemmy's own validation (in the outer process) covers the rest; these only catch
 // what would make the page fail with an obscure error. The schema version is the one scene/ defines (scene.py).
-export function checkScene(value: unknown): Scene {
+function checkScene(value: unknown): Scene {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new SceneError("The JSON is not a gemmy scene (it is not an object).");
   }
@@ -95,7 +96,9 @@ export function checkScene(value: unknown): Scene {
   }
   const doc = value as Scene;
   if (!Array.isArray(doc.points) || !isObject(doc.primitives) || !isObject(doc.materials)) {
-    throw new SceneError("The JSON has a schema_version but no points, primitives and materials: it is not a gemmy scene.");
+    throw new SceneError(
+      "The JSON has a schema_version but no points, primitives and materials: it is not a gemmy scene.",
+    );
   }
   return doc;
 }

@@ -7,6 +7,9 @@ then renders that scene inside Blender. Minimum Blender: 4.2 LTS (Python 3.11).
 
     scripts/check.sh      # ruff format --check, ruff check, pytest -q; with node also tsc and a fresh viewer build; all must pass
 
+The pre-commit hook (`scripts/hooks/pre-commit`: ruff on staged Python, Biome on staged viewer source) is enabled per
+clone with `git config core.hooksPath scripts/hooks`.
+
 ## Module map (src/gemmy/)
 
 Data shapes, defined once as plain frozen stdlib dataclasses (importable in Blender, never import pydantic):

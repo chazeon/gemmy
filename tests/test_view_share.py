@@ -39,8 +39,8 @@ def _try_parse(search: str, tmp_path: Path) -> dict:
 def test_scene_urls_resolve_against_the_page_and_several_scenes_are_kept(tmp_path: Path) -> None:
     found = _try_parse("?scene=../nacl/scene.json.gz&scene=https://example.org/a.json", tmp_path)
     assert found["ok"] == [
-        {"kind": "url", "url": "https://chazeon.github.io/gemmy/nacl/scene.json.gz"},
-        {"kind": "url", "url": "https://example.org/a.json"},
+        {"kind": "url", "url": "https://chazeon.github.io/gemmy/nacl/scene.json.gz", "byDefault": False},
+        {"kind": "url", "url": "https://example.org/a.json", "byDefault": False},
     ]
 
 
@@ -174,11 +174,18 @@ def test_a_view_that_is_not_one_decodes_to_null(text: str, tmp_path: Path) -> No
     }
 
 
-# placedPose: the address pose as the structure can show it (ui/share.ts applyPose). An orthographic eye goes to the
-# standard distance along its direction; a perspective eye keeps its distance, clamped to the trackball's limits.
-def _placed(pose: dict, extent: float, limits: dict, tmp_path: Path) -> Any:
-    body = "console.log(JSON.stringify(placedPose(args.pose, args.extent, args.limits)));"
-    return _run(body, {"pose": pose, "extent": extent, "limits": limits}, tmp_path)
+# viewFromPose: the address pose as the view state the structure shows (ui/share.ts applyPose). An orthographic eye
+# keeps only its direction (the camera goes to the standard distance); a perspective eye's distance is the zoom, clamped
+# to the zoom range. The placed camera is read back as its eye, target, up and zoom.
+def _placed(pose: dict, extent: float, tmp_path: Path) -> Any:
+    body = """
+const view = viewFromPose(args.pose, args.extent, 50);
+console.log(JSON.stringify(view && {
+  eye: cameraPosition(view, args.extent), at: view.target, up: upAxis(view.orientation), zoom: view.zoom,
+  projection: view.projection, base: baseDistance(args.extent), zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX,
+}));
+"""
+    return _run(body, {"pose": pose, "extent": extent}, tmp_path)
 
 
 def _pose(projection: str, eye: list, at: list, up: list, zoom: float = 1.0) -> dict:
@@ -198,12 +205,7 @@ def _length(v: list) -> float:
 
 def test_an_orthographic_eye_far_away_moves_to_the_standard_distance_in_the_same_direction(tmp_path: Path) -> None:
     eye, at = [37.56, -356.5, 1646.0], [0.0, 0.0, 0.0]
-    placed = _placed(
-        _pose("ortho", eye, at, [-0.6627, -0.6607, 0.3525], 0.7509),
-        20.0,
-        {"minDistance": 1, "maxDistance": 800},
-        tmp_path,
-    )
+    placed = _placed(_pose("ortho", eye, at, [-0.6627, -0.6607, 0.3525], 0.7509), 20.0, tmp_path)
     assert _length([placed["eye"][i] - at[i] for i in range(3)]) == pytest.approx(20.0 * 8)
     for got, want in zip(placed["eye"], eye, strict=True):
         assert got == pytest.approx(want / _length(eye) * 160.0)
@@ -213,30 +215,27 @@ def test_an_orthographic_eye_far_away_moves_to_the_standard_distance_in_the_same
 
 def test_an_orthographic_placement_is_taken_from_the_target_not_the_origin(tmp_path: Path) -> None:
     at = [1.0, 2.0, 3.0]
-    placed = _placed(
-        _pose("ortho", [1.0, 2.0, 103.0], at, [0, 1, 0]), 10.0, {"minDistance": 1, "maxDistance": 800}, tmp_path
-    )
+    placed = _placed(_pose("ortho", [1.0, 2.0, 103.0], at, [0, 1, 0]), 10.0, tmp_path)
     assert placed["eye"] == pytest.approx([1.0, 2.0, 3.0 + 80.0])
 
 
-def test_a_perspective_eye_beyond_the_maximum_distance_is_clamped(tmp_path: Path) -> None:
-    placed = _placed(
-        _pose("persp", [0, 0, 5000], [0, 0, 0], [0, 1, 0]), 20.0, {"minDistance": 2, "maxDistance": 400}, tmp_path
-    )
-    assert placed["eye"] == pytest.approx([0, 0, 400])
+def test_a_perspective_eye_beyond_the_maximum_distance_is_clamped_to_the_minimum_zoom(tmp_path: Path) -> None:
+    placed = _placed(_pose("persp", [0, 0, 5000], [0, 0, 0], [0, 1, 0]), 20.0, tmp_path)
+    assert placed["zoom"] == pytest.approx(placed["zoomMin"])
+    assert _length(placed["eye"]) == pytest.approx(placed["base"] / placed["zoomMin"])
 
 
-def test_a_perspective_eye_inside_the_minimum_distance_is_clamped_out(tmp_path: Path) -> None:
-    placed = _placed(
-        _pose("persp", [0, 0.5, 0.5], [0, 0, 0], [0, 1, 0]), 20.0, {"minDistance": 2, "maxDistance": 400}, tmp_path
-    )
-    assert _length(placed["eye"]) == pytest.approx(2.0)
+def test_a_perspective_eye_inside_the_minimum_distance_is_clamped_to_the_maximum_zoom(tmp_path: Path) -> None:
+    placed = _placed(_pose("persp", [0, 0.5, 0.5], [0, 0, 0], [0, 1, 0]), 20.0, tmp_path)
+    assert placed["zoom"] == pytest.approx(placed["zoomMax"])
+    assert _length(placed["eye"]) == pytest.approx(placed["base"] / placed["zoomMax"])
 
 
 def test_a_perspective_eye_in_range_is_unchanged(tmp_path: Path) -> None:
     eye = [30.0, -40.0, 120.0]
-    placed = _placed(_pose("persp", eye, [0, 0, 0], [0, 1, 0]), 20.0, {"minDistance": 2, "maxDistance": 400}, tmp_path)
+    placed = _placed(_pose("persp", eye, [0, 0, 0], [0, 1, 0]), 20.0, tmp_path)
     assert placed["eye"] == pytest.approx(eye)
+    assert placed["zoom"] == pytest.approx(placed["base"] / _length(eye))
 
 
 @pytest.mark.parametrize(
@@ -248,7 +247,7 @@ def test_a_perspective_eye_in_range_is_unchanged(tmp_path: Path) -> None:
     ],
 )
 def test_a_pose_without_a_direction_places_nothing(pose: dict, tmp_path: Path) -> None:
-    assert _placed(pose, 20.0, {"minDistance": 2, "maxDistance": 400}, tmp_path) is None
+    assert _placed(pose, 20.0, tmp_path) is None
 
 
 def test_a_scene_is_named_after_its_folder_or_its_file(tmp_path: Path) -> None:
@@ -267,16 +266,16 @@ def test_the_page_opens_its_defaults_unless_the_address_names_scenes(tmp_path: P
     body = """
 const base = "https://chazeon.github.io/gemmy/";
 const defaults = ["nacl/scene.json.gz", "ice-ih/scene.json.gz", "stishovite/scene.json.gz"];
-const shown = (openings) => openings.map((o) => ({
-  what: o.source.kind === "url" ? o.source.url : `gist ${o.source.id}`, byDefault: o.byDefault,
+const shown = (sources) => sources.map((s) => ({
+  what: s.kind === "url" ? s.url : `gist ${s.id}`, byDefault: Boolean(s.byDefault),
 }));
 console.log(JSON.stringify({
   front: shown(sourcesToOpen("", base, defaults)),
   sceneOverrides: shown(sourcesToOpen("?scene=https://example.org/a.json", base, defaults)),
   gistOverrides: shown(sourcesToOpen("?gist=0123", base, defaults)),
   nothing: sourcesToOpen("", base, []),
-  secondTab: sceneName(sourcesToOpen("", base, defaults)[1].source),
-  frontName: sourcesToOpen("", base, defaults).map((o) => sceneName(o.source)),
+  secondTab: sceneName(sourcesToOpen("", base, defaults)[1]),
+  frontName: sourcesToOpen("", base, defaults).map((s) => sceneName(s)),
 }));
 """
     found = _run(body, {}, tmp_path)
@@ -292,19 +291,35 @@ console.log(JSON.stringify({
     assert found["frontName"] == ["nacl", "ice-ih", "stishovite"]
 
 
-def test_a_default_tab_links_to_the_page_and_a_scene_tab_to_its_scene(tmp_path: Path) -> None:
+def test_every_kind_of_source_has_a_name_a_line_and_a_link(tmp_path: Path) -> None:
     body = """
 const page = "https://chazeon.github.io/gemmy/#view=persp;lens=50";
+const names = { name: "nacl", from: "a crystal" };
+const file = { kind: "file", file: { name: "mine.json" } };
+const embedded = { kind: "embedded", doc: {}, page: names };
+const live = { kind: "live", page: names };
 console.log(JSON.stringify({
-  defaultTab: linkFor({ kind: "url", url: "https://chazeon.github.io/gemmy/nacl/scene.json.gz" }, true, page),
-  sceneTab: linkFor({ kind: "url", url: "https://example.org/a.json" }, false, page),
-  gistTab: linkFor({ kind: "gist", id: "0123", file: null }, false, page),
+  names: [nameOf(file), nameOf(live), nameOf(embedded), nameOf({ kind: "gist", id: "0123", file: null })],
+  lines: [fromOf(file), fromOf(live), fromOf({ kind: "url", url: "https://example.org/a.json", byDefault: false })],
+  defaultTab: linkOf({ kind: "url", url: "https://chazeon.github.io/gemmy/nacl/scene.json.gz", byDefault: true }, page),
+  sceneTab: linkOf({ kind: "url", url: "https://example.org/a.json", byDefault: false }, page),
+  gistTab: linkOf({ kind: "gist", id: "0123", file: null }, page),
+  gistFileTab: linkOf({ kind: "gist", id: "0123", file: "ice.json.gz" }, page),
+  liveTab: linkOf(live, page),
+  embeddedTab: linkOf(embedded, page),
+  fileTab: linkOf(file, page),
 }));
 """
     assert _run(body, {}, tmp_path) == {
+        "names": ["mine.json", "nacl", "nacl", "gist 0123"],
+        "lines": ["local file", "a crystal", "https://example.org/a.json"],
         "defaultTab": "https://chazeon.github.io/gemmy/",
         "sceneTab": "https://chazeon.github.io/gemmy/?scene=https%3A%2F%2Fexample.org%2Fa.json",
         "gistTab": "https://chazeon.github.io/gemmy/?gist=0123",
+        "gistFileTab": "https://chazeon.github.io/gemmy/?gist=0123&file=ice.json.gz",
+        "liveTab": "https://chazeon.github.io/gemmy/",
+        "embeddedTab": None,
+        "fileTab": None,
     }
 
 

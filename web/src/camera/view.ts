@@ -1,201 +1,234 @@
-// Camera moves shared by the toolbar, the keys and the export: zoom and fit, the views, rotate, pan and fly. Each one
-// asks for a redraw; nothing here draws or listens for input (the pivot of a rotation is in pivot.ts). The structure's
-// centre is the world origin (scene/load.ts moves the structure root by -centre), so the origin is where the target goes
-// back to.
+// The camera. The ViewState (view-state.ts) is the source of truth: a move maps the state to the next, and `commit`
+// writes it to the three.js camera. The trackball moves the camera itself, so `readBack` takes its drags into the
+// state.
 import * as THREE from "three";
+import { baseDistance, clipPlanesAround, depthOfCentre, type Projection } from "./framing";
 import {
-  ORTHO_VIEW_DISTANCE, baseDistance, centreDistance, clipPlanesAround, depthOfCentre, dollyPosition, fitZoom, fitZoomPersp,
-  flyShift, orthoSide, viewForward,
-} from "./framing";
-import { controls, perspCamera, stage } from "../render/draw";
-import { camera, extent, lens, requestRender, setFitValue } from "../state";
-import { cancelGlide, glideView } from "./glide";
+  type Frame,
+  type ViewState,
+  cameraPosition,
+  fitZoomFor,
+  flown,
+  framed,
+  interpolated,
+  panned,
+  pivoted,
+  released,
+  rotated,
+  shownZoom,
+  upAxis,
+  viewedFrom,
+  visibleHeight,
+  withProjection,
+  zoomedTo,
+} from "./view-state";
+import { GEMMY } from "../config";
+import { controls, key, orthoCamera, perspCamera, stage } from "../render/draw";
+import { batch } from "@preact/signals-core";
+import { camera, fitValue, lens, loaded, projection, requestRender } from "../state";
+import { span } from "../geom/vector";
 
-// The zoom range, shared with the trackball's dolly limits (scene/load.ts).
-export const ZOOM_MIN = 0.05;
-export const ZOOM_MAX = 40;
-// The orthographic camera's far plane, in structure sizes from the camera (scene/load.ts sets it). It lies well beyond
-// where an orthographic view sits (ORTHO_VIEW_DISTANCE, framing.ts).
-export const ORTHO_FAR_EXTENTS = 40;
-
-// A clip plane moves the projection matrix only when it has changed by more than this, so an idle camera does no work.
+const GLIDE_MS = 300;
+// A clip plane moves the projection matrix only when it has changed by more than this.
 const CLIP_CHANGE_TOLERANCE = 1e-6;
 
-export const isPersp = (): boolean => camera === perspCamera;
+// The state the camera shows. It starts orthographic, as the camera does (draw.ts); the first view sets the rest.
+let view: ViewState = {
+  target: [0, 0, 0],
+  orientation: [0, 0, 0, 1],
+  zoom: 1,
+  projection: "ortho",
+  lens: GEMMY.defaultLens,
+};
+// A glide stops once its id is no longer the current one. Every move and every drag bumps it.
+let glideId = 0;
 
-// The zoom of the exported view. Perspective dollies, so zoom = base distance / distance (camera.zoom stays 1).
-export const currentZoom = (): number => (isPersp() ? baseDistance(extent) / distance() : camera.zoom);
-// The zoom the page shows (the readout's percentage). It differs from the exported zoom in perspective: it measures the
-// camera against the structure's centre, not against the target. A pivot moves the target and leaves the camera where it
-// is, so the shown zoom does not jump when you pivot. The two agree while the target is at the origin (the fit view).
-// Orthographic has no such difference: camera.zoom is the zoom.
-export const shownZoom = (): number =>
-  isPersp() ? baseDistance(extent) / centreDistance(camera.position.toArray()) : camera.zoom;
-// The zoom that frames an object of `size` (its sphere with the ortho margin, as the structure's fit): by the fit maths
-// of the structure, with the structure's extent in place of the object's. Orthographic zoom scales with the margin.
-export const frameZoom = (size: number, width: number, height: number): number =>
-  isPersp() ? fitZoomPersp(size, lens, width, height) : (fitZoom(width, height) * orthoSide(extent)) / orthoSide(size);
-export const fitFor = (width: number, height: number): number => frameZoom(extent, width, height);
+export const isPersp = (): boolean => view.projection === "persp";
+const frameSize = (): Frame => ({ width: stage.clientWidth, height: stage.clientHeight });
+const extentNow = (): number => loaded.value.extent;
+const refit = (): void => {
+  fitValue.value = fitFor(stage.clientWidth, stage.clientHeight);
+};
 
-// Zoom towards or away from the structure. Perspective moves the camera along its view line; ortho changes camera.zoom.
-export function setZoom(requested: number): void {
-  const zoomLevel = THREE.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
-  if (isPersp()) {
-    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
-    camera.position.copy(controls.target).addScaledVector(towardsCamera, baseDistance(extent) / zoomLevel);
-  } else {
-    camera.zoom = zoomLevel;
-    camera.updateProjectionMatrix();
-  }
-  requestRender();
+// The state as the camera shows it now.
+export function viewNow(): ViewState {
+  readBack();
+  return view;
+}
+// The view as the exports take it: the camera's orientation, the zoom and target (the render takes the target's
+// distance as the zoom), the projection and lens, and the stage's size.
+export function pageCamera() {
+  return {
+    quaternion: camera.value.quaternion.toArray(),
+    zoom: viewNow().zoom,
+    target: controls.target.toArray(),
+    projection: projection.value,
+    lens: lens.value,
+    width: stage.clientWidth,
+    height: stage.clientHeight,
+  };
+}
+// The zoom the readout shows (view-state.ts shownZoom): what the user sees, and what the zoom buttons act on.
+export const shownNow = (): number => shownZoom(viewNow(), extentNow());
+// The zoom that frames the structure in the current projection (the readout's percentage is of it).
+export const fitFor = (width: number, height: number): number =>
+  fitZoomFor(view.projection, view.lens, extentNow(), { width, height });
+
+// Takes the camera's state into the view.
+export function readBack(): void {
+  const cam = camera.value;
+  const persp = cam === perspCamera;
+  const target = controls.target.toArray();
+  const distance = span(cam.position.toArray(), target);
+  // A perspective camera's zoom follows its distance from the target; an orthographic camera keeps its own zoom.
+  let zoom = cam.zoom;
+  if (persp) zoom = distance === 0 ? 1 : baseDistance(extentNow()) / distance;
+  view = {
+    ...view,
+    target,
+    orientation: cam.quaternion.toArray(),
+    projection: persp ? "persp" : "ortho",
+    zoom,
+  };
 }
 
-// Keep the clip planes round the structure as the camera moves (it can fly through it, so they follow the structure,
-// not the target).
+// Writes the state to the three.js camera: its camera object, place, orientation and zoom.
+function applyView(): void {
+  const cam = view.projection === "persp" ? perspCamera : orthoCamera;
+  if (camera.peek() !== cam) {
+    camera.value = cam;
+    cam.add(key, key.target); // the key light follows the camera (draw.ts)
+    controls.object = cam;
+  }
+  cam.position.fromArray(cameraPosition(view, extentNow()));
+  cam.quaternion.fromArray(view.orientation);
+  cam.up.fromArray(upAxis(view.orientation));
+  controls.target.fromArray(view.target);
+  cam.zoom = view.projection === "persp" ? 1 : view.zoom;
+  cam.updateProjectionMatrix();
+}
+
+// Writes a state and asks for a redraw.
+function commit(next: ViewState): void {
+  if (next.lens !== view.lens) perspCamera.setFocalLength(next.lens);
+  // One batch: the effects that follow these signals run once the camera is placed. A readout that ran while applyView
+  // was half done would read the camera at its old place and overwrite the state with it.
+  batch(() => {
+    view = next;
+    lens.value = next.lens;
+    projection.value = next.projection;
+    applyView();
+  });
+  requestRender(); // the picture follows the camera; the zoom readout is written when the view is drawn
+}
+
+// One camera move: the state as the camera shows it, then `change`. A glide still running stops.
+export function move(change: (state: ViewState) => ViewState): void {
+  glideId++;
+  commit(change(viewNow()));
+}
+
+// Sets a state outright (an address, #view=...).
+export function setView(next: ViewState): void {
+  glideId++;
+  commit(next);
+  refit();
+}
+
+// Keeps the perspective clip planes round the structure as the camera moves (the orthographic far plane is set once,
+// by scene/load.ts).
 export function syncClip(): void {
   if (!isPersp()) return;
-  // The planes are depths along the view axis to the structure's centre (the origin), so a camera off to one side
-  // gets the same planes as one looking straight at it. Orthographic planes are fixed (ORTHO_FAR_EXTENTS).
-  const depth = depthOfCentre(camera.position.toArray(), camera.quaternion.toArray());
-  const { near, far } = clipPlanesAround(depth, extent);
-  if (Math.abs(camera.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(camera.far - far) > CLIP_CHANGE_TOLERANCE) {
-    Object.assign(camera, { near, far });
-    camera.updateProjectionMatrix();
+  const cam = camera.value;
+  const depth = depthOfCentre(cam.position.toArray(), cam.quaternion.toArray());
+  const { near, far } = clipPlanesAround(depth, extentNow());
+  if (Math.abs(cam.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(cam.far - far) > CLIP_CHANGE_TOLERANCE) {
+    Object.assign(cam, { near, far });
+    cam.updateProjectionMatrix();
   }
 }
 
-// Look at the structure from a direction (world), with `up` as the world direction shown up on screen.
-export function viewFrom(dir: THREE.Vector3, up: THREE.Vector3): void {
-  cancelGlide();
-  // The view looks at the structure's centre again, wherever flying or panning has taken the target.
-  controls.target.set(0, 0, 0);
-  const target = controls.target;
-  // A perspective view goes back to the base distance (zoom 100%), not the distance it had.
-  const sizeAway = isPersp() ? baseDistance(extent) : extent * ORTHO_VIEW_DISTANCE;
-  camera.position.copy(target).addScaledVector(dir.clone().normalize(), sizeAway);
-  camera.up.copy(up).normalize();
-  camera.lookAt(target);
-  requestRender();
-}
+// The zoom keys and buttons: by a factor of the readout, or to a readout.
+export const zoom = (factor: number): void => move((s) => zoomedTo(s, shownZoom(s, extentNow()) * factor, extentNow()));
+export const zoomTo = (level: number): void => move((s) => zoomedTo(s, level, extentNow()));
 
-// The screen's axes in world terms: x right, y up, z towards the viewer.
-const SCREEN_AXES = {
-  x: new THREE.Vector3(1, 0, 0),
-  y: new THREE.Vector3(0, 1, 0),
-  z: new THREE.Vector3(0, 0, 1),
-};
-export type ScreenAxis = keyof typeof SCREEN_AXES;
-
-// Whether a name (from a toolbar button's data-axis, say) is one of the screen axes `rotate` takes.
+// The screen's axes in camera space: x right, y up, z towards the viewer.
+const SCREEN_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] } as const;
+type ScreenAxis = keyof typeof SCREEN_AXES;
 export function isScreenAxis(name: string | undefined): name is ScreenAxis {
   return name !== undefined && Object.hasOwn(SCREEN_AXES, name);
 }
 
-// Turn the structure about a screen axis by swinging the camera round the target. Positive: tilt up (front comes
-// up), turn left, spin clockwise.
+// Turns about a screen axis, about the target. Positive: tilt up, turn left, spin clockwise.
 export function rotate(axis: ScreenAxis, degrees: number): void {
-  const world = SCREEN_AXES[axis].clone().applyQuaternion(camera.quaternion);
-  const turn = new THREE.Quaternion().setFromAxisAngle(world, THREE.MathUtils.degToRad(degrees));
-  const offset = camera.position.clone().sub(controls.target).applyQuaternion(turn);
-  camera.position.copy(controls.target).add(offset);
-  camera.up.applyQuaternion(turn);
-  camera.lookAt(controls.target);
-  requestRender();
+  move((s) => rotated(s, SCREEN_AXES[axis], degrees));
 }
 
-// Move the structure on screen by a fraction of the view height. dx and dy are screen directions (positive dx moves
-// the camera right, so the structure goes left).
+// Looks at the structure from a direction (world), with `up` as the world direction shown up on screen.
+export function viewFrom(dir: THREE.Vector3, up: THREE.Vector3): void {
+  move((s) => viewedFrom(s, dir.toArray(), up.toArray()));
+}
+
+// Moves the structure on screen by a fraction of the view height.
 export function pan(dx: number, dy: number, fraction: number): void {
-  const distanceAway = visibleHeightAtTarget(camera) * fraction;
-  const shift = new THREE.Vector3(-dx, -dy, 0).multiplyScalar(distanceAway).applyQuaternion(camera.quaternion);
-  camera.position.add(shift);
-  controls.target.add(shift);
-  requestRender();
+  move((s) => panned(s, dx, dy, fraction, extentNow(), frameSize()));
 }
 
-// Fly the camera forward (positive) or back along its view direction, by a fraction of the view height at the target.
-// The target flies with it, so the orbit point stays in front of the camera and the camera passes through the structure
-// with nothing to stop it. Perspective only: the distance to the target does not change, so the zoom does not either.
+// Flies forward (positive) or back by a fraction of the view height. Perspective only (camera/fly.ts zooms in
+// orthographic).
 export function flyForward(fraction: number): void {
-  const shift = new THREE.Vector3(...flyShift(camera.quaternion.toArray(), visibleHeightAtTarget(camera) * fraction));
-  camera.position.add(shift);
-  controls.target.add(shift);
-  requestRender();
+  move((s) => flown(s, visibleHeight(s, extentNow(), frameSize()) * fraction));
 }
 
-// Sets the zoom the page shows. Perspective slides the camera along its view line, the target staying where it is, to the
-// wanted distance from the origin (clamped to the trackball's limits, see dollyPosition). Orthographic sets camera.zoom.
-export function setShownZoom(requested: number): void {
-  const wanted = THREE.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
-  if (!isPersp()) {
-    setZoom(wanted);
-    return;
-  }
-  const next = dollyPosition(
-    camera.position.toArray(), controls.target.toArray(), baseDistance(extent) / wanted,
-    controls.minDistance, controls.maxDistance,
-  );
-  if (next) camera.position.fromArray(next);
-  requestRender();
-}
-
-// Zoom in or out by a factor, as the shown zoom reads it: one press multiplies the readout by the factor.
-export const zoom = (factor: number): void => setShownZoom(shownZoom() * factor);
-
-// The view that frames an object of `size` centred on `centre` (scene units, the origin is the structure's middle), by
-// the fit maths: the target goes to the centre and the camera keeps its view direction. Perspective puts the camera at
-// the distance its zoom gives. Orthographic sets the zoom (zoom is undefined then) and puts the camera at the standard
-// orthographic distance, not the distance it had: a camera left far away could pass the far plane and show nothing. The
-// distance does not change an orthographic picture, so only the direction is kept.
-function framedView(centre: THREE.Vector3, size: number): { target: THREE.Vector3; position: THREE.Vector3; zoom?: number } {
-  const width = stage.clientWidth, height = stage.clientHeight;
-  const zoomWanted = frameZoom(size, width, height);
-  if (isPersp()) {
-    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
-    const distance = baseDistance(size) / zoomWanted;
-    return { target: centre, position: centre.clone().addScaledVector(towardsCamera, distance) };
-  }
-  // A camera exactly on the target has no direction, so it keeps the one it looks along (from behind the target).
-  const towardsCamera = camera.position.clone().sub(controls.target);
-  if (towardsCamera.lengthSq() === 0) towardsCamera.set(0, 0, 1).applyQuaternion(camera.quaternion);
-  const position = centre.clone().addScaledVector(towardsCamera.normalize(), extent * ORTHO_VIEW_DISTANCE);
-  return { target: centre, position, zoom: zoomWanted };
-}
-
-// Fit the structure to the window: the target goes to the middle and the zoom to the fit (at once, not a glide).
+// Fits the structure to the window, at once.
 export function fit(): void {
-  cancelGlide();
-  const view = framedView(new THREE.Vector3(0, 0, 0), extent);
-  controls.target.copy(view.target);
-  camera.position.copy(view.position);
-  if (view.zoom !== undefined) {
-    camera.zoom = view.zoom;
-    camera.updateProjectionMatrix();
-  }
-  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
-  requestRender();
+  move((s) => framed(s, [0, 0, 0], extentNow(), extentNow(), frameSize()));
+  refit();
 }
 
-// Center on an object (its centre and size in scene units, as the origin is the structure's middle): the same framing as
-// fit, glided to over GLIDE_MS. The target stays on the object while it is selected (camera/pivot.ts).
+// The pivot (ui/pivot.ts): the target moves onto the hit, the camera stays. False when there is no pivot.
+export function pivotTo(hitDistance: number, minDistance: number): boolean {
+  const next = pivoted(viewNow(), hitDistance, minDistance, extentNow());
+  if (next) move(() => next);
+  return next !== null;
+}
+
+// Lets the pivot go (ui/pivot.ts).
+export function releaseTo(minDistance: number, maxDistance: number): void {
+  move((s) => released(s, extentNow(), minDistance, maxDistance));
+}
+
+// Switches between perspective (with a lens) and orthographic, keeping the framing.
+export function switchProjection(mode: Projection, newLens = lens.value): void {
+  move((s) => withProjection(s, mode, newLens, extentNow(), frameSize()));
+  refit();
+}
+
+// Glides the view to `end` over GLIDE_MS (a smoothstep share each frame). A move or a drag stops it.
+function glideTo(end: ViewState): void {
+  const id = ++glideId;
+  const start = viewNow();
+  const started = performance.now();
+  const step = (): void => {
+    if (id !== glideId) return;
+    const progress = (performance.now() - started) / GLIDE_MS;
+    commit(progress >= 1 ? end : interpolated(start, end, THREE.MathUtils.smoothstep(progress, 0, 1)));
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// Centres on an object (its centre and size in scene units), glided to.
 export function centreOn(centre: THREE.Vector3, size: number): void {
-  const view = framedView(centre, size);
-  glideView(view.target, view.position, view.zoom);
+  glideTo(framed(viewNow(), centre.toArray(), size, extentNow(), frameSize()));
 }
 
-// The distance from the camera to the target (the orbit point). A camera exactly on the target falls back to the base
-// distance.
-function distance(): number {
-  return camera.position.distanceTo(controls.target) || baseDistance(extent);
+// Glides so that `point` comes to the middle of the screen (a double-click), the camera moving with the target.
+export function glideTarget(point: THREE.Vector3): void {
+  glideTo({ ...viewNow(), target: point.toArray() });
 }
 
-// How tall the view is at the target plane, in scene units (angstrom): a pan of 0.05 moves the structure by 5% of
-// what you see.
-export function visibleHeightAtTarget(view: THREE.PerspectiveCamera | THREE.OrthographicCamera): number {
-  if (view instanceof THREE.PerspectiveCamera) {
-    const halfAngle = THREE.MathUtils.degToRad(view.fov) / 2;
-    return 2 * distance() * Math.tan(halfAngle);
-  }
-  return (view.top - view.bottom) / view.zoom;
-}
-
+// A drag takes over from a glide.
+controls.addEventListener("start", () => {
+  glideId++;
+});

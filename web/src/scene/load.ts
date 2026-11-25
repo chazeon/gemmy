@@ -2,88 +2,114 @@
 // one triangle soup per material, and the cell box. The framing numbers come from scene/bounds.ts (the Blender frame).
 import * as THREE from "three";
 import { baseDistance } from "../camera/framing";
-import { ORTHO_FAR_EXTENTS, ZOOM_MAX, ZOOM_MIN } from "../camera/view";
-import { instanceGroups, polyhedronGroups } from "../render/instancing";
+import { ZOOM_MAX, ZOOM_MIN } from "../camera/view-state";
+import { instanceGroups, isGhost, polyhedronGroups } from "../render/instancing";
+import { cellEdges } from "../geom/cell";
 import {
-  SHAPES, boxMaterial, controls, disposeScene, edgeMaterial, instanced, outlineOf, orthoCamera, root, toon,
+  SHAPES,
+  boxMaterial,
+  controls,
+  disposeScene,
+  edgeMaterial,
+  instanced,
+  orthoCamera,
+  outlineOf,
+  root,
+  toon,
 } from "../render/draw";
-import { resize } from "../render/loop";
-import { select } from "../ui/picking";
-import type { Cell, Scene } from "../types";
+import type { Cell, Scene, Vec3 } from "../types";
 import type { Bounds } from "./bounds";
-import {
-  atomGroup, centre, data, extent, polyGroup, polyTargets, polyhedra, show,
-  setAtomGroup, setBox, setCentre, setData, setExtent, setLattice, setPoints, setPolyGroup,
-  setPolyTargets, setPolyhedra, type PolyTarget,
-} from "../state";
+import { type LoadedScene, type PolyTarget, loaded } from "../state";
 
-// Replace whatever is on show with `doc`, framed by `bounds`.
+// The orthographic far plane, in structure sizes from the camera. Only the orthographic camera's far plane is fixed
+// here: the perspective one moves with the camera (camera/view.ts syncClip).
+const ORTHO_FAR_EXTENTS = 40;
+
+// Replace whatever is on show with `doc`, framed by `bounds`. The caller (ui/stage.ts) clears the selection and resizes.
 export function load(doc: Scene, bounds: Bounds): void {
   disposeScene();
-  select(null);
-  setData(doc);
-  setPoints(new Map(doc.points.map((p) => [p.id, p])));
-  setPolyhedra(doc.primitives.polyhedra);
-  frame(bounds, doc.cell);
-  addAtomsBondsAndArrows();
-  addPolyhedra();
-  addCellBox(doc.cell);
-  resize();
+  loaded.value = build(doc, bounds);
 }
 
-// Put the structure's centre at the origin, and set the camera's distance limits and far plane from its size.
-function frame(bounds: Bounds, cell: Cell | null): void {
-  setCentre(bounds.centre);
-  setExtent(bounds.extent);
-  if (cell) setLattice(cell.vectors.map((vec) => new THREE.Vector3(...vec).normalize()));
+// The scene's objects, built into a new LoadedScene (not yet on show).
+function build(doc: Scene, bounds: Bounds): LoadedScene {
+  const extent = bounds.extent;
+  const centre = bounds.centre;
+  frame(centre, extent);
+  const atomGroup = addAtomsBondsAndArrows(doc);
+  const { polyGroup, polyTargets } = addPolyhedra(doc);
+  const box = addCellBox(doc.cell);
+  return {
+    data: doc,
+    points: new Map(doc.points.map((p) => [p.id, p])),
+    polyhedra: doc.primitives.polyhedra,
+    centre,
+    extent,
+    // A scene without a cell keeps the lattice of the scene before it.
+    lattice: doc.cell ? latticeOf(doc.cell) : loaded.peek().lattice,
+    atomGroup,
+    polyGroup,
+    box,
+    polyTargets,
+  };
+}
+
+// Puts the structure's centre at the origin, and sets the camera's distance limits and far plane from its size.
+function frame(centre: Vec3, extent: number): void {
   root.position.set(-centre[0], -centre[1], -centre[2]);
   orthoCamera.far = extent * ORTHO_FAR_EXTENTS;
   controls.minDistance = baseDistance(extent) / ZOOM_MAX;
   controls.maxDistance = baseDistance(extent) / ZOOM_MIN;
 }
 
+// The unit lattice vectors of the cell: the view buttons look along them.
+function latticeOf(cell: Cell): THREE.Vector3[] {
+  return cell.vectors.map((vec) => new THREE.Vector3(...vec).normalize());
+}
+
 type ShapeName = keyof typeof SHAPES;
 
 // One InstancedMesh per (shape, material). Picking maps an instance back to its atom, so only atoms carry `atoms`.
 // An outline shell goes in the group of the mesh it outlines, so hiding that group (the Atoms toggle) hides it too.
-function addAtomsBondsAndArrows(): void {
-  setAtomGroup(new THREE.Group());
+// Returns the atoms' group; the bonds and arrows are in the structure's root.
+function addAtomsBondsAndArrows(doc: Scene): THREE.Group {
+  const atomGroup = new THREE.Group();
   const bondGroup = new THREE.Group();
   const shapes = new Map<ShapeName, THREE.BufferGeometry>();
-  for (const g of instanceGroups(data)) {
+  for (const g of instanceGroups(doc)) {
     const shapeName: ShapeName = g.shape;
     let shape = shapes.get(shapeName);
     if (!shape) {
       shape = SHAPES[shapeName]();
       shapes.set(shapeName, shape);
     }
-    const mesh = instanced(shape, toon(g.material), g.matrices);
+    const mesh = instanced(shape, toon(g.material, doc.materials), g.matrices);
     const isAtom = g.shape === "sphere";
     const owner = isAtom ? atomGroup : bondGroup;
     owner.add(mesh);
     if (isAtom) mesh.userData = { atoms: g.refs };
     if (g.outlined) owner.add(outlineOf(mesh));
   }
-  atomGroup.visible = show.atoms;
   root.add(atomGroup, bondGroup);
+  return atomGroup;
 }
 
 // One triangle soup per material, with flat faces wound outwards, and its edges as one set of line segments. Materials
 // with alpha < 1 are see-through ghosts drawn after the opaque atoms. A click gives a triangle, and owner[] says which
 // polyhedron it is.
-function addPolyhedra(): void {
-  setPolyGroup(new THREE.Group());
-  setPolyTargets(new Array<PolyTarget>(polyhedra.length));
-  for (const g of polyhedronGroups(data)) {
-    const ghost = (data.materials[g.material].alpha ?? 1) < 1;
+function addPolyhedra(doc: Scene): { polyGroup: THREE.Group; polyTargets: PolyTarget[] } {
+  const polyGroup = new THREE.Group();
+  const polyTargets = new Array<PolyTarget>(doc.primitives.polyhedra.length);
+  for (const g of polyhedronGroups(doc)) {
+    const ghost = isGhost(doc.materials[g.material]);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(g.positions, 3));
     geometry.computeVertexNormals(); // not indexed, so each face keeps its own normal
-    const mesh = new THREE.Mesh(geometry, toon(g.material, { faces: true, ghost }));
+    const mesh = new THREE.Mesh(geometry, toon(g.material, doc.materials, { faces: true, ghost }));
     mesh.userData = { owner: g.owner };
     if (ghost) mesh.renderOrder = 1; // after the opaque atoms and bonds inside
     for (const [index, first, count] of g.ranges) {
-      polyTargets[index] = { kind: "polyhedron", poly: polyhedra[index], ghost, mesh, first, count };
+      polyTargets[index] = { kind: "polyhedron", poly: doc.primitives.polyhedra[index], ghost, mesh, first, count };
     }
     const edgeGeometry = new THREE.BufferGeometry();
     edgeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(g.edges, 3));
@@ -91,34 +117,15 @@ function addPolyhedra(): void {
     if (!ghost) polyGroup.add(outlineOf(mesh));
   }
   root.add(polyGroup);
+  return { polyGroup, polyTargets };
 }
 
 // The twelve edges of the cell's parallelepiped, drawn as line segments. Shown only when the scene has a cell.
-function addCellBox(cell: Cell | null): void {
-  setBox(null);
-  if (!cell) return;
-  const positions: number[] = [];
-  const corners = Array.from({ length: 8 }, (_, n) => cellCorner(cell, n));
-  for (let n = 0; n < 8; n++) {
-    for (let axis = 0; axis < 3; axis++) {
-      const bit = 1 << axis;
-      if (n & bit) continue; // each edge once: from the corner without this bit to the one with it
-      positions.push(...corners[n], ...corners[n | bit]);
-    }
-  }
+function addCellBox(cell: Cell | null): THREE.LineSegments | null {
+  if (!cell) return null;
   const boxGeometry = new THREE.BufferGeometry();
-  boxGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  boxGeometry.setAttribute("position", new THREE.Float32BufferAttribute(cellEdges(cell).flat(2), 3));
   const cellBox = new THREE.LineSegments(boxGeometry, boxMaterial);
-  setBox(cellBox);
-  cellBox.visible = show.box;
   root.add(cellBox);
+  return cellBox;
 }
-
-// Corner n of the cell: bit 0 steps along the first lattice vector, bit 1 along the second, bit 2 along the third.
-function cellCorner(cell: Cell, n: number): number[] {
-  const [a, b, c] = cell.vectors;
-  return [0, 1, 2].map(
-    (d) => cell.origin[d] + (n & 1) * a[d] + ((n >> 1) & 1) * b[d] + ((n >> 2) & 1) * c[d],
-  );
-}
-

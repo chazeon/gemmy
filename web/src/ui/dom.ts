@@ -1,5 +1,6 @@
 // DOM helpers for the ui files. The page (web/page.html) is fixed, so a missing element means a broken page: the
 // lookup fails with the id it could not find.
+import type { PageNames } from "../scene/source";
 
 export function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -12,8 +13,25 @@ export function closestOf(target: EventTarget | null, selector: string): HTMLEle
   return target instanceof Element ? target.closest<HTMLElement>(selector) : null;
 }
 
-// Keeps a floating element's edge inside [low, high]. When the range is empty (the box is wider than the window), the
-// low edge wins, so the box sticks to the window's near side. Tooltips and popovers both rely on that.
-export function clamp(value: number, low: number, high: number): number {
-  return Math.max(low, Math.min(value, high));
+// A copy of a page's <template>, as a fragment the caller fills in and inserts.
+export function cloneTemplate(id: string): DocumentFragment {
+  return byId<HTMLTemplateElement>(id).content.cloneNode(true) as DocumentFragment;
 }
+
+// The text of a template's slot (an element marked data-slot="name"). Text only, never HTML.
+export function setSlot(root: ParentNode, name: string, text: string): void {
+  root.querySelector<HTMLElement>(`[data-slot="${name}"]`)!.textContent = text;
+}
+
+// The page's name and its line under it (the title in the menu island).
+const nameHeading = document.querySelector<HTMLElement>(".name h1")!;
+const nameLine = document.querySelector<HTMLElement>(".name .sub")!;
+export const pageName = {
+  read(): PageNames {
+    return { name: nameHeading.textContent!, from: nameLine.textContent! };
+  },
+  show(name: string, from: string): void {
+    nameHeading.textContent = name;
+    nameLine.textContent = from;
+  },
+};

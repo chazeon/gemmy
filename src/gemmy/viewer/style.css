@@ -21,7 +21,7 @@
     --shadow: 0 0 0 1px rgba(27, 30, 43, 0.06), 0 1px 3px rgba(27, 30, 43, 0.08), 0 6px 14px rgba(27, 30, 43, 0.06);
     --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
     --num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-    --label: "Gemmy Axis Labels", "IBM Plex Sans", sans-serif; /* the triad's face, loaded from AXIS_FONT below */
+    --label: "Gemmy Axis Labels", "IBM Plex Sans", sans-serif; /* the triad's face, loaded by render/triad.ts */
 
     /* sizes: the window margin, the corner radii, a toolbar button, and the step from one round button to the next */
     --edge: 16px;
@@ -167,14 +167,14 @@
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .island button:focus-visible { outline-offset: -2px; }
 
-  /* ---- popovers: the ☰ menu, Export and help. Fixed next to their button (placed by script), so an island's scroll
-     cannot clip them ---- */
+  /* ---- popovers: the ☰ menu, Export and help are native popovers (top layer, so an island's scroll cannot clip them).
+     The browser's [popover] style centres them, so the position is reset here and menus.ts places them by the button. ---- */
   .popover {
-    position: fixed; z-index: 3; box-sizing: border-box; width: min(320px, calc(100vw - 16px)); overflow: auto;
-    padding: 6px; display: grid; gap: 2px; font-size: 13px;
+    position: fixed; inset: auto; margin: 0; z-index: 3; box-sizing: border-box; width: min(320px, calc(100vw - 16px));
+    overflow: auto; padding: 6px; display: grid; gap: 2px; font: 400 13px var(--ui); color: var(--fg);
     background: var(--bar); border-radius: var(--radius); box-shadow: var(--shadow), 0 12px 28px rgba(0, 0, 0, 0.14);
   }
-  .popover[hidden] { display: none; }
+  .popover:not(:popover-open) { display: none; }
   #main-menu { width: min(220px, calc(100vw - 16px)); }
   .mhead { margin: 4px 8px 2px; color: var(--muted); font-size: 12px; }
   .mcheck {

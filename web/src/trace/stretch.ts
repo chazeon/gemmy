@@ -1,9 +1,9 @@
-// Boundary stretches, their outline decision, and their snapping. A region's boundary is cut where the object on the other
-// side changes (background, or another object). Each stretch is split where the live view's outline shell starts or stops
-// along it (the shell mask of passes.ts, sampled in a thin band just outside the boundary). Each piece is then tested
-// against the exact curves it could lie on (the caller supplies them): if one fits within SNAP_TOL_RENDER_PX (RMS), the piece
-// is written as that exact primitive (L for a line, A for an ellipse); otherwise it falls back to the fitted Bézier of
-// curves.ts. Consecutive pieces join where they meet.
+// Boundary stretches, their outline decision, and their snapping. A region's boundary is cut where the object on the
+// other side changes (background, or another object). Each stretch is split where the live view's outline shell starts
+// or stops along it (the shell mask of passes.ts, sampled in a thin band just outside the boundary). Each piece is then
+// tested against the exact curves it could lie on (the caller supplies them): if one fits within SNAP_TOL_RENDER_PX
+// (RMS), the piece is written as that exact primitive (L for a line, A for an ellipse); otherwise it falls back to the
+// fitted Bézier of curves.ts. Consecutive pieces join where they meet.
 import { type Curve, curveRms, onLine } from "./candidates";
 import { arcTo, fullEllipseArcs, paramOf, pointAt } from "./ellipse";
 import { closedPath, fitCommands, type Pt } from "./curves";
@@ -11,17 +11,19 @@ import { type Passes, idOf } from "./buffers";
 import { fmtPt } from "../export/markup";
 import type { Ellipse } from "../export/view";
 
-// The RMS distance (render px) under which a stretch counts as lying on a curve. About a pixel of the id render at 1x is
-// 1 CSS px, so 0.6 render px is 0.6 px at 1x and 0.3 px at 2x.
+// The RMS distance (render px) under which a stretch counts as lying on a curve. About a pixel of the id render at 1x
+// is 1 CSS px, so 0.6 render px is 0.6 px at 1x and 0.3 px at 2x.
 const SNAP_TOL_RENDER_PX = 0.6;
-// The outline decision samples the shell mask at these distances outside the boundary (render px): a band 1.5 px wide. A
-// point is outlined when more than half of its samples are shell.
+// The outline decision samples the shell mask at these distances outside the boundary (render px): a band 1.5 px wide.
+// A point is outlined when more than half of its samples are shell.
 const BAND_OFFSETS_PX = [0.5, 1, 1.5];
-// The flag of a point is the majority over this many points either side of it, so the decision does not flicker pixel by
-// pixel along a boundary that the shell only just covers.
+// The flag of a point is the majority over this many points either side of it, so the decision does not flicker pixel
+// by pixel along a boundary that the shell only just covers.
 const FLAG_HALF_WINDOW = 3;
 // Where a stretch is cut between two labels, the label is the object on the outside (0: background).
 const BACKGROUND = 0;
+// A pixel's centre is half a pixel past its index, so the 2x2 block around a point starts half a pixel before it.
+const PIXEL_CENTRE = 0.5;
 
 // What the outline decision reads: the object's id and the passes, at the render scale.
 interface Ctx {
@@ -36,9 +38,14 @@ export interface Stretch {
   outlined: boolean; // the live view's outline shell covers this piece's outside: its outline is drawn
 }
 
-// The stretches of one object's ring (render px in, CSS px out), each cut at label changes and at outline changes. A ring
-// with one label and no outline change is one closed stretch.
-export function stretchesOf(ring: Pt[], id: number, passes: Passes, scale: number): { stretches: Stretch[]; whole: boolean } {
+// The stretches of one object's ring (render px in, CSS px out), each cut at label changes and at outline changes. A
+// ring with one label and no outline change is one closed stretch.
+export function stretchesOf(
+  ring: Pt[],
+  id: number,
+  passes: Passes,
+  scale: number,
+): { stretches: Stretch[]; whole: boolean } {
   const labels = fillGaps(ring.map(([x, y]) => labelAt(x, y, id, passes)));
   if (labels === null) return { stretches: [], whole: false };
   const css = ring.map(([x, y]): Pt => [x / scale, y / scale]);
@@ -55,8 +62,8 @@ function wholeRing(css: Pt[], label: number, ctx: Ctx): { stretches: Stretch[]; 
   return { stretches: cyclicRuns(css, flags, label), whole: false };
 }
 
-// The label at each point, with the points that see no label (null) taking the label of the point before them. Null when
-// no point has one.
+// The label at each point, with the points that see no label (null) taking the label of the point before them. Null
+// when no point has one.
 function fillGaps(labels: (number | null)[]): number[] | null {
   const first = labels.find((l): l is number => l !== null);
   if (first === undefined) return null;
@@ -71,7 +78,10 @@ function fillGaps(labels: (number | null)[]): number[] | null {
 // The ring walked from a label change, so no stretch is split by the ring's start.
 function rotateToChange(css: Pt[], labels: number[]): [Pt[], number[]] {
   const start = labels.findIndex((l, i) => l !== labels[(i - 1 + labels.length) % labels.length]);
-  return [[...css.slice(start), ...css.slice(0, start)], [...labels.slice(start), ...labels.slice(0, start)]];
+  return [
+    [...css.slice(start), ...css.slice(0, start)],
+    [...labels.slice(start), ...labels.slice(0, start)],
+  ];
 }
 
 // The stretches of a walk, cut where the label changes and again where the outline does.
@@ -90,11 +100,11 @@ function splitAtLabelChanges(pts: Pt[], labels: number[], ctx: Ctx): Stretch[] {
   return stretches;
 }
 
-// The label of the outside at one boundary point (render px): the 2x2 pixels around the point vote, and the winner is the
-// object (or background) most of them show outside this object's region.
+// The label of the outside at one boundary point (render px): the 2x2 pixels around the point vote, and the winner is
+// the object (or background) most of them show outside this object's region.
 function labelAt(x: number, y: number, id: number, passes: Passes): number | null {
-  const left = Math.floor(x - 0.5);
-  const top = Math.floor(y - 0.5);
+  const left = Math.floor(x - PIXEL_CENTRE);
+  const top = Math.floor(y - PIXEL_CENTRE);
   let inside = false;
   const votes: number[] = [];
   for (let dy = 0; dy <= 1; dy++) {
@@ -125,8 +135,8 @@ function mostCommon(values: number[]): number | null {
   return best;
 }
 
-// The outline flags of boundary points (CSS px). The outside of each point is the side that is not this object's region;
-// the shell is sampled in the band just there.
+// The outline flags of boundary points (CSS px). The outside of each point is the side that is not this object's
+// region; the shell is sampled in the band just there.
 function shellFlags(pts: Pt[], closed: boolean, ctx: Ctx): boolean[] {
   const n = pts.length;
   const raw = pts.map((p, i) => {
@@ -134,15 +144,16 @@ function shellFlags(pts: Pt[], closed: boolean, ctx: Ctx): boolean[] {
     const b = closed ? pts[(i + 1) % n] : pts[Math.min(n - 1, i + 1)];
     const [nx, ny] = outwardNormal(p, a, b, ctx);
     let hits = 0;
-    for (const d of BAND_OFFSETS_PX) if (shellAt([p[0] + (nx * d) / ctx.scale, p[1] + (ny * d) / ctx.scale], ctx)) hits++;
+    for (const d of BAND_OFFSETS_PX)
+      if (shellAt([p[0] + (nx * d) / ctx.scale, p[1] + (ny * d) / ctx.scale], ctx)) hits++;
     return hits * 2 > BAND_OFFSETS_PX.length;
   });
   return majority(raw, closed);
 }
 
-// The unit normal at p, from its neighbours a and b, pointing out of this object. The sign of the normal follows the walk's
-// direction, so the test asks which side is the object's own region: a point just along the normal that is the object's
-// own means the normal points in, and it is flipped.
+// The unit normal at p, from its neighbours a and b, pointing out of this object. The sign of the normal follows the
+// walk's direction, so the test asks which side is the object's own region: a point just along the normal that is the
+// object's own means the normal points in, and it is flipped.
 function outwardNormal(p: Pt, a: Pt, b: Pt, ctx: Ctx): Pt {
   const tx = b[0] - a[0];
   const ty = b[1] - a[1];
@@ -197,7 +208,7 @@ function runsOf(pts: Pt[], flags: boolean[]): { pts: Pt[]; outlined: boolean }[]
 function cyclicRuns(pts: Pt[], flags: boolean[], label: number): Stretch[] {
   const n = pts.length;
   const change = flags.findIndex((f, i) => f !== flags[(i - 1 + n) % n]);
-  const from = change < 0 ? 0 : change;
+  const from = Math.max(0, change);
   const rotatedPts = [...pts.slice(from), ...pts.slice(0, from), pts[from]];
   const rotatedFlags = [...flags.slice(from), ...flags.slice(0, from), flags[from]];
   return runsOf(rotatedPts, rotatedFlags).map((piece) => ({ pts: piece.pts, label, outlined: piece.outlined }));
@@ -210,13 +221,20 @@ interface RingPaths {
   outline: string;
 }
 
-export function ringPaths(stretches: Stretch[], whole: boolean, candidates: (st: Stretch) => Curve[], tol: number): RingPaths {
+export function ringPaths(
+  stretches: Stretch[],
+  whole: boolean,
+  candidates: (st: Stretch) => Curve[],
+  tol: number,
+): RingPaths {
   if (stretches.length === 0) return { fill: "", outline: "" };
   if (whole) {
     const st = stretches[0];
     const best = bestCurve(candidates(st), st.pts, tol);
     if (best?.kind === "ellipse") {
-      const d = `M${startOf(best.e, st.pts[0])}${fullEllipseArcs(best.e, pointAt(best.e, paramOf(best.e, st.pts[0])))}Z`;
+      const start = startOf(best.e, st.pts[0]);
+      const seam = pointAt(best.e, paramOf(best.e, st.pts[0]));
+      const d = `M${start}${fullEllipseArcs(best.e, seam)}Z`;
       return { fill: d, outline: st.outlined ? d : "" };
     }
     const d = closedPath(st.pts);
@@ -239,8 +257,8 @@ export function ringPaths(stretches: Stretch[], whole: boolean, candidates: (st:
   return { fill: d, outline: outlineOf(pieces) };
 }
 
-// The command that carries the walk from `start` along a stretch on its best curve (a line, an arc, or the fitted Bézier),
-// and the point it ends at.
+// The command that carries the walk from `start` along a stretch on its best curve (a line, an arc, or the fitted
+// Bézier), and the point it ends at.
 function pieceFor(st: Stretch, best: Curve | null, start: Pt): { cmd: string; end: Pt } {
   const last = st.pts[st.pts.length - 1];
   if (best?.kind === "line") {

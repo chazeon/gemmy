@@ -1,4 +1,5 @@
-// The frame the Blender render uses (gemmy.render.runner.scene_bounds). Pure: no THREE, no DOM.
+// The frame the Blender render uses (gemmy.render.runner.scene_bounds). No DOM.
+import { Box3, Vector3 } from "three";
 import type { Scene, Vec3 } from "../types";
 
 export interface Bounds {
@@ -16,12 +17,9 @@ export function sceneBounds(scene: Scene): Bounds {
   const positions = new Map<string, Vec3>(scene.points.map((p): [string, Vec3] => [p.id, p.position]));
   const corners = [...positions.values(), ...arrowEnds(scene, positions)];
   if (corners.length === 0) return { centre: [0, 0, 0], extent: MIN_EXTENT };
-  const { lo, hi } = boundingBox(corners);
-  const size = hi.map((x, i) => x - lo[i]);
-  return {
-    centre: lo.map((x, i) => (x + hi[i]) * 0.5) as Vec3,
-    extent: Math.max(Math.hypot(...size), MIN_EXTENT),
-  };
+  const box = new Box3().setFromPoints(corners.map((p) => new Vector3(...p)));
+  const centre = box.getCenter(new Vector3());
+  return { centre: [centre.x, centre.y, centre.z], extent: Math.max(box.getSize(new Vector3()).length(), MIN_EXTENT) };
 }
 
 // Both ends of each displacement arrow. The tail sits on its atom and the tip is `vector` away; anchor "tip" flips
@@ -36,16 +34,4 @@ function arrowEnds(scene: Scene, positions: Map<string, Vec3>): Vec3[] {
     ends.push(...(d.anchor === "tip" ? [near, atom] : [atom, far]));
   }
   return ends;
-}
-
-function boundingBox(points: Vec3[]): { lo: Vec3; hi: Vec3 } {
-  const lo: Vec3 = [Infinity, Infinity, Infinity];
-  const hi: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const p of points) {
-    for (let i = 0; i < 3; i++) {
-      lo[i] = Math.min(lo[i], p[i]);
-      hi[i] = Math.max(hi[i], p[i]);
-    }
-  }
-  return { lo, hi };
 }

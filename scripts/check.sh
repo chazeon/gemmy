@@ -12,6 +12,7 @@ uv run ruff check .
 uv run pytest -q
 if [[ $has_node == 1 ]]; then
   npm --prefix web run check
+  npm --prefix web run lint
   built="$(mktemp -d)"
   trap 'rm -rf "$built"' EXIT
   npm --prefix web run build --silent -- "$built"

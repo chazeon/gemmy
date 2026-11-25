@@ -1,5 +1,5 @@
-// Fetching a scene from a URL or a gist. The page is on another origin than most scene hosts, so a failure is often CORS:
-// the browser then gives no status, only a failed fetch, and the message says so.
+// Fetching a scene from a URL or a gist. The page is on another origin than most scene hosts, so a failure is often
+// CORS: the browser then gives no status, only a failed fetch, and the message says so.
 import type { Scene } from "../types";
 import { type GistFile, pickGistFile } from "./gist";
 import { SceneError, readCapped, sceneFromBytes } from "./read";
@@ -14,7 +14,9 @@ async function get(url: string, accept?: string): Promise<Response> {
     // No referrer: the scene's host does not learn the viewer's address.
     response = await fetch(url, { headers: accept ? { Accept: accept } : {}, referrerPolicy: "no-referrer" });
   } catch {
-    throw new SceneError(`Could not fetch ${url}: the network failed, or the server does not allow this page to read it (CORS).`);
+    throw new SceneError(
+      `Could not fetch ${url}: the network failed, or the server does not allow this page to read it (CORS).`,
+    );
   }
   if (!response.ok) {
     const status = [response.status, response.statusText].filter(Boolean).join(" ");
@@ -27,6 +29,20 @@ export async function fetchScene(url: string): Promise<Scene> {
   const response = await get(url);
   if (!response.body) throw new SceneError(`${url} sent no data.`);
   return sceneFromBytes(await readCapped(response.body, `The scene at ${url}`));
+}
+
+// The version gemmy serve holds now (its status), read before its scene so the scene is at least that version.
+export async function fetchServedVersion(): Promise<string | null> {
+  const response = await fetch("status", { cache: "no-store" });
+  if (!response.ok) throw new SceneError(`The server answered ${response.status} for status.`);
+  return (await response.json()).version ?? null;
+}
+
+// The scene gemmy serve holds now: its scene.json, never a cached copy (the server may have a newer one).
+export async function fetchLive(): Promise<Scene> {
+  const response = await fetch("scene.json", { cache: "no-store" });
+  if (!response.ok) throw new SceneError(`The server answered ${response.status} for scene.json.`);
+  return response.json();
 }
 
 // The gist's file (the first scene file, or the one named) and its contents, read from the file's own raw address.

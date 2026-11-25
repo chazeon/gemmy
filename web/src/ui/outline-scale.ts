@@ -1,54 +1,41 @@
 // The outline width the user picks in the ☰ menu: a multiplier on the automatic width that render/draw.ts sets (1 is
-// the automatic width). The choice is kept per browser under OUTLINE_SCALE_KEY, as the theme is (theme.ts). The Outlines
-// toggle still turns every outline off; this only scales them.
+// the automatic width). The choice is kept per browser under OUTLINE_SCALE_KEY, as the theme is (theme.ts). The
+// Outlines toggle still turns every outline off; this only scales them.
+import { effect, signal } from "@preact/signals-core";
 import { setOutlineScale } from "../render/draw";
-import { requestRender } from "../state";
+import { remembered } from "./storage";
 
 const OUTLINE_SCALE_KEY = "gemmy.outline-scale";
 // Thin, Normal and Bold, the values the menu's segments carry (data-outline-scale).
-export const OUTLINE_SCALE_CHOICES: readonly number[] = [0.5, 1, 1.75];
+const OUTLINE_SCALE_CHOICES: readonly number[] = [0.5, 1, 1.75];
 const DEFAULT_SCALE = 1;
 
-export function isOutlineScale(value: unknown): value is number {
+function isOutlineScale(value: unknown): value is number {
   return OUTLINE_SCALE_CHOICES.some((choice) => choice === value);
 }
 
-// A stored value that is not one of the choices counts as the default, as does a value that storage refuses to give.
-function readStoredScale(): number {
-  try {
-    const value = Number(localStorage.getItem(OUTLINE_SCALE_KEY));
-    return isOutlineScale(value) ? value : DEFAULT_SCALE;
-  } catch {
-    return DEFAULT_SCALE;
-  }
-}
-function storeScale(scale: number): void {
-  try {
-    localStorage.setItem(OUTLINE_SCALE_KEY, String(scale));
-  } catch {
-    // storage refused: the choice lasts for this visit only
-  }
-}
+const stored = remembered<number>(OUTLINE_SCALE_KEY, (raw) => {
+  const value = Number(raw);
+  return isOutlineScale(value) ? value : DEFAULT_SCALE;
+});
+// The width in use. The shader's uniform follows it here; the menu's segments and the redraw follow it elsewhere.
+export const outlineScale = signal(stored.read());
+effect(() => setOutlineScale(outlineScale.value));
 
-// Who is told when the choice changes (the menu's segments).
-type ScaleListener = (scale: number) => void;
-const listeners: ScaleListener[] = [];
-export function onOutlineScaleChange(listener: ScaleListener): void {
-  listeners.push(listener);
-}
-
-let current = readStoredScale();
-setOutlineScale(current);
-
-// The width in use: the Blender-side counterpart is not set from here (camera/framing.ts leaves the render settings alone).
-export function outlineScale(): number {
-  return current;
-}
-
+// The menu's choice: it is kept for the next visit.
 export function chooseOutlineScale(scale: number): void {
-  current = scale;
-  storeScale(scale);
-  setOutlineScale(scale);
-  requestRender(); // the viewer draws on demand: the new width shows now, not when the camera next moves
-  for (const listener of listeners) listener(scale);
+  outlineScale.value = scale;
+  stored.write(scale);
 }
+
+// ---- the outline width row of the ☰ menu ----
+// Thin, Normal and Bold, as the theme's segments work: the one in use is pressed.
+const outlineSegments = [...document.querySelectorAll<HTMLButtonElement>("[data-outline-scale]")];
+for (const segment of outlineSegments) {
+  segment.addEventListener("click", () => chooseOutlineScale(Number(segment.dataset.outlineScale)));
+}
+effect(() => {
+  for (const segment of outlineSegments) {
+    segment.setAttribute("aria-pressed", String(Number(segment.dataset.outlineScale) === outlineScale.value));
+  }
+});

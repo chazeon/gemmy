@@ -10,10 +10,15 @@ const FIELD_RADIUS_PX = 1; // box blur radius, in render-scale pixels (the windo
 const FIELD_BORDER_PX = 2; // outside pixels around the box, so the blur never reads past the mask and every ring closes
 const ISO_LEVEL = 0.5; // the coverage that marks the edge: halfway between inside (1) and outside (0)
 
-export interface Box { x0: number; y0: number; x1: number; y1: number } // inclusive pixel bounds; x1 < x0 when empty
+export interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+} // inclusive pixel bounds; x1 < x0 when empty
 
-// The rings of the pixels whose key matches `match`, within `box`.
-// The rings in render-scale pixel coordinates, top row first. Pixel (x, y) spans x..x+1 by y..y+1, so its centre is x + 0.5.
+// The rings of the pixels whose key matches `match`, within `box`. The rings in render-scale pixel coordinates, top row
+// first. Pixel (x, y) spans x..x+1 by y..y+1, so its centre is x + 0.5.
 export function regionRings(passes: Passes, box: Box, match: (key: number) => boolean): Pt[][] {
   if (box.x1 < box.x0) return [];
   const cols = box.x1 - box.x0 + 1 + 2 * FIELD_BORDER_PX;
@@ -21,7 +26,8 @@ export function regionRings(passes: Passes, box: Box, match: (key: number) => bo
   const mask = new Float64Array(cols * rows);
   for (let y = box.y0; y <= box.y1; y++) {
     for (let x = box.x0; x <= box.x1; x++) {
-      if (match(passes.keys[y * passes.width + x])) mask[(y - box.y0 + FIELD_BORDER_PX) * cols + (x - box.x0 + FIELD_BORDER_PX)] = 1;
+      if (match(passes.keys[y * passes.width + x]))
+        mask[(y - box.y0 + FIELD_BORDER_PX) * cols + (x - box.x0 + FIELD_BORDER_PX)] = 1;
     }
   }
   const field = boxBlur(boxBlur(mask, cols, rows, FIELD_RADIUS_PX, true), cols, rows, FIELD_RADIUS_PX, false);

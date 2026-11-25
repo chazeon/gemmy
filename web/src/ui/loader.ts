@@ -1,65 +1,75 @@
-// Opening a scene that the page does not embed: from ?scene= or ?gist= in the address, from the page's default scenes
-// (the built site's example pages and front page), from a URL typed into the empty state, or from a file (dropped on the
-// page, or the ☰ menu's Open scene…). A file is read here and never uploaded. Each scene the page shows is a tab (the
-// list is plain data in tab-model.ts); a file that is dropped or opened is added as a tab of its own. Whatever a load
+// The page's tabs and the card that opens scenes. Every scene the page shows is a tab, whatever its source
+// (scene/source.ts): the page's own scene, a scene the address names or a default, a file that is dropped or
+// chosen (Open scene…). The first tab is shown at startup; the others load when first chosen. Whatever a load
 // reports is shown as plain text.
-import { fetchGist, fetchScene } from "../scene/fetch";
-import { type Opening, type SceneSource, linkFor, resolveWebUrl, sceneName, sourcesToOpen } from "../scene/source";
+import { fetchGist, fetchLive, fetchScene, fetchServedVersion } from "../scene/fetch";
 import { sceneFromFile } from "../scene/read";
+import { type Source, fromOf, linkOf, nameOf, resolveWebUrl } from "../scene/source";
 import type { Scene } from "../types";
-import { byId } from "./dom";
-import { watchOverflow } from "./overflow";
-import { type TabList, addTab, chooseTab, closeTab, tabsOf, uniqueLabel } from "./tab-model";
+import { hasScene } from "../state";
+import { setSceneLink, takePendingPose } from "./share";
+import { byId, pageName } from "./dom";
+import { openScene, updateScene } from "./stage";
+import { type TabBar, makeBar, renderTabs } from "./tab-bar";
+import { addTab, chooseTab, closeTab, tabsOf, uniqueLabel } from "./tab-model";
 
-// What a page shows for a scene: the scene, its name (the title), where it came from (under the title) and the address
-// that opens it again (null for a file, which no link can carry). `live` marks the page's own scene on a gemmy serve
-// page: the page follows the server while it is the one shown.
-export interface Shown {
+// A tab: its label in the bar, its source, and the scene once loaded (kept, so choosing the tab again does not load
+// it).
+interface Tab {
+  label: string;
+  source: Source;
+  loaded: Promise<Loaded> | null;
+}
+// A loaded scene and the title it is shown under (a gist's title is its file, which only the load knows).
+interface Loaded {
   doc: Scene;
   name: string;
-  from: string;
-  link: string | null;
-  live?: boolean;
-}
-export type Show = (shown: Shown) => void;
-
-// A scene the page shows itself (embedded in the page, or live from gemmy serve): its tab, first in the bar.
-export interface OwnScene {
-  label: string;
-  load: () => Promise<Shown>;
 }
 
-// A tab: its label in the bar, what it loads (for a message), whether the user added it (a file, which can be closed),
-// and the load itself. The shown scene is kept once loaded, so choosing the tab again does not load it again.
-interface ClientTab {
-  label: string;
-  what: string;
-  local: boolean;
-  load: () => Promise<Shown>;
-  loaded: Promise<Shown> | null;
-}
+// A load that takes longer than this shows the card's "Loading…" text; a quicker one does not flash the card.
+const PROGRESS_MS = 150;
 
-const empty = byId("empty"), emptyStatus = byId("empty-status"), emptyError = byId("empty-error");
-const urlForm = byId<HTMLFormElement>("empty-url"), urlInput = byId<HTMLInputElement>("scene-url");
+const empty = byId("empty"),
+  emptyStatus = byId("empty-status"),
+  emptyError = byId("empty-error");
+const urlForm = byId<HTMLFormElement>("empty-url"),
+  urlInput = byId<HTMLInputElement>("scene-url");
 const fileInput = byId<HTMLInputElement>("scene-file");
 const closeButton = byId("empty-close");
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
-// Whether a scene is on the stage (behind the card). Only then can the card close back to it.
-let sceneOpen = false;
+// What the loader keeps between events. `tabs` is the list and its current tab; `bar` is the strip that shows it (null
+// until a second tab, or a server-built strip, is there); `shown` is the tab whose scene is on the stage (null until
+// one loads) and `servedVersion` the server's version of the live scene on the stage or being loaded (a status with
+// this version has nothing to load). The live loads run one after another (`liveTurn`), so each compares the version
+// with what the stage shows when its turn comes. `tabListeners` hear which tab is being shown, before it loads
+// (live.ts shows the follow note with it).
+const state = {
+  tabs: tabsOf<Tab>([]),
+  bar: null as TabBar | null,
+  shown: null as Tab | null,
+  servedVersion: null as string | null,
+  liveTurn: Promise.resolve(),
+  tabListeners: [] as ((source: Source) => void)[],
+};
 
-// The tabs and the strip that shows them. The strip is the page's own when it has one (a server-built strip, whose link
-// to the page's own scene is `ownLink`), else one made above the page's name when the first tab is added.
-let showScene: Show = () => {};
-let tabs: TabList<ClientTab> = tabsOf([]);
-let bar: HTMLElement | null = null;
-let ownLink: HTMLAnchorElement | null = null;
+function inLiveTurn<T>(task: () => Promise<T>): Promise<T> {
+  const result = state.liveTurn.then(task);
+  state.liveTurn = result.then(
+    () => undefined,
+    () => undefined,
+  ); // a failed load does not stop the ones after it
+  return result;
+}
+export function onTabChange(listener: (source: Source) => void): void {
+  state.tabListeners.push(listener);
+}
 
 // ---- the empty state and the messages under it ----
 function showCard(): void {
   empty.hidden = false;
-  closeButton.hidden = !sceneOpen;
+  closeButton.hidden = !hasScene();
   document.body.classList.add("no-scene");
 }
 function hideCard(): void {
@@ -81,171 +91,158 @@ function fail(text: string): void {
 }
 
 // ---- loading ----
-function labelOf(source: SceneSource): string {
-  return source.kind === "gist" ? `gist ${source.id}` : source.url;
-}
-async function loadSource(source: SceneSource, byDefault: boolean): Promise<Shown> {
-  const link = linkFor(source, byDefault, location.href);
-  if (source.kind === "gist") {
-    const { name, doc } = await fetchGist(source.id, source.file);
-    return { doc, name, from: labelOf(source), link };
-  }
-  return { doc: await fetchScene(source.url), name: sceneName(source), from: source.url, link };
-}
-async function readFile(file: File): Promise<Shown> {
-  return { doc: await sceneFromFile(file), name: file.name, from: "local file", link: null };
-}
-
-// Shows a loaded scene, or says what failed (the load or the drawing) under the card, naming what was asked for.
-async function present(what: string, loading: () => Promise<Shown>, show: Show): Promise<void> {
-  busy(`Loading ${what}…`);
-  try {
-    show(await loading());
-    sceneOpen = true;
-    hideCard();
-  } catch (error) {
-    fail(`Could not load ${what}: ${messageOf(error)}`);
+async function loadSource(source: Source): Promise<Loaded> {
+  switch (source.kind) {
+    case "embedded":
+      return { doc: source.doc, name: nameOf(source) };
+    case "live":
+      // The version is noted before the scene is read, so the scene is at least that version, and a status that comes
+      // while it loads (with another version) loads again.
+      state.servedVersion = await fetchServedVersion();
+      return { doc: await fetchLive(), name: nameOf(source) };
+    case "url":
+      return { doc: await fetchScene(source.url), name: nameOf(source) };
+    case "gist": {
+      const { name, doc } = await fetchGist(source.id, source.file);
+      return { doc, name };
+    }
+    case "file":
+      return { doc: await sceneFromFile(source.file), name: nameOf(source) };
   }
 }
 
-// ---- the tabs ----
-function tabFor(label: string, what: string, local: boolean, load: () => Promise<Shown>): ClientTab {
-  return { label, what, local, load, loaded: null };
-}
-
-// The tab's shown scene, loaded once. A failed load is cleared, so choosing the tab again tries it again.
-function loadOnce(tab: ClientTab): Promise<Shown> {
-  tab.loaded ??= tab.load().catch((error: unknown) => {
+// A tab's scene: loaded once and kept, and a failed load is cleared so choosing the tab tries again. A live scene is
+// never kept: the server may have a newer one by the time its tab is chosen.
+function loadTab(tab: Tab): Promise<Loaded> {
+  if (tab.source.kind === "live") return inLiveTurn(() => loadSource(tab.source));
+  tab.loaded ??= loadSource(tab.source).catch((error: unknown) => {
     tab.loaded = null;
     throw error;
   });
   return tab.loaded;
 }
 
-function showCurrent(): Promise<void> {
-  const tab = tabs.tabs[tabs.current];
-  return present(tab.what, () => loadOnce(tab), showScene);
+// The tab that is shown (the list's current one), if the page has any.
+const currentTab = (): Tab | undefined => state.tabs.tabs[state.tabs.current];
+
+// Shows the current tab's scene: the one path for every source. The shown scene goes on the stage, its title and line
+// are set, and its link is the one Copy link gives. A tab that is no longer current when its load ends is not shown.
+async function showCurrent(): Promise<void> {
+  const tab = currentTab();
+  if (!tab) return;
+  for (const listener of state.tabListeners) listener(tab.source);
+  const progress = setTimeout(() => {
+    if (tab === currentTab()) busy(`Loading ${nameOf(tab.source)}…`);
+  }, PROGRESS_MS);
+  try {
+    const loaded = await loadTab(tab);
+    clearTimeout(progress);
+    if (tab !== currentTab()) return;
+    openScene(loaded.doc, takePendingPose());
+    state.shown = tab;
+    setSceneLink(linkOf(tab.source, location.href));
+    pageName.show(loaded.name, fromOf(tab.source));
+    document.title = `gemmy: ${loaded.name}`;
+    hideCard();
+  } catch (error) {
+    clearTimeout(progress);
+    if (tab === currentTab()) fail(`Could not load ${nameOf(tab.source)}: ${messageOf(error)}`);
+  }
+}
+
+// gemmy serve reports a version (on its status): when the live tab is the one on the stage and the version is not the
+// one on the stage, the scene is loaded in place. Otherwise, or with no version, nothing happens. When the live tab is
+// current but not on the stage (no scene yet, or a file is shown, or its last load failed), it is opened the usual way
+// (not awaited: the turn it would wait for is this one).
+export function reloadLive(version: string | null | undefined): Promise<void> {
+  return inLiveTurn(async () => {
+    const tab = currentTab();
+    if (!version || tab?.source.kind !== "live" || version === state.servedVersion) return;
+    if (tab !== state.shown) {
+      void showCurrent();
+      return;
+    }
+    const loaded = await loadSource(tab.source);
+    if (tab === currentTab()) updateScene(loaded.doc);
+  });
 }
 
 function choose(k: number): Promise<void> {
-  tabs = chooseTab(tabs, k);
+  state.tabs = chooseTab(state.tabs, k);
   renderBar();
   return showCurrent();
 }
 
 // Closing a tab that is shown brings up the one before it; closing another leaves the scene on the stage as it is.
 function closeAt(k: number): Promise<void> {
-  const wasCurrent = k === tabs.current;
-  tabs = closeTab(tabs, k);
+  const wasCurrent = k === state.tabs.current;
+  state.tabs = closeTab(state.tabs, k);
   renderBar();
   return wasCurrent ? showCurrent() : Promise.resolve();
 }
 
-// The strip's tab buttons are rebuilt from the list. A server-built strip keeps its links: the page's own scene is
-// its link (tab 0), so that tab has no button of its own there, and the link is current only while that scene is shown.
+// ---- the tab bar ----
 function renderBar(): void {
-  const strip = bar;
-  if (strip === null) return;
-  strip.querySelectorAll(".local-tab").forEach((element) => element.remove());
-  tabs.tabs.forEach((tab, k) => {
-    if (k !== 0 || ownLink === null) strip.appendChild(tabElement(tab, k));
-  });
-  if (ownLink !== null) {
-    if (tabs.current === 0) ownLink.setAttribute("aria-current", "page");
-    else ownLink.removeAttribute("aria-current");
-  }
-  watchOverflow(strip);
-  strip.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  if (state.bar === null) return;
+  const many = state.tabs.tabs.length > 1;
+  renderTabs(
+    state.bar,
+    state.tabs.tabs.map((tab) => ({ label: tab.label, closable: many && tab.source.kind === "file" })),
+    state.tabs.current,
+    { choose: (k) => void choose(k), close: (k) => void closeAt(k) },
+  );
 }
 
-// A tab as the strip shows it: its button, and for a file a ✕ while another tab remains (the last tab stays).
-function tabElement(tab: ClientTab, k: number): HTMLElement {
-  const wrap = document.createElement("span");
-  wrap.className = "local-tab";
-  const choice = document.createElement("button");
-  choice.type = "button";
-  choice.textContent = tab.label;
-  if (k === tabs.current) choice.setAttribute("aria-current", "page");
-  choice.addEventListener("click", () => void choose(k));
-  wrap.appendChild(choice);
-  if (tab.local && tabs.tabs.length > 1) wrap.appendChild(tabCloseButton(tab, k));
-  return wrap;
-}
-
-// The ✕ icon is the Lucide x, a constant string (never user text).
-const CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
-function tabCloseButton(tab: ClientTab, k: number): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "tab-close";
-  button.title = `Close ${tab.label}`;
-  button.setAttribute("aria-label", `Close ${tab.label}`);
-  button.innerHTML = CLOSE_ICON;
-  button.addEventListener("click", () => void closeAt(k));
-  return button;
-}
-
-// The tab strip, made above the page's name (the name is hidden behind the strip, as on a server-built strip).
+// The tab strip, made when the page has more than one tab. Its own link (a server-built strip) chooses tab 0.
 function ensureBar(): void {
-  if (bar !== null) return;
-  const built = document.querySelector<HTMLElement>(".tabs");
-  if (built) {
-    bar = built;
-    ownLink = built.querySelector<HTMLAnchorElement>('a[aria-current="page"]');
-    // Its own scene is tab 0 here: choosing it does not navigate, the other links still do.
-    ownLink?.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (tabs.current !== 0) void choose(0);
-    });
-    return;
-  }
-  const nav = document.createElement("nav");
-  nav.className = "tabs";
-  nav.setAttribute("aria-label", "Scenes");
-  byId("menu-island").insertBefore(nav, document.querySelector(".name"));
-  bar = nav;
+  state.bar ??= makeBar(() => {
+    if (state.tabs.current !== 0) void choose(0);
+  });
 }
 
-// Files the user dropped or chose: a tab each, labelled with the file name (made unique), and the last one is shown.
+// ---- adding tabs ----
+// A tab per source, labelled by its name made unique among the labels in the bar, so two files with the same name
+// stay apart. The list's current tab is the last one added.
+function addSources(sources: readonly Source[]): void {
+  for (const source of sources) {
+    const label = uniqueLabel(
+      nameOf(source),
+      state.tabs.tabs.map((tab) => tab.label),
+    );
+    state.tabs = addTab(state.tabs, { label, source, loaded: null });
+  }
+}
+
+// Files the user dropped or chose: a tab each, and the last one is shown.
 function addFiles(files: File[]): void {
   if (files.length === 0) return;
   ensureBar();
-  for (const file of files) {
-    const label = uniqueLabel(file.name, tabs.tabs.map((tab) => tab.label));
-    tabs = addTab(tabs, tabFor(label, file.name, true, () => readFile(file)));
-  }
-  void choose(tabs.tabs.length - 1);
+  addSources(files.map((file): Source => ({ kind: "file", file })));
+  void choose(state.tabs.tabs.length - 1);
 }
 
-// The page's default scenes: one gemmy-default-scene meta per scene, in document order.
-function defaultScenes(): string[] {
-  return [...document.querySelectorAll<HTMLMetaElement>('meta[name="gemmy-default-scene"]')]
-    .map((meta) => meta.content)
-    .filter((scene) => scene !== "");
-}
-
-export function startLoader(open: Show): void {
-  showScene = open;
-  let openings: Opening[];
+// The page's tabs at startup. `read` gives the page's sources; it runs here, so a bad address is said under the card.
+// No sources: the empty card. Several: they are tabs from the start, and the first is shown at once.
+export function startTabs(read: () => Source[]): void {
+  let sources: Source[];
   try {
-    openings = sourcesToOpen(location.search, location.href, defaultScenes());
+    sources = read();
   } catch (error) {
     fail(messageOf(error));
     return;
   }
-  if (openings.length === 0) {
+  if (sources.length === 0) {
     showCard();
     return;
   }
-  // Several scenes are tabs from the start; the first is shown at once, and each loads when its tab is first chosen.
-  tabs = tabsOf(openings.map(({ source, byDefault }) =>
-    tabFor(sceneName(source), labelOf(source), false, () => loadSource(source, byDefault))));
-  if (tabs.tabs.length > 1) ensureBar();
+  state.tabs = tabsOf([]);
+  addSources(sources);
+  if (state.tabs.tabs.length > 1) ensureBar();
   void choose(0);
 }
 
-// The ☰ menu's Open URL…: the card with its URL input focused, over the scene that stays behind it. On the empty page
-// there is nothing behind the card, so it has no close control (showCard hides it).
+// The ☰ menu's Open URL…: the card with its URL input focused, over the scene that stays behind it. On the
+// empty page there is nothing behind the card, so it has no close control (showCard hides it).
 export function showUrlForm(): void {
   showCard();
   urlInput.focus();
@@ -253,17 +250,14 @@ export function showUrlForm(): void {
 // Closes the card back to the scene behind it. Returns whether it did, so Esc knows it was used. On the empty page
 // (no scene behind) it does nothing and returns false.
 export function closeUrlForm(): boolean {
-  if (empty.hidden || !sceneOpen) return false;
+  if (empty.hidden || !hasScene()) return false;
   hideCard();
   return true;
 }
 
-// Drop a file anywhere on the page, the file input from the ☰ menu or the empty state's button. Also the URL form in the
-// empty state, which opens the page again with ?scene= for the URL (so the address shows what is open). `own` is the
-// scene the page shows itself, if any: its tab comes first.
-export function attachOpeners(open: Show, own: OwnScene | null): void {
-  showScene = open;
-  if (own) tabs = tabsOf([tabFor(own.label, own.label, false, own.load)]);
+// Drop a file anywhere on the page, the file input from the ☰ menu or the empty state's button. Also the URL form in
+// the empty state, which opens the page again with ?scene= for the URL (so the address shows what is open).
+export function attachOpeners(): void {
   closeButton.addEventListener("click", () => closeUrlForm());
   window.addEventListener("dragover", (event) => {
     event.preventDefault();

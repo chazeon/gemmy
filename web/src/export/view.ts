@@ -3,7 +3,7 @@
 import { Quaternion, Vector2, Vector3 } from "three";
 import { EPS, GEMMY } from "../config";
 import { baseDistance, orthoFrame } from "../camera/framing";
-import type { Vec3 } from "../types";
+import type { Scene, Vec3 } from "../types";
 
 // Angstrom: the floor on the view depth, so a point in the eye plane never divides by zero.
 const MIN_DEPTH = 1e-3;
@@ -20,6 +20,16 @@ export interface ViewOptions {
   height: number;
   projection?: "ortho" | "persp";
   lens?: number; // mm, perspective only
+}
+
+// What the SVG export draws: the view, the scene, and what the page shows of it (the atoms and the box, the outlines).
+export interface SvgOptions extends ViewOptions {
+  data: Scene;
+  show: { atoms: boolean; box: boolean };
+  outlines: boolean;
+  outlineScale: number; // the user's outline width (ui/outline-scale.ts): a multiplier on the automatic width
+  lattice: Vec3[]; // the a, b, c vectors, for the triad
+  boxColor: string; // CSS colour of the cell box and the triad hub
 }
 
 // An ellipse on screen: its centre, radii and the angle of the rx axis.
@@ -89,6 +99,28 @@ export function makeView(o: ViewOptions): View {
     return perspectiveSphereImage(c, r, pinhole);
   };
   return { right, up, back, toCam, toScreen, depth, pxPerUnit, sphereImage };
+}
+
+// The view of the corner: the camera's orientation, and the screen in CSS px of the corner (y down from its top), where
+// the origin sits at `origin`. The triad's curves are written in these coordinates.
+export function viewOfCorner(orientation: Quaternion, origin: [number, number]): View {
+  const inverse = orientation.clone().invert();
+  const axis = (x: number, y: number, z: number) => new Vector3(x, y, z).applyQuaternion(orientation);
+  const toCam = (p: Vector3) => p.clone().applyQuaternion(inverse); // the origin is the triad's own origin
+  const toScreen = (c: Vector3) => new Vector2(origin[0] + c.x, origin[1] - c.y);
+  return {
+    right: axis(1, 0, 0),
+    up: axis(0, 1, 0),
+    back: axis(0, 0, 1),
+    toCam,
+    toScreen,
+    depth: (c) => c.z,
+    pxPerUnit: () => 1, // the triad's lengths are CSS px
+    sphereImage: (c, r) => {
+      const s = toScreen(c);
+      return { cx: s.x, cy: s.y, rx: r, ry: r, phi: 0 };
+    },
+  };
 }
 
 // The image of a sphere (camera-space centre c, radius r) under the pinhole as an ellipse. Exact: the silhouette cone

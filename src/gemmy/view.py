@@ -65,6 +65,8 @@ def render_constants() -> dict[str, Any]:
             "labelReach": looks.AXES_LABEL_REACH,
             "headRadiusRatio": looks.AXES_HEAD_RADIUS_RATIO,
             "headLengthRatio": looks.AXES_HEAD_LENGTH_RATIO,
+            "dotRadius": looks.AXES_DOT_RADIUS,
+            "depthFadeMax": looks.DEPTH_FADE_MAX,
         },
     }
 

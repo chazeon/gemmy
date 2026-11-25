@@ -47,40 +47,40 @@ var require_fit_curve = __commonJS({
           throw new TypeError("Cannot call a class as a function");
         }
       }
-      function fitCurve2(points2, maxError, progressCallback) {
-        if (!Array.isArray(points2)) {
+      function fitCurve2(points, maxError, progressCallback) {
+        if (!Array.isArray(points)) {
           throw new TypeError("First argument should be an array");
         }
-        points2.forEach(function(point) {
+        points.forEach(function(point) {
           if (!Array.isArray(point) || point.some(function(item) {
             return typeof item !== "number";
-          }) || point.length !== points2[0].length) {
+          }) || point.length !== points[0].length) {
             throw Error("Each point should be an array of numbers. Each point should have the same amount of numbers.");
           }
         });
-        points2 = points2.filter(function(point, i) {
-          return i === 0 || !point.every(function(val, j) {
-            return val === points2[i - 1][j];
+        points = points.filter(function(point, i2) {
+          return i2 === 0 || !point.every(function(val, j2) {
+            return val === points[i2 - 1][j2];
           });
         });
-        if (points2.length < 2) {
+        if (points.length < 2) {
           return [];
         }
-        var len = points2.length;
-        var leftTangent = createTangent(points2[1], points2[0]);
-        var rightTangent = createTangent(points2[len - 2], points2[len - 1]);
-        return fitCubic(points2, leftTangent, rightTangent, maxError, progressCallback);
+        var len = points.length;
+        var leftTangent = createTangent(points[1], points[0]);
+        var rightTangent = createTangent(points[len - 2], points[len - 1]);
+        return fitCubic(points, leftTangent, rightTangent, maxError, progressCallback);
       }
-      function fitCubic(points2, leftTangent, rightTangent, error, progressCallback) {
+      function fitCubic(points, leftTangent, rightTangent, error, progressCallback) {
         var MaxIterations = 20;
-        var bezCurve, u, uPrime, maxError, prevErr, splitPoint, prevSplit, centerVector, toCenterTangent, fromCenterTangent, beziers, dist2, i;
-        if (points2.length === 2) {
-          dist2 = maths.vectorLen(maths.subtract(points2[0], points2[1])) / 3;
-          bezCurve = [points2[0], maths.addArrays(points2[0], maths.mulItems(leftTangent, dist2)), maths.addArrays(points2[1], maths.mulItems(rightTangent, dist2)), points2[1]];
+        var bezCurve, u2, uPrime, maxError, prevErr, splitPoint, prevSplit, centerVector, toCenterTangent, fromCenterTangent, beziers, dist2, i2;
+        if (points.length === 2) {
+          dist2 = maths.vectorLen(maths.subtract(points[0], points[1])) / 3;
+          bezCurve = [points[0], maths.addArrays(points[0], maths.mulItems(leftTangent, dist2)), maths.addArrays(points[1], maths.mulItems(rightTangent, dist2)), points[1]];
           return [bezCurve];
         }
-        u = chordLengthParameterize(points2);
-        var _generateAndReport = generateAndReport(points2, u, u, leftTangent, rightTangent, progressCallback);
+        u2 = chordLengthParameterize(points);
+        var _generateAndReport = generateAndReport(points, u2, u2, leftTangent, rightTangent, progressCallback);
         bezCurve = _generateAndReport[0];
         maxError = _generateAndReport[1];
         splitPoint = _generateAndReport[2];
@@ -88,12 +88,12 @@ var require_fit_curve = __commonJS({
           return [bezCurve];
         }
         if (maxError < error * error) {
-          uPrime = u;
+          uPrime = u2;
           prevErr = maxError;
           prevSplit = splitPoint;
-          for (i = 0; i < MaxIterations; i++) {
-            uPrime = reparameterize(bezCurve, points2, uPrime);
-            var _generateAndReport2 = generateAndReport(points2, u, uPrime, leftTangent, rightTangent, progressCallback);
+          for (i2 = 0; i2 < MaxIterations; i2++) {
+            uPrime = reparameterize(bezCurve, points, uPrime);
+            var _generateAndReport2 = generateAndReport(points, u2, uPrime, leftTangent, rightTangent, progressCallback);
             bezCurve = _generateAndReport2[0];
             maxError = _generateAndReport2[1];
             splitPoint = _generateAndReport2[2];
@@ -110,32 +110,32 @@ var require_fit_curve = __commonJS({
           }
         }
         beziers = [];
-        centerVector = maths.subtract(points2[splitPoint - 1], points2[splitPoint + 1]);
+        centerVector = maths.subtract(points[splitPoint - 1], points[splitPoint + 1]);
         if (centerVector.every(function(val) {
           return val === 0;
         })) {
-          centerVector = maths.subtract(points2[splitPoint - 1], points2[splitPoint]);
+          centerVector = maths.subtract(points[splitPoint - 1], points[splitPoint]);
           var _ref = [-centerVector[1], centerVector[0]];
           centerVector[0] = _ref[0];
           centerVector[1] = _ref[1];
         }
         toCenterTangent = maths.normalize(centerVector);
         fromCenterTangent = maths.mulItems(toCenterTangent, -1);
-        beziers = beziers.concat(fitCubic(points2.slice(0, splitPoint + 1), leftTangent, toCenterTangent, error, progressCallback));
-        beziers = beziers.concat(fitCubic(points2.slice(splitPoint), fromCenterTangent, rightTangent, error, progressCallback));
+        beziers = beziers.concat(fitCubic(points.slice(0, splitPoint + 1), leftTangent, toCenterTangent, error, progressCallback));
+        beziers = beziers.concat(fitCubic(points.slice(splitPoint), fromCenterTangent, rightTangent, error, progressCallback));
         return beziers;
       }
       ;
-      function generateAndReport(points2, paramsOrig, paramsPrime, leftTangent, rightTangent, progressCallback) {
+      function generateAndReport(points, paramsOrig, paramsPrime, leftTangent, rightTangent, progressCallback) {
         var bezCurve, maxError, splitPoint;
-        bezCurve = generateBezier(points2, paramsPrime, leftTangent, rightTangent, progressCallback);
-        var _computeMaxError = computeMaxError(points2, bezCurve, paramsOrig);
+        bezCurve = generateBezier(points, paramsPrime, leftTangent, rightTangent, progressCallback);
+        var _computeMaxError = computeMaxError(points, bezCurve, paramsOrig);
         maxError = _computeMaxError[0];
         splitPoint = _computeMaxError[1];
         if (progressCallback) {
           progressCallback({
             bez: bezCurve,
-            points: points2,
+            points,
             params: paramsOrig,
             maxErr: maxError,
             maxPoint: splitPoint
@@ -143,29 +143,29 @@ var require_fit_curve = __commonJS({
         }
         return [bezCurve, maxError, splitPoint];
       }
-      function generateBezier(points2, parameters, leftTangent, rightTangent) {
-        var bezCurve, A, a, C, X, det_C0_C1, det_C0_X, det_X_C1, alpha_l, alpha_r, epsilon, segLength, i, len, tmp, u, ux, firstPoint = points2[0], lastPoint = points2[points2.length - 1];
+      function generateBezier(points, parameters, leftTangent, rightTangent) {
+        var bezCurve, A, a2, C, X, det_C0_C1, det_C0_X, det_X_C1, alpha_l, alpha_r, epsilon, segLength, i2, len, tmp, u2, ux, firstPoint = points[0], lastPoint = points[points.length - 1];
         bezCurve = [firstPoint, null, null, lastPoint];
         A = maths.zeros_Xx2x2(parameters.length);
-        for (i = 0, len = parameters.length; i < len; i++) {
-          u = parameters[i];
-          ux = 1 - u;
-          a = A[i];
-          a[0] = maths.mulItems(leftTangent, 3 * u * (ux * ux));
-          a[1] = maths.mulItems(rightTangent, 3 * ux * (u * u));
+        for (i2 = 0, len = parameters.length; i2 < len; i2++) {
+          u2 = parameters[i2];
+          ux = 1 - u2;
+          a2 = A[i2];
+          a2[0] = maths.mulItems(leftTangent, 3 * u2 * (ux * ux));
+          a2[1] = maths.mulItems(rightTangent, 3 * ux * (u2 * u2));
         }
         C = [[0, 0], [0, 0]];
         X = [0, 0];
-        for (i = 0, len = points2.length; i < len; i++) {
-          u = parameters[i];
-          a = A[i];
-          C[0][0] += maths.dot(a[0], a[0]);
-          C[0][1] += maths.dot(a[0], a[1]);
-          C[1][0] += maths.dot(a[0], a[1]);
-          C[1][1] += maths.dot(a[1], a[1]);
-          tmp = maths.subtract(points2[i], bezier.q([firstPoint, firstPoint, lastPoint, lastPoint], u));
-          X[0] += maths.dot(a[0], tmp);
-          X[1] += maths.dot(a[1], tmp);
+        for (i2 = 0, len = points.length; i2 < len; i2++) {
+          u2 = parameters[i2];
+          a2 = A[i2];
+          C[0][0] += maths.dot(a2[0], a2[0]);
+          C[0][1] += maths.dot(a2[0], a2[1]);
+          C[1][0] += maths.dot(a2[0], a2[1]);
+          C[1][1] += maths.dot(a2[1], a2[1]);
+          tmp = maths.subtract(points[i2], bezier.q([firstPoint, firstPoint, lastPoint, lastPoint], u2));
+          X[0] += maths.dot(a2[0], tmp);
+          X[1] += maths.dot(a2[1], tmp);
         }
         det_C0_C1 = C[0][0] * C[1][1] - C[1][0] * C[0][1];
         det_C0_X = C[0][0] * X[1] - C[1][0] * X[0];
@@ -184,48 +184,48 @@ var require_fit_curve = __commonJS({
         return bezCurve;
       }
       ;
-      function reparameterize(bezier2, points2, parameters) {
-        return parameters.map(function(p, i) {
-          return newtonRaphsonRootFind(bezier2, points2[i], p);
+      function reparameterize(bezier2, points, parameters) {
+        return parameters.map(function(p2, i2) {
+          return newtonRaphsonRootFind(bezier2, points[i2], p2);
         });
       }
       ;
-      function newtonRaphsonRootFind(bez, point, u) {
-        var d = maths.subtract(bezier.q(bez, u), point), qprime = bezier.qprime(bez, u), numerator = maths.mulMatrix(d, qprime), denominator = maths.sum(maths.squareItems(qprime)) + 2 * maths.mulMatrix(d, bezier.qprimeprime(bez, u));
+      function newtonRaphsonRootFind(bez, point, u2) {
+        var d2 = maths.subtract(bezier.q(bez, u2), point), qprime = bezier.qprime(bez, u2), numerator = maths.mulMatrix(d2, qprime), denominator = maths.sum(maths.squareItems(qprime)) + 2 * maths.mulMatrix(d2, bezier.qprimeprime(bez, u2));
         if (denominator === 0) {
-          return u;
+          return u2;
         } else {
-          return u - numerator / denominator;
+          return u2 - numerator / denominator;
         }
       }
       ;
-      function chordLengthParameterize(points2) {
-        var u = [], currU, prevU, prevP;
-        points2.forEach(function(p, i) {
-          currU = i ? prevU + maths.vectorLen(maths.subtract(p, prevP)) : 0;
-          u.push(currU);
+      function chordLengthParameterize(points) {
+        var u2 = [], currU, prevU, prevP;
+        points.forEach(function(p2, i2) {
+          currU = i2 ? prevU + maths.vectorLen(maths.subtract(p2, prevP)) : 0;
+          u2.push(currU);
           prevU = currU;
-          prevP = p;
+          prevP = p2;
         });
-        u = u.map(function(x) {
-          return x / prevU;
+        u2 = u2.map(function(x2) {
+          return x2 / prevU;
         });
-        return u;
+        return u2;
       }
       ;
-      function computeMaxError(points2, bez, parameters) {
-        var dist2, maxDist, splitPoint, v, i, count2, point, t;
+      function computeMaxError(points, bez, parameters) {
+        var dist2, maxDist, splitPoint, v2, i2, count2, point, t2;
         maxDist = 0;
-        splitPoint = Math.floor(points2.length / 2);
+        splitPoint = Math.floor(points.length / 2);
         var t_distMap = mapTtoRelativeDistances(bez, 10);
-        for (i = 0, count2 = points2.length; i < count2; i++) {
-          point = points2[i];
-          t = find_t(bez, parameters[i], t_distMap, 10);
-          v = maths.subtract(bezier.q(bez, t), point);
-          dist2 = v[0] * v[0] + v[1] * v[1];
+        for (i2 = 0, count2 = points.length; i2 < count2; i2++) {
+          point = points[i2];
+          t2 = find_t(bez, parameters[i2], t_distMap, 10);
+          v2 = maths.subtract(bezier.q(bez, t2), point);
+          dist2 = v2[0] * v2[0] + v2[1] * v2[1];
           if (dist2 > maxDist) {
             maxDist = dist2;
-            splitPoint = i;
+            splitPoint = i2;
           }
         }
         return [maxDist, splitPoint];
@@ -236,14 +236,14 @@ var require_fit_curve = __commonJS({
         var B_t_dist = [0];
         var B_t_prev = bez[0];
         var sumLen = 0;
-        for (var i = 1; i <= B_parts; i++) {
-          B_t_curr = bezier.q(bez, i / B_parts);
+        for (var i2 = 1; i2 <= B_parts; i2++) {
+          B_t_curr = bezier.q(bez, i2 / B_parts);
           sumLen += maths.vectorLen(maths.subtract(B_t_curr, B_t_prev));
           B_t_dist.push(sumLen);
           B_t_prev = B_t_curr;
         }
-        B_t_dist = B_t_dist.map(function(x) {
-          return x / sumLen;
+        B_t_dist = B_t_dist.map(function(x2) {
+          return x2 / sumLen;
         });
         return B_t_dist;
       };
@@ -254,18 +254,18 @@ var require_fit_curve = __commonJS({
         if (param > 1) {
           return 1;
         }
-        var lenMax, lenMin, tMax, tMin, t;
-        for (var i = 1; i <= B_parts; i++) {
-          if (param <= t_distMap[i]) {
-            tMin = (i - 1) / B_parts;
-            tMax = i / B_parts;
-            lenMin = t_distMap[i - 1];
-            lenMax = t_distMap[i];
-            t = (param - lenMin) / (lenMax - lenMin) * (tMax - tMin) + tMin;
+        var lenMax, lenMin, tMax, tMin, t2;
+        for (var i2 = 1; i2 <= B_parts; i2++) {
+          if (param <= t_distMap[i2]) {
+            tMin = (i2 - 1) / B_parts;
+            tMax = i2 / B_parts;
+            lenMin = t_distMap[i2 - 1];
+            lenMax = t_distMap[i2];
+            t2 = (param - lenMin) / (lenMax - lenMin) * (tMax - tMin) + tMin;
             break;
           }
         }
-        return t;
+        return t2;
       }
       function createTangent(pointA, pointB) {
         return maths.normalize(maths.subtract(pointA, pointB));
@@ -274,61 +274,61 @@ var require_fit_curve = __commonJS({
         function maths2() {
           _classCallCheck(this, maths2);
         }
-        maths2.zeros_Xx2x2 = function zeros_Xx2x2(x) {
+        maths2.zeros_Xx2x2 = function zeros_Xx2x2(x2) {
           var zs = [];
-          while (x--) {
+          while (x2--) {
             zs.push([0, 0]);
           }
           return zs;
         };
         maths2.mulItems = function mulItems(items, multiplier) {
-          return items.map(function(x) {
-            return x * multiplier;
+          return items.map(function(x2) {
+            return x2 * multiplier;
           });
         };
         maths2.mulMatrix = function mulMatrix(m1, m2) {
-          return m1.reduce(function(sum, x1, i) {
-            return sum + x1 * m2[i];
+          return m1.reduce(function(sum, x1, i2) {
+            return sum + x1 * m2[i2];
           }, 0);
         };
         maths2.subtract = function subtract(arr1, arr2) {
-          return arr1.map(function(x1, i) {
-            return x1 - arr2[i];
+          return arr1.map(function(x1, i2) {
+            return x1 - arr2[i2];
           });
         };
         maths2.addArrays = function addArrays(arr1, arr2) {
-          return arr1.map(function(x1, i) {
-            return x1 + arr2[i];
+          return arr1.map(function(x1, i2) {
+            return x1 + arr2[i2];
           });
         };
         maths2.addItems = function addItems(items, addition) {
-          return items.map(function(x) {
-            return x + addition;
+          return items.map(function(x2) {
+            return x2 + addition;
           });
         };
         maths2.sum = function sum(items) {
-          return items.reduce(function(sum2, x) {
-            return sum2 + x;
+          return items.reduce(function(sum2, x2) {
+            return sum2 + x2;
           });
         };
         maths2.dot = function dot(m1, m2) {
           return maths2.mulMatrix(m1, m2);
         };
-        maths2.vectorLen = function vectorLen(v) {
-          return Math.hypot.apply(Math, v);
+        maths2.vectorLen = function vectorLen(v2) {
+          return Math.hypot.apply(Math, v2);
         };
         maths2.divItems = function divItems(items, divisor) {
-          return items.map(function(x) {
-            return x / divisor;
+          return items.map(function(x2) {
+            return x2 / divisor;
           });
         };
         maths2.squareItems = function squareItems(items) {
-          return items.map(function(x) {
-            return x * x;
+          return items.map(function(x2) {
+            return x2 * x2;
           });
         };
-        maths2.normalize = function normalize(v) {
-          return this.divItems(v, this.vectorLen(v));
+        maths2.normalize = function normalize(v2) {
+          return this.divItems(v2, this.vectorLen(v2));
         };
         return maths2;
       }();
@@ -336,18 +336,18 @@ var require_fit_curve = __commonJS({
         function bezier2() {
           _classCallCheck(this, bezier2);
         }
-        bezier2.q = function q(ctrlPoly, t) {
-          var tx = 1 - t;
-          var pA = maths.mulItems(ctrlPoly[0], tx * tx * tx), pB = maths.mulItems(ctrlPoly[1], 3 * tx * tx * t), pC = maths.mulItems(ctrlPoly[2], 3 * tx * t * t), pD = maths.mulItems(ctrlPoly[3], t * t * t);
+        bezier2.q = function q(ctrlPoly, t2) {
+          var tx = 1 - t2;
+          var pA = maths.mulItems(ctrlPoly[0], tx * tx * tx), pB = maths.mulItems(ctrlPoly[1], 3 * tx * tx * t2), pC = maths.mulItems(ctrlPoly[2], 3 * tx * t2 * t2), pD = maths.mulItems(ctrlPoly[3], t2 * t2 * t2);
           return maths.addArrays(maths.addArrays(pA, pB), maths.addArrays(pC, pD));
         };
-        bezier2.qprime = function qprime(ctrlPoly, t) {
-          var tx = 1 - t;
-          var pA = maths.mulItems(maths.subtract(ctrlPoly[1], ctrlPoly[0]), 3 * tx * tx), pB = maths.mulItems(maths.subtract(ctrlPoly[2], ctrlPoly[1]), 6 * tx * t), pC = maths.mulItems(maths.subtract(ctrlPoly[3], ctrlPoly[2]), 3 * t * t);
+        bezier2.qprime = function qprime(ctrlPoly, t2) {
+          var tx = 1 - t2;
+          var pA = maths.mulItems(maths.subtract(ctrlPoly[1], ctrlPoly[0]), 3 * tx * tx), pB = maths.mulItems(maths.subtract(ctrlPoly[2], ctrlPoly[1]), 6 * tx * t2), pC = maths.mulItems(maths.subtract(ctrlPoly[3], ctrlPoly[2]), 3 * t2 * t2);
           return maths.addArrays(maths.addArrays(pA, pB), pC);
         };
-        bezier2.qprimeprime = function qprimeprime(ctrlPoly, t) {
-          return maths.addArrays(maths.mulItems(maths.addArrays(maths.subtract(ctrlPoly[2], maths.mulItems(ctrlPoly[1], 2)), ctrlPoly[0]), 6 * (1 - t)), maths.mulItems(maths.addArrays(maths.subtract(ctrlPoly[3], maths.mulItems(ctrlPoly[2], 2)), ctrlPoly[1]), 6 * t));
+        bezier2.qprimeprime = function qprimeprime(ctrlPoly, t2) {
+          return maths.addArrays(maths.mulItems(maths.addArrays(maths.subtract(ctrlPoly[2], maths.mulItems(ctrlPoly[1], 2)), ctrlPoly[0]), 6 * (1 - t2)), maths.mulItems(maths.addArrays(maths.subtract(ctrlPoly[3], maths.mulItems(ctrlPoly[2], 2)), ctrlPoly[1]), 6 * t2));
         };
         return bezier2;
       }();
@@ -358,6 +358,10 @@ var require_fit_curve = __commonJS({
   }
 });
 
+// src/render/draw.ts
+import * as THREE3 from "three";
+import { TrackballControls } from "three/addons/controls/TrackballControls.js";
+
 // src/config.ts
 var LOOK = {
   azimuth: 35,
@@ -366,8 +370,8 @@ var LOOK = {
   // brightness of the shaded band
   threshold: 0.25,
   // N.L above which a surface is lit
+  // The key light, screen-relative: right, up, towards the viewer.
   key: [-0.55, 0.6, 0.6],
-  // key light, screen-relative: right, up, towards the viewer
   outline: [0.02, 0.02, 0.05],
   axisColors: ["#cc3833", "#389e47", "#3861cc"]
 };
@@ -380,259 +384,423 @@ var EPS = 1e-9;
 var POINTER_SLOP_PX = 5;
 var GEMMY = __CONSTANTS_JSON__;
 var AXIS_FONT = { family: "Gemmy Axis Labels", faces: __AXIS_FONTS_JSON__ };
-var axisFontFace = (weights = Object.keys(AXIS_FONT.faces)) => weights.map((w) => `@font-face { font-family: "${AXIS_FONT.family}"; font-style: italic; font-weight: ${w}; src: url(data:font/ttf;base64,${AXIS_FONT.faces[w]}) format("truetype"); }`).join("\n");
+var AXIS_LETTERS = "abc";
+var axisFontFace = (weight) => `@font-face { font-family: "${AXIS_FONT.family}"; font-style: italic; font-weight: ${weight}; src: url(data:font/ttf;base64,${AXIS_FONT.faces[weight]}) format("truetype"); }`;
 
-// src/geom/vector.ts
-var lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
-var span = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
-var vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-var vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-var vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-var vscale = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
-var vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-function vunit(a) {
-  const length2 = Math.hypot(...a) || 1;
-  return a.map((x) => x / length2);
+// node_modules/@preact/signals-core/dist/signals-core.module.js
+var i = Symbol.for("preact-signals");
+function t() {
+  if (!(v > 1)) {
+    var i2, t2 = false;
+    !function() {
+      var i3 = c;
+      c = void 0;
+      while (void 0 !== i3) {
+        var t3 = i3.S;
+        if (t3.v === i3.v) {
+          for (var r3 = t3.t; void 0 !== r3; r3 = r3.x) if (r3.i === i3.i) r3.i = t3.i;
+        }
+        i3 = i3.o;
+      }
+    }();
+    while (void 0 !== h) {
+      var r2 = h;
+      h = void 0;
+      s++;
+      while (void 0 !== r2) {
+        var n2 = r2.u;
+        r2.u = void 0;
+        r2.f &= -3;
+        if (!(8 & r2.f) && w(r2)) try {
+          r2.c();
+        } catch (r3) {
+          if (!t2) {
+            i2 = r3;
+            t2 = true;
+          }
+        }
+        r2 = n2;
+      }
+    }
+    s = 0;
+    v--;
+    if (t2) throw i2;
+  } else v--;
 }
-
-// src/camera/framing.ts
-var baseDistance = (extent3) => Math.max(GEMMY.distanceFactor * extent3, GEMMY.distanceMin);
-var orthoSide = (extent3) => Math.max(GEMMY.orthoFactor * extent3, GEMMY.orthoMin);
-var ORTHO_VIEW_DISTANCE = 8;
-function orthoFrame(extent3, width, height) {
-  const side = orthoSide(extent3);
-  const larger = Math.max(width, height);
-  return { halfWidth: side / 2 * (width / larger), halfHeight: side / 2 * (height / larger) };
-}
-var RAD_TO_DEG = 180 / Math.PI;
-function fitZoomPersp(extent3, lens2, width, height) {
-  const shorterSensor = GEMMY.sensorWidth * Math.min(width, height) / Math.max(width, height);
-  const halfAngle = Math.atan(shorterSensor / 2 / lens2);
-  return baseDistance(extent3) * Math.sin(halfAngle) / (orthoSide(extent3) / 2);
-}
-var fitZoom = (width, height) => Math.min(width, height) / Math.max(width, height);
-var orthoToPerspZoom = (extent3, lens2, zoom2) => baseDistance(extent3) * GEMMY.sensorWidth * zoom2 / (orthoSide(extent3) * lens2);
-var perspToOrthoZoom = (extent3, lens2, zoom2) => zoom2 * orthoSide(extent3) * lens2 / (baseDistance(extent3) * GEMMY.sensorWidth);
-var EXPORT_LONG_SIDE = 1600;
-function exportView(view) {
-  const { quaternion, zoom: zoom2, target, centre: centre2, box: box2, width, height } = view;
-  return {
-    projection: view.projection ?? "ortho",
-    lens: view.projection === "persp" ? view.lens : void 0,
-    direction: applyQuaternion(quaternion, [0, 0, 1]).map((x) => roundTo(x, 4)),
-    up: applyQuaternion(quaternion, [0, 1, 0]).map((x) => roundTo(x, 4)),
-    zoom: roundTo(zoom2, 3),
-    target: target.map((t, i) => roundTo(t + centre2[i], 4)),
-    cellBox: Boolean(box2),
-    resolution: resolutionFor(width, height)
-  };
-}
-function settingsObject(view) {
-  return {
-    look: { preset: "3to2d" },
-    camera: {
-      projection: view.projection,
-      ...view.lens === void 0 ? {} : { lens: view.lens },
-      direction: view.direction,
-      up: view.up,
-      zoom: view.zoom,
-      target: view.target
-    },
-    cell_box: { show: view.cellBox },
-    quality: { resolution: view.resolution }
-  };
-}
-var settingsJson = (view) => `${JSON.stringify(settingsObject(view), null, 2)}
-`;
-function settingsToml(view) {
-  return Object.entries(settingsObject(view)).map(([table, keys]) => `[${table}]
-${Object.entries(keys).map(([k, v]) => `${k} = ${tomlValue(v)}`).join("\n")}
-`).join("\n");
-}
-function renderCommand(view, sceneFile) {
-  const [w, h] = view.resolution;
-  return [
-    "gemmy render",
-    "--scene",
-    shellWord(sceneFile),
-    "--look.preset 3to2d",
-    `--camera.projection ${view.projection}`,
-    ...view.lens === void 0 ? [] : [`--camera.lens ${view.lens}`],
-    `--camera.direction ${view.direction.join(" ")}`,
-    `--camera.up ${view.up.join(" ")}`,
-    `--camera.zoom ${view.zoom}`,
-    `--camera.target ${view.target.join(" ")}`,
-    `--cell-box.show ${view.cellBox ? "True" : "False"}`,
-    `--quality.resolution ${w} ${h}`,
-    "--out view.png"
-  ].join(" ");
-}
-function triadLayout(dirs, width, height) {
-  const T = GEMMY.triad;
-  const length2 = T.size * Math.min(width, height);
-  const origin = [T.margin * width, height - T.margin * height];
-  const items = dirs.map((d, index) => triadItem(d, index, origin, length2)).sort((p, q) => p.depth - q.depth);
-  return {
-    origin,
-    items,
-    lineWidth: 2 * T.arrowRadius * length2,
-    fontSize: T.labelSize * length2,
-    dotRadius: DOT_RADIUS * length2,
-    length: length2
-  };
-}
-var LABEL_FLAT_MIN = 0.15;
-var HEAD_FLAT_MIN = 0.08;
-var DIAGONAL = Math.SQRT1_2;
-var DOT_RADIUS = 0.0875;
-function triadItem(d, index, origin, length2) {
-  const T = GEMMY.triad;
-  const flat = Math.hypot(d[0], d[1]);
-  const onScreen2 = flat > LABEL_FLAT_MIN;
-  const [ux, uy] = labelDirection(d, flat, onScreen2);
-  const labelRadius = length2 * (1 + T.labelReach * T.arrowRadius);
-  const reach = onScreen2 ? labelRadius * flat : 0;
-  const pad = T.labelPad * length2;
-  const label = { x: origin[0] + (reach + pad) * ux, y: origin[1] - (reach + pad) * uy };
-  return flat > HEAD_FLAT_MIN ? { index, depth: d[2], label, ...triadArrow(d, flat, origin, length2) } : { index, depth: d[2], label };
-}
-function labelDirection(d, flat, onScreen2) {
-  return onScreen2 ? [d[0] / flat, d[1] / flat] : [DIAGONAL, DIAGONAL];
-}
-var SHAFT_INTO_HEAD = 0.5;
-function triadArrow(d, flat, [ox, oy], length2) {
-  const T = GEMMY.triad;
-  const tip2 = [ox + d[0] * length2, oy - d[1] * length2];
-  const tx = d[0] / flat;
-  const ty = -d[1] / flat;
-  const headLength = T.headLengthRatio * length2;
-  const headHalf = T.headRadiusRatio * T.arrowRadius * length2;
-  const base = [tip2[0] - tx * headLength, tip2[1] - ty * headLength];
-  return {
-    shaftEnd: [tip2[0] - tx * headLength * SHAFT_INTO_HEAD, tip2[1] - ty * headLength * SHAFT_INTO_HEAD],
-    head: [
-      tip2,
-      [base[0] - ty * headHalf, base[1] + tx * headHalf],
-      [base[0] + ty * headHalf, base[1] - tx * headHalf]
-    ]
-  };
-}
-var CAMERA_FORWARD = [0, 0, -1];
-var viewForward = (quaternion) => applyQuaternion(quaternion, CAMERA_FORWARD);
-var flyShift = (quaternion, distance2) => viewForward(quaternion).map((x) => x * distance2);
-var centreDistance = (position) => Math.hypot(position[0], position[1], position[2]);
-var pointAlong = (from, direction, distance2) => from.map((x, i) => x + direction[i] * distance2);
-function pivotTarget(position, quaternion, currentTarget, hitDistance, minDistance) {
-  const pivotDistance = Math.max(hitDistance, minDistance);
-  const targetDistance = span(position, currentTarget);
-  if (pivotDistance >= targetDistance) return null;
-  return pointAlong(position, viewForward(quaternion), pivotDistance);
-}
-function distancesFromCentre(target, towards, wanted) {
-  const alongTarget = vdot(target, towards);
-  const discriminant = alongTarget * alongTarget - (vdot(target, target) - wanted * wanted);
-  if (discriminant < 0) return [-alongTarget];
-  const root2 = Math.sqrt(discriminant);
-  return [-alongTarget - root2, -alongTarget + root2];
-}
-var clampTo = (x, low, high) => Math.min(Math.max(x, low), high);
-function dollyPosition(position, target, wanted, minDistance, maxDistance) {
-  const current4 = span(position, target);
-  if (current4 === 0) return null;
-  const towards = vunit(vsub(position, target));
-  const ahead = distancesFromCentre(target, towards, wanted).filter((s) => s > 0);
-  if (!ahead.length) return null;
-  const nearest = ahead.reduce((best, s) => Math.abs(s - current4) < Math.abs(best - current4) ? s : best);
-  const along = clampTo(nearest, minDistance, maxDistance);
-  return target.map((x, i) => x + towards[i] * along);
-}
-var CLIP_MARGIN_IN_FRONT = 1;
-var CLIP_MARGIN_BEHIND = 2;
-var NEAREST_CLIP = 0.01;
-var depthOfCentre = (position, quaternion) => -vdot(position, viewForward(quaternion));
-function clipPlanesAround(depth, structureExtent) {
-  const radius = structureExtent / 2;
-  return {
-    near: Math.max(depth - radius - CLIP_MARGIN_IN_FRONT * structureExtent, NEAREST_CLIP),
-    far: depth + radius + CLIP_MARGIN_BEHIND * structureExtent
-  };
-}
-function resolutionFor(width, height) {
-  const scale = EXPORT_LONG_SIDE / Math.max(width, height);
-  return [Math.round(width * scale), Math.round(height * scale)];
-}
-var roundTo = (x, digits) => {
-  const scale = 10 ** digits;
-  return Math.round(x * scale) / scale || 0;
-};
-function applyQuaternion(q, v) {
-  const [x, y, z, w] = q;
-  const [vx, vy, vz] = v;
-  const tx = 2 * (y * vz - z * vy);
-  const ty = 2 * (z * vx - x * vz);
-  const tz = 2 * (x * vy - y * vx);
-  return [vx + w * tx + (y * tz - z * ty), vy + w * ty + (z * tx - x * tz), vz + w * tz + (x * ty - y * tx)];
-}
-var tomlValue = (v) => Array.isArray(v) ? `[${v.map(tomlValue).join(", ")}]` : JSON.stringify(v);
-var shellWord = (text) => /^[\w@%+=:,./-]+$/.test(text) ? text : `'${text.replace(/'/g, "'\\''")}'`;
-
-// src/scene/bounds.ts
-var MIN_EXTENT = 1;
-function sceneBounds(scene2) {
-  const positions = new Map(scene2.points.map((p) => [p.id, p.position]));
-  const corners = [...positions.values(), ...arrowEnds(scene2, positions)];
-  if (corners.length === 0) return { centre: [0, 0, 0], extent: MIN_EXTENT };
-  const { lo, hi } = boundingBox(corners);
-  const size = hi.map((x, i) => x - lo[i]);
-  return {
-    centre: lo.map((x, i) => (x + hi[i]) * 0.5),
-    extent: Math.max(Math.hypot(...size), MIN_EXTENT)
-  };
-}
-function arrowEnds(scene2, positions) {
-  const ends = [];
-  for (const d of scene2.primitives.displacements) {
-    const atom = positions.get(d.start_point_id);
-    if (atom === void 0) continue;
-    const far = atom.map((x, i) => x + d.vector[i]);
-    const near = atom.map((x, i) => x - d.vector[i]);
-    ends.push(...d.anchor === "tip" ? [near, atom] : [atom, far]);
+function r(i2) {
+  if (v > 0) return i2();
+  u = ++e;
+  v++;
+  try {
+    return i2();
+  } finally {
+    t();
   }
-  return ends;
 }
-function boundingBox(points2) {
-  const lo = [Infinity, Infinity, Infinity];
-  const hi = [-Infinity, -Infinity, -Infinity];
-  for (const p of points2) {
-    for (let i = 0; i < 3; i++) {
-      lo[i] = Math.min(lo[i], p[i]);
-      hi[i] = Math.max(hi[i], p[i]);
+var n;
+var o = void 0;
+function f(i2) {
+  var t2 = o, r2 = n;
+  o = void 0;
+  n = void 0;
+  try {
+    return i2();
+  } finally {
+    o = t2;
+    n = r2;
+  }
+}
+var h = void 0;
+var v = 0;
+var s = 0;
+var e = 0;
+var u = 0;
+var c = void 0;
+var a = 0;
+function d(i2) {
+  if (void 0 !== o) {
+    var t2 = i2.n;
+    if (void 0 === t2 || t2.t !== o) {
+      t2 = { i: 0, S: i2, p: o.s, n: void 0, t: o, e: void 0, x: void 0, r: t2 };
+      if (void 0 !== o.s) o.s.n = t2;
+      o.s = t2;
+      i2.n = t2;
+      if (32 & o.f) i2.S(t2);
+      return t2;
+    } else if (-1 === t2.i) {
+      t2.i = 0;
+      if (void 0 !== t2.n) {
+        t2.n.p = t2.p;
+        if (void 0 !== t2.p) t2.p.n = t2.n;
+        t2.p = o.s;
+        t2.n = void 0;
+        o.s.n = t2;
+        o.s = t2;
+      }
+      return t2;
     }
   }
-  return { lo, hi };
 }
-
-// src/render/draw.ts
-import * as THREE2 from "three";
-import { TrackballControls } from "three/addons/controls/TrackballControls.js";
+function l(i2, t2) {
+  this.v = i2;
+  this.i = 0;
+  this.n = void 0;
+  this.t = void 0;
+  this.l = 0;
+  this.W = null == t2 ? void 0 : t2.watched;
+  this.Z = null == t2 ? void 0 : t2.unwatched;
+  this.name = null == t2 ? void 0 : t2.name;
+}
+l.prototype.brand = i;
+l.prototype.h = function() {
+  return true;
+};
+l.prototype.S = function(i2) {
+  var t2 = this, r2 = this.t;
+  if (r2 !== i2 && void 0 === i2.e) {
+    i2.x = r2;
+    this.t = i2;
+    if (void 0 !== r2) r2.e = i2;
+    else f(function() {
+      var i3;
+      null == (i3 = t2.W) || i3.call(t2);
+    });
+  }
+};
+l.prototype.U = function(i2) {
+  var t2 = this;
+  if (void 0 !== this.t) {
+    var r2 = i2.e, n2 = i2.x;
+    if (void 0 !== r2) {
+      r2.x = n2;
+      i2.e = void 0;
+    }
+    if (void 0 !== n2) {
+      n2.e = r2;
+      i2.x = void 0;
+    }
+    if (i2 === this.t) {
+      this.t = n2;
+      if (void 0 === n2) f(function() {
+        var i3;
+        null == (i3 = t2.Z) || i3.call(t2);
+      });
+    }
+  }
+};
+l.prototype.subscribe = function(i2) {
+  var t2 = this;
+  return x(function() {
+    var r2 = t2.value;
+    f(function() {
+      return i2(r2);
+    });
+  }, { name: "sub" });
+};
+l.prototype.valueOf = function() {
+  return this.value;
+};
+l.prototype.toString = function() {
+  return this.value + "";
+};
+l.prototype.toJSON = function() {
+  return this.value;
+};
+l.prototype.peek = function() {
+  var i2 = this;
+  return f(function() {
+    return i2.value;
+  });
+};
+Object.defineProperty(l.prototype, "value", { get: function() {
+  var i2 = d(this);
+  if (void 0 !== i2) i2.i = this.i;
+  return this.v;
+}, set: function(i2) {
+  if (i2 !== this.v) {
+    if (s > 100) throw new Error("Cycle detected");
+    !function(i3) {
+      if (0 !== v && 0 === s) {
+        if (i3.l !== u) {
+          i3.l = u;
+          c = { S: i3, v: i3.v, i: i3.i, o: c };
+        }
+      }
+    }(this);
+    this.v = i2;
+    this.i++;
+    a++;
+    v++;
+    try {
+      for (var r2 = this.t; void 0 !== r2; r2 = r2.x) r2.t.N();
+    } finally {
+      t();
+    }
+  }
+} });
+function y(i2, t2) {
+  return new l(i2, t2);
+}
+function w(i2) {
+  for (var t2 = i2.s; void 0 !== t2; t2 = t2.n) if (t2.S.i !== t2.i || !t2.S.h() || t2.S.i !== t2.i) return true;
+  return false;
+}
+function b(i2) {
+  for (var t2 = i2.s; void 0 !== t2; t2 = t2.n) {
+    var r2 = t2.S.n;
+    if (void 0 !== r2) t2.r = r2;
+    t2.S.n = t2;
+    t2.i = -1;
+    if (void 0 === t2.n) {
+      i2.s = t2;
+      break;
+    }
+  }
+}
+function _(i2) {
+  var t2 = i2.s, r2 = void 0;
+  while (void 0 !== t2) {
+    var n2 = t2.p;
+    if (-1 === t2.i) {
+      t2.S.U(t2);
+      if (void 0 !== n2) n2.n = t2.n;
+      if (void 0 !== t2.n) t2.n.p = n2;
+    } else r2 = t2;
+    t2.S.n = t2.r;
+    if (void 0 !== t2.r) t2.r = void 0;
+    t2 = n2;
+  }
+  i2.s = r2;
+}
+function j(i2, t2) {
+  l.call(this, void 0, t2);
+  this.x = i2;
+  this.s = void 0;
+  this.g = a - 1;
+  this.f = 4;
+}
+j.prototype = new l();
+j.prototype.h = function() {
+  this.f &= -3;
+  if (1 & this.f) return false;
+  if (32 == (36 & this.f)) return true;
+  this.f &= -5;
+  if (this.g === a) return true;
+  this.g = a;
+  this.f |= 1;
+  if (this.i > 0 && !w(this)) {
+    this.f &= -2;
+    return true;
+  }
+  var i2 = o;
+  try {
+    b(this);
+    o = this;
+    var t2 = this.x();
+    if (16 & this.f || this.v !== t2 || 0 === this.i) {
+      this.v = t2;
+      this.f &= -17;
+      this.i++;
+    }
+  } catch (i3) {
+    this.v = i3;
+    this.f |= 16;
+    this.i++;
+  }
+  o = i2;
+  _(this);
+  this.f &= -2;
+  return true;
+};
+j.prototype.S = function(i2) {
+  if (void 0 === this.t) {
+    this.f |= 36;
+    for (var t2 = this.s; void 0 !== t2; t2 = t2.n) t2.S.S(t2);
+  }
+  l.prototype.S.call(this, i2);
+};
+j.prototype.U = function(i2) {
+  if (void 0 !== this.t) {
+    l.prototype.U.call(this, i2);
+    if (void 0 === this.t) {
+      this.f &= -33;
+      for (var t2 = this.s; void 0 !== t2; t2 = t2.n) t2.S.U(t2);
+    }
+  }
+};
+j.prototype.N = function() {
+  if (!(2 & this.f)) {
+    this.f |= 6;
+    for (var i2 = this.t; void 0 !== i2; i2 = i2.x) i2.t.N();
+  }
+};
+Object.defineProperty(j.prototype, "value", { get: function() {
+  if (1 & this.f) throw new Error("Cycle detected");
+  var i2 = d(this);
+  this.h();
+  if (void 0 !== i2) i2.i = this.i;
+  if (16 & this.f) throw this.v;
+  return this.v;
+} });
+function p(i2) {
+  var r2 = i2.j;
+  i2.j = void 0;
+  if ("function" == typeof r2) {
+    v++;
+    var n2 = o;
+    o = void 0;
+    try {
+      r2();
+    } catch (t2) {
+      i2.f &= -2;
+      i2.f |= 8;
+      g(i2);
+      throw t2;
+    } finally {
+      o = n2;
+      t();
+    }
+  }
+}
+function g(i2) {
+  for (var t2 = i2.s; void 0 !== t2; t2 = t2.n) t2.S.U(t2);
+  i2.x = void 0;
+  i2.s = void 0;
+  p(i2);
+}
+function S(i2) {
+  if (o !== this) throw new Error("Out-of-order effect");
+  _(this);
+  o = i2;
+  this.f &= -2;
+  try {
+    if (8 & this.f) g(this);
+  } finally {
+    t();
+  }
+}
+function m(i2, t2) {
+  this.x = i2;
+  this.j = void 0;
+  this.s = void 0;
+  this.u = void 0;
+  this.f = 32;
+  this.name = null == t2 ? void 0 : t2.name;
+  if (n) n.push(this);
+}
+m.prototype.c = function() {
+  var i2 = this.S();
+  try {
+    if (8 & this.f) return;
+    if (void 0 === this.x) return;
+    var t2 = this.x();
+    if ("function" == typeof t2) this.j = t2;
+  } finally {
+    i2();
+  }
+};
+m.prototype.S = function() {
+  if (1 & this.f) throw new Error("Cycle detected");
+  this.f |= 1;
+  this.f &= -9;
+  p(this);
+  b(this);
+  v++;
+  var i2 = o;
+  o = this;
+  return S.bind(this, i2);
+};
+m.prototype.N = function() {
+  if (!(2 & this.f)) {
+    this.f |= 2;
+    this.u = h;
+    h = this;
+  }
+};
+m.prototype.d = function() {
+  this.f |= 8;
+  if (!(1 & this.f)) g(this);
+};
+m.prototype.dispose = function() {
+  this.d();
+};
+function x(i2, t2) {
+  var r2 = new m(i2, t2);
+  try {
+    r2.c();
+  } catch (i3) {
+    r2.d();
+    throw i3;
+  }
+  var n2 = r2.d.bind(r2);
+  n2[Symbol.dispose] = n2;
+  return n2;
+}
 
 // src/state.ts
 import * as THREE from "three";
-var data = void 0;
-var points = /* @__PURE__ */ new Map();
-var polyhedra = [];
-var centre = [0, 0, 0];
-var extent = 1;
-var lattice = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
-var atomGroup = new THREE.Group();
-var polyGroup = new THREE.Group();
-var box = null;
-var polyTargets = [];
-var show = { atoms: true, box: true };
-var outlines = true;
-var camera = void 0;
-var lens = GEMMY.defaultLens;
-var fitValue = 1;
+var EMPTY_SCENE = {
+  data: void 0,
+  // no scene yet: hasScene() is false
+  points: /* @__PURE__ */ new Map(),
+  polyhedra: [],
+  centre: [0, 0, 0],
+  extent: 1,
+  lattice: [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)],
+  atomGroup: new THREE.Group(),
+  polyGroup: new THREE.Group(),
+  box: null,
+  polyTargets: []
+};
+var loaded = y(EMPTY_SCENE);
+var hasScene = () => loaded.peek().data !== void 0;
+var showAtoms = y(true);
+var showBox = y(true);
+var outlines = y(true);
+var camera = y(new THREE.OrthographicCamera());
+var lens = y(GEMMY.defaultLens);
+var fitValue = y(1);
+var projection = y("ortho");
 var dirty = true;
 function requestRender() {
   dirty = true;
@@ -642,47 +810,224 @@ function takeDirty() {
   dirty = false;
   return was;
 }
-function setData(value) {
-  data = value;
+
+// src/render/instancing.ts
+import { MathUtils, Matrix4, Quaternion, Vector3 as Vector32 } from "three";
+
+// src/geom/vector.ts
+var lerp = (a2, b2, t2) => a2.map((x2, i2) => x2 + (b2[i2] - x2) * t2);
+var span = (a2, b2) => Math.hypot(b2[0] - a2[0], b2[1] - a2[1], b2[2] - a2[2]);
+var vdot = (a2, b2) => a2[0] * b2[0] + a2[1] * b2[1] + a2[2] * b2[2];
+var vsub = (a2, b2) => [a2[0] - b2[0], a2[1] - b2[1], a2[2] - b2[2]];
+var vadd = (a2, b2) => [a2[0] + b2[0], a2[1] + b2[1], a2[2] + b2[2]];
+var vscale = (a2, k) => [a2[0] * k, a2[1] * k, a2[2] * k];
+var vcross = (a2, b2) => [
+  a2[1] * b2[2] - a2[2] * b2[1],
+  a2[2] * b2[0] - a2[0] * b2[2],
+  a2[0] * b2[1] - a2[1] * b2[0]
+];
+function vunit(a2) {
+  const length2 = Math.hypot(...a2) || 1;
+  return a2.map((x2) => x2 / length2);
 }
-function setPoints(value) {
-  points = value;
+
+// src/geom/dashes.ts
+function dashSegments(a2, b2, dash, gap) {
+  const len = span(a2, b2);
+  if (len <= EPS) return [];
+  const count2 = Math.max(1, Math.round((len + gap) / (dash + gap)));
+  const stretch = len / (count2 * dash + (count2 - 1) * gap);
+  const dashFraction = dash * stretch / len;
+  const periodFraction = (dash + gap) * stretch / len;
+  return Array.from({ length: count2 }, (_2, i2) => [
+    lerp(a2, b2, i2 * periodFraction),
+    lerp(a2, b2, i2 * periodFraction + dashFraction)
+  ]);
 }
-function setPolyhedra(value) {
-  polyhedra = value;
+function dotCentres(a2, b2, spacing) {
+  const len = span(a2, b2);
+  if (len <= EPS) return [];
+  const count2 = Math.max(1, Math.round(len / spacing));
+  return Array.from({ length: count2 }, (_2, i2) => lerp(a2, b2, (i2 + 0.5) / count2));
 }
-function setCentre(value) {
-  centre = value;
+
+// src/render/instancing.ts
+var MATRIX_SIZE = 16;
+var UP = new Vector32(0, 1, 0);
+var HEAD_MIN_RADII = 3;
+var HEAD_MAX_SHARE = 0.8;
+var SHAFT_MIN_SHARE = 0.2;
+var HEAD_CENTRE_SHARE = 0.5;
+var LINE_RADIUS_SHARE = 0.7;
+var HARD_EDGE_ANGLE_DEG = 1;
+var InstanceCollector = class {
+  groups = /* @__PURE__ */ new Map();
+  // Adds one instance to its group, creating the group the first time.
+  add(shape, material, outlined, matrix, ref = null) {
+    const key2 = `${shape}|${material}|${outlined}`;
+    let group = this.groups.get(key2);
+    if (!group) {
+      group = { shape, material, outlined, matrices: [], refs: [] };
+      this.groups.set(key2, group);
+    }
+    group.matrices.push(...matrix);
+    group.refs.push(ref);
+  }
+  // A cylinder from a to b, centred on the midpoint. Two coincident ends draw nothing.
+  cylinder(a2, b2, radius, material, outlined) {
+    const len = span(a2, b2);
+    if (len <= EPS) return;
+    this.add("cylinder", material, outlined, alongMatrix(lerp(a2, b2, 0.5), vunit(vsub(b2, a2)), radius, len));
+  }
+  groupList() {
+    return [...this.groups.values()];
+  }
+};
+function instanceGroups(data) {
+  const pos = pointPositions(data);
+  const collector = new InstanceCollector();
+  const { atoms, bonds, displacements } = data.primitives;
+  for (const atom of atoms) {
+    collector.add("sphere", atom.material_id, true, sphereMatrix(pos.get(atom.point_id), atom.radius), atom);
+  }
+  for (const bond of bonds) addBond(collector, bond, pos);
+  for (const d2 of displacements) addDisplacement(collector, d2, pos);
+  return collector.groupList();
 }
-function setExtent(value) {
-  extent = value;
+function polyhedronGroups(data) {
+  const pos = pointPositions(data);
+  const topologies = new Map(data.topologies.map((t2) => [t2.id, t2]));
+  const groups = /* @__PURE__ */ new Map();
+  data.primitives.polyhedra.forEach((poly, index) => {
+    const topo = topologies.get(poly.topology_id);
+    const v2 = topo.point_ids.map((id) => pos.get(id));
+    const group = polyhedronGroupFor(groups, poly.material_id);
+    const first = group.owner.length;
+    const faces = outwardFaces(v2, topo.faces);
+    addFaces(group, faces, v2, index);
+    for (const [a2, b2] of hardEdges(topo, pos)) group.edges.push(...a2, ...b2);
+    group.ranges.push([index, first, faces.length]);
+  });
+  return [...groups.values()];
 }
-function setLattice(value) {
-  lattice = value;
+function addBond(collector, bond, pos) {
+  const a2 = pos.get(bond.a_point_id);
+  const b2 = pos.get(bond.b_point_id);
+  const style = bond.style ?? "solid";
+  if (style === "dashed") addDashes(collector, a2, b2, bond.radius, bond.material_id);
+  else if (style === "dotted") addDots(collector, a2, b2, bond.radius, bond.material_id);
+  else collector.cylinder(a2, b2, bond.radius, bond.material_id, true);
 }
-function setAtomGroup(value) {
-  atomGroup = value;
+function addDashes(collector, a2, b2, radius, material) {
+  const dash = Math.max(DASH.length * radius, DASH.min);
+  const gap = dash * DASH.gap / DASH.length;
+  for (const [start, end] of dashSegments(a2, b2, dash, gap)) collector.cylinder(start, end, radius, material, false);
 }
-function setPolyGroup(value) {
-  polyGroup = value;
+function addDots(collector, a2, b2, radius, material) {
+  const spacing = Math.max(DOT.spacing * radius, DOT.spacingMin);
+  for (const centre of dotCentres(a2, b2, spacing)) {
+    collector.add("dot", material, false, sphereMatrix(centre, DOT.radius * radius));
+  }
 }
-function setBox(value) {
-  box = value;
+function addDisplacement(collector, d2, pos) {
+  const start = pos.get(d2.start_point_id);
+  const atomIsTip = d2.anchor === "tip";
+  const tail = atomIsTip ? vsub(start, d2.vector) : start;
+  const tip2 = atomIsTip ? start : start.map((x2, i2) => x2 + d2.vector[i2]);
+  if ((d2.mode ?? "arrow").toLowerCase() === "arrow") addArrow(collector, tail, tip2, ARROW.radius);
+  else collector.cylinder(tail, tip2, ARROW.radius * LINE_RADIUS_SHARE, null, true);
 }
-function setPolyTargets(value) {
-  polyTargets = value;
+function addArrow(collector, a2, b2, radius) {
+  const len = span(a2, b2);
+  if (len <= EPS) return;
+  const dir = vunit(vsub(b2, a2));
+  const headLen = Math.min(Math.max(len * ARROW.headLengthRatio, radius * HEAD_MIN_RADII), len * HEAD_MAX_SHARE);
+  const shaftLen = Math.max(len - headLen, len * SHAFT_MIN_SHARE);
+  const shaftEnd = a2.map((x2, i2) => x2 + dir[i2] * shaftLen);
+  collector.cylinder(a2, shaftEnd, radius, null, true);
+  const headCentre = shaftEnd.map((x2, i2) => x2 + dir[i2] * headLen * HEAD_CENTRE_SHARE);
+  collector.add("cone", null, true, alongMatrix(headCentre, dir, radius * ARROW.headRadiusRatio, headLen));
 }
-function setOutlines(value) {
-  outlines = value;
+function polyhedronGroupFor(groups, material) {
+  let group = groups.get(material);
+  if (!group) {
+    group = { material, positions: [], edges: [], owner: [], ranges: [] };
+    groups.set(material, group);
+  }
+  return group;
 }
-function setCamera(value) {
-  camera = value;
+function outwardFaces(v2, triangles) {
+  const mid = centroid(v2);
+  return triangles.map(([i2, j2, k]) => {
+    const n2 = vunit(vcross(vsub(v2[j2], v2[i2]), vsub(v2[k], v2[i2])));
+    const faceCentre = centroid([v2[i2], v2[j2], v2[k]]);
+    const outward = vdot(n2, vsub(faceCentre, mid)) >= 0;
+    return outward ? { idx: [i2, j2, k], n: n2 } : { idx: [i2, k, j2], n: n2.map((x2) => -x2) };
+  });
 }
-function setLens(value) {
-  lens = value;
+function centroid(v2) {
+  return v2.reduce((sum, p2) => sum.map((c2, i2) => c2 + p2[i2] / v2.length), [0, 0, 0]);
 }
-function setFitValue(value) {
-  fitValue = value;
+function addFaces(group, faces, v2, index) {
+  for (const f2 of faces) {
+    group.positions.push(...v2[f2.idx[0]], ...v2[f2.idx[1]], ...v2[f2.idx[2]]);
+    group.owner.push(index);
+  }
+}
+function hardEdges(topo, points) {
+  const v2 = topo.point_ids.map((id) => points.get(id));
+  const faces = outwardFaces(v2, topo.faces);
+  const sides = /* @__PURE__ */ new Map();
+  for (const f2 of faces) {
+    for (let e3 = 0; e3 < 3; e3++) {
+      const i2 = f2.idx[e3];
+      const j2 = f2.idx[(e3 + 1) % 3];
+      const key2 = i2 < j2 ? `${i2}-${j2}` : `${j2}-${i2}`;
+      if (!sides.has(key2)) sides.set(key2, { i: i2, j: j2, faces: [] });
+      sides.get(key2).faces.push(f2);
+    }
+  }
+  const sharpAngle = Math.cos(MathUtils.degToRad(HARD_EDGE_ANGLE_DEG));
+  const edges = [];
+  for (const side of sides.values()) {
+    const boundary = side.faces.length === 1;
+    const sharp = !boundary && vdot(side.faces[0].n, side.faces[1].n) < sharpAngle;
+    if (boundary || sharp) edges.push([v2[side.i], v2[side.j]]);
+  }
+  return edges;
+}
+var isGhost = (material) => material.alpha < 1;
+function pointPositions(data) {
+  return new Map(data.points.map((p2) => [p2.id, p2.position]));
+}
+function sphereMatrix(c2, r2) {
+  return [r2, 0, 0, 0, 0, r2, 0, 0, 0, 0, r2, 0, c2[0], c2[1], c2[2], 1];
+}
+function alongMatrix(centre, d2, radius, length2) {
+  const turn = new Quaternion().setFromUnitVectors(UP, new Vector32(...d2));
+  const scale = new Vector32(radius, length2, radius);
+  return new Matrix4().compose(new Vector32(...centre), turn, scale).toArray();
+}
+
+// src/render/toon.ts
+import * as THREE2 from "three";
+var TOON_STEPS = 16;
+var FIRST_LIT = Math.ceil((LOOK.threshold + 1) / 2 * TOON_STEPS);
+var LIT_CUT = 2 * FIRST_LIT / TOON_STEPS - 1;
+var FACE_OFFSET_FACTOR = 1;
+var FACE_OFFSET_UNITS = 1;
+var polygonOffsetOf = (faces) => ({
+  polygonOffset: faces,
+  polygonOffsetFactor: FACE_OFFSET_FACTOR,
+  polygonOffsetUnits: FACE_OFFSET_UNITS
+});
+function makeToonGradient() {
+  const texels = Array.from({ length: TOON_STEPS }, (_2, i2) => i2 >= FIRST_LIT ? 255 : 0);
+  const texture = new THREE2.DataTexture(new Uint8Array(texels), TOON_STEPS, 1, THREE2.RedFormat);
+  texture.minFilter = THREE2.NearestFilter;
+  texture.magFilter = THREE2.NearestFilter;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 // src/render/draw.ts
@@ -690,41 +1035,35 @@ var MAX_PIXEL_RATIO = 2;
 var CLIP_NEAR = 0.1;
 var CLIP_FAR = 100;
 var PLACEHOLDER_FOV_DEG = 30;
-var TOON_STEPS = 16;
-var NUMBERS_PER_MATRIX = 16;
 var OUTLINE_THICKNESS = 35e-4;
 var OUTLINE_SIZE_FRACTION = 0.12;
-var FACE_OFFSET_FACTOR = 1;
-var FACE_OFFSET_UNITS = 1;
 var ATOM_SEGMENTS = { width: 48, height: 24 };
 var DOT_SEGMENTS = { width: 12, height: 8 };
 var TUBE_SEGMENTS = 24;
 var stage = document.getElementById("stage");
-var renderer = new THREE2.WebGLRenderer({ antialias: true, alpha: true });
+var renderer = new THREE3.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
 renderer.setClearColor(0, 0);
 stage.appendChild(renderer.domElement);
-var scene = new THREE2.Scene();
-var root = new THREE2.Group();
+var scene = new THREE3.Scene();
+var root = new THREE3.Group();
 scene.add(root);
-var orthoCamera = new THREE2.OrthographicCamera(-1, 1, 1, -1, CLIP_NEAR, CLIP_FAR);
-var perspCamera = new THREE2.PerspectiveCamera(PLACEHOLDER_FOV_DEG, 1, CLIP_NEAR, CLIP_FAR);
+var orthoCamera = new THREE3.OrthographicCamera(-1, 1, 1, -1, CLIP_NEAR, CLIP_FAR);
+var perspCamera = new THREE3.PerspectiveCamera(PLACEHOLDER_FOV_DEG, 1, CLIP_NEAR, CLIP_FAR);
 perspCamera.filmGauge = GEMMY.sensorWidth;
 scene.add(orthoCamera, perspCamera);
-setCamera(orthoCamera);
-scene.add(new THREE2.AmbientLight(16777215, LOOK.dark * Math.PI));
-var key = new THREE2.DirectionalLight(16777215, (1 - LOOK.dark) * Math.PI);
-key.position.set(...LOOK.key);
-camera.add(key, key.target);
-var controls = new TrackballControls(camera, renderer.domElement);
-var edgeMaterial = new THREE2.LineBasicMaterial({ color: srgbColor(LOOK.outline) });
-var boxMaterial = new THREE2.LineBasicMaterial();
+camera.value = orthoCamera;
+var key = addToonLights(scene, orthoCamera);
+var controls = new TrackballControls(orthoCamera, renderer.domElement);
+var edgeMaterial = new THREE3.LineBasicMaterial({ color: srgbColor(LOOK.outline) });
+var boxMaterial = new THREE3.LineBasicMaterial();
 var MIN_OUTLINE_W = CLIP_NEAR;
 var MIN_OUTLINE_DIRECTION = 1e-6;
 var OUTLINE_VERTEX_SHADER = `
     uniform float outlineThickness;
     uniform float outlineScale; // the user's width (ui/outline-scale.ts): 1 is the automatic width
-    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)} // a float literal: GLSL reads a bare integer as int
+    // A float literal: GLSL reads a bare integer as int.
+    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)}
     #define MIN_OUTLINE_W ${MIN_OUTLINE_W.toFixed(3)}
     #define MIN_OUTLINE_DIRECTION ${MIN_OUTLINE_DIRECTION.toFixed(9)}
 
@@ -744,9 +1083,9 @@ var OUTLINE_VERTEX_SHADER = `
     // The shell's clip position for one vertex: the vertex moved on the screen along its outward normal by the outline
     // width. clipNormal is projectionMatrix * modelViewMatrix applied to the normal as a direction (w = 0). Moving the
     // point by t along the normal moves its clip position by t * clipNormal, so the screen position moves in the
-    // direction of (clipNormal.xy * w - clipNormal.w * clip.xy), exactly, with no offset point to pick. That direction is
-    // normalised in 2D, so the outline is the full width in every direction. A vertex at or behind the near plane has
-    // no usable screen position, so it stays where it is.
+    // direction of (clipNormal.xy * w - clipNormal.w * clip.xy), exactly, with no offset point to pick. That direction
+    // is normalised in 2D, so the outline is the full width in every direction. A vertex at or behind the near plane
+    // has no usable screen position, so it stays where it is.
     vec4 outlinePosition(vec4 clipPos, vec4 clipNormal, float radius) {
       if (clipPos.w <= MIN_OUTLINE_W) return clipPos;
       vec2 screenDirection = clipPos.w * clipNormal.xy - clipNormal.w * clipPos.xy;
@@ -765,7 +1104,11 @@ var OUTLINE_VERTEX_SHADER = `
       #ifdef USE_INSTANCING
         mat3 instanceRotation = mat3(instanceMatrix);
         // dividing each column by its squared length gives the inverse transpose for a scaled instance
-        normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
+        vec3 columnSquared = vec3(
+          dot(instanceRotation[0], instanceRotation[0]),
+          dot(instanceRotation[1], instanceRotation[1]),
+          dot(instanceRotation[2], instanceRotation[2]));
+        normalLocal = instanceRotation * (normal / columnSquared);
         local = instanceMatrix * local;
         radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
       #endif
@@ -779,34 +1122,34 @@ var OUTLINE_FRAGMENT_SHADER = `
       gl_FragColor = vec4(outlineColor, 1.0);
       #include <colorspace_fragment>
     }`;
-var outlineMaterial = new THREE2.ShaderMaterial({
-  side: THREE2.BackSide,
+var outlineMaterial = new THREE3.ShaderMaterial({
+  side: THREE3.BackSide,
   uniforms: {
     outlineThickness: { value: OUTLINE_THICKNESS },
     outlineScale: { value: 1 },
     // These numbers are read as linear colour (Color.fromArray) and colorspace_fragment then encodes them to sRGB, so
     // the outline shows lighter than the edges (edgeMaterial reads LOOK.outline as sRGB). Blender's Freestyle line
     // colour, set from the same numbers in renderer.py, is linear too; the render match depends on this.
-    outlineColor: { value: new THREE2.Color().fromArray(LOOK.outline) }
+    outlineColor: { value: new THREE3.Color().fromArray(LOOK.outline) }
   },
   vertexShader: OUTLINE_VERTEX_SHADER,
   fragmentShader: OUTLINE_FRAGMENT_SHADER
 });
 var toonGradient = makeToonGradient();
 var toonMaterials = /* @__PURE__ */ new Map();
-function toon(id, { faces = false, ghost = false } = {}) {
+function toon(id, materials, { faces = false, ghost = false } = {}) {
   const cacheKey = `${id}|${faces}|${ghost}`;
-  if (!toonMaterials.has(cacheKey)) toonMaterials.set(cacheKey, makeToon(id, faces, ghost));
+  if (!toonMaterials.has(cacheKey)) toonMaterials.set(cacheKey, makeToon(id, materials, faces, ghost));
   return toonMaterials.get(cacheKey);
 }
 var SHAPES = {
-  sphere: () => new THREE2.SphereGeometry(1, ATOM_SEGMENTS.width, ATOM_SEGMENTS.height),
-  dot: () => new THREE2.SphereGeometry(1, DOT_SEGMENTS.width, DOT_SEGMENTS.height),
-  cylinder: () => new THREE2.CylinderGeometry(1, 1, 1, TUBE_SEGMENTS, 1),
-  cone: () => new THREE2.ConeGeometry(1, 1, TUBE_SEGMENTS, 1)
+  sphere: () => new THREE3.SphereGeometry(1, ATOM_SEGMENTS.width, ATOM_SEGMENTS.height),
+  dot: () => new THREE3.SphereGeometry(1, DOT_SEGMENTS.width, DOT_SEGMENTS.height),
+  cylinder: () => new THREE3.CylinderGeometry(1, 1, 1, TUBE_SEGMENTS, 1),
+  cone: () => new THREE3.ConeGeometry(1, 1, TUBE_SEGMENTS, 1)
 };
 function instanced(geometry, material, matrices) {
-  const mesh = new THREE2.InstancedMesh(geometry, material, matrices.length / NUMBERS_PER_MATRIX);
+  const mesh = new THREE3.InstancedMesh(geometry, material, matrices.length / MATRIX_SIZE);
   mesh.instanceMatrix.array.set(matrices);
   mesh.frustumCulled = false;
   return mesh;
@@ -815,20 +1158,20 @@ function setOutlineScale(scale) {
   outlineMaterial.uniforms.outlineScale.value = scale;
 }
 function outlineOf(mesh) {
-  if (mesh instanceof THREE2.InstancedMesh) {
-    const outline2 = new THREE2.InstancedMesh(mesh.geometry, outlineMaterial, mesh.count);
+  if (mesh instanceof THREE3.InstancedMesh) {
+    const outline2 = new THREE3.InstancedMesh(mesh.geometry, outlineMaterial, mesh.count);
     outline2.instanceMatrix = mesh.instanceMatrix;
     outline2.frustumCulled = false;
     return outline2;
   }
-  const outline = new THREE2.Mesh(mesh.geometry, outlineMaterial);
+  const outline = new THREE3.Mesh(mesh.geometry, outlineMaterial);
   outline.frustumCulled = false;
   return outline;
 }
 function disposeScene() {
   root.traverse((object) => {
     object.geometry?.dispose();
-    if (object instanceof THREE2.InstancedMesh) object.dispose();
+    if (object instanceof THREE3.InstancedMesh) object.dispose();
   });
   for (const material of toonMaterials.values()) material.dispose();
   toonMaterials = /* @__PURE__ */ new Map();
@@ -838,213 +1181,500 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name);
 }
 function srgbColor(rgb) {
-  return new THREE2.Color().setRGB(rgb[0], rgb[1], rgb[2], THREE2.SRGBColorSpace);
+  return new THREE3.Color().setRGB(rgb[0], rgb[1], rgb[2], THREE3.SRGBColorSpace);
 }
-function baseColorOf(id) {
-  return id === null ? ARROW.color : data.materials[id].base_color;
+function baseColorOf(id, materials) {
+  return id === null ? ARROW.color : materials[id].base_color;
 }
-function alphaOf(id) {
-  return id === null ? 1 : data.materials[id].alpha ?? 1;
+function alphaOf(id, materials) {
+  return id === null ? 1 : materials[id].alpha ?? 1;
 }
-function makeToon(id, faces, ghost) {
-  const material = new THREE2.MeshToonMaterial({
-    color: srgbColor(baseColorOf(id)),
+function makeToon(id, materials, faces, ghost) {
+  const material = new THREE3.MeshToonMaterial({
+    color: srgbColor(baseColorOf(id, materials)),
     gradientMap: toonGradient,
-    polygonOffset: faces,
-    polygonOffsetFactor: FACE_OFFSET_FACTOR,
-    polygonOffsetUnits: FACE_OFFSET_UNITS
+    ...polygonOffsetOf(faces)
   });
   if (ghost) {
     material.transparent = true;
-    material.opacity = alphaOf(id);
+    material.opacity = alphaOf(id, materials);
     material.depthWrite = false;
   }
   return material;
 }
-function makeToonGradient() {
-  const firstLit = Math.ceil((LOOK.threshold + 1) / 2 * TOON_STEPS);
-  const texels = Array.from({ length: TOON_STEPS }, (_, i) => i >= firstLit ? 255 : 0);
-  const texture = new THREE2.DataTexture(new Uint8Array(texels), TOON_STEPS, 1, THREE2.RedFormat);
-  texture.minFilter = THREE2.NearestFilter;
-  texture.magFilter = THREE2.NearestFilter;
-  texture.needsUpdate = true;
-  return texture;
+function addToonLights(parent, camera2) {
+  parent.add(new THREE3.AmbientLight(16777215, LOOK.dark * Math.PI));
+  const key2 = new THREE3.DirectionalLight(16777215, (1 - LOOK.dark) * Math.PI);
+  key2.position.set(...LOOK.key);
+  camera2.add(key2, key2.target);
+  return key2;
 }
 
-// src/ui/ui.ts
-import * as THREE13 from "three";
+// src/render/triad.ts
+import { Color as Color2 } from "three";
+
+// src/render/triad-layout.ts
+function triadLayout(dirs, width, height) {
+  const T2 = GEMMY.triad;
+  const length2 = T2.size * Math.min(width, height);
+  const origin = [T2.margin * width, height - T2.margin * height];
+  const items = dirs.map((d2, index) => triadItem(d2, index, origin, length2)).sort((p2, q) => p2.depth - q.depth);
+  return {
+    origin,
+    items,
+    behind: items.filter((item) => item.depth < 0).length,
+    lineWidth: 2 * T2.arrowRadius * length2,
+    fontSize: T2.labelSize * length2,
+    dotRadius: T2.dotRadius * length2,
+    length: length2
+  };
+}
+var LABEL_FLAT_MIN = 0.15;
+var HEAD_FLAT_MIN = 0.08;
+var DIAGONAL = Math.SQRT1_2;
+function triadItem(d2, index, origin, length2) {
+  const T2 = GEMMY.triad;
+  const flat = Math.hypot(d2[0], d2[1]);
+  const onScreen2 = flat > LABEL_FLAT_MIN;
+  const [ux, uy] = labelDirection(d2, flat, onScreen2);
+  const labelRadius = length2 * (1 + T2.labelReach * T2.arrowRadius);
+  const reach = onScreen2 ? labelRadius * flat : 0;
+  const pad = T2.labelPad * length2;
+  const label = { x: origin[0] + (reach + pad) * ux, y: origin[1] - (reach + pad) * uy };
+  const fade = T2.depthFadeMax * Math.max(0, -d2[2]);
+  return flat > HEAD_FLAT_MIN ? { index, depth: d2[2], fade, label, ...triadArrow(d2, flat, origin, length2) } : { index, depth: d2[2], fade, label };
+}
+function labelDirection(d2, flat, onScreen2) {
+  return onScreen2 ? [d2[0] / flat, d2[1] / flat] : [DIAGONAL, DIAGONAL];
+}
+var SHAFT_INTO_HEAD = 0.5;
+function triadArrow(d2, flat, [ox, oy], length2) {
+  const T2 = GEMMY.triad;
+  const tip2 = [ox + d2[0] * length2, oy - d2[1] * length2];
+  const tx = d2[0] / flat;
+  const ty = -d2[1] / flat;
+  const headLength = T2.headLengthRatio * length2;
+  const headHalf = T2.headRadiusRatio * T2.arrowRadius * length2;
+  const base = [tip2[0] - tx * headLength, tip2[1] - ty * headLength];
+  return {
+    shaftEnd: [tip2[0] - tx * headLength * SHAFT_INTO_HEAD, tip2[1] - ty * headLength * SHAFT_INTO_HEAD],
+    head: [tip2, [base[0] - ty * headHalf, base[1] + tx * headHalf], [base[0] + ty * headHalf, base[1] - tx * headHalf]]
+  };
+}
+function latticeInView(lattice, orientation) {
+  const inverse = orientation.clone().invert();
+  return lattice.map((vector) => vector.clone().applyQuaternion(inverse).toArray());
+}
+
+// src/render/triad.ts
+var FONT_LOAD_PX = 16;
+var AXIS_FONT_STYLE = "italic 700";
+var triadCanvas = document.getElementById("triad");
+var triadContext = triadCanvas.getContext("2d");
+for (const [weight, base64] of Object.entries(AXIS_FONT.faces)) {
+  document.fonts.add(
+    new FontFace(AXIS_FONT.family, `url(data:font/ttf;base64,${base64})`, { style: "italic", weight })
+  );
+}
+var axisFontReady = false;
+document.fonts.load(`${AXIS_FONT_STYLE} ${FONT_LOAD_PX}px "${AXIS_FONT.family}"`).finally(() => {
+  axisFontReady = true;
+  requestRender();
+});
+function drawLiveTriad() {
+  drawTriad(triadCanvas, triadContext, Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO), false);
+}
+function drawTriad(canvas, ctx, dpr, transparent) {
+  const width = stage.clientWidth;
+  const height = stage.clientHeight;
+  sizeCanvas(canvas, width, height, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  if (!axisFontReady) return;
+  const lattice = latticeInView(loaded.value.lattice, camera.value.quaternion);
+  const background = transparent ? null : cssVar("--bg").trim();
+  drawLetters(ctx, triadLayout(lattice, width, height), background);
+}
+function drawLetters(ctx, triad, background) {
+  for (const item of triad.items) drawLetter(ctx, item, triad.fontSize, background);
+}
+function drawLetter(ctx, item, fontSize, background) {
+  const base = LOOK.axisColors[item.index];
+  ctx.save();
+  if (background === null) {
+    ctx.globalAlpha = 1 - item.fade;
+    ctx.fillStyle = base;
+  } else {
+    ctx.fillStyle = new Color2(base).lerp(new Color2(background), item.fade).getStyle();
+  }
+  ctx.font = `${AXIS_FONT_STYLE} ${fontSize}px ${cssVar("--label")}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(AXIS_LETTERS[item.index], item.label.x, item.label.y);
+  ctx.restore();
+}
+function sizeCanvas(canvas, width, height, dpr) {
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+}
+
+// src/camera/view.ts
+import * as THREE4 from "three";
+
+// src/camera/framing.ts
+import { Quaternion as Quaternion2, Vector3 as Vector33 } from "three";
+var baseDistance = (extent2) => Math.max(GEMMY.distanceFactor * extent2, GEMMY.distanceMin);
+var orthoSide = (extent2) => Math.max(GEMMY.orthoFactor * extent2, GEMMY.orthoMin);
+var ORTHO_VIEW_DISTANCE = 8;
+function orthoFrame(extent2, width, height) {
+  const side = orthoSide(extent2);
+  const larger = Math.max(width, height);
+  return { halfWidth: side / 2 * (width / larger), halfHeight: side / 2 * (height / larger) };
+}
+var RAD_TO_DEG = 180 / Math.PI;
+function perspFov(lens2, width, height) {
+  const halfSensor = 0.5 * GEMMY.sensorWidth / Math.max(width / height, 1);
+  return 2 * Math.atan(halfSensor / lens2) * RAD_TO_DEG;
+}
+function fitZoomPersp(extent2, lens2, width, height) {
+  const shorterSensor = GEMMY.sensorWidth * Math.min(width, height) / Math.max(width, height);
+  const halfAngle = Math.atan(shorterSensor / 2 / lens2);
+  return baseDistance(extent2) * Math.sin(halfAngle) / (orthoSide(extent2) / 2);
+}
+var fitZoom = (width, height) => Math.min(width, height) / Math.max(width, height);
+var orthoToPerspZoom = (extent2, lens2, zoom2) => baseDistance(extent2) * GEMMY.sensorWidth * zoom2 / (orthoSide(extent2) * lens2);
+var perspToOrthoZoom = (extent2, lens2, zoom2) => zoom2 * orthoSide(extent2) * lens2 / (baseDistance(extent2) * GEMMY.sensorWidth);
+var CAMERA_FORWARD = [0, 0, -1];
+var viewForward = (quaternion) => applyQuaternion(quaternion, CAMERA_FORWARD);
+var flyShift = (quaternion, distance) => viewForward(quaternion).map((x2) => x2 * distance);
+var CLIP_MARGIN_IN_FRONT = 1;
+var CLIP_MARGIN_BEHIND = 2;
+var NEAREST_CLIP = 0.01;
+var depthOfCentre = (position, quaternion) => -vdot(position, viewForward(quaternion));
+function clipPlanesAround(depth, structureExtent) {
+  const radius = structureExtent / 2;
+  return {
+    near: Math.max(depth - radius - CLIP_MARGIN_IN_FRONT * structureExtent, NEAREST_CLIP),
+    far: depth + radius + CLIP_MARGIN_BEHIND * structureExtent
+  };
+}
+function applyQuaternion(q, v2) {
+  return new Vector33(...v2).applyQuaternion(new Quaternion2().fromArray(q)).toArray();
+}
+
+// src/camera/view-state.ts
+import { Matrix4 as Matrix42, MathUtils as MathUtils2, Quaternion as Quaternion3, Vector3 as Vector34 } from "three";
+var ZOOM_MIN = 0.05;
+var ZOOM_MAX = 40;
+var orbitDistance = (view2, extent2) => view2.projection === "persp" ? baseDistance(extent2) / view2.zoom : extent2 * ORTHO_VIEW_DISTANCE;
+var backAxis = (orientation) => applyQuaternion(orientation, [0, 0, 1]);
+var upAxis = (orientation) => applyQuaternion(orientation, [0, 1, 0]);
+var cameraPosition = (view2, extent2) => vadd(view2.target, vscale(backAxis(view2.orientation), orbitDistance(view2, extent2)));
+function shownZoom(view2, extent2) {
+  if (view2.projection !== "persp") return view2.zoom;
+  return baseDistance(extent2) / Math.hypot(...cameraPosition(view2, extent2));
+}
+function frameZoom(projection2, lens2, size, extent2, frame3) {
+  if (projection2 === "persp") {
+    return fitZoomPersp(size, lens2, frame3.width, frame3.height) * (baseDistance(extent2) / baseDistance(size));
+  }
+  return fitZoom(frame3.width, frame3.height) * orthoSide(extent2) / orthoSide(size);
+}
+var fitZoomFor = (projection2, lens2, extent2, frame3) => frameZoom(projection2, lens2, extent2, extent2, frame3);
+function visibleHeight(view2, extent2, frame3) {
+  if (view2.projection === "persp") {
+    const halfAngle = perspFov(view2.lens, frame3.width, frame3.height) * MathUtils2.DEG2RAD / 2;
+    return 2 * orbitDistance(view2, extent2) * Math.tan(halfAngle);
+  }
+  return 2 * orthoFrame(extent2, frame3.width, frame3.height).halfHeight / view2.zoom;
+}
+function orientationFromBasis(back, up) {
+  const basis = new Matrix42().lookAt(new Vector34(...back), new Vector34(0, 0, 0), new Vector34(...up));
+  return new Quaternion3().setFromRotationMatrix(basis).toArray();
+}
+function dollied(view2, wanted, extent2) {
+  const towards = backAxis(view2.orientation);
+  const along = vdot(view2.target, towards);
+  const discriminant = along * along - (vdot(view2.target, view2.target) - (baseDistance(extent2) / wanted) ** 2);
+  const roots = discriminant < 0 ? [-along] : [-along - Math.sqrt(discriminant), -along + Math.sqrt(discriminant)];
+  const ahead = roots.filter((s2) => s2 > 0);
+  if (!ahead.length) return view2;
+  const current = orbitDistance(view2, extent2);
+  const nearest = ahead.reduce((best, s2) => Math.abs(s2 - current) < Math.abs(best - current) ? s2 : best);
+  const distance = MathUtils2.clamp(nearest, baseDistance(extent2) / ZOOM_MAX, baseDistance(extent2) / ZOOM_MIN);
+  return { ...view2, zoom: baseDistance(extent2) / distance };
+}
+function zoomedTo(view2, wanted, extent2) {
+  const level = MathUtils2.clamp(wanted, ZOOM_MIN, ZOOM_MAX);
+  return view2.projection === "persp" ? dollied(view2, level, extent2) : { ...view2, zoom: level };
+}
+function rotated(view2, screenAxis, degrees) {
+  const world = new Vector34(...applyQuaternion(view2.orientation, screenAxis));
+  const turn = new Quaternion3().setFromAxisAngle(world, degrees * MathUtils2.DEG2RAD);
+  return { ...view2, orientation: turn.multiply(new Quaternion3().fromArray(view2.orientation)).toArray() };
+}
+function panned(view2, dx, dy, fraction, extent2, frame3) {
+  const amount = visibleHeight(view2, extent2, frame3) * fraction;
+  return { ...view2, target: vadd(view2.target, applyQuaternion(view2.orientation, [-dx * amount, -dy * amount, 0])) };
+}
+var flown = (view2, distance) => ({
+  ...view2,
+  target: vadd(view2.target, flyShift(view2.orientation, distance))
+});
+function framed(view2, centre, size, extent2, frame3) {
+  const zoom2 = frameZoom(view2.projection, view2.lens, size, extent2, frame3);
+  return { ...view2, target: [...centre], zoom: zoom2 };
+}
+function viewedFrom(view2, direction, up) {
+  return {
+    ...view2,
+    target: [0, 0, 0],
+    orientation: orientationFromBasis(direction, up),
+    zoom: view2.projection === "persp" ? 1 : view2.zoom
+  };
+}
+function pivoted(view2, hitDistance, minDistance, extent2) {
+  const position = cameraPosition(view2, extent2);
+  const distance = Math.max(hitDistance, minDistance);
+  if (distance >= span(position, view2.target)) return null;
+  return {
+    ...view2,
+    target: vadd(position, vscale(viewForward(view2.orientation), distance)),
+    zoom: baseDistance(extent2) / distance
+  };
+}
+function released(view2, extent2, minDistance, maxDistance) {
+  const position = cameraPosition(view2, extent2);
+  const along = MathUtils2.clamp(depthOfCentre(position, view2.orientation), minDistance, maxDistance);
+  return {
+    ...view2,
+    target: vadd(position, vscale(viewForward(view2.orientation), along)),
+    zoom: view2.projection === "persp" ? baseDistance(extent2) / along : view2.zoom
+  };
+}
+function withProjection(view2, projection2, lens2, extent2, frame3) {
+  if (projection2 === view2.projection && (projection2 === "ortho" || lens2 === view2.lens)) return { ...view2, lens: lens2 };
+  const fitted = Math.abs(shownZoom(view2, extent2) - fitZoomFor(view2.projection, view2.lens, extent2, frame3)) < EPS;
+  const orthoZoom = view2.projection === "persp" ? perspToOrthoZoom(extent2, view2.lens, view2.zoom) : view2.zoom;
+  const zoom2 = projection2 === "persp" ? orthoToPerspZoom(extent2, lens2, orthoZoom) : orthoZoom;
+  const next = { ...view2, projection: projection2, lens: lens2 };
+  return { ...next, zoom: fitted ? fitZoomFor(projection2, lens2, extent2, frame3) : zoom2 };
+}
+function interpolated(from, to, share) {
+  return {
+    target: lerp(from.target, to.target, share),
+    orientation: new Quaternion3().fromArray(from.orientation).slerp(new Quaternion3().fromArray(to.orientation), share).toArray(),
+    zoom: from.zoom * (to.zoom / from.zoom) ** share,
+    projection: to.projection,
+    lens: to.lens
+  };
+}
+
+// src/camera/view.ts
+var GLIDE_MS = 300;
+var CLIP_CHANGE_TOLERANCE = 1e-6;
+var view = {
+  target: [0, 0, 0],
+  orientation: [0, 0, 0, 1],
+  zoom: 1,
+  projection: "ortho",
+  lens: GEMMY.defaultLens
+};
+var glideId = 0;
+var isPersp = () => view.projection === "persp";
+var frameSize = () => ({ width: stage.clientWidth, height: stage.clientHeight });
+var extentNow = () => loaded.value.extent;
+var refit = () => {
+  fitValue.value = fitFor(stage.clientWidth, stage.clientHeight);
+};
+function viewNow() {
+  readBack();
+  return view;
+}
+function pageCamera() {
+  return {
+    quaternion: camera.value.quaternion.toArray(),
+    zoom: viewNow().zoom,
+    target: controls.target.toArray(),
+    projection: projection.value,
+    lens: lens.value,
+    width: stage.clientWidth,
+    height: stage.clientHeight
+  };
+}
+var shownNow = () => shownZoom(viewNow(), extentNow());
+var fitFor = (width, height) => fitZoomFor(view.projection, view.lens, extentNow(), { width, height });
+function readBack() {
+  const cam = camera.value;
+  const persp = cam === perspCamera;
+  const target = controls.target.toArray();
+  const distance = span(cam.position.toArray(), target);
+  let zoom2 = cam.zoom;
+  if (persp) zoom2 = distance === 0 ? 1 : baseDistance(extentNow()) / distance;
+  view = {
+    ...view,
+    target,
+    orientation: cam.quaternion.toArray(),
+    projection: persp ? "persp" : "ortho",
+    zoom: zoom2
+  };
+}
+function applyView() {
+  const cam = view.projection === "persp" ? perspCamera : orthoCamera;
+  if (camera.peek() !== cam) {
+    camera.value = cam;
+    cam.add(key, key.target);
+    controls.object = cam;
+  }
+  cam.position.fromArray(cameraPosition(view, extentNow()));
+  cam.quaternion.fromArray(view.orientation);
+  cam.up.fromArray(upAxis(view.orientation));
+  controls.target.fromArray(view.target);
+  cam.zoom = view.projection === "persp" ? 1 : view.zoom;
+  cam.updateProjectionMatrix();
+}
+function commit(next) {
+  if (next.lens !== view.lens) perspCamera.setFocalLength(next.lens);
+  r(() => {
+    view = next;
+    lens.value = next.lens;
+    projection.value = next.projection;
+    applyView();
+  });
+  requestRender();
+}
+function move(change) {
+  glideId++;
+  commit(change(viewNow()));
+}
+function setView(next) {
+  glideId++;
+  commit(next);
+  refit();
+}
+function syncClip() {
+  if (!isPersp()) return;
+  const cam = camera.value;
+  const depth = depthOfCentre(cam.position.toArray(), cam.quaternion.toArray());
+  const { near, far } = clipPlanesAround(depth, extentNow());
+  if (Math.abs(cam.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(cam.far - far) > CLIP_CHANGE_TOLERANCE) {
+    Object.assign(cam, { near, far });
+    cam.updateProjectionMatrix();
+  }
+}
+var zoom = (factor) => move((s2) => zoomedTo(s2, shownZoom(s2, extentNow()) * factor, extentNow()));
+var zoomTo = (level) => move((s2) => zoomedTo(s2, level, extentNow()));
+var SCREEN_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+function isScreenAxis(name) {
+  return name !== void 0 && Object.hasOwn(SCREEN_AXES, name);
+}
+function rotate(axis, degrees) {
+  move((s2) => rotated(s2, SCREEN_AXES[axis], degrees));
+}
+function viewFrom(dir, up) {
+  move((s2) => viewedFrom(s2, dir.toArray(), up.toArray()));
+}
+function pan(dx, dy, fraction) {
+  move((s2) => panned(s2, dx, dy, fraction, extentNow(), frameSize()));
+}
+function flyForward(fraction) {
+  move((s2) => flown(s2, visibleHeight(s2, extentNow(), frameSize()) * fraction));
+}
+function fit() {
+  move((s2) => framed(s2, [0, 0, 0], extentNow(), extentNow(), frameSize()));
+  refit();
+}
+function pivotTo(hitDistance, minDistance) {
+  const next = pivoted(viewNow(), hitDistance, minDistance, extentNow());
+  if (next) move(() => next);
+  return next !== null;
+}
+function releaseTo(minDistance, maxDistance) {
+  move((s2) => released(s2, extentNow(), minDistance, maxDistance));
+}
+function switchProjection(mode2, newLens = lens.value) {
+  move((s2) => withProjection(s2, mode2, newLens, extentNow(), frameSize()));
+  refit();
+}
+function glideTo(end) {
+  const id = ++glideId;
+  const start = viewNow();
+  const started = performance.now();
+  const step = () => {
+    if (id !== glideId) return;
+    const progress = (performance.now() - started) / GLIDE_MS;
+    commit(progress >= 1 ? end : interpolated(start, end, THREE4.MathUtils.smoothstep(progress, 0, 1)));
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function centreOn(centre, size) {
+  glideTo(framed(viewNow(), centre.toArray(), size, extentNow(), frameSize()));
+}
+function glideTarget(point) {
+  glideTo({ ...viewNow(), target: point.toArray() });
+}
+controls.addEventListener("start", () => {
+  glideId++;
+});
+
+// src/camera/fly.ts
+var MS_PER_SECOND = 1e3;
+var MAX_FRAME_SECONDS = 0.05;
+var FIRST_STEP_SECONDS = 1 / 60;
+var flying = /* @__PURE__ */ new Set();
+var flyLast = 0;
+var shiftHeld = false;
+var FLY = {
+  KeyW: ["fly", 1],
+  KeyS: ["fly", -1],
+  KeyA: ["pan", 1, 0],
+  KeyD: ["pan", -1, 0],
+  KeyE: ["pan", 0, -1],
+  KeyQ: ["pan", 0, 1]
+};
+var FLY_SHIFT = { KeyW: ["pan", 0, -1], KeyS: ["pan", 0, 1] };
+function setShiftHeld(held) {
+  shiftHeld = held;
+}
+function moveFor(code) {
+  return shiftHeld && FLY_SHIFT[code] || FLY[code];
+}
+function advance(direction, seconds) {
+  if (isPersp()) flyForward(direction * RATE.pan * seconds);
+  else zoom(RATE.zoom ** (direction * seconds));
+}
+function fly(now) {
+  if (!flying.size) {
+    flyLast = 0;
+    return;
+  }
+  const seconds = flyLast ? Math.min((now - flyLast) / MS_PER_SECOND, MAX_FRAME_SECONDS) : FIRST_STEP_SECONDS;
+  flyLast = now;
+  for (const code of flying) {
+    const move2 = moveFor(code);
+    if (move2[0] === "fly") advance(move2[1], seconds);
+    else pan(move2[1], move2[2], RATE.pan * seconds);
+  }
+}
+function wireFlyKeys() {
+  window.addEventListener("keyup", (e3) => {
+    flying.delete(e3.code);
+    setShiftHeld(e3.shiftKey);
+  });
+  window.addEventListener("blur", () => {
+    flying.clear();
+    setShiftHeld(false);
+  });
+}
 
 // src/ui/picking.ts
 import * as THREE6 from "three";
 
 // src/ui/readout.ts
 import * as THREE5 from "three";
-
-// src/camera/view.ts
-import * as THREE4 from "three";
-
-// src/camera/glide.ts
-import * as THREE3 from "three";
-var GLIDE_MS = 300;
-var current = 0;
-function glideTo(point) {
-  const offset = point.clone().sub(controls.target);
-  glideView(point, camera.position.clone().add(offset));
-}
-function glideView(target, position, zoom2) {
-  const id = ++current;
-  const moveTarget = target.clone().sub(controls.target);
-  const movePosition = position.clone().sub(camera.position);
-  const zoomStart = camera.zoom;
-  const started = performance.now();
-  let shareMoved = 0;
-  const step = () => {
-    if (id !== current) return;
-    const progress = (performance.now() - started) / GLIDE_MS;
-    const share = THREE3.MathUtils.smoothstep(progress, 0, 1);
-    const part = share - shareMoved;
-    camera.position.addScaledVector(movePosition, part);
-    controls.target.addScaledVector(moveTarget, part);
-    if (zoom2 !== void 0) {
-      camera.zoom = progress < 1 ? camera.zoom * Math.pow(zoom2 / zoomStart, part) : zoom2;
-      camera.updateProjectionMatrix();
-    }
-    shareMoved = share;
-    requestRender();
-    if (progress < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-function cancelGlide() {
-  current++;
-}
-
-// src/camera/view.ts
-var ZOOM_MIN = 0.05;
-var ZOOM_MAX = 40;
-var ORTHO_FAR_EXTENTS = 40;
-var CLIP_CHANGE_TOLERANCE = 1e-6;
-var isPersp = () => camera === perspCamera;
-var currentZoom = () => isPersp() ? baseDistance(extent) / distance() : camera.zoom;
-var shownZoom = () => isPersp() ? baseDistance(extent) / centreDistance(camera.position.toArray()) : camera.zoom;
-var frameZoom = (size, width, height) => isPersp() ? fitZoomPersp(size, lens, width, height) : fitZoom(width, height) * orthoSide(extent) / orthoSide(size);
-var fitFor = (width, height) => frameZoom(extent, width, height);
-function setZoom(requested) {
-  const zoomLevel2 = THREE4.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
-  if (isPersp()) {
-    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
-    camera.position.copy(controls.target).addScaledVector(towardsCamera, baseDistance(extent) / zoomLevel2);
-  } else {
-    camera.zoom = zoomLevel2;
-    camera.updateProjectionMatrix();
-  }
-  requestRender();
-}
-function syncClip() {
-  if (!isPersp()) return;
-  const depth = depthOfCentre(camera.position.toArray(), camera.quaternion.toArray());
-  const { near, far } = clipPlanesAround(depth, extent);
-  if (Math.abs(camera.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(camera.far - far) > CLIP_CHANGE_TOLERANCE) {
-    Object.assign(camera, { near, far });
-    camera.updateProjectionMatrix();
-  }
-}
-function viewFrom(dir, up) {
-  cancelGlide();
-  controls.target.set(0, 0, 0);
-  const target = controls.target;
-  const sizeAway = isPersp() ? baseDistance(extent) : extent * ORTHO_VIEW_DISTANCE;
-  camera.position.copy(target).addScaledVector(dir.clone().normalize(), sizeAway);
-  camera.up.copy(up).normalize();
-  camera.lookAt(target);
-  requestRender();
-}
-var SCREEN_AXES = {
-  x: new THREE4.Vector3(1, 0, 0),
-  y: new THREE4.Vector3(0, 1, 0),
-  z: new THREE4.Vector3(0, 0, 1)
-};
-function isScreenAxis(name) {
-  return name !== void 0 && Object.hasOwn(SCREEN_AXES, name);
-}
-function rotate(axis, degrees) {
-  const world = SCREEN_AXES[axis].clone().applyQuaternion(camera.quaternion);
-  const turn = new THREE4.Quaternion().setFromAxisAngle(world, THREE4.MathUtils.degToRad(degrees));
-  const offset = camera.position.clone().sub(controls.target).applyQuaternion(turn);
-  camera.position.copy(controls.target).add(offset);
-  camera.up.applyQuaternion(turn);
-  camera.lookAt(controls.target);
-  requestRender();
-}
-function pan(dx, dy, fraction) {
-  const distanceAway = visibleHeightAtTarget(camera) * fraction;
-  const shift = new THREE4.Vector3(-dx, -dy, 0).multiplyScalar(distanceAway).applyQuaternion(camera.quaternion);
-  camera.position.add(shift);
-  controls.target.add(shift);
-  requestRender();
-}
-function flyForward(fraction) {
-  const shift = new THREE4.Vector3(...flyShift(camera.quaternion.toArray(), visibleHeightAtTarget(camera) * fraction));
-  camera.position.add(shift);
-  controls.target.add(shift);
-  requestRender();
-}
-function setShownZoom(requested) {
-  const wanted = THREE4.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
-  if (!isPersp()) {
-    setZoom(wanted);
-    return;
-  }
-  const next = dollyPosition(
-    camera.position.toArray(),
-    controls.target.toArray(),
-    baseDistance(extent) / wanted,
-    controls.minDistance,
-    controls.maxDistance
-  );
-  if (next) camera.position.fromArray(next);
-  requestRender();
-}
-var zoom = (factor) => setShownZoom(shownZoom() * factor);
-function framedView(centre2, size) {
-  const width = stage.clientWidth, height = stage.clientHeight;
-  const zoomWanted = frameZoom(size, width, height);
-  if (isPersp()) {
-    const towardsCamera2 = camera.position.clone().sub(controls.target).normalize();
-    const distance2 = baseDistance(size) / zoomWanted;
-    return { target: centre2, position: centre2.clone().addScaledVector(towardsCamera2, distance2) };
-  }
-  const towardsCamera = camera.position.clone().sub(controls.target);
-  if (towardsCamera.lengthSq() === 0) towardsCamera.set(0, 0, 1).applyQuaternion(camera.quaternion);
-  const position = centre2.clone().addScaledVector(towardsCamera.normalize(), extent * ORTHO_VIEW_DISTANCE);
-  return { target: centre2, position, zoom: zoomWanted };
-}
-function fit() {
-  cancelGlide();
-  const view = framedView(new THREE4.Vector3(0, 0, 0), extent);
-  controls.target.copy(view.target);
-  camera.position.copy(view.position);
-  if (view.zoom !== void 0) {
-    camera.zoom = view.zoom;
-    camera.updateProjectionMatrix();
-  }
-  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
-  requestRender();
-}
-function centreOn(centre2, size) {
-  const view = framedView(centre2, size);
-  glideView(view.target, view.position, view.zoom);
-}
-function distance() {
-  return camera.position.distanceTo(controls.target) || baseDistance(extent);
-}
-function visibleHeightAtTarget(view) {
-  if (view instanceof THREE4.PerspectiveCamera) {
-    const halfAngle = THREE4.MathUtils.degToRad(view.fov) / 2;
-    return 2 * distance() * Math.tan(halfAngle);
-  }
-  return (view.top - view.bottom) / view.zoom;
-}
 
 // src/ui/dom.ts
 function byId(id) {
@@ -1055,9 +1685,23 @@ function byId(id) {
 function closestOf(target, selector) {
   return target instanceof Element ? target.closest(selector) : null;
 }
-function clamp(value, low, high) {
-  return Math.max(low, Math.min(value, high));
+function cloneTemplate(id) {
+  return byId(id).content.cloneNode(true);
 }
+function setSlot(root2, name, text) {
+  root2.querySelector(`[data-slot="${name}"]`).textContent = text;
+}
+var nameHeading = document.querySelector(".name h1");
+var nameLine = document.querySelector(".name .sub");
+var pageName = {
+  read() {
+    return { name: nameHeading.textContent, from: nameLine.textContent };
+  },
+  show(name, from) {
+    nameHeading.textContent = name;
+    nameLine.textContent = from;
+  }
+};
 
 // src/ui/readout.ts
 var info = byId("info-body");
@@ -1066,86 +1710,83 @@ var FRACTIONAL_DIGITS = 4;
 var DELTA_SCALE = 1e4;
 var COPY_FEEDBACK_MS = 1500;
 var SUBSCRIPT_DIGITS = "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089";
-var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-function dist(a, b) {
-  return new THREE5.Vector3(...a).distanceTo(new THREE5.Vector3(...b));
+function dist(a2, b2) {
+  return new THREE5.Vector3(...a2).distanceTo(new THREE5.Vector3(...b2));
 }
 function pointOf(id) {
-  const point = points.get(id);
+  const point = loaded.value.points.get(id);
   if (!point) throw new Error(`gemmy viewer: the scene has no point ${id}`);
   return point;
 }
-function fmt(x, digits = ANGSTROM_DIGITS) {
-  return x.toFixed(digits);
+function formatDigits(x2, digits = ANGSTROM_DIGITS) {
+  return x2.toFixed(digits);
 }
 function average(xs) {
-  return xs.reduce((sum, x) => sum + x, 0) / xs.length;
+  return xs.reduce((sum, x2) => sum + x2, 0) / xs.length;
 }
-function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
-}
-function subscripts(s) {
-  return s.replace(/\d+/g, (m) => [...m].map((c) => SUBSCRIPT_DIGITS[Number(c)]).join(""));
+function subscripts(s2) {
+  return s2.replace(/\d+/g, (m2) => [...m2].map((c2) => SUBSCRIPT_DIGITS[Number(c2)]).join(""));
 }
 function grouped(values) {
   const counts = /* @__PURE__ */ new Map();
-  for (const x of values) counts.set(fmt(x), (counts.get(fmt(x)) || 0) + 1);
-  return [...counts].sort((p, q) => Number(p[0]) - Number(q[0])).map(([x, n]) => n > 1 ? `${n} \xD7 ${x}` : x).join(", ");
+  for (const x2 of values) counts.set(formatDigits(x2), (counts.get(formatDigits(x2)) || 0) + 1);
+  return [...counts].sort((p2, q) => Number(p2[0]) - Number(q[0])).map(([x2, n2]) => n2 > 1 ? `${n2} \xD7 ${x2}` : x2).join(", ");
 }
-function nothingSelectedHtml() {
-  return `<h2>Nothing selected</h2><p class="hint">Click an atom or a polyhedron to see its distances.</p>`;
-}
-function polyhedronHtml(p) {
-  const centre2 = pointOf(p.center_point_id);
-  const bonds = p.ligand_point_ids.map((id) => dist(centre2.position, pointOf(id).position));
-  const mean = average(bonds);
-  const distortion = average(bonds.map((x) => ((x - mean) / mean) ** 2));
-  const centreText = centre2.fractional ? `${centre2.element} at (${centre2.fractional.map((x) => fmt(x, FRACTIONAL_DIGITS)).join(", ")})` : centre2.element;
-  return `<h2>${escapeHtml(subscripts(p.name ?? "Polyhedron"))}</h2><dl>
-      <dt>Centre</dt><dd>${escapeHtml(centreText)}</dd>
-      <dt>Bonds</dt><dd>${grouped(bonds)} \xC5</dd>
-      <dt>Mean</dt><dd>${fmt(mean)} \xC5</dd>
-      <dt>\u0394</dt><dd>${(distortion * DELTA_SCALE).toFixed(2)} \xD7 10\u207B\u2074</dd>
-      <dt>View</dt><dd>${CENTER_BUTTON}</dd></dl>
-      <p class="hint">\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\xB2. Fractional coordinates are in the supercell.</p>`;
+function dropRow(root2, row) {
+  for (const element of root2.querySelectorAll(`[data-row="${row}"]`)) element.remove();
 }
 function objectBounds(target) {
-  const offset = new THREE5.Vector3(...centre);
+  const offset = new THREE5.Vector3(...loaded.value.centre);
   if (target.kind === "atom") {
     const position = new THREE5.Vector3(...pointOf(target.atom.point_id).position).sub(offset);
     return { centre: position, size: 2 * target.atom.radius };
   }
   const corners = target.poly.ligand_point_ids.map((id) => new THREE5.Vector3(...pointOf(id).position));
-  const low = new THREE5.Vector3(Infinity, Infinity, Infinity), high = low.clone().multiplyScalar(-1);
-  for (const c of corners) {
-    low.min(c);
-    high.max(c);
-  }
-  return { centre: low.clone().add(high).multiplyScalar(0.5).sub(offset), size: low.distanceTo(high) };
+  const box = new THREE5.Box3().setFromPoints(corners);
+  return { centre: box.getCenter(new THREE5.Vector3()).sub(offset), size: box.min.distanceTo(box.max) };
 }
-var CENTER_BUTTON = `<button type="button" class="copy" data-center title="Center and fit this object" aria-label="Center and fit this object"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg> Center</button>`;
-function atomHtml(a) {
-  const point = pointOf(a.point_id);
-  const hosts = polyhedra.filter((p) => p.ligand_point_ids.includes(a.point_id));
-  const neighbours = hosts.map((p) => dist(point.position, pointOf(p.center_point_id).position));
-  const hostElement = hosts.length ? pointOf(hosts[0].center_point_id).element : "";
-  const ref = point.ref ? `<dt>Ref</dt><dd>${escapeHtml(point.ref)} <button type="button" class="copy" data-copy="${escapeHtml(point.ref)}">Copy</button></dd>` : "";
-  const fractional = point.fractional ? `<dt>Fractional</dt><dd>${point.fractional.map((x) => fmt(x, FRACTIONAL_DIGITS)).join(", ")}</dd>` : "";
-  const nbrs = neighbours.length ? `<dt>${escapeHtml(hostElement)} nbrs</dt><dd>${grouped(neighbours)} \xC5</dd>` : "";
-  return `<h2>${escapeHtml(point.element)} atom</h2><dl>
-      ${ref}
-      ${fractional}
-      <dt>Cartesian</dt><dd>${point.position.map((x) => fmt(x)).join(", ")} \xC5</dd>
-      ${nbrs}
-      <dt>View</dt><dd>${CENTER_BUTTON}</dd></dl>
-      <p class="hint">Fractional coordinates are in the supercell.</p>`;
+function polyhedronReadout(p2) {
+  const centre = pointOf(p2.center_point_id);
+  const bonds = p2.ligand_point_ids.map((id) => dist(centre.position, pointOf(id).position));
+  const mean = average(bonds);
+  const distortion = average(bonds.map((x2) => ((x2 - mean) / mean) ** 2));
+  const centreText = centre.fractional ? `${centre.element} at (${centre.fractional.map((x2) => formatDigits(x2, FRACTIONAL_DIGITS)).join(", ")})` : centre.element;
+  const root2 = cloneTemplate("polyhedron-readout");
+  setSlot(root2, "name", subscripts(p2.name ?? "Polyhedron"));
+  setSlot(root2, "centre", centreText);
+  setSlot(root2, "bonds", grouped(bonds));
+  setSlot(root2, "mean", formatDigits(mean));
+  setSlot(root2, "delta", (distortion * DELTA_SCALE).toFixed(2));
+  root2.querySelector('[data-slot="view"]').append(cloneTemplate("center-button"));
+  return root2;
+}
+function atomReadout(a2) {
+  const point = pointOf(a2.point_id);
+  const hosts = loaded.value.polyhedra.filter((p2) => p2.ligand_point_ids.includes(a2.point_id));
+  const neighbours = hosts.map((p2) => dist(point.position, pointOf(p2.center_point_id).position));
+  const root2 = cloneTemplate("atom-readout");
+  setSlot(root2, "element", point.element);
+  if (point.ref) {
+    setSlot(root2, "ref", point.ref);
+    root2.querySelector('[data-slot="copy"]').dataset.copy = point.ref;
+  } else dropRow(root2, "ref");
+  if (point.fractional)
+    setSlot(root2, "fractional", point.fractional.map((x2) => formatDigits(x2, FRACTIONAL_DIGITS)).join(", "));
+  else dropRow(root2, "fractional");
+  setSlot(root2, "cartesian", point.position.map((x2) => formatDigits(x2)).join(", "));
+  if (hosts.length) {
+    setSlot(root2, "host", pointOf(hosts[0].center_point_id).element);
+    setSlot(root2, "neighbours", grouped(neighbours));
+  } else dropRow(root2, "neighbours");
+  root2.querySelector('[data-slot="view"]').append(cloneTemplate("center-button"));
+  return root2;
 }
 var shown = null;
 function describe(target) {
   shown = target;
-  if (!target) info.innerHTML = nothingSelectedHtml();
-  else if (target.kind === "polyhedron") info.innerHTML = polyhedronHtml(target.poly);
-  else info.innerHTML = atomHtml(target.atom);
+  if (!target) info.replaceChildren(cloneTemplate("nothing-selected"));
+  else if (target.kind === "polyhedron") info.replaceChildren(polyhedronReadout(target.poly));
+  else info.replaceChildren(atomReadout(target.atom));
 }
 function copyRef(button) {
   const done = (text) => {
@@ -1155,42 +1796,59 @@ function copyRef(button) {
     }, COPY_FEEDBACK_MS);
   };
   try {
-    navigator.clipboard.writeText(button.dataset.copy ?? "").then(() => done("Copied"), () => done("Failed"));
+    navigator.clipboard.writeText(button.dataset.copy ?? "").then(
+      () => done("Copied"),
+      () => done("Failed")
+    );
   } catch {
     done("Failed");
   }
 }
-info.addEventListener("click", (e) => {
-  const button = closestOf(e.target, "button[data-copy]");
-  if (button) copyRef(button);
-  else if (closestOf(e.target, "button[data-center]") && shown) {
-    const { centre: centre2, size } = objectBounds(shown);
-    centreOn(centre2, size);
-  }
-});
+function wireReadout() {
+  info.addEventListener("click", (e3) => {
+    const button = closestOf(e3.target, "button[data-copy]");
+    if (button) copyRef(button);
+    else if (closestOf(e3.target, "button[data-center]") && shown) {
+      const { centre, size } = objectBounds(shown);
+      centreOn(centre, size);
+    }
+  });
+}
+
+// src/ui/storage.ts
+function remembered(key2, parse) {
+  return {
+    read() {
+      try {
+        return parse(localStorage.getItem(key2));
+      } catch {
+        return parse(null);
+      }
+    },
+    write(value) {
+      try {
+        localStorage.setItem(key2, String(value));
+      } catch {
+      }
+    }
+  };
+}
 
 // src/ui/panels.ts
 var PHONE_MAX_WIDTH = 640;
 var narrowScreen = matchMedia(`(max-width: ${PHONE_MAX_WIDTH}px)`);
-function readChoice(key2) {
-  try {
-    const value = localStorage.getItem(key2);
-    return value === null ? null : value === "1";
-  } catch {
-    return null;
-  }
-}
-function saveChoice(key2, value) {
-  try {
-    localStorage.setItem(key2, value ? "1" : "0");
-  } catch {
-  }
-}
+var choiceStore = (key2) => remembered(key2, (raw) => raw === "1" || raw === "0" ? raw : null);
+var asChoice = (open) => open ? "1" : "0";
+var isOpen = (choice) => choice === null ? null : choice === "1";
 var INFO_KEY = "gemmy.info-open";
 var infoPanel = byId("info");
 var infoButton = byId("info-button");
 var infoClose = byId("info-close");
-var infoChoice = readChoice(INFO_KEY);
+var infoStore = choiceStore(INFO_KEY);
+var rememberedInfo = isOpen(infoStore.read());
+function infoChoice() {
+  return rememberedInfo;
+}
 function showInfo(open) {
   if (open && narrowScreen.matches) showViewControls(false);
   infoPanel.hidden = !open;
@@ -1200,27 +1858,30 @@ function showInfo(open) {
 function toggleInfo() {
   const open = infoPanel.hidden;
   showInfo(open);
-  infoChoice = open;
-  saveChoice(INFO_KEY, open);
+  rememberedInfo = open;
+  infoStore.write(asChoice(open));
   (open ? infoClose : infoButton).focus({ preventScroll: true });
 }
-infoButton.addEventListener("click", toggleInfo);
-infoClose.addEventListener("click", toggleInfo);
-var VIEW_KEY = "gemmy.view-controls-open";
+var VIEW_CONTROLS_KEY = "gemmy.view-controls-open";
 var viewBar = byId("bottom");
 var viewToggle = byId("view-toggle");
-var viewOpen = readChoice(VIEW_KEY) ?? !narrowScreen.matches;
+var viewStore = choiceStore(VIEW_CONTROLS_KEY);
+var viewOpen = isOpen(viewStore.read()) ?? !narrowScreen.matches;
 function showViewControls(open) {
   viewBar.classList.toggle("folded", !open);
   viewToggle.setAttribute("aria-expanded", String(open));
 }
-showViewControls(viewOpen);
-viewToggle.addEventListener("click", () => {
-  viewOpen = !viewOpen;
-  if (viewOpen && narrowScreen.matches && !infoPanel.hidden) showInfo(false);
+function wirePanels() {
+  infoButton.addEventListener("click", toggleInfo);
+  infoClose.addEventListener("click", toggleInfo);
   showViewControls(viewOpen);
-  saveChoice(VIEW_KEY, viewOpen);
-});
+  viewToggle.addEventListener("click", () => {
+    viewOpen = !viewOpen;
+    if (viewOpen && narrowScreen.matches && !infoPanel.hidden) showInfo(false);
+    showViewControls(viewOpen);
+    viewStore.write(asChoice(viewOpen));
+  });
+}
 
 // src/ui/picking.ts
 var HIGHLIGHT_GLOW = 0.55;
@@ -1245,7 +1906,7 @@ function highlightAtom(target) {
   const mesh = new THREE6.Mesh(target.mesh.geometry, highlightMaterial(target.mesh.material));
   target.mesh.getMatrixAt(target.index, mesh.matrix);
   mesh.matrixAutoUpdate = false;
-  atomGroup.add(mesh);
+  loaded.value.atomGroup.add(mesh);
   return mesh;
 }
 function highlightPolyhedron(target) {
@@ -1258,7 +1919,7 @@ function highlightPolyhedron(target) {
   const mesh = new THREE6.Mesh(geometry, highlightMaterial(target.mesh.material));
   mesh.userData.own = true;
   mesh.renderOrder = target.ghost ? GHOST_RENDER_ORDER : 0;
-  polyGroup.add(mesh);
+  loaded.value.polyGroup.add(mesh);
   return mesh;
 }
 function select(target) {
@@ -1274,20 +1935,21 @@ function targetOf(hit) {
     return { kind: "atom", atom: mesh.userData.atoms[index], mesh, index };
   }
   const face = hit.faceIndex;
-  return polyTargets[mesh.userData.owner[face]];
+  return loaded.value.polyTargets[mesh.userData.owner[face]];
 }
 function pickableObjects() {
-  const atoms = atomGroup.visible ? atomGroup.children.filter((o) => o.userData.atoms) : [];
-  const polys = polyGroup.children.filter((o) => o.isMesh && o.userData.owner);
+  const { atomGroup, polyGroup } = loaded.value;
+  const atoms = atomGroup.visible ? atomGroup.children.filter((o2) => o2.userData.atoms) : [];
+  const polys = polyGroup.children.filter((o2) => o2.isMesh && o2.userData.owner);
   return [...atoms, ...polys];
 }
 var ray = new THREE6.Raycaster();
 function hitAt(clientX, clientY) {
-  const r = renderer.domElement.getBoundingClientRect();
-  const ndc = new THREE6.Vector2((clientX - r.left) / r.width * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
-  ray.setFromCamera(ndc, camera);
+  const r2 = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE6.Vector2((clientX - r2.left) / r2.width * 2 - 1, -((clientY - r2.top) / r2.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera.value);
   const hits = ray.intersectObjects(pickableObjects(), false);
-  return hits.find((h) => !isGhostHit(h)) ?? hits[0] ?? null;
+  return hits.find((h2) => !isGhostHit(h2)) ?? hits[0] ?? null;
 }
 function isGhostHit(hit) {
   const target = targetOf(hit);
@@ -1301,195 +1963,750 @@ var DOUBLE_CLICK_MS = 350;
 var DOUBLE_CLICK_SLOP_PX = 10;
 var pressedAt = null;
 var lastClick = null;
-function completesDoubleClick(e) {
+function completesDoubleClick(e3) {
   const previous = lastClick;
-  lastClick = { at: e.timeStamp, x: e.clientX, y: e.clientY };
+  lastClick = { at: e3.timeStamp, x: e3.clientX, y: e3.clientY };
   if (!previous) return false;
-  const quick = e.timeStamp - previous.at <= DOUBLE_CLICK_MS;
-  const near = Math.hypot(e.clientX - previous.x, e.clientY - previous.y) <= DOUBLE_CLICK_SLOP_PX;
+  const quick = e3.timeStamp - previous.at <= DOUBLE_CLICK_MS;
+  const near = Math.hypot(e3.clientX - previous.x, e3.clientY - previous.y) <= DOUBLE_CLICK_SLOP_PX;
   if (!quick || !near) return false;
   lastClick = null;
   return true;
 }
-renderer.domElement.addEventListener("pointerdown", (e) => {
-  pressedAt = [e.clientX, e.clientY];
-});
-renderer.domElement.addEventListener("pointerup", (e) => {
-  if (!pressedAt) return;
-  if (Math.hypot(e.clientX - pressedAt[0], e.clientY - pressedAt[1]) > POINTER_SLOP_PX) return;
-  const double = completesDoubleClick(e);
-  const hit = hitAt(e.clientX, e.clientY);
-  select(hit ? targetOf(hit) : null);
-  if (hit) showInfo(true);
-  if (double && hit) glideTo(hit.point);
-  else if (!hit) releasePivot();
-});
+function wirePicking(releaseRotation) {
+  renderer.domElement.addEventListener("pointerdown", (e3) => {
+    pressedAt = [e3.clientX, e3.clientY];
+  });
+  renderer.domElement.addEventListener("pointerup", (e3) => {
+    if (!pressedAt) return;
+    if (Math.hypot(e3.clientX - pressedAt[0], e3.clientY - pressedAt[1]) > POINTER_SLOP_PX) return;
+    const double = completesDoubleClick(e3);
+    const hit = hitAt(e3.clientX, e3.clientY);
+    select(hit ? targetOf(hit) : null);
+    if (hit) showInfo(true);
+    if (double && hit) glideTarget(hit.point);
+    else if (!hit) releaseRotation();
+  });
+}
 
-// src/camera/pivot.ts
+// src/ui/pivot.ts
 function beginRotation() {
   if (!cameraInsideStructure()) return;
-  const r = renderer.domElement.getBoundingClientRect();
-  const hit = pickPointAt(r.left + r.width / 2, r.top + r.height / 2);
+  const r2 = renderer.domElement.getBoundingClientRect();
+  const hit = pickPointAt(r2.left + r2.width / 2, r2.top + r2.height / 2);
   if (!hit) return;
-  const pivot = pivotTarget(
-    camera.position.toArray(),
-    camera.quaternion.toArray(),
-    controls.target.toArray(),
-    hit.distanceTo(camera.position),
-    controls.minDistance
-  );
-  if (!pivot) return;
-  controls.target.fromArray(pivot);
-  requestRender();
+  pivotTo(hit.distanceTo(camera.value.position), controls.minDistance);
 }
 function releasePivot() {
-  const position = camera.position.toArray();
-  const forward = viewForward(camera.quaternion.toArray());
-  const depth = depthOfCentre(position, camera.quaternion.toArray());
-  const along = Math.min(Math.max(depth, controls.minDistance), controls.maxDistance);
-  controls.target.fromArray(pointAlong(position, forward, along));
-  requestRender();
+  releaseTo(controls.minDistance, controls.maxDistance);
 }
 function cameraInsideStructure() {
-  return camera.position.length() < extent / 2;
+  const { extent: extent2 } = loaded.value;
+  return span(cameraPosition(viewNow(), extent2), [0, 0, 0]) < extent2 / 2;
 }
 var press = null;
-window.addEventListener("pointerdown", (e) => {
-  press = e.button === 0 && e.target === renderer.domElement ? { x: e.clientX, y: e.clientY, armed: false } : null;
-}, { capture: true });
+window.addEventListener(
+  "pointerdown",
+  (e3) => {
+    press = e3.button === 0 && e3.target === renderer.domElement ? { x: e3.clientX, y: e3.clientY, armed: false } : null;
+  },
+  { capture: true }
+);
 controls.addEventListener("start", () => {
   if (press) press.armed = true;
 });
-window.addEventListener("pointermove", (e) => {
-  if (!press?.armed) return;
-  if (Math.hypot(e.clientX - press.x, e.clientY - press.y) <= POINTER_SLOP_PX) return;
-  press.armed = false;
-  beginRotation();
-}, { capture: true });
+window.addEventListener(
+  "pointermove",
+  (e3) => {
+    if (!press?.armed) return;
+    if (Math.hypot(e3.clientX - press.x, e3.clientY - press.y) <= POINTER_SLOP_PX) return;
+    press.armed = false;
+    beginRotation();
+  },
+  { capture: true }
+);
 for (const ending of ["pointerup", "pointercancel"]) {
-  window.addEventListener(ending, () => {
-    press = null;
-  }, { capture: true });
+  window.addEventListener(
+    ending,
+    () => {
+      press = null;
+    },
+    { capture: true }
+  );
 }
 
-// src/camera/fly.ts
-function fly(now) {
-  if (!flying.size) {
-    flyLast = 0;
+// src/ui/menus.ts
+import { MathUtils as MathUtils8 } from "three";
+
+// src/scene/read.ts
+var SCENE_FILE = /\.json(\.gz)?$/i;
+var MEGABYTE = 1024 * 1024;
+var MAX_SCENE_BYTES = 200 * MEGABYTE;
+var GZIP_FIRST_BYTE = 31;
+var GZIP_SECOND_BYTE = 139;
+var SceneError = class extends Error {
+};
+var messageOf = (error) => error instanceof Error ? error.message : String(error);
+var isObject = (value) => typeof value === "object" && value !== null;
+function isGzip(bytes) {
+  return bytes[0] === GZIP_FIRST_BYTE && bytes[1] === GZIP_SECOND_BYTE;
+}
+async function readCapped(stream, what) {
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  for (; ; ) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_SCENE_BYTES) {
+      await reader.cancel();
+      throw new SceneError(`${what} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, at);
+    at += chunk.byteLength;
+  }
+  return all;
+}
+async function sceneText(bytes) {
+  if (!isGzip(bytes)) return new TextDecoder().decode(bytes);
+  let plain;
+  try {
+    const unzipped = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    plain = await readCapped(unzipped, "The decompressed scene");
+  } catch (error) {
+    if (error instanceof SceneError) throw error;
+    throw new SceneError(`The gzip data could not be read: ${messageOf(error)}`);
+  }
+  return new TextDecoder().decode(plain);
+}
+async function sceneFromBytes(bytes) {
+  return parseScene(await sceneText(bytes));
+}
+async function sceneFromFile(file) {
+  if (!SCENE_FILE.test(file.name)) throw new SceneError(`${file.name} is not a .json or .json.gz scene file.`);
+  if (file.size > MAX_SCENE_BYTES)
+    throw new SceneError(`${file.name} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
+  return sceneFromBytes(new Uint8Array(await file.arrayBuffer()));
+}
+function parseScene(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new SceneError(`The scene is not valid JSON: ${messageOf(error)}`);
+  }
+  return checkScene(value);
+}
+function checkScene(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SceneError("The JSON is not a gemmy scene (it is not an object).");
+  }
+  const { schema_version: version } = value;
+  if (version !== GEMMY.sceneSchemaVersion) {
+    throw new SceneError(
+      `This scene has schema_version ${String(version)}; this viewer reads version ${GEMMY.sceneSchemaVersion}. Compile it again with this gemmy.`
+    );
+  }
+  const doc = value;
+  if (!Array.isArray(doc.points) || !isObject(doc.primitives) || !isObject(doc.materials)) {
+    throw new SceneError(
+      "The JSON has a schema_version but no points, primitives and materials: it is not a gemmy scene."
+    );
+  }
+  return doc;
+}
+
+// src/scene/gist.ts
+function pickGistFile(files, wanted) {
+  const all = Object.values(files);
+  if (wanted !== null) {
+    const named = all.find((file) => file.filename === wanted);
+    if (!named) throw new Error(`The gist has no file named "${wanted}".`);
+    return named;
+  }
+  const scene2 = all.find((file) => SCENE_FILE.test(file.filename));
+  if (!scene2) throw new Error("The gist has no .json or .json.gz file.");
+  return scene2;
+}
+
+// src/scene/source.ts
+var SCENE_PARAM = "scene";
+var GIST_PARAM = "gist";
+var FILE_PARAM = "file";
+var GIST_ID = /^[A-Za-z0-9]+$/;
+var WEB_PROTOCOLS = ["http:", "https:"];
+var SourceError = class extends Error {
+};
+function parseSources(search, base) {
+  const query = new URLSearchParams(search);
+  const urls = query.getAll(SCENE_PARAM);
+  const gist = query.get(GIST_PARAM);
+  if (gist !== null && urls.length > 0) throw new SourceError("Give scene= or gist=, not both.");
+  if (gist !== null) {
+    if (!GIST_ID.test(gist)) throw new SourceError(`gist= should be a gist id (letters and digits), got "${gist}".`);
+    return [{ kind: "gist", id: gist, file: query.get(FILE_PARAM) || null }];
+  }
+  return urls.map((value) => ({ kind: "url", url: resolveWebUrl(value, base), byDefault: false }));
+}
+function resolveWebUrl(value, base) {
+  if (value.trim() === "") throw new SourceError("scene= needs a URL.");
+  let url;
+  try {
+    url = new URL(value.trim(), base);
+  } catch {
+    throw new SourceError(`"${value}" is not a URL.`);
+  }
+  if (!WEB_PROTOCOLS.includes(url.protocol))
+    throw new SourceError(`Only http and https scene URLs can be opened, not "${value}".`);
+  return url.href;
+}
+function pathSegments(url) {
+  return new URL(url).pathname.split("/").filter(Boolean).map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  });
+}
+function sourcesToOpen(search, base, defaults) {
+  const sources = parseSources(search, base);
+  if (sources.length > 0) return sources;
+  return defaults.map((scene2) => ({ kind: "url", url: resolveWebUrl(scene2, base), byDefault: true }));
+}
+function nameOf(source) {
+  switch (source.kind) {
+    case "embedded":
+    case "live":
+      return source.page.name;
+    case "file":
+      return source.file.name;
+    case "url":
+    case "gist":
+      return sceneName(source);
+  }
+}
+function fromOf(source) {
+  switch (source.kind) {
+    case "embedded":
+    case "live":
+      return source.page.from;
+    case "file":
+      return "local file";
+    case "url":
+      return source.url;
+    case "gist":
+      return `gist ${source.id}`;
+  }
+}
+function linkOf(source, pageHref) {
+  const query = queryOf(source);
+  if (query === null) return null;
+  const link = new URL(pageHref);
+  link.hash = "";
+  link.search = query;
+  return link.href;
+}
+function queryOf(source) {
+  switch (source.kind) {
+    case "embedded":
+    case "file":
+      return null;
+    case "live":
+      return "";
+    case "url":
+      return source.byDefault ? "" : new URLSearchParams({ [SCENE_PARAM]: source.url }).toString();
+    case "gist":
+      return new URLSearchParams({
+        [GIST_PARAM]: source.id,
+        ...source.file === null ? {} : { [FILE_PARAM]: source.file }
+      }).toString();
+  }
+}
+function sceneName(source) {
+  if (source.kind === "gist") return source.file ?? `gist ${source.id}`;
+  const segments = pathSegments(source.url);
+  const stem = (segments.at(-1) ?? source.url).replace(SCENE_FILE, "");
+  return stem === "scene" ? segments.at(-2) ?? stem : stem;
+}
+
+// src/scene/fetch.ts
+var GIST_API = "https://api.github.com/gists/";
+var GIST_ACCEPT = "application/vnd.github+json";
+async function get(url, accept) {
+  let response;
+  try {
+    response = await fetch(url, { headers: accept ? { Accept: accept } : {}, referrerPolicy: "no-referrer" });
+  } catch {
+    throw new SceneError(
+      `Could not fetch ${url}: the network failed, or the server does not allow this page to read it (CORS).`
+    );
+  }
+  if (!response.ok) {
+    const status = [response.status, response.statusText].filter(Boolean).join(" ");
+    throw new SceneError(`The server answered ${status} for ${url}.`);
+  }
+  return response;
+}
+async function fetchScene(url) {
+  const response = await get(url);
+  if (!response.body) throw new SceneError(`${url} sent no data.`);
+  return sceneFromBytes(await readCapped(response.body, `The scene at ${url}`));
+}
+async function fetchServedVersion() {
+  const response = await fetch("status", { cache: "no-store" });
+  if (!response.ok) throw new SceneError(`The server answered ${response.status} for status.`);
+  return (await response.json()).version ?? null;
+}
+async function fetchLive() {
+  const response = await fetch("scene.json", { cache: "no-store" });
+  if (!response.ok) throw new SceneError(`The server answered ${response.status} for scene.json.`);
+  return response.json();
+}
+async function fetchGist(id, file) {
+  const response = await get(GIST_API + encodeURIComponent(id), GIST_ACCEPT);
+  let gist;
+  try {
+    gist = await response.json();
+  } catch {
+    throw new SceneError(`GitHub sent no gist data for ${id}.`);
+  }
+  const picked = pickGistFile(gist.files ?? {}, file);
+  const raw = resolveWebUrl(picked.raw_url, GIST_API);
+  return { name: picked.filename, doc: await fetchScene(raw) };
+}
+
+// src/camera/viewhash.ts
+import { MathUtils as MathUtils4 } from "three";
+var VIEW_KEY = "view";
+var SIGNIFICANT_DIGITS = 4;
+var FIELD_SEPARATOR = ";";
+var VECTOR_SEPARATOR = ",";
+var VECTOR_LENGTH = 3;
+var numberText = (x2) => String(Number(x2.toPrecision(SIGNIFICANT_DIGITS)));
+var vectorText = (v2) => v2.map(numberText).join(VECTOR_SEPARATOR);
+function encodeView(pose) {
+  const size = pose.projection === "persp" ? `lens=${numberText(pose.lens)}` : `zoom=${numberText(pose.zoom)}`;
+  return [
+    pose.projection,
+    size,
+    `eye=${vectorText(pose.eye)}`,
+    `at=${vectorText(pose.at)}`,
+    `up=${vectorText(pose.up)}`
+  ].join(FIELD_SEPARATOR);
+}
+function decodeView(text) {
+  const [projection2, ...rest] = text.split(FIELD_SEPARATOR);
+  if (projection2 !== "persp" && projection2 !== "ortho") return null;
+  const fields = new URLSearchParams(rest.join("&"));
+  const vector = (name) => {
+    const parts = (fields.get(name) ?? "").split(VECTOR_SEPARATOR).map(Number);
+    return parts.length === VECTOR_LENGTH && parts.every(Number.isFinite) ? parts : null;
+  };
+  const size = Number(fields.get(projection2 === "persp" ? "lens" : "zoom"));
+  const eye = vector("eye"), at = vector("at"), up = vector("up");
+  if (!(size > 0) || !Number.isFinite(size) || !eye || !at || !up) return null;
+  return {
+    projection: projection2,
+    lens: projection2 === "persp" ? size : 0,
+    zoom: projection2 === "ortho" ? size : 1,
+    eye,
+    at,
+    up
+  };
+}
+function viewFromPose(pose, extent2, lens2) {
+  const numbers = [...pose.eye, ...pose.at, ...pose.up, pose.zoom];
+  if (!numbers.every(Number.isFinite)) return null;
+  const separation = span(pose.eye, pose.at);
+  if (separation === 0 || Math.hypot(...pose.up) === 0) return null;
+  const persp = pose.projection === "persp";
+  const zoom2 = persp ? MathUtils4.clamp(baseDistance(extent2) / separation, ZOOM_MIN, ZOOM_MAX) : pose.zoom;
+  return {
+    target: [...pose.at],
+    orientation: orientationFromBasis(vsub(pose.eye, pose.at), pose.up),
+    zoom: zoom2,
+    projection: pose.projection,
+    lens: persp ? pose.lens : lens2
+  };
+}
+function poseOf(view2, extent2) {
+  return {
+    projection: view2.projection,
+    lens: view2.lens,
+    zoom: view2.zoom,
+    eye: cameraPosition(view2, extent2),
+    at: view2.target,
+    up: upAxis(view2.orientation)
+  };
+}
+
+// src/ui/toast.ts
+var DEFAULT_MS = 6e3;
+var FADE_MS = 400;
+var STAY = "stay";
+var toast = byId("toast");
+var timer;
+function note(text, ms = DEFAULT_MS) {
+  clearTimeout(timer);
+  toast.textContent = text;
+  toast.hidden = false;
+  toast.classList.remove("fade");
+  if (ms === STAY) return;
+  timer = setTimeout(() => {
+    toast.classList.add("fade");
+    timer = setTimeout(hideNote, FADE_MS);
+  }, ms);
+}
+function hideNote() {
+  clearTimeout(timer);
+  toast.hidden = true;
+}
+var noteText = () => toast.textContent ?? "";
+
+// src/ui/views.ts
+import * as THREE7 from "three";
+function viewDirection(azimuthDeg, elevationDeg) {
+  const a2 = THREE7.MathUtils.degToRad(azimuthDeg), e3 = THREE7.MathUtils.degToRad(elevationDeg);
+  return new THREE7.Vector3(Math.cos(e3) * Math.cos(a2), Math.cos(e3) * Math.sin(a2), Math.sin(e3));
+}
+var VIEWS = {
+  a: () => viewFrom(loaded.value.lattice[0], loaded.value.lattice[2]),
+  b: () => viewFrom(loaded.value.lattice[1], loaded.value.lattice[2]),
+  c: () => viewFrom(loaded.value.lattice[2], loaded.value.lattice[1]),
+  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE7.Vector3(0, 0, 1))
+};
+function wireViewButtons() {
+  for (const button of document.querySelectorAll("[data-view]")) {
+    button.addEventListener("click", () => VIEWS[button.dataset.view ?? ""]());
+  }
+}
+
+// src/ui/share.ts
+var SETTLE_MS = 200;
+var NOTE_MS = 5e3;
+var currentPose = () => poseOf(viewNow(), loaded.value.extent);
+function applyPose(pose) {
+  const next = viewFromPose(pose, loaded.value.extent, lens.value);
+  if (!next) {
+    VIEWS.rotated();
     return;
   }
-  const seconds = flyLast ? Math.min((now - flyLast) / MS_PER_SECOND, MAX_STEP_SECONDS) : FIRST_STEP_SECONDS;
-  flyLast = now;
-  for (const code of flying) {
-    const move = moveFor(code);
-    if (move[0] === "fly") advance(move[1], seconds);
-    else pan(move[1], move[2], RATE.pan * seconds);
+  setView(next);
+  writeAddress(encodeView(currentPose()));
+}
+var pending = readAddressPose();
+function readAddressPose() {
+  const text = new URLSearchParams(location.hash.slice(1)).get(VIEW_KEY);
+  return text === null ? null : decodeView(text);
+}
+function takePendingPose() {
+  const pose = pending;
+  pending = null;
+  return pose;
+}
+function writeAddress(text) {
+  const url = new URL(location.href);
+  url.hash = `${VIEW_KEY}=${text}`;
+  history.replaceState(history.state, "", url.href);
+}
+var watching = false;
+function watchView() {
+  if (watching) return;
+  watching = true;
+  let written = encodeView(currentPose());
+  let previous = written;
+  setInterval(() => {
+    const now = encodeView(currentPose());
+    if (now === previous && now !== written) {
+      written = now;
+      writeAddress(now);
+    }
+    previous = now;
+  }, SETTLE_MS);
+}
+var sceneLink = null;
+function setSceneLink(link) {
+  sceneLink = link;
+}
+function copyLink() {
+  const url = new URL(sceneLink ?? location.href);
+  url.hash = `${VIEW_KEY}=${encodeView(currentPose())}`;
+  const said = sceneLink === null ? "Copied the view only: an embedded or local scene cannot go in a link, so the link opens this page at this view." : "Copied the link: this scene, at this view.";
+  const refused = () => note("Could not copy the link: the browser refused the clipboard.", NOTE_MS);
+  try {
+    navigator.clipboard.writeText(url.href).then(() => note(said, NOTE_MS), refused);
+  } catch {
+    refused();
   }
 }
-function advance(direction, seconds) {
-  if (isPersp()) flyForward(direction * FLY_RATE * seconds);
-  else zoom(RATE.zoom ** (direction * seconds));
+byId("copy-link").addEventListener("click", copyLink);
+
+// src/ui/outline-scale.ts
+var OUTLINE_SCALE_KEY = "gemmy.outline-scale";
+var OUTLINE_SCALE_CHOICES = [0.5, 1, 1.75];
+var DEFAULT_SCALE = 1;
+function isOutlineScale(value) {
+  return OUTLINE_SCALE_CHOICES.some((choice) => choice === value);
 }
-var FLY = {
-  KeyW: ["fly", 1],
-  KeyS: ["fly", -1],
-  KeyA: ["pan", 1, 0],
-  KeyD: ["pan", -1, 0],
-  KeyE: ["pan", 0, -1],
-  KeyQ: ["pan", 0, 1]
-};
-var FLY_SHIFT = { KeyW: ["pan", 0, -1], KeyS: ["pan", 0, 1] };
-function moveFor(code) {
-  return shiftHeld && FLY_SHIFT[code] || FLY[code];
-}
-var flying = /* @__PURE__ */ new Set();
-var flyLast = 0;
-var shiftHeld = false;
-function setShiftHeld(held) {
-  shiftHeld = held;
-}
-var MS_PER_SECOND = 1e3;
-var MAX_STEP_SECONDS = 0.05;
-var FIRST_STEP_SECONDS = 1 / 60;
-var FLY_RATE = RATE.pan;
-window.addEventListener("keyup", (e) => {
-  flying.delete(e.code);
-  shiftHeld = e.shiftKey;
+var stored = remembered(OUTLINE_SCALE_KEY, (raw) => {
+  const value = Number(raw);
+  return isOutlineScale(value) ? value : DEFAULT_SCALE;
 });
-window.addEventListener("blur", () => {
-  flying.clear();
-  shiftHeld = false;
+var outlineScale = y(stored.read());
+x(() => setOutlineScale(outlineScale.value));
+function chooseOutlineScale(scale) {
+  outlineScale.value = scale;
+  stored.write(scale);
+}
+var outlineSegments = [...document.querySelectorAll("[data-outline-scale]")];
+for (const segment of outlineSegments) {
+  segment.addEventListener("click", () => chooseOutlineScale(Number(segment.dataset.outlineScale)));
+}
+x(() => {
+  for (const segment of outlineSegments) {
+    segment.setAttribute("aria-pressed", String(Number(segment.dataset.outlineScale) === outlineScale.value));
+  }
 });
 
-// src/render/triad.ts
-var FONT_LOAD_PX = 16;
-var AXIS_FONT_STYLE = "italic 700";
-var AXIS_LETTERS = "abc";
-var FULL_TURN = 2 * Math.PI;
-var triadCanvas = document.getElementById("triad");
-var triadContext = triadCanvas.getContext("2d");
-document.head.appendChild(Object.assign(document.createElement("style"), { textContent: axisFontFace() }));
-var axisFontReady = false;
-document.fonts.load(`${AXIS_FONT_STYLE} ${FONT_LOAD_PX}px "${AXIS_FONT.family}"`).finally(() => {
-  axisFontReady = true;
-  requestRender();
+// src/ui/theme.ts
+var THEME_KEY = "gemmy.theme";
+var THEME_CHOICES = ["auto", "light", "dark"];
+var AUTO = "auto";
+var THEME_ATTRIBUTE = "data-theme";
+var DARK_QUERY = "(prefers-color-scheme: dark)";
+function isThemeChoice(value) {
+  return THEME_CHOICES.some((choice) => choice === value);
+}
+function applyToPage(choice) {
+  if (choice === AUTO) document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+  else document.documentElement.setAttribute(THEME_ATTRIBUTE, choice);
+}
+var stored2 = remembered(THEME_KEY, (raw) => isThemeChoice(raw) ? raw : AUTO);
+var theme = y(stored2.read());
+applyToPage(theme.peek());
+var systemQuery = matchMedia(DARK_QUERY);
+var systemDark = y(systemQuery.matches);
+systemQuery.addEventListener("change", (event) => {
+  systemDark.value = event.matches;
 });
-function drawTriad(canvas = triadCanvas, ctx = triadContext, dpr = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO)) {
+function setTheme(choice) {
+  applyToPage(choice);
+  stored2.write(choice);
+  theme.value = choice;
+}
+function cycleTheme() {
+  const next = (THEME_CHOICES.indexOf(theme.peek()) + 1) % THEME_CHOICES.length;
+  setTheme(THEME_CHOICES[next]);
+}
+var themeSegments = [...document.querySelectorAll("[data-theme-choice]")];
+for (const segment of themeSegments) {
+  segment.addEventListener("click", () => {
+    const choice = segment.dataset.themeChoice;
+    if (isThemeChoice(choice)) setTheme(choice);
+  });
+}
+x(() => {
+  for (const segment of themeSegments) {
+    segment.setAttribute("aria-pressed", String(segment.dataset.themeChoice === theme.value));
+  }
+});
+
+// src/render/triad3d.ts
+import * as THREE9 from "three";
+
+// src/render/triad-model.ts
+import * as THREE8 from "three";
+var T = GEMMY.triad;
+var SHAFT_RADIUS = T.arrowRadius;
+var HEAD_RADIUS = T.headRadiusRatio * T.arrowRadius;
+var HEAD_LENGTH = T.headLengthRatio;
+var BALL_TO_HEAD_BASE = 1.1;
+var BALL_RADIUS = BALL_TO_HEAD_BASE * HEAD_RADIUS;
+var BALL_COLOUR = "#ffffff";
+var SIDES = 24;
+var BALL_SEGMENTS = { width: 32, height: 16 };
+var CORNER_LENGTHS = 1.2;
+var CAMERA_LENGTHS = 3;
+var NEAR_LENGTHS = 0.5;
+var FAR_LENGTHS = 5;
+var UP2 = new THREE8.Vector3(0, 1, 0);
+function triadModel(length2, directions) {
+  const shaftLength = length2 * (1 - HEAD_LENGTH / 2);
+  const shaft = { kind: "cylinder", radius: SHAFT_RADIUS * length2, height: shaftLength };
+  const head = { kind: "cone", radius: HEAD_RADIUS * length2, height: HEAD_LENGTH * length2 };
+  const orientation = (direction) => new THREE8.Quaternion().setFromUnitVectors(UP2, direction);
+  const shafts = directions.map(
+    (direction, axis) => ({
+      shape: shaft,
+      position: direction.clone().multiplyScalar(shaftLength / 2),
+      quaternion: orientation(direction),
+      colour: LOOK.axisColors[axis],
+      axis
+    })
+  );
+  const heads = directions.map(
+    (direction, axis) => ({
+      shape: head,
+      position: direction.clone().multiplyScalar(length2 - HEAD_LENGTH * length2 / 2),
+      quaternion: orientation(direction),
+      colour: LOOK.axisColors[axis],
+      axis
+    })
+  );
+  const ball = {
+    shape: { kind: "sphere", radius: BALL_RADIUS * length2, height: BALL_RADIUS * length2 },
+    position: new THREE8.Vector3(),
+    quaternion: new THREE8.Quaternion(),
+    colour: BALL_COLOUR,
+    axis: null
+  };
+  return [...shafts, ...heads, ball];
+}
+function shapeGeometry(shape) {
+  const { radius, height } = shape;
+  switch (shape.kind) {
+    case "cylinder":
+      return new THREE8.CylinderGeometry(radius, radius, height, SIDES, 1);
+    case "cone":
+      return new THREE8.ConeGeometry(radius, height, SIDES, 1);
+    case "sphere":
+      return new THREE8.SphereGeometry(radius, BALL_SEGMENTS.width, BALL_SEGMENTS.height);
+  }
+}
+function partMatrix(part) {
+  const { kind, radius, height } = part.shape;
+  const scale = new THREE8.Vector3(radius, kind === "sphere" ? radius : height, radius);
+  return new THREE8.Matrix4().compose(part.position, part.quaternion, scale).toArray();
+}
+function triadCorner(layout, width, height) {
+  const [originX, originDownY] = layout.origin;
+  const originY = height - originDownY;
+  return {
+    originX,
+    originY,
+    width: Math.min(width, originX + CORNER_LENGTHS * layout.length),
+    height: Math.min(height, originY + CORNER_LENGTHS * layout.length)
+  };
+}
+function placeTriadCamera(camera2, orientation, corner, length2) {
+  const forward = new THREE8.Vector3(0, 0, -1).applyQuaternion(orientation);
+  camera2.quaternion.copy(orientation);
+  camera2.position.copy(forward).multiplyScalar(-CAMERA_LENGTHS * length2);
+  Object.assign(camera2, {
+    left: -corner.originX,
+    right: corner.width - corner.originX,
+    bottom: -corner.originY,
+    top: corner.height - corner.originY,
+    near: NEAR_LENGTHS * length2,
+    far: FAR_LENGTHS * length2
+  });
+  camera2.updateProjectionMatrix();
+}
+
+// src/render/triad3d.ts
+var triadScene = new THREE9.Scene();
+var triadCamera = new THREE9.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+triadScene.add(triadCamera);
+addToonLights(triadScene, triadCamera);
+var SOLID_COUNT = 2 * LOOK.axisColors.length + 1;
+var solids = Array.from({ length: SOLID_COUNT }, () => {
+  const toonMat = toonMaterial();
+  const shell = outlineShell();
+  return { toon: toonMat, shell, mesh: new THREE9.Mesh(void 0, toonMat), outline: new THREE9.Mesh(void 0, shell) };
+});
+for (const solid of solids) {
+  for (const mesh of [solid.mesh, solid.outline]) {
+    mesh.frustumCulled = false;
+    triadScene.add(mesh);
+  }
+}
+var builtLength = 0;
+function renderTriad(transparent = false) {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
-  sizeCanvas(canvas, width, height, dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-  if (!axisFontReady) return void 0;
-  const triad = triadLayout(latticeInView(), width, height);
-  ctx.lineCap = "round";
-  ctx.lineWidth = triad.lineWidth;
-  for (const item of triad.items) drawAxis(ctx, item, triad.origin, triad.fontSize);
-  drawOrigin(ctx, triad.origin, triad.dotRadius);
-  return triad;
+  const layout = triadLayout(latticeInView(loaded.value.lattice, camera.value.quaternion), width, height);
+  const corner = triadCorner(layout, width, height);
+  const parts = triadModel(layout.length, loaded.value.lattice);
+  ensureGeometry(parts, layout.length);
+  placeTriadCamera(triadCamera, camera.value.quaternion, corner, layout.length);
+  const background = transparent ? null : new THREE9.Color(cssVar("--bg").trim());
+  paintSolids(parts, layout.items, background);
+  placeSolids(parts);
+  const autoClear = renderer.autoClear;
+  renderer.autoClear = false;
+  renderer.setViewport(0, 0, corner.width, corner.height);
+  renderer.setScissor(0, 0, corner.width, corner.height);
+  renderer.setScissorTest(true);
+  renderer.clearDepth();
+  renderer.render(triadScene, triadCamera);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, width, height);
+  renderer.autoClear = autoClear;
 }
-function latticeInView() {
-  const inverse = camera.quaternion.clone().invert();
-  return lattice.map((vector2) => vector2.clone().applyQuaternion(inverse).toArray());
+function paintSolids(parts, items, background) {
+  parts.forEach((part, index) => {
+    const fade = part.axis === null ? 0 : items.find((item) => item.index === part.axis)?.fade ?? 0;
+    const { toon: material, shell } = solids[index];
+    const base = new THREE9.Color(part.colour);
+    const outlineBase = new THREE9.Color().fromArray(LOOK.outline);
+    material.color.copy(background === null ? base : base.lerp(background, fade));
+    shell.uniforms.outlineColor.value.copy(background === null ? outlineBase : outlineBase.lerp(background, fade));
+    material.opacity = background === null ? 1 - fade : 1;
+    shell.uniforms.opacity.value = material.opacity;
+    shell.uniforms.outlineScale.value = outlineMaterial.uniforms.outlineScale.value;
+  });
+  for (const { outline } of solids) outline.visible = outlines.value;
 }
-function drawAxis(ctx, item, origin, fontSize) {
-  const color = LOOK.axisColors[item.index];
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  if (item.head && item.shaftEnd) {
-    drawShaft(ctx, origin, item.shaftEnd);
-    drawHead(ctx, item.head);
-  }
-  ctx.font = `${AXIS_FONT_STYLE} ${fontSize}px ${cssVar("--label")}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(AXIS_LETTERS[item.index], item.label.x, item.label.y);
+function ensureGeometry(parts, length2) {
+  if (length2 === builtLength) return;
+  builtLength = length2;
+  parts.forEach((part, index) => {
+    const geometry = shapeGeometry(part.shape);
+    for (const mesh of [solids[index].mesh, solids[index].outline]) {
+      mesh.geometry.dispose();
+      mesh.geometry = geometry;
+    }
+  });
 }
-function drawShaft(ctx, from, to) {
-  ctx.beginPath();
-  ctx.moveTo(from[0], from[1]);
-  ctx.lineTo(to[0], to[1]);
-  ctx.stroke();
+function placeSolids(parts) {
+  parts.forEach((part, index) => {
+    for (const mesh of [solids[index].mesh, solids[index].outline]) {
+      mesh.position.copy(part.position);
+      mesh.quaternion.copy(part.quaternion);
+    }
+  });
 }
-function drawHead(ctx, [tip2, left, right]) {
-  ctx.beginPath();
-  ctx.moveTo(tip2[0], tip2[1]);
-  ctx.lineTo(left[0], left[1]);
-  ctx.lineTo(right[0], right[1]);
-  ctx.closePath();
-  ctx.fill();
+function toonMaterial() {
+  const material = toon(null, {}).clone();
+  material.transparent = true;
+  return material;
 }
-function drawOrigin(ctx, [x, y], radius) {
-  ctx.fillStyle = cssVar("--box");
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, FULL_TURN);
-  ctx.fill();
-}
-function sizeCanvas(canvas, width, height, dpr) {
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+function outlineShell() {
+  return new THREE9.ShaderMaterial({
+    side: THREE9.BackSide,
+    transparent: true,
+    uniforms: {
+      outlineThickness: { value: OUTLINE_THICKNESS },
+      outlineScale: { value: 1 },
+      outlineColor: { value: new THREE9.Color().fromArray(LOOK.outline) },
+      opacity: { value: 1 }
+    },
+    vertexShader: OUTLINE_VERTEX_SHADER,
+    fragmentShader: `
+    uniform vec3 outlineColor;
+    uniform float opacity;
+    void main() {
+      gl_FragColor = vec4(outlineColor, opacity);
+      #include <colorspace_fragment>
+    }`
+  });
 }
 
 // src/render/loop.ts
@@ -1498,141 +2715,637 @@ var zoomLevel = document.getElementById("zoom-level");
 function resize() {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
-  const atFit = Math.abs(shownZoom() - fitValue) < EPS;
-  setFitValue(fitFor(width, height));
+  const atFit = Math.abs(shownNow() - fitValue.value) < EPS;
+  fitValue.value = fitFor(width, height);
   fitOrthoFrustum(width, height);
   perspCamera.aspect = width / height;
-  perspCamera.setFocalLength(lens);
-  if (atFit) setShownZoom(fitValue);
+  perspCamera.setFocalLength(lens.value);
+  if (atFit) zoomTo(fitValue.value);
   renderer.setSize(width, height);
   controls.handleResize();
   requestRender();
 }
 function fitOrthoFrustum(width, height) {
-  const { halfWidth, halfHeight } = orthoFrame(extent, width, height);
+  const { halfWidth, halfHeight } = orthoFrame(loaded.value.extent, width, height);
   Object.assign(orthoCamera, { left: -halfWidth, right: halfWidth, top: halfHeight, bottom: -halfHeight });
   orthoCamera.updateProjectionMatrix();
 }
-function applyTheme() {
-  boxMaterial.color.set(cssVar("--box").trim());
+var PICTURE = [loaded, outlines, outlineScale, showAtoms, showBox, theme, systemDark];
+x(() => {
+  for (const part of PICTURE) void part.value;
   requestRender();
-}
+});
+x(() => {
+  void [theme.value, systemDark.value];
+  boxMaterial.color.set(cssVar("--box").trim());
+});
 function frame(now = 0) {
   requestAnimationFrame(frame);
   fly(now);
   controls.update();
+  readBack();
   if (takeDirty()) drawView();
 }
 function drawView() {
   syncClip();
-  renderer.render(scene, camera);
-  drawTriad();
-  showZoomPercent();
+  renderer.render(scene, camera.value);
+  renderTriad();
+  drawLiveTriad();
+  showZoom();
 }
-function showZoomPercent() {
-  const percent = Math.round(shownZoom() / fitValue * FIT_PERCENT);
+function showZoom() {
+  const percent = Math.round(shownNow() / fitValue.value * FIT_PERCENT);
   const text = Number.isFinite(percent) ? `${percent}%` : "";
   if (zoomLevel.textContent !== text) zoomLevel.textContent = text;
 }
 controls.addEventListener("change", requestRender);
 window.addEventListener("resize", resize);
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
-new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 document.fonts?.ready.then(requestRender);
-applyTheme();
 frame();
 
+// src/scene/bounds.ts
+import { Box3 as Box32, Vector3 as Vector38 } from "three";
+var MIN_EXTENT = 1;
+function sceneBounds(scene2) {
+  const positions = new Map(scene2.points.map((p2) => [p2.id, p2.position]));
+  const corners = [...positions.values(), ...arrowEnds(scene2, positions)];
+  if (corners.length === 0) return { centre: [0, 0, 0], extent: MIN_EXTENT };
+  const box = new Box32().setFromPoints(corners.map((p2) => new Vector38(...p2)));
+  const centre = box.getCenter(new Vector38());
+  return { centre: [centre.x, centre.y, centre.z], extent: Math.max(box.getSize(new Vector38()).length(), MIN_EXTENT) };
+}
+function arrowEnds(scene2, positions) {
+  const ends = [];
+  for (const d2 of scene2.primitives.displacements) {
+    const atom = positions.get(d2.start_point_id);
+    if (atom === void 0) continue;
+    const far = atom.map((x2, i2) => x2 + d2.vector[i2]);
+    const near = atom.map((x2, i2) => x2 - d2.vector[i2]);
+    ends.push(...d2.anchor === "tip" ? [near, atom] : [atom, far]);
+  }
+  return ends;
+}
+
+// src/scene/load.ts
+import * as THREE10 from "three";
+
+// src/geom/cell.ts
+function cellCorner(cell, n2) {
+  const [a2, b2, c2] = cell.vectors;
+  return [0, 1, 2].map((d2) => cell.origin[d2] + (n2 & 1) * a2[d2] + (n2 >> 1 & 1) * b2[d2] + (n2 >> 2 & 1) * c2[d2]);
+}
+function cellEdges(cell) {
+  const corners = Array.from({ length: 8 }, (_2, n2) => cellCorner(cell, n2));
+  const edges = [];
+  for (let n2 = 0; n2 < 8; n2++) {
+    for (let axis = 0; axis < 3; axis++) {
+      const bit = 1 << axis;
+      if (!(n2 & bit)) edges.push([corners[n2], corners[n2 | bit]]);
+    }
+  }
+  return edges;
+}
+
+// src/scene/load.ts
+var ORTHO_FAR_EXTENTS = 40;
+function load(doc, bounds) {
+  disposeScene();
+  loaded.value = build(doc, bounds);
+}
+function build(doc, bounds) {
+  const extent2 = bounds.extent;
+  const centre = bounds.centre;
+  frame2(centre, extent2);
+  const atomGroup = addAtomsBondsAndArrows(doc);
+  const { polyGroup, polyTargets } = addPolyhedra(doc);
+  const box = addCellBox(doc.cell);
+  return {
+    data: doc,
+    points: new Map(doc.points.map((p2) => [p2.id, p2])),
+    polyhedra: doc.primitives.polyhedra,
+    centre,
+    extent: extent2,
+    // A scene without a cell keeps the lattice of the scene before it.
+    lattice: doc.cell ? latticeOf(doc.cell) : loaded.peek().lattice,
+    atomGroup,
+    polyGroup,
+    box,
+    polyTargets
+  };
+}
+function frame2(centre, extent2) {
+  root.position.set(-centre[0], -centre[1], -centre[2]);
+  orthoCamera.far = extent2 * ORTHO_FAR_EXTENTS;
+  controls.minDistance = baseDistance(extent2) / ZOOM_MAX;
+  controls.maxDistance = baseDistance(extent2) / ZOOM_MIN;
+}
+function latticeOf(cell) {
+  return cell.vectors.map((vec) => new THREE10.Vector3(...vec).normalize());
+}
+function addAtomsBondsAndArrows(doc) {
+  const atomGroup = new THREE10.Group();
+  const bondGroup = new THREE10.Group();
+  const shapes = /* @__PURE__ */ new Map();
+  for (const g2 of instanceGroups(doc)) {
+    const shapeName = g2.shape;
+    let shape = shapes.get(shapeName);
+    if (!shape) {
+      shape = SHAPES[shapeName]();
+      shapes.set(shapeName, shape);
+    }
+    const mesh = instanced(shape, toon(g2.material, doc.materials), g2.matrices);
+    const isAtom = g2.shape === "sphere";
+    const owner = isAtom ? atomGroup : bondGroup;
+    owner.add(mesh);
+    if (isAtom) mesh.userData = { atoms: g2.refs };
+    if (g2.outlined) owner.add(outlineOf(mesh));
+  }
+  root.add(atomGroup, bondGroup);
+  return atomGroup;
+}
+function addPolyhedra(doc) {
+  const polyGroup = new THREE10.Group();
+  const polyTargets = new Array(doc.primitives.polyhedra.length);
+  for (const g2 of polyhedronGroups(doc)) {
+    const ghost = isGhost(doc.materials[g2.material]);
+    const geometry = new THREE10.BufferGeometry();
+    geometry.setAttribute("position", new THREE10.Float32BufferAttribute(g2.positions, 3));
+    geometry.computeVertexNormals();
+    const mesh = new THREE10.Mesh(geometry, toon(g2.material, doc.materials, { faces: true, ghost }));
+    mesh.userData = { owner: g2.owner };
+    if (ghost) mesh.renderOrder = 1;
+    for (const [index, first, count2] of g2.ranges) {
+      polyTargets[index] = { kind: "polyhedron", poly: doc.primitives.polyhedra[index], ghost, mesh, first, count: count2 };
+    }
+    const edgeGeometry = new THREE10.BufferGeometry();
+    edgeGeometry.setAttribute("position", new THREE10.Float32BufferAttribute(g2.edges, 3));
+    polyGroup.add(mesh, new THREE10.LineSegments(edgeGeometry, edgeMaterial));
+    if (!ghost) polyGroup.add(outlineOf(mesh));
+  }
+  root.add(polyGroup);
+  return { polyGroup, polyTargets };
+}
+function addCellBox(cell) {
+  if (!cell) return null;
+  const boxGeometry = new THREE10.BufferGeometry();
+  boxGeometry.setAttribute("position", new THREE10.Float32BufferAttribute(cellEdges(cell).flat(2), 3));
+  const cellBox = new THREE10.LineSegments(boxGeometry, boxMaterial);
+  root.add(cellBox);
+  return cellBox;
+}
+
+// src/ui/stage.ts
+var DRAG_FEEL = { rotateSpeed: 3, zoomSpeed: 1.2, panSpeed: 0.8, staticMoving: true };
+function place(doc) {
+  select(null);
+  r(() => {
+    load(doc, sceneBounds(doc));
+    resize();
+  });
+}
+function openScene(doc, view2) {
+  place(doc);
+  if (view2) applyPose(view2);
+  else VIEWS.rotated();
+  const { centre, points, polyTargets } = loaded.value;
+  const middle = [...polyTargets].sort(
+    (p2, q) => dist(points.get(p2.poly.center_point_id).position, centre) - dist(points.get(q.poly.center_point_id).position, centre)
+  )[0];
+  select(middle ?? null);
+  showInfo(infoChoice() ?? (Boolean(middle) && !narrowScreen.matches));
+  watchView();
+}
+function updateScene(doc) {
+  place(doc);
+}
+function wireShowToggle(id, flag) {
+  const button = byId(id);
+  button.addEventListener("click", () => {
+    flag.value = !flag.value;
+  });
+  x(() => button.setAttribute("aria-pressed", String(flag.value)));
+}
+function wireStage() {
+  Object.assign(controls, DRAG_FEEL);
+  wireShowToggle("toggle-atoms", showAtoms);
+  wireShowToggle("toggle-outline", outlines);
+  wireShowToggle("toggle-box", showBox);
+  x(() => {
+    loaded.value.atomGroup.visible = showAtoms.value;
+  });
+  x(() => {
+    outlineMaterial.visible = outlines.value;
+  });
+  x(() => {
+    const { box } = loaded.value;
+    if (box) box.visible = showBox.value;
+  });
+}
+
+// src/ui/overflow.ts
+var EDGE_SLACK_PX = 2;
+var watched = /* @__PURE__ */ new Set();
+function markOverflow(el) {
+  const { scrollLeft, scrollWidth, clientWidth } = el;
+  el.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
+  el.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
+}
+function watchOverflow(el) {
+  if (!watched.has(el)) {
+    watched.add(el);
+    el.addEventListener("scroll", () => markOverflow(el), { passive: true });
+  }
+  markOverflow(el);
+}
+window.addEventListener("resize", () => watched.forEach(markOverflow));
+
+// src/ui/tab-bar.ts
+function makeBar(onOwnLink) {
+  const built = document.querySelector(".tabs");
+  if (built) {
+    const ownLink = built.querySelector('a[aria-current="page"]');
+    ownLink?.addEventListener("click", (event) => {
+      event.preventDefault();
+      onOwnLink();
+    });
+    return { element: built, ownLink };
+  }
+  const nav = document.createElement("nav");
+  nav.className = "tabs";
+  nav.setAttribute("aria-label", "Scenes");
+  byId("menu-island").insertBefore(nav, document.querySelector(".name"));
+  return { element: nav, ownLink: null };
+}
+function renderTabs(bar, entries, current, actions) {
+  const strip = bar.element;
+  strip.querySelectorAll(".local-tab").forEach((element) => {
+    element.remove();
+  });
+  entries.forEach((entry, k) => {
+    if (k !== 0 || bar.ownLink === null) strip.appendChild(tabElement(entry, k === current, k, actions));
+  });
+  if (bar.ownLink !== null) {
+    if (current === 0) bar.ownLink.setAttribute("aria-current", "page");
+    else bar.ownLink.removeAttribute("aria-current");
+  }
+  watchOverflow(strip);
+  strip.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+function tabElement(entry, isCurrent, k, actions) {
+  const wrap = document.createElement("span");
+  wrap.className = "local-tab";
+  const choice = document.createElement("button");
+  choice.type = "button";
+  choice.textContent = entry.label;
+  if (isCurrent) choice.setAttribute("aria-current", "page");
+  choice.addEventListener("click", () => actions.choose(k));
+  wrap.appendChild(choice);
+  if (entry.closable) wrap.appendChild(closeButton(entry.label, () => actions.close(k)));
+  return wrap;
+}
+function closeButton(label, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "tab-close";
+  button.title = `Close ${label}`;
+  button.setAttribute("aria-label", `Close ${label}`);
+  button.append(cloneTemplate("close-icon"));
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+// src/ui/tab-model.ts
+function tabsOf(tabs, current = 0) {
+  return { tabs, current };
+}
+function addTab(list, tab) {
+  return { tabs: [...list.tabs, tab], current: list.tabs.length };
+}
+function chooseTab(list, k) {
+  return k >= 0 && k < list.tabs.length ? { tabs: list.tabs, current: k } : list;
+}
+function closeTab(list, k) {
+  if (list.tabs.length < 2 || k < 0 || k >= list.tabs.length) return list;
+  const tabs = list.tabs.filter((_2, j2) => j2 !== k);
+  if (k === list.current) return { tabs, current: Math.max(0, k - 1) };
+  return { tabs, current: k < list.current ? list.current - 1 : list.current };
+}
+function uniqueLabel(label, taken) {
+  if (!taken.includes(label)) return label;
+  let n2 = 2;
+  while (taken.includes(`${label} (${n2})`)) n2 += 1;
+  return `${label} (${n2})`;
+}
+
+// src/ui/loader.ts
+var PROGRESS_MS = 150;
+var empty = byId("empty");
+var emptyStatus = byId("empty-status");
+var emptyError = byId("empty-error");
+var urlForm = byId("empty-url");
+var urlInput = byId("scene-url");
+var fileInput = byId("scene-file");
+var closeButton2 = byId("empty-close");
+var messageOf2 = (error) => error instanceof Error ? error.message : String(error);
+var state = {
+  tabs: tabsOf([]),
+  bar: null,
+  shown: null,
+  servedVersion: null,
+  liveTurn: Promise.resolve(),
+  tabListeners: []
+};
+function inLiveTurn(task) {
+  const result = state.liveTurn.then(task);
+  state.liveTurn = result.then(
+    () => void 0,
+    () => void 0
+  );
+  return result;
+}
+function onTabChange(listener) {
+  state.tabListeners.push(listener);
+}
+function showCard() {
+  empty.hidden = false;
+  closeButton2.hidden = !hasScene();
+  document.body.classList.add("no-scene");
+}
+function hideCard() {
+  empty.hidden = true;
+  emptyStatus.textContent = "";
+  emptyError.hidden = true;
+  document.body.classList.remove("no-scene");
+}
+function busy(text) {
+  showCard();
+  emptyError.hidden = true;
+  emptyStatus.textContent = text;
+}
+function fail(text) {
+  showCard();
+  emptyStatus.textContent = "";
+  emptyError.textContent = text;
+  emptyError.hidden = false;
+}
+async function loadSource(source) {
+  switch (source.kind) {
+    case "embedded":
+      return { doc: source.doc, name: nameOf(source) };
+    case "live":
+      state.servedVersion = await fetchServedVersion();
+      return { doc: await fetchLive(), name: nameOf(source) };
+    case "url":
+      return { doc: await fetchScene(source.url), name: nameOf(source) };
+    case "gist": {
+      const { name, doc } = await fetchGist(source.id, source.file);
+      return { doc, name };
+    }
+    case "file":
+      return { doc: await sceneFromFile(source.file), name: nameOf(source) };
+  }
+}
+function loadTab(tab) {
+  if (tab.source.kind === "live") return inLiveTurn(() => loadSource(tab.source));
+  tab.loaded ??= loadSource(tab.source).catch((error) => {
+    tab.loaded = null;
+    throw error;
+  });
+  return tab.loaded;
+}
+var currentTab = () => state.tabs.tabs[state.tabs.current];
+async function showCurrent() {
+  const tab = currentTab();
+  if (!tab) return;
+  for (const listener of state.tabListeners) listener(tab.source);
+  const progress = setTimeout(() => {
+    if (tab === currentTab()) busy(`Loading ${nameOf(tab.source)}\u2026`);
+  }, PROGRESS_MS);
+  try {
+    const loaded2 = await loadTab(tab);
+    clearTimeout(progress);
+    if (tab !== currentTab()) return;
+    openScene(loaded2.doc, takePendingPose());
+    state.shown = tab;
+    setSceneLink(linkOf(tab.source, location.href));
+    pageName.show(loaded2.name, fromOf(tab.source));
+    document.title = `gemmy: ${loaded2.name}`;
+    hideCard();
+  } catch (error) {
+    clearTimeout(progress);
+    if (tab === currentTab()) fail(`Could not load ${nameOf(tab.source)}: ${messageOf2(error)}`);
+  }
+}
+function reloadLive(version) {
+  return inLiveTurn(async () => {
+    const tab = currentTab();
+    if (!version || tab?.source.kind !== "live" || version === state.servedVersion) return;
+    if (tab !== state.shown) {
+      void showCurrent();
+      return;
+    }
+    const loaded2 = await loadSource(tab.source);
+    if (tab === currentTab()) updateScene(loaded2.doc);
+  });
+}
+function choose(k) {
+  state.tabs = chooseTab(state.tabs, k);
+  renderBar();
+  return showCurrent();
+}
+function closeAt(k) {
+  const wasCurrent = k === state.tabs.current;
+  state.tabs = closeTab(state.tabs, k);
+  renderBar();
+  return wasCurrent ? showCurrent() : Promise.resolve();
+}
+function renderBar() {
+  if (state.bar === null) return;
+  const many = state.tabs.tabs.length > 1;
+  renderTabs(
+    state.bar,
+    state.tabs.tabs.map((tab) => ({ label: tab.label, closable: many && tab.source.kind === "file" })),
+    state.tabs.current,
+    { choose: (k) => void choose(k), close: (k) => void closeAt(k) }
+  );
+}
+function ensureBar() {
+  state.bar ??= makeBar(() => {
+    if (state.tabs.current !== 0) void choose(0);
+  });
+}
+function addSources(sources) {
+  for (const source of sources) {
+    const label = uniqueLabel(
+      nameOf(source),
+      state.tabs.tabs.map((tab) => tab.label)
+    );
+    state.tabs = addTab(state.tabs, { label, source, loaded: null });
+  }
+}
+function addFiles(files) {
+  if (files.length === 0) return;
+  ensureBar();
+  addSources(files.map((file) => ({ kind: "file", file })));
+  void choose(state.tabs.tabs.length - 1);
+}
+function startTabs(read) {
+  let sources;
+  try {
+    sources = read();
+  } catch (error) {
+    fail(messageOf2(error));
+    return;
+  }
+  if (sources.length === 0) {
+    showCard();
+    return;
+  }
+  state.tabs = tabsOf([]);
+  addSources(sources);
+  if (state.tabs.tabs.length > 1) ensureBar();
+  void choose(0);
+}
+function showUrlForm() {
+  showCard();
+  urlInput.focus();
+}
+function closeUrlForm() {
+  if (empty.hidden || !hasScene()) return false;
+  hideCard();
+  return true;
+}
+function attachOpeners() {
+  closeButton2.addEventListener("click", () => closeUrlForm());
+  window.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    document.body.classList.add("dragging");
+  });
+  window.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget === null) document.body.classList.remove("dragging");
+  });
+  window.addEventListener("drop", (event) => {
+    event.preventDefault();
+    document.body.classList.remove("dragging");
+    addFiles(Array.from(event.dataTransfer?.files ?? []));
+  });
+  fileInput.addEventListener("change", () => {
+    const files = Array.from(fileInput.files ?? []);
+    fileInput.value = "";
+    addFiles(files);
+  });
+  byId("open-scene").addEventListener("click", () => fileInput.click());
+  byId("empty-open").addEventListener("click", () => fileInput.click());
+  urlForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const url = resolveWebUrl(urlInput.value, location.href);
+      location.search = new URLSearchParams({ scene: url }).toString();
+    } catch (error) {
+      fail(messageOf2(error));
+    }
+  });
+}
+
 // src/trace/traced.ts
-import * as THREE12 from "three";
+import * as THREE16 from "three";
 
 // src/export/markup.ts
-import { Color as Color2, LinearSRGBColorSpace, SRGBColorSpace as SRGBColorSpace2 } from "three";
+import { Color as Color4, LinearSRGBColorSpace, SRGBColorSpace as SRGBColorSpace2 } from "three";
 var SVG_PRECISION = 100;
-var escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-var escapeAttr = (s) => escapeText(s).replace(/"/g, "&quot;");
-var fmt2 = (x) => Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0";
-var fmtPt = (p) => `${fmt2(p[0])} ${fmt2(p[1])}`;
-var pointList = (list) => list.map((p) => `${fmt2(p.x)},${fmt2(p.y)}`).join(" ");
-function attrText(attrs) {
-  return Object.entries(attrs).filter((entry) => entry[1] !== void 0 && entry[1] !== false).map(([name, value]) => ` ${name}="${typeof value === "number" ? fmt2(value) : escapeAttr(value)}"`).join("");
-}
-function el(tag, attrs, body) {
-  const list = attrText(attrs);
-  return body === void 0 ? `<${tag}${list}/>` : `<${tag}${list}>${body}</${tag}>`;
-}
-function textEl(tag, attrs, text) {
-  return `<${tag}${attrText(attrs)}>${escapeText(text)}</${tag}>`;
-}
+var fmt = (x2) => Number.isFinite(x2) ? String(Math.round(x2 * SVG_PRECISION) / SVG_PRECISION || 0) : "0";
+var fmtPt = (p2) => `${fmt(p2[0])} ${fmt(p2[1])}`;
 function srgbHex(rgb) {
-  return `#${new Color2().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace2).getHexString()}`;
+  return `#${new Color4().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace2).getHexString()}`;
 }
 function linearHex(rgb) {
-  return `#${new Color2().setRGB(rgb[0], rgb[1], rgb[2], LinearSRGBColorSpace).getHexString()}`;
+  return `#${new Color4().setRGB(rgb[0], rgb[1], rgb[2], LinearSRGBColorSpace).getHexString()}`;
 }
 function shadedBand(base, darkening) {
-  return `#${new Color2().setRGB(base[0], base[1], base[2], SRGBColorSpace2).multiplyScalar(darkening).getHexString()}`;
+  return `#${new Color4().setRGB(base[0], base[1], base[2], SRGBColorSpace2).multiplyScalar(darkening).getHexString()}`;
 }
 
-// src/export/shape.ts
-function colorOf(o, id) {
-  return o.data.materials[id].base_color.slice(0, 3);
+// src/export/svg-dom.ts
+var SVG_NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, children = []) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [name, value] of Object.entries(attrs)) {
+    if (value === void 0 || value === false) continue;
+    node.setAttribute(name, typeof value === "number" ? fmt(value) : value);
+  }
+  node.append(...children.filter((child) => child !== null));
+  return node;
 }
-function arrowColor() {
-  return ARROW.color.slice(0, 3);
-}
-
-// src/export/triad.ts
-import { Vector2 as Vector24 } from "three";
 
 // src/export/view.ts
-import { Quaternion as Quaternion2, Vector2 as Vector23, Vector3 as Vector34 } from "three";
+import { Quaternion as Quaternion5, Vector2 as Vector22, Vector3 as Vector310 } from "three";
 var MIN_DEPTH = 1e-3;
 var HORIZON_MARGIN = 1e-3;
-var vec3 = (p) => new Vector34(p[0], p[1], p[2]);
-function makeView(o) {
-  const { width: W, height: H, zoom: zoom2 } = o;
-  const orientation = new Quaternion2().fromArray(o.quaternion);
-  const right = new Vector34(1, 0, 0).applyQuaternion(orientation);
-  const up = new Vector34(0, 1, 0).applyQuaternion(orientation);
-  const back = new Vector34(0, 0, 1).applyQuaternion(orientation);
-  const offset = vec3(o.centre).add(vec3(o.target));
+var vec3 = (p2) => new Vector310(p2[0], p2[1], p2[2]);
+function makeView(o2) {
+  const { width: W, height: H, zoom: zoom2 } = o2;
+  const orientation = new Quaternion5().fromArray(o2.quaternion);
+  const right = new Vector310(1, 0, 0).applyQuaternion(orientation);
+  const up = new Vector310(0, 1, 0).applyQuaternion(orientation);
+  const back = new Vector310(0, 0, 1).applyQuaternion(orientation);
+  const offset = vec3(o2.centre).add(vec3(o2.target));
   const inverse = orientation.clone().invert();
-  const persp = o.projection === "persp";
-  const lens2 = o.lens ?? GEMMY.defaultLens;
-  const eyeZ = baseDistance(o.extent) / zoom2;
+  const persp = o2.projection === "persp";
+  const lens2 = o2.lens ?? GEMMY.defaultLens;
+  const eyeZ = baseDistance(o2.extent) / zoom2;
   const focal = lens2 * (Math.max(W, H) / GEMMY.sensorWidth);
-  const scale = W / (2 * orthoFrame(o.extent, W, H).halfWidth) * zoom2;
+  const scale = W / (2 * orthoFrame(o2.extent, W, H).halfWidth) * zoom2;
   const pinhole = { eyeZ, focal, W, H };
-  const toCam = (p) => p.clone().sub(offset).applyQuaternion(inverse);
-  const pxPerUnit = (c) => persp ? focal / Math.max(eyeZ - c.z, MIN_DEPTH) : scale;
-  const toScreen = (c) => {
-    const k = pxPerUnit(c);
-    return new Vector23(W / 2 + c.x * k, H / 2 - c.y * k);
+  const toCam = (p2) => p2.clone().sub(offset).applyQuaternion(inverse);
+  const pxPerUnit = (c2) => persp ? focal / Math.max(eyeZ - c2.z, MIN_DEPTH) : scale;
+  const toScreen = (c2) => {
+    const k = pxPerUnit(c2);
+    return new Vector22(W / 2 + c2.x * k, H / 2 - c2.y * k);
   };
-  const depth = (c) => persp ? -Math.hypot(c.x, c.y, eyeZ - c.z) : c.z;
-  const sphereImage = (c, r) => {
+  const depth = (c2) => persp ? -Math.hypot(c2.x, c2.y, eyeZ - c2.z) : c2.z;
+  const sphereImage = (c2, r2) => {
     if (!persp) {
-      const s = toScreen(c);
-      return { cx: s.x, cy: s.y, rx: r * scale, ry: r * scale, phi: 0 };
+      const s2 = toScreen(c2);
+      return { cx: s2.x, cy: s2.y, rx: r2 * scale, ry: r2 * scale, phi: 0 };
     }
-    return perspectiveSphereImage(c, r, pinhole);
+    return perspectiveSphereImage(c2, r2, pinhole);
   };
   return { right, up, back, toCam, toScreen, depth, pxPerUnit, sphereImage };
 }
-function perspectiveSphereImage(c, r, pinhole) {
+function viewOfCorner(orientation, origin) {
+  const inverse = orientation.clone().invert();
+  const axis = (x2, y2, z) => new Vector310(x2, y2, z).applyQuaternion(orientation);
+  const toCam = (p2) => p2.clone().applyQuaternion(inverse);
+  const toScreen = (c2) => new Vector22(origin[0] + c2.x, origin[1] - c2.y);
+  return {
+    right: axis(1, 0, 0),
+    up: axis(0, 1, 0),
+    back: axis(0, 0, 1),
+    toCam,
+    toScreen,
+    depth: (c2) => c2.z,
+    pxPerUnit: () => 1,
+    // the triad's lengths are CSS px
+    sphereImage: (c2, r2) => {
+      const s2 = toScreen(c2);
+      return { cx: s2.x, cy: s2.y, rx: r2, ry: r2, phi: 0 };
+    }
+  };
+}
+function perspectiveSphereImage(c2, r2, pinhole) {
   const { eyeZ, focal, W, H } = pinhole;
-  const t = eyeZ - c.z;
-  const rho = Math.hypot(c.x, c.y);
-  const dist2 = Math.hypot(rho, t);
-  const theta = Math.atan2(rho, t);
-  const alpha = Math.asin(Math.min(r / dist2, 1));
-  if (dist2 <= r || theta + alpha >= Math.PI / 2 - HORIZON_MARGIN) return null;
+  const t2 = eyeZ - c2.z;
+  const rho = Math.hypot(c2.x, c2.y);
+  const dist2 = Math.hypot(rho, t2);
+  const theta = Math.atan2(rho, t2);
+  const alpha = Math.asin(Math.min(r2 / dist2, 1));
+  if (dist2 <= r2 || theta + alpha >= Math.PI / 2 - HORIZON_MARGIN) return null;
   const nearEdgePx = focal * Math.tan(theta - alpha);
   const farEdgePx = focal * Math.tan(theta + alpha);
   const centreOffsetPx = (nearEdgePx + farEdgePx) / 2;
   const across = (centreOffsetPx * Math.sin(theta) + focal * Math.cos(theta)) / Math.cos(alpha);
-  const dx = rho > EPS ? c.x / rho : 1;
-  const dy = rho > EPS ? -c.y / rho : 0;
+  const dx = rho > EPS ? c2.x / rho : 1;
+  const dy = rho > EPS ? -c2.y / rho : 0;
   return {
     cx: W / 2 + dx * centreOffsetPx,
     cy: H / 2 + dy * centreOffsetPx,
@@ -1642,71 +3355,41 @@ function perspectiveSphereImage(c, r, pinhole) {
   };
 }
 
-// src/export/triad.ts
-function triadSvg(ctx) {
-  const { o, view } = ctx;
-  const dirs = o.lattice.map((vec) => {
-    const v = vec3(vec);
-    return [v.dot(view.right), v.dot(view.up), v.dot(view.back)];
-  });
-  const tri = triadLayout(dirs, o.width, o.height);
-  const items = [];
-  for (const it of tri.items) {
-    const color = LOOK.axisColors[it.index];
-    if (it.head) {
-      items.push(el("line", { x1: tri.origin[0], y1: tri.origin[1], x2: it.shaftEnd[0], y2: it.shaftEnd[1], stroke: color, "stroke-width": tri.lineWidth }));
-      items.push(el("polygon", { points: pointList(it.head.map(([x, y]) => new Vector24(x, y))), fill: color }));
-    }
-    items.push(textEl("text", {
-      x: it.label.x,
-      y: it.label.y,
-      fill: color,
-      "text-anchor": "middle",
-      "dominant-baseline": "central",
-      "font-family": `'${AXIS_FONT.family}', sans-serif`,
-      "font-style": "italic",
-      "font-weight": 700,
-      "font-size": tri.fontSize
-    }, "abc"[it.index]));
-  }
-  items.push(el("circle", { cx: tri.origin[0], cy: tri.origin[1], r: tri.dotRadius, fill: o.boxColor }));
-  return el("g", { id: "triad", "stroke-linecap": "round" }, items.join(""));
-}
-
 // src/trace/curves.ts
 var import_fit_curve = __toESM(require_fit_curve());
-import { MathUtils as MathUtils3 } from "three";
+import { MathUtils as MathUtils6 } from "three";
 var RESAMPLE_PX = 0.25;
 var CORNER_ANGLE_DEG = 50;
 var CORNER_WINDOW_PX = 1;
 var WINDOW_SAMPLES = Math.max(1, Math.round(CORNER_WINDOW_PX / RESAMPLE_PX));
 var FIT_ERROR_PX = 0.3;
 function segmentsPath(spans) {
-  return spans.map(([p, q]) => `M${fmtPt(p)}L${fmtPt(q)}`).join("");
+  return spans.map(([p2, q]) => `M${fmtPt(p2)}L${fmtPt(q)}`).join("");
 }
-function closedPath(points2) {
-  return pathFrom(points2, true);
+function closedPath(points) {
+  return pathFrom(points, true);
 }
-function fitCommands(points2) {
-  return smoothPieces(points2, false).map(fitPiece).join("");
+function fitCommands(points) {
+  return smoothPieces(points, false).map(fitPiece).join("");
 }
-function pathFrom(points2, closed) {
-  const pieces = smoothPieces(points2, closed);
+function pathFrom(points, closed) {
+  const pieces = smoothPieces(points, closed);
   if (pieces.length === 0) return "";
   const [x0, y0] = pieces[0][0];
-  const d = `M${fmt2(x0)} ${fmt2(y0)}${pieces.map(fitPiece).join("")}`;
-  return closed ? `${d}Z` : d;
+  const d2 = `M${fmt(x0)} ${fmt(y0)}${pieces.map(fitPiece).join("")}`;
+  return closed ? `${d2}Z` : d2;
 }
-function smoothPieces(points2, closed) {
-  const line = resample(points2, closed, RESAMPLE_PX);
+function smoothPieces(points, closed) {
+  const line = resample(points, closed, RESAMPLE_PX);
   if (line.length < 2) return [];
   const corners = cornerIndices(turningAngles(line, closed), closed);
   return closed ? ringPieces(line, corners) : linePieces(line, corners);
 }
-function resample(points2, closed, spacing) {
-  const ring = closed ? [...points2, points2[0]] : points2;
+function resample(points, closed, spacing) {
+  const ring = closed ? [...points, points[0]] : points;
   const lengths = [0];
-  for (let i = 1; i < ring.length; i++) lengths.push(lengths[i - 1] + Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]));
+  for (let i2 = 1; i2 < ring.length; i2++)
+    lengths.push(lengths[i2 - 1] + Math.hypot(ring[i2][0] - ring[i2 - 1][0], ring[i2][1] - ring[i2 - 1][1]));
   const total = lengths[lengths.length - 1];
   if (total === 0) return [];
   const count2 = Math.max(2, Math.round(total / spacing));
@@ -1717,145 +3400,155 @@ function resample(points2, closed, spacing) {
     const target = k * total / (closed ? count2 : steps);
     while (seg < ring.length - 2 && lengths[seg + 1] < target) seg++;
     const span2 = lengths[seg + 1] - lengths[seg] || 1;
-    const t = Math.min(1, Math.max(0, (target - lengths[seg]) / span2));
-    const a = ring[seg];
-    const b = ring[seg + 1];
-    out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    const t2 = Math.min(1, Math.max(0, (target - lengths[seg]) / span2));
+    const a2 = ring[seg];
+    const b2 = ring[seg + 1];
+    out.push([a2[0] + (b2[0] - a2[0]) * t2, a2[1] + (b2[1] - a2[1]) * t2]);
   }
   return out;
 }
 function turningAngles(line, closed) {
-  const n = line.length;
+  const n2 = line.length;
   const step = WINDOW_SAMPLES;
-  const turns = new Array(n).fill(0);
-  for (let i = 0; i < n; i++) {
-    const before = closed ? (i - step + n) % n : i - step;
-    const after = closed ? (i + step) % n : i + step;
-    if (!closed && (before < 0 || after >= n)) continue;
-    const ax = line[i][0] - line[before][0];
-    const ay = line[i][1] - line[before][1];
-    const bx = line[after][0] - line[i][0];
-    const by = line[after][1] - line[i][1];
-    turns[i] = MathUtils3.radToDeg(Math.atan2(ax * by - ay * bx, ax * bx + ay * by));
-    turns[i] = Math.abs(turns[i]);
+  const turns = new Array(n2).fill(0);
+  for (let i2 = 0; i2 < n2; i2++) {
+    const before = closed ? (i2 - step + n2) % n2 : i2 - step;
+    const after = closed ? (i2 + step) % n2 : i2 + step;
+    if (!closed && (before < 0 || after >= n2)) continue;
+    const ax = line[i2][0] - line[before][0];
+    const ay = line[i2][1] - line[before][1];
+    const bx = line[after][0] - line[i2][0];
+    const by = line[after][1] - line[i2][1];
+    turns[i2] = MathUtils6.radToDeg(Math.atan2(ax * by - ay * bx, ax * bx + ay * by));
+    turns[i2] = Math.abs(turns[i2]);
   }
   return turns;
 }
 function cornerIndices(turns, closed) {
-  const n = turns.length;
+  const n2 = turns.length;
   const reach = WINDOW_SAMPLES;
   const corners = [];
-  for (let i = 0; i < n; i++) {
-    if (turns[i] <= CORNER_ANGLE_DEG) continue;
+  for (let i2 = 0; i2 < n2; i2++) {
+    if (turns[i2] <= CORNER_ANGLE_DEG) continue;
     let isPeak = true;
     for (let k = -reach; k <= reach && isPeak; k++) {
       if (k === 0) continue;
-      const j = closed ? (i + k + n) % n : i + k;
-      if (j < 0 || j >= n) continue;
-      if (turns[j] > turns[i] || turns[j] === turns[i] && k < 0) isPeak = false;
+      const j2 = closed ? (i2 + k + n2) % n2 : i2 + k;
+      if (j2 < 0 || j2 >= n2) continue;
+      if (turns[j2] > turns[i2] || turns[j2] === turns[i2] && k < 0) isPeak = false;
     }
-    if (isPeak) corners.push(i);
+    if (isPeak) corners.push(i2);
   }
   return corners;
 }
 function ringPieces(line, corners) {
-  const n = line.length;
+  const n2 = line.length;
   if (corners.length === 0) return [[...line, line[0]]];
   const pieces = [];
-  for (let c = 0; c < corners.length; c++) {
-    const from = corners[c];
-    const to = corners[(c + 1) % corners.length];
+  for (let c2 = 0; c2 < corners.length; c2++) {
+    const from = corners[c2];
+    const to = corners[(c2 + 1) % corners.length];
     const piece = [];
-    for (let i = from; ; i = (i + 1) % n) {
-      piece.push(line[i]);
-      if (i === to && piece.length > 1) break;
+    for (let i2 = from; ; i2 = (i2 + 1) % n2) {
+      piece.push(line[i2]);
+      if (i2 === to && piece.length > 1) break;
     }
     pieces.push(piece);
   }
   return pieces;
 }
 function linePieces(line, corners) {
-  const cuts = [0, ...corners.filter((i) => i > 0 && i < line.length - 1), line.length - 1];
+  const cuts = [0, ...corners.filter((i2) => i2 > 0 && i2 < line.length - 1), line.length - 1];
   const pieces = [];
-  for (let c = 0; c < cuts.length - 1; c++) pieces.push(line.slice(cuts[c], cuts[c + 1] + 1));
+  for (let c2 = 0; c2 < cuts.length - 1; c2++) pieces.push(line.slice(cuts[c2], cuts[c2 + 1] + 1));
   return pieces;
 }
 function fitPiece(piece) {
-  if (piece.length < 3) return piece.slice(1).map((p) => `L${fmt2(p[0])} ${fmt2(p[1])}`).join("");
-  const curves = (0, import_fit_curve.default)(piece.map((p) => [p[0], p[1]]), FIT_ERROR_PX * FIT_ERROR_PX);
-  return curves.map(([, c1, c2, end]) => `C${fmt2(c1[0])} ${fmt2(c1[1])} ${fmt2(c2[0])} ${fmt2(c2[1])} ${fmt2(end[0])} ${fmt2(end[1])}`).join("");
+  if (piece.length < 3)
+    return piece.slice(1).map((p2) => `L${fmt(p2[0])} ${fmt(p2[1])}`).join("");
+  const curves = (0, import_fit_curve.default)(
+    piece.map((p2) => [p2[0], p2[1]]),
+    FIT_ERROR_PX * FIT_ERROR_PX
+  );
+  return curves.map(([, c1, c2, end]) => `C${fmt(c1[0])} ${fmt(c1[1])} ${fmt(c2[0])} ${fmt(c2[1])} ${fmt(end[0])} ${fmt(end[1])}`).join("");
 }
 
 // src/trace/candidates.ts
-import * as THREE7 from "three";
+import * as THREE11 from "three";
 
 // src/trace/ellipse.ts
-import { MathUtils as MathUtils4 } from "three";
+import { MathUtils as MathUtils7 } from "three";
 var MIN_RADIUS_PX = 1e-6;
 var QUARTER_TURN = Math.PI / 2;
-function arcTo(e, from, to, pts) {
-  const t0 = paramOf(e, from);
+function arcTo(e3, from, to, pts) {
+  const t0 = paramOf(e3, from);
   let prev = t0;
   let swept = 0;
-  for (const p of pts) {
-    const t = paramOf(e, p);
-    swept += wrapPi(t - prev);
-    prev = t;
+  for (const p2 of pts) {
+    const t2 = paramOf(e3, p2);
+    swept += wrapPi(t2 - prev);
+    prev = t2;
   }
   const dir = swept >= 0 ? 1 : -1;
-  return arcSeries(e, t0, dir, Math.abs(swept), to);
+  return arcSeries(e3, t0, dir, Math.abs(swept), to);
 }
-function fullEllipseArcs(e, start) {
-  return arcSeries(e, paramOf(e, start), 1, 2 * Math.PI, start);
+function fullEllipseArcs(e3, start) {
+  return arcSeries(e3, paramOf(e3, start), 1, 2 * Math.PI, start);
 }
-function arcSeries(e, t0, dir, span2, end) {
+function arcSeries(e3, t0, dir, span2, end) {
   const pieces = Math.max(1, Math.ceil(span2 / QUARTER_TURN));
   const sweep = dir > 0 ? 1 : 0;
-  let d = "";
+  let d2 = "";
   for (let k = 1; k <= pieces; k++) {
-    const point = k === pieces ? end : pointAt(e, t0 + dir * span2 * k / pieces);
-    d += `A${fmt2(e.rx)} ${fmt2(e.ry)} ${fmt2(MathUtils4.radToDeg(e.phi))} 0 ${sweep} ${fmtPt(point)}`;
+    const point = k === pieces ? end : pointAt(e3, t0 + dir * span2 * k / pieces);
+    d2 += `A${fmt(e3.rx)} ${fmt(e3.ry)} ${fmt(MathUtils7.radToDeg(e3.phi))} 0 ${sweep} ${fmtPt(point)}`;
   }
-  return d;
+  return d2;
 }
-function wrapPi(t) {
-  return t - 2 * Math.PI * Math.round(t / (2 * Math.PI));
+function wrapPi(t2) {
+  return t2 - 2 * Math.PI * Math.round(t2 / (2 * Math.PI));
 }
-function pointAt(e, t) {
-  const x = e.rx * Math.cos(t);
-  const y = e.ry * Math.sin(t);
-  const cos = Math.cos(e.phi);
-  const sin = Math.sin(e.phi);
-  return [e.cx + x * cos - y * sin, e.cy + x * sin + y * cos];
+function pointAt(e3, t2) {
+  const x2 = e3.rx * Math.cos(t2);
+  const y2 = e3.ry * Math.sin(t2);
+  const cos = Math.cos(e3.phi);
+  const sin = Math.sin(e3.phi);
+  return [e3.cx + x2 * cos - y2 * sin, e3.cy + x2 * sin + y2 * cos];
 }
-function paramOf(e, p) {
-  const [wx, wy] = local(e, p);
-  return Math.atan2(wy / Math.max(e.ry, MIN_RADIUS_PX), wx / Math.max(e.rx, MIN_RADIUS_PX));
+function paramOf(e3, p2) {
+  const [wx, wy] = local(e3, p2);
+  return Math.atan2(wy / Math.max(e3.ry, MIN_RADIUS_PX), wx / Math.max(e3.rx, MIN_RADIUS_PX));
 }
-function local(e, p) {
-  const dx = p[0] - e.cx;
-  const dy = p[1] - e.cy;
-  const cos = Math.cos(e.phi);
-  const sin = Math.sin(e.phi);
+function local(e3, p2) {
+  const dx = p2[0] - e3.cx;
+  const dy = p2[1] - e3.cy;
+  const cos = Math.cos(e3.phi);
+  const sin = Math.sin(e3.phi);
   return [dx * cos + dy * sin, -dx * sin + dy * cos];
 }
-function ellipseRms(e, pts) {
-  const mean = (e.rx + e.ry) / 2;
+function ellipseRms(e3, pts) {
+  const mean = (e3.rx + e3.ry) / 2;
   let sum = 0;
-  for (const p of pts) {
-    const [wx, wy] = local(e, p);
-    const r = Math.hypot(wx / Math.max(e.rx, MIN_RADIUS_PX), wy / Math.max(e.ry, MIN_RADIUS_PX));
-    sum += ((r - 1) * mean) ** 2;
+  for (const p2 of pts) {
+    const [wx, wy] = local(e3, p2);
+    const r2 = Math.hypot(wx / Math.max(e3.rx, MIN_RADIUS_PX), wy / Math.max(e3.ry, MIN_RADIUS_PX));
+    sum += ((r2 - 1) * mean) ** 2;
   }
   return Math.sqrt(sum / pts.length);
 }
-function ellipseFromBasis(c, a, b) {
-  const p = a[0] * a[0] + b[0] * b[0];
-  const q = a[0] * a[1] + b[0] * b[1];
-  const s = a[1] * a[1] + b[1] * b[1];
-  const mean = (p + s) / 2;
-  const spread = Math.sqrt(((p - s) / 2) ** 2 + q * q);
-  return { cx: c[0], cy: c[1], rx: Math.sqrt(mean + spread), ry: Math.sqrt(Math.max(mean - spread, 0)), phi: 0.5 * Math.atan2(2 * q, p - s) };
+function ellipseFromBasis(c2, a2, b2) {
+  const p2 = a2[0] * a2[0] + b2[0] * b2[0];
+  const q = a2[0] * a2[1] + b2[0] * b2[1];
+  const s2 = a2[1] * a2[1] + b2[1] * b2[1];
+  const mean = (p2 + s2) / 2;
+  const spread = Math.sqrt(((p2 - s2) / 2) ** 2 + q * q);
+  return {
+    cx: c2[0],
+    cy: c2[1],
+    rx: Math.sqrt(mean + spread),
+    ry: Math.sqrt(Math.max(mean - spread, 0)),
+    phi: 0.5 * Math.atan2(2 * q, p2 - s2)
+  };
 }
 
 // src/trace/candidates.ts
@@ -1866,92 +3559,134 @@ var HALF_AXIS = 0.5;
 function curveRms(curve, pts) {
   return curve.kind === "line" ? lineRms(curve.a, curve.b, pts) : ellipseRms(curve.e, pts);
 }
-function lineRms(a, b, pts) {
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
+function lineRms(a2, b2, pts) {
+  const dx = b2[0] - a2[0];
+  const dy = b2[1] - a2[1];
   const len = Math.hypot(dx, dy);
   if (len < MIN_SPAN_PX) return Infinity;
   let sum = 0;
-  for (const p of pts) {
-    const along = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len;
+  for (const p2 of pts) {
+    const along = ((p2[0] - a2[0]) * dx + (p2[1] - a2[1]) * dy) / len;
     if (along < -SEGMENT_MARGIN_PX || along > len + SEGMENT_MARGIN_PX) return Infinity;
-    const across = ((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) / len;
+    const across = ((p2[0] - a2[0]) * dy - (p2[1] - a2[1]) * dx) / len;
     sum += across * across;
   }
   return Math.sqrt(sum / pts.length);
 }
-function onLine(a, b, p) {
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / Math.max(dx * dx + dy * dy, MIN_SPAN_PX);
-  return [a[0] + t * dx, a[1] + t * dy];
+function onLine(a2, b2, p2) {
+  const dx = b2[0] - a2[0];
+  const dy = b2[1] - a2[1];
+  const t2 = ((p2[0] - a2[0]) * dx + (p2[1] - a2[1]) * dy) / Math.max(dx * dx + dy * dy, MIN_SPAN_PX);
+  return [a2[0] + t2 * dx, a2[1] + t2 * dy];
 }
-function sphereCurves(view, centre2, radius) {
-  const image = view.sphereImage(view.toCam(centre2), radius);
+function instanceFrame(matrix) {
+  const col = (i2) => new THREE11.Vector3(matrix[4 * i2], matrix[4 * i2 + 1], matrix[4 * i2 + 2]);
+  return {
+    centre: new THREE11.Vector3(matrix[12], matrix[13], matrix[14]),
+    axis: col(1).multiplyScalar(HALF_AXIS),
+    ux: col(0),
+    uz: col(2)
+  };
+}
+function screenBasis(screen, centre, u2, v2) {
+  const c2 = screen(centre);
+  const a2 = screen(centre.clone().add(u2));
+  const b2 = screen(centre.clone().add(v2));
+  return { c: c2, ua: [a2[0] - c2[0], a2[1] - c2[1]], ub: [b2[0] - c2[0], b2[1] - c2[1]] };
+}
+function capEllipse(screen, centre, u2, v2) {
+  const { c: c2, ua, ub } = screenBasis(screen, centre, u2, v2);
+  return ellipseFromBasis(c2, ua, ub);
+}
+function sphereCurves(view2, centre, radius) {
+  const image = view2.sphereImage(view2.toCam(centre), radius);
   return image ? [{ kind: "ellipse", e: { cx: image.cx, cy: image.cy, rx: image.rx, ry: image.ry, phi: image.phi } }] : [];
 }
 function cylinderCurves(matrix, screen) {
-  const col = (i) => new THREE7.Vector3(matrix[4 * i], matrix[4 * i + 1], matrix[4 * i + 2]);
-  const centre2 = new THREE7.Vector3(matrix[12], matrix[13], matrix[14]);
-  const axis = col(1).multiplyScalar(HALF_AXIS);
-  const ends = [centre2.clone().sub(axis), centre2.clone().add(axis)];
-  const caps = ends.map((end) => {
-    const c = screen(end);
-    const a = screen(end.clone().add(col(0)));
-    const b = screen(end.clone().add(col(2)));
-    return ellipseFromBasis(c, [a[0] - c[0], a[1] - c[1]], [b[0] - c[0], b[1] - c[1]]);
-  });
+  const { centre, axis, ux, uz } = instanceFrame(matrix);
+  const ends = [centre.clone().sub(axis), centre.clone().add(axis)];
+  const caps = ends.map((end) => capEllipse(screen, end, ux, uz));
   const pa = screen(ends[0]);
   const pb = screen(ends[1]);
   const dx = pb[0] - pa[0];
   const dy = pb[1] - pa[1];
   const len = Math.hypot(dx, dy);
-  if (len < MIN_SPAN_PX) return caps.map((e) => ({ kind: "ellipse", e }));
-  const n = [-dy / len, dx / len];
-  const support = (e) => Math.hypot(e.rx * Math.cos(e.phi) * n[0] + e.rx * Math.sin(e.phi) * n[1], e.ry * Math.sin(e.phi) * n[0] - e.ry * Math.cos(e.phi) * n[1]);
+  if (len < MIN_SPAN_PX) return caps.map((e3) => ({ kind: "ellipse", e: e3 }));
+  const n2 = [-dy / len, dx / len];
+  const support = (e3) => Math.hypot(
+    e3.rx * Math.cos(e3.phi) * n2[0] + e3.rx * Math.sin(e3.phi) * n2[1],
+    e3.ry * Math.sin(e3.phi) * n2[0] - e3.ry * Math.cos(e3.phi) * n2[1]
+  );
   const sa = support(caps[0]);
   const sb = support(caps[1]);
   const sides = [1, -1].map((side) => ({
     kind: "line",
-    a: [pa[0] + side * n[0] * sa, pa[1] + side * n[1] * sa],
-    b: [pb[0] + side * n[0] * sb, pb[1] + side * n[1] * sb]
+    a: [pa[0] + side * n2[0] * sa, pa[1] + side * n2[1] * sa],
+    b: [pb[0] + side * n2[0] * sb, pb[1] + side * n2[1] * sb]
   }));
-  return [...caps.map((e) => ({ kind: "ellipse", e })), ...sides];
+  return [...caps.map((e3) => ({ kind: "ellipse", e: e3 })), ...sides];
+}
+function coneCurves(matrix, screen) {
+  const { centre, axis, ux, uz } = instanceFrame(matrix);
+  const apex = screen(centre.clone().add(axis));
+  const { c: c2, ua, ub } = screenBasis(screen, centre.clone().sub(axis), ux, uz);
+  const ellipse = { kind: "ellipse", e: ellipseFromBasis(c2, ua, ub) };
+  const touches = tangentPoints(c2, ua, ub, apex);
+  if (!touches) return [ellipse];
+  return [ellipse, ...touches.map((p2) => ({ kind: "line", a: apex, b: p2 }))];
+}
+function tangentPoints(c2, ua, ub, apex) {
+  const det = ua[0] * ub[1] - ub[0] * ua[1];
+  if (Math.abs(det) < MIN_SPAN_PX * MIN_SPAN_PX) return null;
+  const w2 = [apex[0] - c2[0], apex[1] - c2[1]];
+  const qx = (ub[1] * w2[0] - ub[0] * w2[1]) / det;
+  const qy = (-ua[1] * w2[0] + ua[0] * w2[1]) / det;
+  const d2 = qx * qx + qy * qy;
+  if (d2 <= 1) return null;
+  const s2 = Math.sqrt(d2 - 1);
+  const onEllipse = (sign) => {
+    const u2 = (qx - sign * s2 * qy) / d2;
+    const v2 = (qy + sign * s2 * qx) / d2;
+    return [c2[0] + ua[0] * u2 + ub[0] * v2, c2[1] + ua[1] * u2 + ub[1] * v2];
+  };
+  return [onEllipse(1), onEllipse(-1)];
 }
 function edgeCurves(edges, screen) {
-  return edges.map(([p, q]) => ({ kind: "line", a: screen(p), b: screen(q) }));
+  return edges.map(([p2, q]) => ({ kind: "line", a: screen(p2), b: screen(q) }));
 }
-function sectionCurve(centre2, radius, face, screen) {
+function sectionCurve(centre, radius, face, screen) {
   const [p0, p1, p2] = face;
-  const n = new THREE7.Triangle(p0, p1, p2).getNormal(new THREE7.Vector3());
-  const d = n.dot(new THREE7.Vector3().subVectors(centre2, p0));
-  if (Math.abs(d) >= radius) return null;
-  const foot = centre2.clone().addScaledVector(n, -d);
-  const rho = Math.sqrt(radius * radius - d * d);
-  const u = new THREE7.Vector3().subVectors(p1, p0).normalize();
-  const v = new THREE7.Vector3().crossVectors(n, u).normalize();
-  const c = screen(foot);
-  const a = screen(foot.clone().addScaledVector(u, rho));
-  const b = screen(foot.clone().addScaledVector(v, rho));
-  return { kind: "ellipse", e: ellipseFromBasis(c, [a[0] - c[0], a[1] - c[1]], [b[0] - c[0], b[1] - c[1]]) };
+  const n2 = new THREE11.Triangle(p0, p1, p2).getNormal(new THREE11.Vector3());
+  const d2 = n2.dot(new THREE11.Vector3().subVectors(centre, p0));
+  if (Math.abs(d2) >= radius) return null;
+  const foot = centre.clone().addScaledVector(n2, -d2);
+  const rho = Math.sqrt(radius * radius - d2 * d2);
+  const u2 = new THREE11.Vector3().subVectors(p1, p0).normalize();
+  const v2 = new THREE11.Vector3().crossVectors(n2, u2).normalize();
+  return { kind: "ellipse", e: capEllipse(screen, foot, u2.clone().multiplyScalar(rho), v2.clone().multiplyScalar(rho)) };
 }
 function cylinderSectionCurve(matrix, face, screen) {
   const [p0, p1, p2] = face;
-  const n = new THREE7.Triangle(p0, p1, p2).getNormal(new THREE7.Vector3());
-  const c = new THREE7.Vector3(matrix[12], matrix[13], matrix[14]);
-  const axisFull = new THREE7.Vector3(matrix[4], matrix[5], matrix[6]);
-  const radius = new THREE7.Vector3(matrix[0], matrix[1], matrix[2]).length();
+  const n2 = new THREE11.Triangle(p0, p1, p2).getNormal(new THREE11.Vector3());
+  const c2 = new THREE11.Vector3(matrix[12], matrix[13], matrix[14]);
+  const axisFull = new THREE11.Vector3(matrix[4], matrix[5], matrix[6]);
+  const radius = new THREE11.Vector3(matrix[0], matrix[1], matrix[2]).length();
   const dir = axisFull.clone().normalize();
-  const cosAlpha = Math.abs(n.dot(dir));
+  const cosAlpha = Math.abs(n2.dot(dir));
   if (cosAlpha < PARALLEL_COS) return null;
-  const t = n.dot(new THREE7.Vector3().subVectors(p0, c)) / n.dot(dir);
-  const centre2 = c.clone().addScaledVector(dir, t);
-  const along = dir.clone().addScaledVector(n, -dir.dot(n)).normalize();
-  const across = new THREE7.Vector3().crossVectors(n, along).normalize();
-  const a = screen(centre2.clone().addScaledVector(along, radius / cosAlpha));
-  const b = screen(centre2.clone().addScaledVector(across, radius));
-  const o = screen(centre2);
-  return { kind: "ellipse", e: ellipseFromBasis(o, [a[0] - o[0], a[1] - o[1]], [b[0] - o[0], b[1] - o[1]]) };
+  const t2 = n2.dot(new THREE11.Vector3().subVectors(p0, c2)) / n2.dot(dir);
+  const centre = c2.clone().addScaledVector(dir, t2);
+  const along = dir.clone().addScaledVector(n2, -dir.dot(n2)).normalize();
+  const across = new THREE11.Vector3().crossVectors(n2, along).normalize();
+  return {
+    kind: "ellipse",
+    e: capEllipse(
+      screen,
+      centre,
+      along.clone().multiplyScalar(radius / cosAlpha),
+      across.clone().multiplyScalar(radius)
+    )
+  };
 }
 
 // src/trace/buffers.ts
@@ -1968,18 +3703,18 @@ var Passes = class {
     this.shell = shell;
     this.lineId = lineId;
   }
-  keyAt(x, y) {
-    return this.read(this.keys, x, y);
+  keyAt(x2, y2) {
+    return this.read(this.keys, x2, y2);
   }
-  shellAt(x, y) {
-    return this.read(this.shell, x, y) === 1;
+  shellAt(x2, y2) {
+    return this.read(this.shell, x2, y2) === 1;
   }
-  lineIdAt(x, y) {
-    return this.read(this.lineId, x, y);
+  lineIdAt(x2, y2) {
+    return this.read(this.lineId, x2, y2);
   }
-  read(values, x, y) {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return 0;
-    return values[y * this.width + x];
+  read(values, x2, y2) {
+    if (x2 < 0 || y2 < 0 || x2 >= this.width || y2 >= this.height) return 0;
+    return values[y2 * this.width + x2];
   }
 };
 var OUT_OF_RANGE = 1 << 30;
@@ -1989,50 +3724,50 @@ function objectBoxes(passes, count2) {
   const boxes = new Int32Array((count2 + 1) * 4);
   const nearest = new Float64Array(count2 + 1).fill(BACKGROUND_DEPTH);
   for (let id = 0; id <= count2; id++) boxes.set([OUT_OF_RANGE, OUT_OF_RANGE, -1, -1], 4 * id);
-  for (let p = 0; p < keys.length; p++) {
-    const k = keys[p];
+  for (let p2 = 0; p2 < keys.length; p2++) {
+    const k = keys[p2];
     if (k === 0) continue;
     const id = idOf(k);
-    const b = 4 * id;
-    nearest[id] = Math.min(nearest[id], depth[p]);
+    const b2 = 4 * id;
+    nearest[id] = Math.min(nearest[id], depth[p2]);
     pixels[id]++;
-    const x = p % width;
-    const y = (p - x) / width;
-    if (x < boxes[b]) boxes[b] = x;
-    if (y < boxes[b + 1]) boxes[b + 1] = y;
-    if (x > boxes[b + 2]) boxes[b + 2] = x;
-    if (y > boxes[b + 3]) boxes[b + 3] = y;
+    const x2 = p2 % width;
+    const y2 = (p2 - x2) / width;
+    if (x2 < boxes[b2]) boxes[b2] = x2;
+    if (y2 < boxes[b2 + 1]) boxes[b2 + 1] = y2;
+    if (x2 > boxes[b2 + 2]) boxes[b2 + 2] = x2;
+    if (y2 > boxes[b2 + 3]) boxes[b2 + 3] = y2;
   }
   return { boxes, nearest, pixels };
 }
 function boxOf(boxes, id) {
   return { x0: boxes[4 * id], y0: boxes[4 * id + 1], x1: boxes[4 * id + 2], y1: boxes[4 * id + 3] };
 }
-function keyAtCentre(passes, p) {
-  return idOf(passes.keyAt(Math.floor(p.x), Math.floor(p.y)));
+function keyAtCentre(passes, p2) {
+  return idOf(passes.keyAt(Math.floor(p2.x), Math.floor(p2.y)));
 }
 
 // src/trace/measure.ts
-import * as THREE8 from "three";
+import * as THREE12 from "three";
 
 // node_modules/d3-polygon/dist/d3-polygon.mjs
 function area(polygon) {
-  var i = -1, n = polygon.length, a, b = polygon[n - 1], area3 = 0;
-  while (++i < n) {
-    a = b;
-    b = polygon[i];
-    area3 += a[1] * b[0] - a[0] * b[1];
+  var i2 = -1, n2 = polygon.length, a2, b2 = polygon[n2 - 1], area3 = 0;
+  while (++i2 < n2) {
+    a2 = b2;
+    b2 = polygon[i2];
+    area3 += a2[1] * b2[0] - a2[0] * b2[1];
   }
   return area3 / 2;
 }
 function length(polygon) {
-  var i = -1, n = polygon.length, b = polygon[n - 1], xa, ya, xb = b[0], yb = b[1], perimeter = 0;
-  while (++i < n) {
+  var i2 = -1, n2 = polygon.length, b2 = polygon[n2 - 1], xa, ya, xb = b2[0], yb = b2[1], perimeter = 0;
+  while (++i2 < n2) {
     xa = xb;
     ya = yb;
-    b = polygon[i];
-    xb = b[0];
-    yb = b[1];
+    b2 = polygon[i2];
+    xb = b2[0];
+    yb = b2[1];
     xa -= xb;
     ya -= yb;
     perimeter += Math.hypot(xa, ya);
@@ -2041,30 +3776,30 @@ function length(polygon) {
 }
 
 // src/trace/measure.ts
-function nearestFace(faces, p, screen) {
+function nearestFace(faces, p2, screen) {
   let best = null;
   let bestDist = Infinity;
-  for (const f of faces) {
-    const d = triangleDistance(p, screen(f[0]), screen(f[1]), screen(f[2]));
-    if (d < bestDist) {
-      bestDist = d;
-      best = [f[0], f[1], f[2]];
+  for (const f2 of faces) {
+    const d2 = triangleDistance(p2, screen(f2[0]), screen(f2[1]), screen(f2[2]));
+    if (d2 < bestDist) {
+      bestDist = d2;
+      best = [f2[0], f2[1], f2[2]];
     }
   }
   return best;
 }
-function triangleDistance(p, a, b, c) {
-  const sign = (u, v, w) => (v[0] - u[0]) * (w[1] - u[1]) - (v[1] - u[1]) * (w[0] - u[0]);
-  const s1 = sign(a, b, p);
-  const s2 = sign(b, c, p);
-  const s3 = sign(c, a, p);
+function triangleDistance(p2, a2, b2, c2) {
+  const sign = (u2, v2, w2) => (v2[0] - u2[0]) * (w2[1] - u2[1]) - (v2[1] - u2[1]) * (w2[0] - u2[0]);
+  const s1 = sign(a2, b2, p2);
+  const s2 = sign(b2, c2, p2);
+  const s3 = sign(c2, a2, p2);
   if (s1 >= 0 && s2 >= 0 && s3 >= 0 || s1 <= 0 && s2 <= 0 && s3 <= 0) return 0;
-  return Math.min(segmentDistance(p, a, b), segmentDistance(p, b, c), segmentDistance(p, c, a));
+  return Math.min(segmentDistance(p2, a2, b2), segmentDistance(p2, b2, c2), segmentDistance(p2, c2, a2));
 }
-function segmentDistance(p, a, b) {
-  const point = new THREE8.Vector3(p[0], p[1], 0);
-  const segment = new THREE8.Line3(new THREE8.Vector3(a[0], a[1], 0), new THREE8.Vector3(b[0], b[1], 0));
-  const nearest = segment.distance() > 0 ? segment.closestPointToPoint(point, true, new THREE8.Vector3()) : segment.start;
+function segmentDistance(p2, a2, b2) {
+  const point = new THREE12.Vector3(p2[0], p2[1], 0);
+  const segment = new THREE12.Line3(new THREE12.Vector3(a2[0], a2[1], 0), new THREE12.Vector3(b2[0], b2[1], 0));
+  const nearest = segment.distance() > 0 ? segment.closestPointToPoint(point, true, new THREE12.Vector3()) : segment.start;
   return nearest.distanceTo(point);
 }
 function ringArea(ring, scale) {
@@ -2075,8 +3810,6 @@ function ringPerimeter(ring, scale) {
 }
 
 // src/trace/edges.ts
-import * as THREE9 from "three";
-var HARD_EDGE_DEG = 1;
 var SAMPLE_SPACING_PX = 0.5;
 var MAX_SAMPLES_PER_IMAGE_EDGE = 4;
 var NDC_DEPTH_MIN = -1;
@@ -2101,121 +3834,91 @@ var LinePass = class {
     this.scale = scale;
   }
   // The visible spans of the segment a-b of line `id`, as CSS px segments.
-  spansOf(a, b, id) {
-    const pa = this.project(a);
-    const pb = this.project(b);
+  spansOf(a2, b2, id) {
+    const pa = this.project(a2);
+    const pb = this.project(b2);
     if (!onScreen(pa) || !onScreen(pb)) return [];
     const outputLength = Math.hypot(pb.x - pa.x, pb.y - pa.y) / this.scale;
     const sampleLimit = MAX_SAMPLES_PER_IMAGE_EDGE * (this.passes.width + this.passes.height) / SAMPLE_SPACING_PX;
     const count2 = Math.min(sampleLimit, Math.max(1, Math.ceil(outputLength / SAMPLE_SPACING_PX)));
     const visible = (k) => {
-      const p = this.project(a.clone().lerp(b, k / count2));
-      return this.shows(id, Math.floor(p.x), Math.floor(p.y));
+      const p2 = this.project(a2.clone().lerp(b2, k / count2));
+      return this.shows(id, Math.floor(p2.x), Math.floor(p2.y));
     };
-    return runsWhere(count2, visible).map(([first, last]) => [this.cssAt(a, b, first / count2), this.cssAt(a, b, last / count2)]);
+    return runsWhere(count2, visible).map(([first, last]) => [
+      this.cssAt(a2, b2, first / count2),
+      this.cssAt(a2, b2, last / count2)
+    ]);
   }
   // Whether any pixel of the 3x3 block around (x, y) shows line `id`.
-  shows(id, x, y) {
+  shows(id, x2, y2) {
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
-        if (this.passes.lineIdAt(x + dx, y + dy) === id) return true;
+        if (this.passes.lineIdAt(x2 + dx, y2 + dy) === id) return true;
       }
     }
     return false;
   }
-  cssAt(a, b, t) {
-    const p = this.project(a.clone().lerp(b, t));
-    return [p.x / this.scale, p.y / this.scale];
+  cssAt(a2, b2, t2) {
+    const p2 = this.project(a2.clone().lerp(b2, t2));
+    return [p2.x / this.scale, p2.y / this.scale];
   }
 };
-function onScreen(p) {
-  return Number.isFinite(p.x) && Number.isFinite(p.y) && p.depth >= NDC_DEPTH_MIN && p.depth <= NDC_DEPTH_MAX;
-}
-function hardEdges(topo, points2) {
-  const v = topo.point_ids.map((id) => new THREE9.Vector3(...points2.get(id)));
-  const normals = topo.faces.map(([i, j, k]) => new THREE9.Triangle(v[i], v[j], v[k]).getNormal(new THREE9.Vector3()));
-  const sides = /* @__PURE__ */ new Map();
-  topo.faces.forEach(([i, j, k], f) => {
-    for (const [p, q] of [[i, j], [j, k], [k, i]]) {
-      const key2 = p < q ? `${p}-${q}` : `${q}-${p}`;
-      if (!sides.has(key2)) sides.set(key2, { i: p, j: q, faces: [] });
-      sides.get(key2).faces.push(normals[f]);
-    }
-  });
-  const hardEdgeCosine = Math.cos(THREE9.MathUtils.degToRad(HARD_EDGE_DEG));
-  const edges = [];
-  for (const side of sides.values()) {
-    const hard = side.faces.length === 1 || Math.abs(side.faces[0].dot(side.faces[1])) < hardEdgeCosine;
-    if (hard) edges.push([v[side.i], v[side.j]]);
-  }
-  return edges;
-}
-function cellEdges(cell) {
-  const [a, b, c] = cell.vectors.map((vec) => new THREE9.Vector3(...vec));
-  const origin = new THREE9.Vector3(...cell.origin);
-  const corner = (n) => origin.clone().addScaledVector(a, n & 1).addScaledVector(b, n >> 1 & 1).addScaledVector(c, n >> 2 & 1);
-  const edges = [];
-  for (let n = 0; n < 8; n++) {
-    for (let axis = 0; axis < 3; axis++) {
-      const bit = 1 << axis;
-      if (n & bit) continue;
-      edges.push([corner(n), corner(n | bit)]);
-    }
-  }
-  return edges;
+function onScreen(p2) {
+  return Number.isFinite(p2.x) && Number.isFinite(p2.y) && p2.depth >= NDC_DEPTH_MIN && p2.depth <= NDC_DEPTH_MAX;
 }
 
 // node_modules/d3-array/dist/d3-array.mjs
-function ascending(a, b) {
-  return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+function ascending(a2, b2) {
+  return a2 == null || b2 == null ? NaN : a2 < b2 ? -1 : a2 > b2 ? 1 : a2 >= b2 ? 0 : NaN;
 }
-function descending(a, b) {
-  return a == null || b == null ? NaN : b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+function descending(a2, b2) {
+  return a2 == null || b2 == null ? NaN : b2 < a2 ? -1 : b2 > a2 ? 1 : b2 >= a2 ? 0 : NaN;
 }
-function bisector(f) {
+function bisector(f2) {
   let compare1, compare2, delta;
-  if (f.length !== 2) {
+  if (f2.length !== 2) {
     compare1 = ascending;
-    compare2 = (d, x) => ascending(f(d), x);
-    delta = (d, x) => f(d) - x;
+    compare2 = (d2, x2) => ascending(f2(d2), x2);
+    delta = (d2, x2) => f2(d2) - x2;
   } else {
-    compare1 = f === ascending || f === descending ? f : zero;
-    compare2 = f;
-    delta = f;
+    compare1 = f2 === ascending || f2 === descending ? f2 : zero;
+    compare2 = f2;
+    delta = f2;
   }
-  function left(a, x, lo = 0, hi = a.length) {
+  function left(a2, x2, lo = 0, hi = a2.length) {
     if (lo < hi) {
-      if (compare1(x, x) !== 0) return hi;
+      if (compare1(x2, x2) !== 0) return hi;
       do {
         const mid = lo + hi >>> 1;
-        if (compare2(a[mid], x) < 0) lo = mid + 1;
+        if (compare2(a2[mid], x2) < 0) lo = mid + 1;
         else hi = mid;
       } while (lo < hi);
     }
     return lo;
   }
-  function right(a, x, lo = 0, hi = a.length) {
+  function right(a2, x2, lo = 0, hi = a2.length) {
     if (lo < hi) {
-      if (compare1(x, x) !== 0) return hi;
+      if (compare1(x2, x2) !== 0) return hi;
       do {
         const mid = lo + hi >>> 1;
-        if (compare2(a[mid], x) <= 0) lo = mid + 1;
+        if (compare2(a2[mid], x2) <= 0) lo = mid + 1;
         else hi = mid;
       } while (lo < hi);
     }
     return lo;
   }
-  function center(a, x, lo = 0, hi = a.length) {
-    const i = left(a, x, lo, hi - 1);
-    return i > lo && delta(a[i - 1], x) > -delta(a[i], x) ? i - 1 : i;
+  function center(a2, x2, lo = 0, hi = a2.length) {
+    const i2 = left(a2, x2, lo, hi - 1);
+    return i2 > lo && delta(a2[i2 - 1], x2) > -delta(a2[i2], x2) ? i2 - 1 : i2;
   }
   return { left, center, right };
 }
 function zero() {
   return 0;
 }
-function number(x) {
-  return x === null ? NaN : +x;
+function number(x2) {
+  return x2 === null ? NaN : +x2;
 }
 var ascendingBisect = bisector(ascending);
 var bisectRight = ascendingBisect.right;
@@ -2224,13 +3927,13 @@ var bisectCenter = bisector(number).center;
 var blur2 = Blur2(blurf);
 var blurImage = Blur2(blurfImage);
 function Blur2(blur) {
-  return function(data2, rx, ry = rx) {
+  return function(data, rx, ry = rx) {
     if (!((rx = +rx) >= 0)) throw new RangeError("invalid rx");
     if (!((ry = +ry) >= 0)) throw new RangeError("invalid ry");
-    let { data: values, width, height } = data2;
+    let { data: values, width, height } = data;
     if (!((width = Math.floor(width)) >= 0)) throw new RangeError("invalid width");
     if (!((height = Math.floor(height !== void 0 ? height : values.length / width)) >= 0)) throw new RangeError("invalid height");
-    if (!width || !height || !rx && !ry) return data2;
+    if (!width || !height || !rx && !ry) return data;
     const blurx = rx && blur(rx);
     const blury = ry && blur(ry);
     const temp = values.slice();
@@ -2250,62 +3953,62 @@ function Blur2(blur) {
       blurv(blury, temp, values, width, height);
       blurv(blury, values, temp, width, height);
     }
-    return data2;
+    return data;
   };
 }
-function blurh(blur, T, S, w, h) {
-  for (let y = 0, n = w * h; y < n; ) {
-    blur(T, S, y, y += w, 1);
+function blurh(blur, T2, S2, w2, h2) {
+  for (let y2 = 0, n2 = w2 * h2; y2 < n2; ) {
+    blur(T2, S2, y2, y2 += w2, 1);
   }
 }
-function blurv(blur, T, S, w, h) {
-  for (let x = 0, n = w * h; x < w; ++x) {
-    blur(T, S, x, x + n, w);
+function blurv(blur, T2, S2, w2, h2) {
+  for (let x2 = 0, n2 = w2 * h2; x2 < w2; ++x2) {
+    blur(T2, S2, x2, x2 + n2, w2);
   }
 }
 function blurfImage(radius) {
   const blur = blurf(radius);
-  return (T, S, start, stop, step) => {
+  return (T2, S2, start, stop, step) => {
     start <<= 2, stop <<= 2, step <<= 2;
-    blur(T, S, start + 0, stop + 0, step);
-    blur(T, S, start + 1, stop + 1, step);
-    blur(T, S, start + 2, stop + 2, step);
-    blur(T, S, start + 3, stop + 3, step);
+    blur(T2, S2, start + 0, stop + 0, step);
+    blur(T2, S2, start + 1, stop + 1, step);
+    blur(T2, S2, start + 2, stop + 2, step);
+    blur(T2, S2, start + 3, stop + 3, step);
   };
 }
 function blurf(radius) {
   const radius0 = Math.floor(radius);
   if (radius0 === radius) return bluri(radius);
-  const t = radius - radius0;
-  const w = 2 * radius + 1;
-  return (T, S, start, stop, step) => {
+  const t2 = radius - radius0;
+  const w2 = 2 * radius + 1;
+  return (T2, S2, start, stop, step) => {
     if (!((stop -= step) >= start)) return;
-    let sum = radius0 * S[start];
+    let sum = radius0 * S2[start];
     const s0 = step * radius0;
     const s1 = s0 + step;
-    for (let i = start, j = start + s0; i < j; i += step) {
-      sum += S[Math.min(stop, i)];
+    for (let i2 = start, j2 = start + s0; i2 < j2; i2 += step) {
+      sum += S2[Math.min(stop, i2)];
     }
-    for (let i = start, j = stop; i <= j; i += step) {
-      sum += S[Math.min(stop, i + s0)];
-      T[i] = (sum + t * (S[Math.max(start, i - s1)] + S[Math.min(stop, i + s1)])) / w;
-      sum -= S[Math.max(start, i - s0)];
+    for (let i2 = start, j2 = stop; i2 <= j2; i2 += step) {
+      sum += S2[Math.min(stop, i2 + s0)];
+      T2[i2] = (sum + t2 * (S2[Math.max(start, i2 - s1)] + S2[Math.min(stop, i2 + s1)])) / w2;
+      sum -= S2[Math.max(start, i2 - s0)];
     }
   };
 }
 function bluri(radius) {
-  const w = 2 * radius + 1;
-  return (T, S, start, stop, step) => {
+  const w2 = 2 * radius + 1;
+  return (T2, S2, start, stop, step) => {
     if (!((stop -= step) >= start)) return;
-    let sum = radius * S[start];
-    const s = step * radius;
-    for (let i = start, j = start + s; i < j; i += step) {
-      sum += S[Math.min(stop, i)];
+    let sum = radius * S2[start];
+    const s2 = step * radius;
+    for (let i2 = start, j2 = start + s2; i2 < j2; i2 += step) {
+      sum += S2[Math.min(stop, i2)];
     }
-    for (let i = start, j = stop; i <= j; i += step) {
-      sum += S[Math.min(stop, i + s)];
-      T[i] = sum / w;
-      sum -= S[Math.max(start, i - s)];
+    for (let i2 = start, j2 = stop; i2 <= j2; i2 += step) {
+      sum += S2[Math.min(stop, i2 + s2)];
+      T2[i2] = sum / w2;
+      sum -= S2[Math.max(start, i2 - s2)];
     }
   };
 }
@@ -2327,7 +4030,7 @@ function count(values, valueof) {
   }
   return count2;
 }
-function extent2(values, valueof) {
+function extent(values, valueof) {
   let min;
   let max2;
   if (valueof === void 0) {
@@ -2387,13 +4090,13 @@ function ticks(start, stop, count2) {
   if (start === stop) return [start];
   const reverse = stop < start, [i1, i2, inc] = reverse ? tickSpec(stop, start, count2) : tickSpec(start, stop, count2);
   if (!(i2 >= i1)) return [];
-  const n = i2 - i1 + 1, ticks2 = new Array(n);
+  const n2 = i2 - i1 + 1, ticks2 = new Array(n2);
   if (reverse) {
-    if (inc < 0) for (let i = 0; i < n; ++i) ticks2[i] = (i2 - i) / -inc;
-    else for (let i = 0; i < n; ++i) ticks2[i] = (i2 - i) * inc;
+    if (inc < 0) for (let i3 = 0; i3 < n2; ++i3) ticks2[i3] = (i2 - i3) / -inc;
+    else for (let i3 = 0; i3 < n2; ++i3) ticks2[i3] = (i2 - i3) * inc;
   } else {
-    if (inc < 0) for (let i = 0; i < n; ++i) ticks2[i] = (i1 + i) / -inc;
-    else for (let i = 0; i < n; ++i) ticks2[i] = (i1 + i) * inc;
+    if (inc < 0) for (let i3 = 0; i3 < n2; ++i3) ticks2[i3] = (i1 + i3) / -inc;
+    else for (let i3 = 0; i3 < n2; ++i3) ticks2[i3] = (i1 + i3) * inc;
   }
   return ticks2;
 }
@@ -2408,16 +4111,16 @@ function nice(start, stop, count2) {
     if (step === prestep || step === 0 || !isFinite(step)) {
       return [start, stop];
     } else if (step > 0) {
-      const i = Math.ceil(start / step);
-      const j = Math.floor(stop / step);
-      start = (i - (i * step > start)) * step;
-      stop = (j + (j * step < stop)) * step;
+      const i2 = Math.ceil(start / step);
+      const j2 = Math.floor(stop / step);
+      start = (i2 - (i2 * step > start)) * step;
+      stop = (j2 + (j2 * step < stop)) * step;
     } else if (step < 0) {
-      const s = -step;
-      const i = Math.ceil(start * s);
-      const j = Math.floor(stop * s);
-      start = (i - (i / s > start)) / s;
-      stop = (j + (j / s < stop)) / s;
+      const s2 = -step;
+      const i2 = Math.ceil(start * s2);
+      const j2 = Math.floor(stop * s2);
+      start = (i2 - (i2 / s2 > start)) / s2;
+      stop = (j2 + (j2 / s2 < stop)) / s2;
     }
     prestep = step;
   }
@@ -2428,11 +4131,11 @@ function thresholdSturges(values) {
 var shuffle = shuffler(Math.random);
 function shuffler(random) {
   return function shuffle2(array3, i0 = 0, i1 = array3.length) {
-    let m = i1 - (i0 = +i0);
-    while (m) {
-      const i = random() * m-- | 0, t = array3[m + i0];
-      array3[m + i0] = array3[i + i0];
-      array3[i + i0] = t;
+    let m2 = i1 - (i0 = +i0);
+    while (m2) {
+      const i2 = random() * m2-- | 0, t2 = array3[m2 + i0];
+      array3[m2 + i0] = array3[i2 + i0];
+      array3[i2 + i0] = t2;
     }
     return array3;
   };
@@ -2441,38 +4144,38 @@ function shuffler(random) {
 // node_modules/d3-contour/dist/d3-contour.mjs
 var array2 = Array.prototype;
 var slice2 = array2.slice;
-function ascending2(a, b) {
-  return a - b;
+function ascending2(a2, b2) {
+  return a2 - b2;
 }
 function area2(ring) {
-  var i = 0, n = ring.length, area3 = ring[n - 1][1] * ring[0][0] - ring[n - 1][0] * ring[0][1];
-  while (++i < n) area3 += ring[i - 1][1] * ring[i][0] - ring[i - 1][0] * ring[i][1];
+  var i2 = 0, n2 = ring.length, area3 = ring[n2 - 1][1] * ring[0][0] - ring[n2 - 1][0] * ring[0][1];
+  while (++i2 < n2) area3 += ring[i2 - 1][1] * ring[i2][0] - ring[i2 - 1][0] * ring[i2][1];
   return area3;
 }
-var constant = (x) => () => x;
+var constant = (x2) => () => x2;
 function contains(ring, hole) {
-  var i = -1, n = hole.length, c;
-  while (++i < n) if (c = ringContains(ring, hole[i])) return c;
+  var i2 = -1, n2 = hole.length, c2;
+  while (++i2 < n2) if (c2 = ringContains(ring, hole[i2])) return c2;
   return 0;
 }
 function ringContains(ring, point) {
-  var x = point[0], y = point[1], contains2 = -1;
-  for (var i = 0, n = ring.length, j = n - 1; i < n; j = i++) {
-    var pi = ring[i], xi = pi[0], yi = pi[1], pj = ring[j], xj = pj[0], yj = pj[1];
+  var x2 = point[0], y2 = point[1], contains2 = -1;
+  for (var i2 = 0, n2 = ring.length, j2 = n2 - 1; i2 < n2; j2 = i2++) {
+    var pi = ring[i2], xi = pi[0], yi = pi[1], pj = ring[j2], xj = pj[0], yj = pj[1];
     if (segmentContains(pi, pj, point)) return 0;
-    if (yi > y !== yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi) contains2 = -contains2;
+    if (yi > y2 !== yj > y2 && x2 < (xj - xi) * (y2 - yi) / (yj - yi) + xi) contains2 = -contains2;
   }
   return contains2;
 }
-function segmentContains(a, b, c) {
-  var i;
-  return collinear(a, b, c) && within(a[i = +(a[0] === b[0])], c[i], b[i]);
+function segmentContains(a2, b2, c2) {
+  var i2;
+  return collinear(a2, b2, c2) && within(a2[i2 = +(a2[0] === b2[0])], c2[i2], b2[i2]);
 }
-function collinear(a, b, c) {
-  return (b[0] - a[0]) * (c[1] - a[1]) === (c[0] - a[0]) * (b[1] - a[1]);
+function collinear(a2, b2, c2) {
+  return (b2[0] - a2[0]) * (c2[1] - a2[1]) === (c2[0] - a2[0]) * (b2[1] - a2[1]);
 }
-function within(p, q, r) {
-  return p <= q && q <= r || r <= q && q <= p;
+function within(p2, q, r2) {
+  return p2 <= q && q <= r2 || r2 <= q && q <= p2;
 }
 function noop() {
 }
@@ -2499,27 +4202,27 @@ function Contours() {
   function contours(values) {
     var tz = threshold(values);
     if (!Array.isArray(tz)) {
-      const e = extent2(values, finite);
-      tz = ticks(...nice(e[0], e[1], tz), tz);
-      while (tz[tz.length - 1] >= e[1]) tz.pop();
-      while (tz[1] < e[0]) tz.shift();
+      const e3 = extent(values, finite);
+      tz = ticks(...nice(e3[0], e3[1], tz), tz);
+      while (tz[tz.length - 1] >= e3[1]) tz.pop();
+      while (tz[1] < e3[0]) tz.shift();
     } else {
       tz = tz.slice().sort(ascending2);
     }
     return tz.map((value) => contour(values, value));
   }
   function contour(values, value) {
-    const v = value == null ? NaN : +value;
-    if (isNaN(v)) throw new Error(`invalid value: ${value}`);
+    const v2 = value == null ? NaN : +value;
+    if (isNaN(v2)) throw new Error(`invalid value: ${value}`);
     var polygons = [], holes = [];
-    isorings(values, v, function(ring) {
-      smooth(ring, values, v);
+    isorings(values, v2, function(ring) {
+      smooth(ring, values, v2);
       if (area2(ring) > 0) polygons.push([ring]);
       else holes.push(ring);
     });
     holes.forEach(function(hole) {
-      for (var i = 0, n = polygons.length, polygon; i < n; ++i) {
-        if (contains((polygon = polygons[i])[0], hole) !== -1) {
+      for (var i2 = 0, n2 = polygons.length, polygon; i2 < n2; ++i2) {
+        if (contains((polygon = polygons[i2])[0], hole) !== -1) {
           polygon.push(hole);
           return;
         }
@@ -2532,66 +4235,66 @@ function Contours() {
     };
   }
   function isorings(values, value, callback) {
-    var fragmentByStart = new Array(), fragmentByEnd = new Array(), x, y, t0, t1, t2, t3;
-    x = y = -1;
+    var fragmentByStart = new Array(), fragmentByEnd = new Array(), x2, y2, t0, t1, t2, t3;
+    x2 = y2 = -1;
     t1 = above(values[0], value);
     cases[t1 << 1].forEach(stitch);
-    while (++x < dx - 1) {
-      t0 = t1, t1 = above(values[x + 1], value);
+    while (++x2 < dx - 1) {
+      t0 = t1, t1 = above(values[x2 + 1], value);
       cases[t0 | t1 << 1].forEach(stitch);
     }
     cases[t1 << 0].forEach(stitch);
-    while (++y < dy - 1) {
-      x = -1;
-      t1 = above(values[y * dx + dx], value);
-      t2 = above(values[y * dx], value);
+    while (++y2 < dy - 1) {
+      x2 = -1;
+      t1 = above(values[y2 * dx + dx], value);
+      t2 = above(values[y2 * dx], value);
       cases[t1 << 1 | t2 << 2].forEach(stitch);
-      while (++x < dx - 1) {
-        t0 = t1, t1 = above(values[y * dx + dx + x + 1], value);
-        t3 = t2, t2 = above(values[y * dx + x + 1], value);
+      while (++x2 < dx - 1) {
+        t0 = t1, t1 = above(values[y2 * dx + dx + x2 + 1], value);
+        t3 = t2, t2 = above(values[y2 * dx + x2 + 1], value);
         cases[t0 | t1 << 1 | t2 << 2 | t3 << 3].forEach(stitch);
       }
       cases[t1 | t2 << 3].forEach(stitch);
     }
-    x = -1;
-    t2 = values[y * dx] >= value;
+    x2 = -1;
+    t2 = values[y2 * dx] >= value;
     cases[t2 << 2].forEach(stitch);
-    while (++x < dx - 1) {
-      t3 = t2, t2 = above(values[y * dx + x + 1], value);
+    while (++x2 < dx - 1) {
+      t3 = t2, t2 = above(values[y2 * dx + x2 + 1], value);
       cases[t2 << 2 | t3 << 3].forEach(stitch);
     }
     cases[t2 << 3].forEach(stitch);
     function stitch(line) {
-      var start = [line[0][0] + x, line[0][1] + y], end = [line[1][0] + x, line[1][1] + y], startIndex = index(start), endIndex = index(end), f, g;
-      if (f = fragmentByEnd[startIndex]) {
-        if (g = fragmentByStart[endIndex]) {
-          delete fragmentByEnd[f.end];
-          delete fragmentByStart[g.start];
-          if (f === g) {
-            f.ring.push(end);
-            callback(f.ring);
+      var start = [line[0][0] + x2, line[0][1] + y2], end = [line[1][0] + x2, line[1][1] + y2], startIndex = index(start), endIndex = index(end), f2, g2;
+      if (f2 = fragmentByEnd[startIndex]) {
+        if (g2 = fragmentByStart[endIndex]) {
+          delete fragmentByEnd[f2.end];
+          delete fragmentByStart[g2.start];
+          if (f2 === g2) {
+            f2.ring.push(end);
+            callback(f2.ring);
           } else {
-            fragmentByStart[f.start] = fragmentByEnd[g.end] = { start: f.start, end: g.end, ring: f.ring.concat(g.ring) };
+            fragmentByStart[f2.start] = fragmentByEnd[g2.end] = { start: f2.start, end: g2.end, ring: f2.ring.concat(g2.ring) };
           }
         } else {
-          delete fragmentByEnd[f.end];
-          f.ring.push(end);
-          fragmentByEnd[f.end = endIndex] = f;
+          delete fragmentByEnd[f2.end];
+          f2.ring.push(end);
+          fragmentByEnd[f2.end = endIndex] = f2;
         }
-      } else if (f = fragmentByStart[endIndex]) {
-        if (g = fragmentByEnd[startIndex]) {
-          delete fragmentByStart[f.start];
-          delete fragmentByEnd[g.end];
-          if (f === g) {
-            f.ring.push(end);
-            callback(f.ring);
+      } else if (f2 = fragmentByStart[endIndex]) {
+        if (g2 = fragmentByEnd[startIndex]) {
+          delete fragmentByStart[f2.start];
+          delete fragmentByEnd[g2.end];
+          if (f2 === g2) {
+            f2.ring.push(end);
+            callback(f2.ring);
           } else {
-            fragmentByStart[g.start] = fragmentByEnd[f.end] = { start: g.start, end: f.end, ring: g.ring.concat(f.ring) };
+            fragmentByStart[g2.start] = fragmentByEnd[f2.end] = { start: g2.start, end: f2.end, ring: g2.ring.concat(f2.ring) };
           }
         } else {
-          delete fragmentByStart[f.start];
-          f.ring.unshift(start);
-          fragmentByStart[f.start = startIndex] = f;
+          delete fragmentByStart[f2.start];
+          f2.ring.unshift(start);
+          fragmentByStart[f2.start = startIndex] = f2;
         }
       } else {
         fragmentByStart[startIndex] = fragmentByEnd[endIndex] = { start: startIndex, end: endIndex, ring: [start, end] };
@@ -2603,69 +4306,70 @@ function Contours() {
   }
   function smoothLinear(ring, values, value) {
     ring.forEach(function(point) {
-      var x = point[0], y = point[1], xt = x | 0, yt = y | 0, v1 = valid(values[yt * dx + xt]);
-      if (x > 0 && x < dx && xt === x) {
-        point[0] = smooth1(x, valid(values[yt * dx + xt - 1]), v1, value);
+      var x2 = point[0], y2 = point[1], xt = x2 | 0, yt = y2 | 0, v1 = valid(values[yt * dx + xt]);
+      if (x2 > 0 && x2 < dx && xt === x2) {
+        point[0] = smooth1(x2, valid(values[yt * dx + xt - 1]), v1, value);
       }
-      if (y > 0 && y < dy && yt === y) {
-        point[1] = smooth1(y, valid(values[(yt - 1) * dx + xt]), v1, value);
+      if (y2 > 0 && y2 < dy && yt === y2) {
+        point[1] = smooth1(y2, valid(values[(yt - 1) * dx + xt]), v1, value);
       }
     });
   }
   contours.contour = contour;
-  contours.size = function(_) {
+  contours.size = function(_2) {
     if (!arguments.length) return [dx, dy];
-    var _0 = Math.floor(_[0]), _1 = Math.floor(_[1]);
+    var _0 = Math.floor(_2[0]), _1 = Math.floor(_2[1]);
     if (!(_0 >= 0 && _1 >= 0)) throw new Error("invalid size");
     return dx = _0, dy = _1, contours;
   };
-  contours.thresholds = function(_) {
-    return arguments.length ? (threshold = typeof _ === "function" ? _ : Array.isArray(_) ? constant(slice2.call(_)) : constant(_), contours) : threshold;
+  contours.thresholds = function(_2) {
+    return arguments.length ? (threshold = typeof _2 === "function" ? _2 : Array.isArray(_2) ? constant(slice2.call(_2)) : constant(_2), contours) : threshold;
   };
-  contours.smooth = function(_) {
-    return arguments.length ? (smooth = _ ? smoothLinear : noop, contours) : smooth === smoothLinear;
+  contours.smooth = function(_2) {
+    return arguments.length ? (smooth = _2 ? smoothLinear : noop, contours) : smooth === smoothLinear;
   };
   return contours;
 }
-function finite(x) {
-  return isFinite(x) ? x : NaN;
+function finite(x2) {
+  return isFinite(x2) ? x2 : NaN;
 }
-function above(x, value) {
-  return x == null ? false : +x >= value;
+function above(x2, value) {
+  return x2 == null ? false : +x2 >= value;
 }
-function valid(v) {
-  return v == null || isNaN(v = +v) ? -Infinity : v;
+function valid(v2) {
+  return v2 == null || isNaN(v2 = +v2) ? -Infinity : v2;
 }
-function smooth1(x, v0, v1, value) {
-  const a = value - v0;
-  const b = v1 - v0;
-  const d = isFinite(a) || isFinite(b) ? a / b : Math.sign(a) / Math.sign(b);
-  return isNaN(d) ? x : x + d - 0.5;
+function smooth1(x2, v0, v1, value) {
+  const a2 = value - v0;
+  const b2 = v1 - v0;
+  const d2 = isFinite(a2) || isFinite(b2) ? a2 / b2 : Math.sign(a2) / Math.sign(b2);
+  return isNaN(d2) ? x2 : x2 + d2 - 0.5;
 }
 
 // src/trace/field.ts
 var FIELD_RADIUS_PX = 1;
 var FIELD_BORDER_PX = 2;
 var ISO_LEVEL = 0.5;
-function regionRings(passes, box2, match) {
-  if (box2.x1 < box2.x0) return [];
-  const cols = box2.x1 - box2.x0 + 1 + 2 * FIELD_BORDER_PX;
-  const rows = box2.y1 - box2.y0 + 1 + 2 * FIELD_BORDER_PX;
+function regionRings(passes, box, match) {
+  if (box.x1 < box.x0) return [];
+  const cols = box.x1 - box.x0 + 1 + 2 * FIELD_BORDER_PX;
+  const rows = box.y1 - box.y0 + 1 + 2 * FIELD_BORDER_PX;
   const mask = new Float64Array(cols * rows);
-  for (let y = box2.y0; y <= box2.y1; y++) {
-    for (let x = box2.x0; x <= box2.x1; x++) {
-      if (match(passes.keys[y * passes.width + x])) mask[(y - box2.y0 + FIELD_BORDER_PX) * cols + (x - box2.x0 + FIELD_BORDER_PX)] = 1;
+  for (let y2 = box.y0; y2 <= box.y1; y2++) {
+    for (let x2 = box.x0; x2 <= box.x1; x2++) {
+      if (match(passes.keys[y2 * passes.width + x2]))
+        mask[(y2 - box.y0 + FIELD_BORDER_PX) * cols + (x2 - box.x0 + FIELD_BORDER_PX)] = 1;
     }
   }
   const field = boxBlur(boxBlur(mask, cols, rows, FIELD_RADIUS_PX, true), cols, rows, FIELD_RADIUS_PX, false);
   const multi = Contours().size([cols, rows]).thresholds([ISO_LEVEL])(Array.from(field))[0];
-  const offsetX = box2.x0 - FIELD_BORDER_PX + 0.5;
-  const offsetY = box2.y0 - FIELD_BORDER_PX + 0.5;
+  const offsetX = box.x0 - FIELD_BORDER_PX + 0.5;
+  const offsetY = box.y0 - FIELD_BORDER_PX + 0.5;
   const rings = [];
   for (const polygon of multi.coordinates) {
     for (const ring of polygon) {
-      const points2 = ring.slice(0, -1).map(([gx, gy]) => [gx + offsetX, gy + offsetY]);
-      if (points2.length >= 3) rings.push(points2);
+      const points = ring.slice(0, -1).map(([gx, gy]) => [gx + offsetX, gy + offsetY]);
+      if (points.length >= 3) rings.push(points);
     }
   }
   return rings;
@@ -2675,234 +4379,452 @@ function boxBlur(src, cols, rows, radius, horizontal) {
   const weight = 1 / (2 * radius + 1);
   const length2 = horizontal ? cols : rows;
   for (let line = 0; line < (horizontal ? rows : cols); line++) {
-    for (let i = 0; i < length2; i++) {
+    for (let i2 = 0; i2 < length2; i2++) {
       let sum = 0;
       for (let k = -radius; k <= radius; k++) {
-        const j = Math.min(length2 - 1, Math.max(0, i + k));
-        sum += horizontal ? src[line * cols + j] : src[j * cols + line];
+        const j2 = Math.min(length2 - 1, Math.max(0, i2 + k));
+        sum += horizontal ? src[line * cols + j2] : src[j2 * cols + line];
       }
-      if (horizontal) out[line * cols + i] = sum * weight;
-      else out[i * cols + line] = sum * weight;
+      if (horizontal) out[line * cols + i2] = sum * weight;
+      else out[i2 * cols + line] = sum * weight;
     }
   }
   return out;
 }
 
-// src/trace/objects.ts
-import * as THREE10 from "three";
-
-// src/geom/dashes.ts
-function dashSegments(a, b, dash, gap) {
-  const len = span(a, b);
-  if (len <= EPS) return [];
-  const count2 = Math.max(1, Math.round((len + gap) / (dash + gap)));
-  const stretch = len / (count2 * dash + (count2 - 1) * gap);
-  const dashFraction = dash * stretch / len;
-  const periodFraction = (dash + gap) * stretch / len;
-  return Array.from({ length: count2 }, (_, i) => [
-    lerp(a, b, i * periodFraction),
-    lerp(a, b, i * periodFraction + dashFraction)
-  ]);
+// src/trace/stretch.ts
+var SNAP_TOL_RENDER_PX = 0.6;
+var BAND_OFFSETS_PX = [0.5, 1, 1.5];
+var FLAG_HALF_WINDOW = 3;
+var BACKGROUND = 0;
+var PIXEL_CENTRE = 0.5;
+function stretchesOf(ring, id, passes, scale) {
+  const labels = fillGaps(ring.map(([x2, y2]) => labelAt(x2, y2, id, passes)));
+  if (labels === null) return { stretches: [], whole: false };
+  const css = ring.map(([x2, y2]) => [x2 / scale, y2 / scale]);
+  const ctx = { id, passes, scale };
+  if (labels.every((l2) => l2 === labels[0])) return wholeRing(css, labels[0], ctx);
+  const [pts, rotatedLabels] = rotateToChange(css, labels);
+  return { stretches: splitAtLabelChanges(pts, rotatedLabels, ctx), whole: false };
 }
-function dotCentres(a, b, spacing) {
-  const len = span(a, b);
-  if (len <= EPS) return [];
-  const count2 = Math.max(1, Math.round(len / spacing));
-  return Array.from({ length: count2 }, (_, i) => lerp(a, b, (i + 0.5) / count2));
+function wholeRing(css, label, ctx) {
+  const flags = shellFlags(css, true, ctx);
+  if (flags.every((f2) => f2 === flags[0])) return { stretches: [{ pts: css, label, outlined: flags[0] }], whole: true };
+  return { stretches: cyclicRuns(css, flags, label), whole: false };
 }
-
-// src/render/instancing.ts
-var HEAD_MIN_RADII = 3;
-var HEAD_MAX_SHARE = 0.8;
-var SHAFT_MIN_SHARE = 0.2;
-var HEAD_CENTRE_SHARE = 0.5;
-var LINE_RADIUS_SHARE = 0.7;
-var HARD_EDGE_ANGLE_DEG = 1;
-function instanceGroups(data2) {
-  const pos = pointPositions(data2);
-  const groups = /* @__PURE__ */ new Map();
-  const { atoms, bonds = [], displacements = [] } = data2.primitives;
-  for (const atom of atoms) {
-    addInstance(groups, "sphere", atom.material_id, true, sphereMatrix(pos.get(atom.point_id), atom.radius), atom);
-  }
-  for (const bond of bonds) addBond(groups, bond, pos);
-  for (const d of displacements) addDisplacement(groups, d, pos);
-  return [...groups.values()];
-}
-function polyhedronGroups(data2) {
-  const pos = pointPositions(data2);
-  const topologies = new Map(data2.topologies.map((t) => [t.id, t]));
-  const groups = /* @__PURE__ */ new Map();
-  data2.primitives.polyhedra.forEach((poly, index) => {
-    const topo = topologies.get(poly.topology_id);
-    const v = topo.point_ids.map((id) => pos.get(id));
-    const group = polyhedronGroupFor(groups, poly.material_id);
-    const first = group.owner.length;
-    const faces = outwardFaces(v, topo.faces);
-    addFaces(group, faces, v, index);
-    addHardEdges(group, faces, v);
-    group.ranges.push([index, first, faces.length]);
-  });
-  return [...groups.values()];
-}
-function addBond(groups, bond, pos) {
-  const a = pos.get(bond.a_point_id);
-  const b = pos.get(bond.b_point_id);
-  const style = bond.style ?? "solid";
-  if (style === "dashed") addDashes(groups, a, b, bond.radius, bond.material_id);
-  else if (style === "dotted") addDots(groups, a, b, bond.radius, bond.material_id);
-  else addCylinder(groups, a, b, bond.radius, bond.material_id, true);
-}
-function addDashes(groups, a, b, radius, material) {
-  const dash = Math.max(DASH.length * radius, DASH.min);
-  const gap = dash * DASH.gap / DASH.length;
-  for (const [start, end] of dashSegments(a, b, dash, gap)) addCylinder(groups, start, end, radius, material, false);
-}
-function addDots(groups, a, b, radius, material) {
-  const spacing = Math.max(DOT.spacing * radius, DOT.spacingMin);
-  for (const centre2 of dotCentres(a, b, spacing)) {
-    addInstance(groups, "dot", material, false, sphereMatrix(centre2, DOT.radius * radius));
-  }
-}
-function addDisplacement(groups, d, pos) {
-  const start = pos.get(d.start_point_id);
-  const vector2 = d.vector;
-  const atomIsTip = d.anchor === "tip";
-  const tail = atomIsTip ? vsub(start, vector2) : start;
-  const tip2 = atomIsTip ? start : start.map((x, i) => x + vector2[i]);
-  const drawnAsArrow = (d.mode ?? "arrow").toLowerCase() === "arrow";
-  const radius = ARROW.radius;
-  if (drawnAsArrow) addArrow(groups, tail, tip2, radius);
-  else addCylinder(groups, tail, tip2, radius * LINE_RADIUS_SHARE, null, true);
-}
-function addArrow(groups, a, b, radius) {
-  const len = span(a, b);
-  if (len <= EPS) return;
-  const dir = vunit(vsub(b, a));
-  const headLen = Math.min(Math.max(len * ARROW.headLengthRatio, radius * HEAD_MIN_RADII), len * HEAD_MAX_SHARE);
-  const shaftLen = Math.max(len - headLen, len * SHAFT_MIN_SHARE);
-  const shaftEnd = a.map((x, i) => x + dir[i] * shaftLen);
-  addCylinder(groups, a, shaftEnd, radius, null, true);
-  const headCentre = shaftEnd.map((x, i) => x + dir[i] * headLen * HEAD_CENTRE_SHARE);
-  addInstance(groups, "cone", null, true, alongMatrix(headCentre, dir, radius * ARROW.headRadiusRatio, headLen));
-}
-function addCylinder(groups, a, b, radius, material, outlined) {
-  const len = span(a, b);
-  if (len <= EPS) return;
-  const dir = vunit(vsub(b, a));
-  const midpoint = lerp(a, b, 0.5);
-  addInstance(groups, "cylinder", material, outlined, alongMatrix(midpoint, dir, radius, len));
-}
-function addInstance(groups, shape, material, outlined, matrix, ref = null) {
-  const key2 = `${shape}|${material}|${outlined}`;
-  let group = groups.get(key2);
-  if (!group) {
-    group = { shape, material, outlined, matrices: [], refs: [] };
-    groups.set(key2, group);
-  }
-  group.matrices.push(...matrix);
-  group.refs.push(ref);
-}
-function polyhedronGroupFor(groups, material) {
-  let group = groups.get(material);
-  if (!group) {
-    group = { material, positions: [], edges: [], owner: [], ranges: [] };
-    groups.set(material, group);
-  }
-  return group;
-}
-function outwardFaces(v, triangles) {
-  const mid = centroid(v);
-  return triangles.map(([i, j, k]) => {
-    const n = vunit(vcross(vsub(v[j], v[i]), vsub(v[k], v[i])));
-    const faceCentre = centroid([v[i], v[j], v[k]]);
-    const outward = vdot(n, vsub(faceCentre, mid)) >= 0;
-    return outward ? { idx: [i, j, k], n } : { idx: [i, k, j], n: n.map((x) => -x) };
+function fillGaps(labels) {
+  const first = labels.find((l2) => l2 !== null);
+  if (first === void 0) return null;
+  let prev = first;
+  return labels.map((l2) => {
+    if (l2 === null) return prev;
+    prev = l2;
+    return l2;
   });
 }
-function centroid(v) {
-  return v.reduce((sum, p) => sum.map((c, i) => c + p[i] / v.length), [0, 0, 0]);
-}
-function addFaces(group, faces, v, index) {
-  for (const f of faces) {
-    group.positions.push(...v[f.idx[0]], ...v[f.idx[1]], ...v[f.idx[2]]);
-    group.owner.push(index);
-  }
-}
-function addHardEdges(group, faces, v) {
-  const sides = /* @__PURE__ */ new Map();
-  for (const f of faces) {
-    for (let e = 0; e < 3; e++) {
-      const i = f.idx[e];
-      const j = f.idx[(e + 1) % 3];
-      const key2 = i < j ? `${i}-${j}` : `${j}-${i}`;
-      if (!sides.has(key2)) sides.set(key2, { i, j, faces: [] });
-      sides.get(key2).faces.push(f);
-    }
-  }
-  const sharpAngle = Math.cos(HARD_EDGE_ANGLE_DEG * Math.PI / 180);
-  for (const side of sides.values()) {
-    const boundary = side.faces.length === 1;
-    const sharp = !boundary && vdot(side.faces[0].n, side.faces[1].n) < sharpAngle;
-    if (boundary || sharp) group.edges.push(...v[side.i], ...v[side.j]);
-  }
-}
-function pointPositions(data2) {
-  return new Map(data2.points.map((p) => [p.id, p.position]));
-}
-function sphereMatrix(c, r) {
-  return [r, 0, 0, 0, 0, r, 0, 0, 0, 0, r, 0, c[0], c[1], c[2], 1];
-}
-function alongMatrix(centre2, d, radius, length2) {
-  const { x, z } = rotationFromY(d);
+function rotateToChange(css, labels) {
+  const start = labels.findIndex((l2, i2) => l2 !== labels[(i2 - 1 + labels.length) % labels.length]);
   return [
-    x[0] * radius,
-    x[1] * radius,
-    x[2] * radius,
-    0,
-    d[0] * length2,
-    d[1] * length2,
-    d[2] * length2,
-    0,
-    z[0] * radius,
-    z[1] * radius,
-    z[2] * radius,
-    0,
-    centre2[0],
-    centre2[1],
-    centre2[2],
-    1
+    [...css.slice(start), ...css.slice(0, start)],
+    [...labels.slice(start), ...labels.slice(0, start)]
   ];
 }
-function rotationFromY(d) {
-  const axisX = d[2];
-  const axisZ = -d[0];
-  const cosAngle = d[1];
-  if (cosAngle <= -1 + EPS) return { x: [1, 0, 0], z: [0, 0, -1] };
-  const k = 1 / (1 + cosAngle);
-  return {
-    x: [1 - k * axisZ * axisZ, -d[0], k * axisX * axisZ],
-    z: [k * axisX * axisZ, -d[2], 1 - k * axisX * axisX]
+function splitAtLabelChanges(pts, labels, ctx) {
+  const stretches = [];
+  for (let i2 = 0; i2 < pts.length; ) {
+    let j2 = i2;
+    while (j2 + 1 < pts.length && labels[j2 + 1] === labels[i2]) j2++;
+    const span2 = pts.slice(i2, j2 + 1);
+    for (const piece of runsOf(span2, shellFlags(span2, false, ctx))) {
+      stretches.push({ pts: piece.pts, label: labels[i2], outlined: piece.outlined });
+    }
+    i2 = j2 + 1;
+  }
+  return stretches;
+}
+function labelAt(x2, y2, id, passes) {
+  const left = Math.floor(x2 - PIXEL_CENTRE);
+  const top = Math.floor(y2 - PIXEL_CENTRE);
+  let inside = false;
+  const votes = [];
+  for (let dy = 0; dy <= 1; dy++) {
+    for (let dx = 0; dx <= 1; dx++) {
+      const key2 = passes.keyAt(left + dx, top + dy);
+      if (key2 !== 0 && idOf(key2) === id) {
+        inside = true;
+        continue;
+      }
+      votes.push(key2 === 0 ? BACKGROUND : idOf(key2));
+    }
+  }
+  return inside ? mostCommon(votes) : null;
+}
+function mostCommon(values) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const v2 of values) counts.set(v2, (counts.get(v2) ?? 0) + 1);
+  let best = null;
+  let bestCount = 0;
+  for (const [value, count2] of counts) {
+    if (count2 > bestCount) {
+      best = value;
+      bestCount = count2;
+    }
+  }
+  return best;
+}
+function shellFlags(pts, closed, ctx) {
+  const n2 = pts.length;
+  const raw = pts.map((p2, i2) => {
+    const a2 = closed ? pts[(i2 - 1 + n2) % n2] : pts[Math.max(0, i2 - 1)];
+    const b2 = closed ? pts[(i2 + 1) % n2] : pts[Math.min(n2 - 1, i2 + 1)];
+    const [nx, ny] = outwardNormal(p2, a2, b2, ctx);
+    let hits = 0;
+    for (const d2 of BAND_OFFSETS_PX)
+      if (shellAt([p2[0] + nx * d2 / ctx.scale, p2[1] + ny * d2 / ctx.scale], ctx)) hits++;
+    return hits * 2 > BAND_OFFSETS_PX.length;
+  });
+  return majority(raw, closed);
+}
+function outwardNormal(p2, a2, b2, ctx) {
+  const tx = b2[0] - a2[0];
+  const ty = b2[1] - a2[1];
+  const len = Math.hypot(tx, ty) || 1;
+  const n2 = [ty / len, -tx / len];
+  return ownAt([p2[0] + n2[0] / ctx.scale, p2[1] + n2[1] / ctx.scale], ctx) ? [-n2[0], -n2[1]] : n2;
+}
+function majority(flags, closed) {
+  const n2 = flags.length;
+  return flags.map((_2, i2) => {
+    let count2 = 0;
+    let seen = 0;
+    for (let k = -FLAG_HALF_WINDOW; k <= FLAG_HALF_WINDOW; k++) {
+      const j2 = closed ? (i2 + k + n2 * 2) % n2 : i2 + k;
+      if (j2 < 0 || j2 >= n2) continue;
+      seen++;
+      if (flags[j2]) count2++;
+    }
+    return count2 * 2 > seen;
+  });
+}
+var pixelOf = (p2, ctx) => [Math.floor(p2[0] * ctx.scale), Math.floor(p2[1] * ctx.scale)];
+function ownAt(p2, ctx) {
+  const key2 = ctx.passes.keyAt(...pixelOf(p2, ctx));
+  return key2 !== 0 && idOf(key2) === ctx.id;
+}
+function shellAt(p2, ctx) {
+  return ctx.passes.shellAt(...pixelOf(p2, ctx));
+}
+function runsOf(pts, flags) {
+  const out = [];
+  if (pts.length < 2) return [{ pts, outlined: flags[0] }];
+  let i2 = 0;
+  while (i2 < pts.length - 1) {
+    let j2 = i2 + 1;
+    while (j2 + 1 < pts.length && flags[j2 + 1] === flags[i2]) j2++;
+    out.push({ pts: pts.slice(i2, j2 + 1), outlined: flags[i2] });
+    i2 = j2;
+  }
+  return out;
+}
+function cyclicRuns(pts, flags, label) {
+  const n2 = pts.length;
+  const change = flags.findIndex((f2, i2) => f2 !== flags[(i2 - 1 + n2) % n2]);
+  const from = Math.max(0, change);
+  const rotatedPts = [...pts.slice(from), ...pts.slice(0, from), pts[from]];
+  const rotatedFlags = [...flags.slice(from), ...flags.slice(0, from), flags[from]];
+  return runsOf(rotatedPts, rotatedFlags).map((piece) => ({ pts: piece.pts, label, outlined: piece.outlined }));
+}
+function ringPaths(stretches, whole, candidates, tol) {
+  if (stretches.length === 0) return { fill: "", outline: "" };
+  if (whole) {
+    const st = stretches[0];
+    const best = bestCurve(candidates(st), st.pts, tol);
+    if (best?.kind === "ellipse") {
+      const start = startOf(best.e, st.pts[0]);
+      const seam = pointAt(best.e, paramOf(best.e, st.pts[0]));
+      const d4 = `M${start}${fullEllipseArcs(best.e, seam)}Z`;
+      return { fill: d4, outline: st.outlined ? d4 : "" };
+    }
+    const d3 = closedPath(st.pts);
+    return { fill: d3, outline: st.outlined ? d3 : "" };
+  }
+  const bests = stretches.map((st) => bestCurve(candidates(st), st.pts, tol));
+  let cur = startOn(bests[0], stretches[0].pts[0]);
+  let d2 = `M${fmtPt(cur)}`;
+  const pieces = [];
+  stretches.forEach((st, index) => {
+    const start = cur;
+    const piece = pieceFor(st, bests[index], start);
+    cur = piece.end;
+    d2 += piece.cmd;
+    pieces.push({ start, cmd: piece.cmd, outlined: st.outlined });
+  });
+  d2 += "Z";
+  return { fill: d2, outline: outlineOf2(pieces) };
+}
+function pieceFor(st, best, start) {
+  const last = st.pts[st.pts.length - 1];
+  if (best?.kind === "line") {
+    const end = onLine(best.a, best.b, last);
+    return { cmd: `L${fmtPt(end)}`, end };
+  }
+  if (best?.kind === "ellipse") {
+    const end = pointAt(best.e, paramOf(best.e, last));
+    return { cmd: arcTo(best.e, pointAt(best.e, paramOf(best.e, start)), end, st.pts), end };
+  }
+  return { cmd: fitCommands([start, ...st.pts.slice(1)]), end: last };
+}
+function outlineOf2(pieces) {
+  let out = "";
+  let open = false;
+  for (const p2 of pieces) {
+    if (!p2.outlined) {
+      open = false;
+      continue;
+    }
+    if (!open) out += `M${fmtPt(p2.start)}`;
+    out += p2.cmd;
+    open = true;
+  }
+  return out;
+}
+function bestCurve(curves, pts, tol) {
+  let best = null;
+  let bestRms = tol;
+  for (const c2 of curves) {
+    const rms = curveRms(c2, pts);
+    if (rms <= bestRms) {
+      best = c2;
+      bestRms = rms;
+    }
+  }
+  return best;
+}
+function snapTolerance(scale) {
+  return SNAP_TOL_RENDER_PX / scale;
+}
+function startOn(curve, p2) {
+  if (!curve) return p2;
+  if (curve.kind === "line") return onLine(curve.a, curve.b, p2);
+  return pointAt(curve.e, paramOf(curve.e, p2));
+}
+function startOf(e3, p2) {
+  return fmtPt(pointAt(e3, paramOf(e3, p2)));
+}
+
+// src/trace/regions.ts
+var SEAM_TRAP_PX = 0.5;
+var SEAM_STROKE_WIDTH = 2 * SEAM_TRAP_PX;
+var SILHOUETTE_SAMPLES = 48;
+var MIN_REGION_PX = 4;
+var MIN_STRIP_PX = 1;
+var MIN_SILHOUETTE_PX = 1;
+var MIN_PERIMETER_PX = 1e-9;
+var Layers = class {
+  clips = [];
+  fills = [];
+  outlines = [];
+  paths = 0;
+  counted(node) {
+    this.paths++;
+    return node;
+  }
+};
+function curveLookup(own, crossing) {
+  const ownOf = memo(own);
+  const candidatesFor = (id, st) => {
+    if (st.label <= 0) return ownOf(id);
+    const mid = st.pts[Math.floor(st.pts.length / 2)];
+    return [...ownOf(id), ...ownOf(st.label), ...crossing(id, st.label, mid)];
+  };
+  return { own: ownOf, candidatesFor };
+}
+function ownCurves(obj, view2) {
+  switch (obj.kind) {
+    case "sphere":
+    case "dot":
+      return sphereCurves(view2, vec3(obj.centre), obj.matrix[0]);
+    case "cylinder":
+      return cylinderCurves(obj.matrix, screenOf(view2));
+    case "cone":
+      return coneCurves(obj.matrix, screenOf(view2));
+    case "polyhedron":
+      return [];
+  }
+}
+function traceRegions(g2) {
+  const layers = new Layers();
+  for (const { id, obj } of drawOrder(g2)) {
+    if (obj.kind !== "polyhedron" && g2.thin(obj)) traceThin(g2, layers, id, obj);
+    else traceObject(g2, layers, id, obj);
+  }
+  return layers;
+}
+function drawOrder(g2) {
+  return g2.objects.map((obj, i2) => ({
+    id: i2 + 1,
+    nearestDepth: g2.thin(obj) ? g2.project(vec3(obj.centre)).depth : g2.stats.nearest[i2 + 1],
+    obj
+  })).sort((p2, q) => q.nearestDepth - p2.nearestDepth);
+}
+function traceObject(g2, layers, id, obj) {
+  const box = boxOf(g2.stats.boxes, id);
+  if (box.x1 < box.x0) return;
+  const rgb = g2.paint.rgb(obj);
+  const lit = srgbHex(rgb);
+  const dark = shadedBand(rgb, LOOK.dark);
+  const common = { "fill-rule": "evenodd", ...obj.alpha < 1 ? { "fill-opacity": obj.alpha } : {} };
+  const region = regionFill(g2, id, obj, box);
+  const body = [];
+  if (region.fill) {
+    body.push(layers.counted(seamTrapped(region.fill, lit, common)));
+    const clipPath = svgEl("path", { d: region.fill, "clip-rule": "evenodd" });
+    layers.clips.push(svgEl("clipPath", { id: clipId(g2, id) }, [clipPath]));
+  }
+  const band = darkBandPath(g2, id, box);
+  if (band)
+    body.push(
+      layers.counted(
+        seamTrapped(band, dark, { ...common, "clip-path": region.fill ? `url(#${clipId(g2, id)})` : void 0 })
+      )
+    );
+  const edge = g2.edgeLine(id);
+  if (edge) body.push(layers.counted(edge));
+  const opacity = g2.paint.opacity(obj);
+  layers.fills.push(svgEl("g", opacity < 1 ? { opacity } : {}, body));
+  if (g2.outlines.on && obj.outlined && region.outline) {
+    const outline = layers.counted(outlineMarkup(g2, obj, region.outline));
+    layers.outlines.push(opacity < 1 ? svgEl("g", { opacity }, [outline]) : outline);
+  }
+}
+function clipId(g2, id) {
+  return `${g2.clipPrefix}${id}`;
+}
+function regionFill(g2, id, obj, box) {
+  const { passes, stats, scale } = g2;
+  const regionPx = stats.pixels[id] / (scale * scale);
+  if (regionPx < MIN_REGION_PX) return { fill: tinySilhouette(g2, id, obj, regionPx), outline: "" };
+  let fill = "";
+  let outline = "";
+  const rings = regionRings(passes, box, (k) => idOf(k) === id).filter(
+    (ring) => ringArea(ring, scale) >= MIN_REGION_PX
+  );
+  for (const ring of rings) {
+    const { stretches, whole } = stretchesOf(ring, id, passes, scale);
+    const parts = ringPaths(stretches, whole, (st) => g2.curves.candidatesFor(id, st), g2.tol);
+    fill += parts.fill;
+    outline += parts.outline;
+  }
+  return { fill, outline };
+}
+function tinySilhouette(g2, id, obj, regionPx) {
+  const exact = g2.curves.own(id).find((c2) => c2.kind === "ellipse");
+  const centre = g2.project(vec3(obj.centre));
+  if (!exact || keyAtCentre(g2.passes, centre) !== id || regionPx < MIN_SILHOUETTE_PX) return "";
+  return closedPath(silhouettePoints(exact.e));
+}
+function darkBandPath(g2, id, box) {
+  const { passes, scale } = g2;
+  const rings = regionRings(passes, box, (k) => k === darkKey(id)).filter(
+    (ring) => ringArea(ring, scale) >= MIN_REGION_PX && ringArea(ring, scale) / Math.max(ringPerimeter(ring, scale), MIN_PERIMETER_PX) >= MIN_STRIP_PX
+  );
+  return rings.map((ring) => closedPath(toCss(ring, scale))).join("");
+}
+function toCss(ring, scale) {
+  return ring.map(([x2, y2]) => [x2 / scale, y2 / scale]);
+}
+function outlineMarkup(g2, obj, d2) {
+  const r2 = g2.outlines.capped ? radiusPx(g2.view, obj) : null;
+  const width = r2 === null ? g2.outlines.width / 2 : Math.min(g2.outlines.width / 2, 2 * OUTLINE_SIZE_FRACTION * r2);
+  const strokeWidth = g2.outlines.scale * width;
+  return svgEl("path", {
+    d: d2,
+    fill: "none",
+    stroke: g2.outlines.hex,
+    "stroke-width": strokeWidth,
+    "stroke-linejoin": "round"
+  });
+}
+function seamTrapped(d2, colour, extra) {
+  return svgEl("path", {
+    d: d2,
+    fill: colour,
+    stroke: colour,
+    "stroke-width": SEAM_STROKE_WIDTH,
+    "stroke-linejoin": "round",
+    ...extra
+  });
+}
+function traceThin(g2, layers, id, obj) {
+  const lit = srgbHex(g2.paint.rgb(obj));
+  const radius = radiusPx(g2.view, obj) ?? 0;
+  const thin = obj.kind === "dot" ? dotMarkup(obj, lit, id, g2.linePass, radius) : barMarkup(obj, lit, id, g2.linePass, radius);
+  if (!thin) return;
+  const opacity = g2.paint.opacity(obj);
+  layers.fills.push(layers.counted(opacity < 1 ? svgEl("g", { opacity }, [thin]) : thin));
+}
+function dotMarkup(obj, lit, id, lines, radius) {
+  const p2 = lines.project(vec3(obj.centre));
+  if (!onScreen(p2)) return null;
+  if (!lines.shows(id, Math.floor(p2.x), Math.floor(p2.y))) return null;
+  return svgEl("circle", { cx: p2.x / lines.scale, cy: p2.y / lines.scale, r: radius, fill: lit });
+}
+function barMarkup(obj, lit, id, lines, radius) {
+  const c2 = vec3(obj.centre);
+  const { axis } = instanceFrame(obj.matrix);
+  const d2 = segmentsPath(lines.spansOf(c2.clone().sub(axis), c2.clone().add(axis), id));
+  return d2 ? svgEl("path", { d: d2, fill: "none", stroke: lit, "stroke-width": 2 * radius, "stroke-linecap": "round" }) : null;
+}
+function silhouettePoints(e3) {
+  return Array.from({ length: SILHOUETTE_SAMPLES }, (_2, i2) => pointAt(e3, 2 * Math.PI * i2 / SILHOUETTE_SAMPLES));
+}
+function radiusPx(view2, obj) {
+  if (obj.kind === "polyhedron") return null;
+  const m2 = obj.matrix;
+  let unit = null;
+  if (obj.kind === "cylinder") unit = Math.hypot(m2[0], m2[1], m2[2]);
+  else if (obj.kind === "sphere" || obj.kind === "dot") unit = m2[0];
+  return unit === null ? null : unit * view2.pxPerUnit(view2.toCam(vec3(obj.centre)));
+}
+function screenOf(view2) {
+  return (p2) => {
+    const s2 = view2.toScreen(view2.toCam(p2));
+    return [s2.x, s2.y];
+  };
+}
+function memo(compute) {
+  const cache = /* @__PURE__ */ new Map();
+  return (key2) => {
+    if (!cache.has(key2)) cache.set(key2, compute(key2));
+    return cache.get(key2);
   };
 }
 
 // src/trace/objects.ts
+import * as THREE13 from "three";
 var roleOf = (mesh) => mesh.userData;
-function buildIdMeshes(data2, material, keep = () => true) {
+function buildIdMeshes(data, material, keep = () => true) {
   const objects = [];
   const parts = { meshes: [], shells: [], thin: [] };
-  for (const group of instanceGroups(data2)) addInstanceGroup(group, objects, parts, material, keep);
-  addPolyhedra(data2, objects, parts, material);
+  for (const group of instanceGroups(data)) addInstanceGroup(group, objects, parts, material, keep);
+  addPolyhedra2(data, objects, parts, material);
   return { objects, ...parts };
 }
 function addInstanceGroup(group, objects, parts, material, keep) {
   const first = objects.length + 1;
   const kept = [];
   const dropped = [];
-  group.refs.forEach((_, i) => {
-    const obj = { kind: group.shape, material: group.material, alpha: 1, outlined: group.outlined, centre: instanceCentre(group.matrices, i), matrix: group.matrices.slice(16 * i, 16 * i + 16) };
+  group.refs.forEach((_2, i2) => {
+    const obj = {
+      kind: group.shape,
+      material: group.material,
+      alpha: 1,
+      outlined: group.outlined,
+      centre: instanceCentre(group.matrices, i2),
+      matrix: group.matrices.slice(MATRIX_SIZE * i2, MATRIX_SIZE * (i2 + 1))
+    };
     objects.push(obj);
-    (keep(obj) ? kept : dropped).push(i);
+    (keep(obj) ? kept : dropped).push(i2);
   });
   if (kept.length) {
     const mesh = instanceSet(group, first, kept, material);
@@ -2920,52 +4842,56 @@ function addInstanceGroup(group, objects, parts, material, keep) {
     parts.thin.push(mesh);
   }
 }
-function addPolyhedra(data2, objects, parts, material) {
-  const points2 = new Map(data2.points.map((p) => [p.id, p.position]));
+function addPolyhedra2(data, objects, parts, material) {
+  const points = new Map(data.points.map((p2) => [p2.id, p2.position]));
   const polyBase = objects.length;
-  data2.primitives.polyhedra.forEach((poly, index) => {
-    const alpha = data2.materials[poly.material_id].alpha ?? 1;
+  data.primitives.polyhedra.forEach((poly, index) => {
+    const material2 = data.materials[poly.material_id];
     objects.push({
       kind: "polyhedron",
       material: poly.material_id,
-      alpha,
-      outlined: alpha >= 1,
-      centre: points2.get(poly.center_point_id),
+      alpha: material2.alpha,
+      outlined: !isGhost(material2),
+      centre: points.get(poly.center_point_id),
       poly: index
     });
   });
-  for (const group of polyhedronGroups(data2)) {
+  for (const group of polyhedronGroups(data)) {
     const ids = new Float32Array(group.owner.length * 3);
-    group.owner.forEach((p, t) => ids.fill(polyBase + p + 1, t * 3, t * 3 + 3));
-    const geometry = new THREE10.BufferGeometry();
-    geometry.setAttribute("position", new THREE10.Float32BufferAttribute(group.positions, 3));
-    geometry.setAttribute("objectId", new THREE10.BufferAttribute(ids, 1));
+    group.owner.forEach((p2, t2) => {
+      ids.fill(polyBase + p2 + 1, t2 * 3, t2 * 3 + 3);
+    });
+    const geometry = new THREE13.BufferGeometry();
+    geometry.setAttribute("position", new THREE13.Float32BufferAttribute(group.positions, 3));
+    geometry.setAttribute("objectId", new THREE13.BufferAttribute(ids, 1));
     geometry.computeVertexNormals();
-    const mesh = new THREE10.Mesh(geometry, material);
+    const mesh = new THREE13.Mesh(geometry, material);
     mesh.userData = { shape: "polyhedron", role: "solid" };
     parts.meshes.push(mesh);
-    if (group.material && (data2.materials[group.material].alpha ?? 1) >= 1) {
-      const shell = new THREE10.Mesh(geometry, material);
+    if (group.material && !isGhost(data.materials[group.material])) {
+      const shell = new THREE13.Mesh(geometry, material);
       shell.userData = { shape: "polyhedron", role: "shell" };
       parts.shells.push(shell);
     }
   }
 }
-function instanceCentre(matrices, i) {
-  return [matrices[16 * i + 12], matrices[16 * i + 13], matrices[16 * i + 14]];
+function instanceCentre(matrices, i2) {
+  const at = MATRIX_SIZE * i2;
+  return [matrices[at + 12], matrices[at + 13], matrices[at + 14]];
 }
 function instanceSet(group, first, indices, material) {
   const ids = new Float32Array(indices.length);
-  indices.forEach((i, k) => ids[k] = first + i);
-  const matrices = indices.flatMap((i) => group.matrices.slice(16 * i, 16 * i + 16));
+  indices.forEach((i2, k) => {
+    ids[k] = first + i2;
+  });
+  const matrices = indices.flatMap((i2) => group.matrices.slice(MATRIX_SIZE * i2, MATRIX_SIZE * (i2 + 1)));
   const geometry = SHAPES[group.shape]();
-  geometry.setAttribute("objectId", new THREE10.InstancedBufferAttribute(ids, 1));
+  geometry.setAttribute("objectId", new THREE13.InstancedBufferAttribute(ids, 1));
   return instanced(geometry, material, matrices);
 }
 
 // src/trace/passes.ts
-import * as THREE11 from "three";
-var TOON_STEPS2 = 16;
+import * as THREE14 from "three";
 var DEPTH_SCALE = 16777215;
 var ID_VERTEX = `
     attribute float objectId;
@@ -3021,31 +4947,24 @@ var PLAIN_VERTEX = `
       #endif
       gl_Position = projectionMatrix * modelViewMatrix * local;
     }`;
-var FIRST_LIT = Math.ceil((LOOK.threshold + 1) / 2 * TOON_STEPS2);
-var LIT_CUT = 2 * FIRST_LIT / TOON_STEPS2 - 1;
-var FACE_OFFSET_FACTOR2 = 1;
-var FACE_OFFSET_UNITS2 = 1;
+var PASS_SHADERS = {
+  id: { vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, uniforms: () => ({}) },
+  band: {
+    vertexShader: BAND_VERTEX,
+    fragmentShader: BAND_FRAGMENT,
+    uniforms: () => ({ lightDir: { value: new THREE14.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } })
+  },
+  depth: { vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, uniforms: () => ({}) }
+};
 function passMaterial(pass, faces) {
-  const offset = faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR2, polygonOffsetUnits: FACE_OFFSET_UNITS2 } : {};
-  switch (pass) {
-    case "id":
-      return new THREE11.ShaderMaterial({ vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, ...offset });
-    case "band":
-      return new THREE11.ShaderMaterial({
-        vertexShader: BAND_VERTEX,
-        fragmentShader: BAND_FRAGMENT,
-        uniforms: { lightDir: { value: new THREE11.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } },
-        ...offset
-      });
-    case "depth":
-      return new THREE11.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, ...offset });
-  }
+  const { vertexShader, fragmentShader, uniforms } = PASS_SHADERS[pass];
+  return new THREE14.ShaderMaterial({ vertexShader, fragmentShader, uniforms: uniforms(), ...polygonOffsetOf(faces) });
 }
-function idScene(meshes) {
-  const group = new THREE11.Group();
-  group.position.copy(root.position);
+function idScene(meshes, origin) {
+  const group = new THREE14.Group();
+  group.position.copy(origin);
   group.add(...meshes);
-  const scene2 = new THREE11.Scene();
+  const scene2 = new THREE14.Scene();
   scene2.add(group);
   return scene2;
 }
@@ -3061,93 +4980,119 @@ var ZERO_FRAGMENT = `
     void main() {
       gl_FragColor = vec4(0.0);
     }`;
-var shellMaterial = (outlineScale2) => new THREE11.ShaderMaterial({
+var shellMaterial = (outlineScale2) => new THREE14.ShaderMaterial({
   vertexShader: OUTLINE_VERTEX_SHADER,
   fragmentShader: SHELL_FRAGMENT,
-  side: THREE11.BackSide,
+  side: THREE14.BackSide,
   uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale2 } }
 });
-var occluderMaterial = (faces) => new THREE11.ShaderMaterial({
-  vertexShader: PLAIN_VERTEX,
-  fragmentShader: ZERO_FRAGMENT,
-  ...faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR2, polygonOffsetUnits: FACE_OFFSET_UNITS2 } : {}
-});
-function renderPasses(groups, cssWidth, cssHeight, scale, outlineScale2) {
+var occluderMaterial = (faces) => new THREE14.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: ZERO_FRAGMENT, ...polygonOffsetOf(faces) });
+function renderPasses(groups, options) {
   const { meshes, shells, thin, lines } = groups;
+  const { cssWidth, cssHeight, scale, outlineScale: outlineScale2, view: view2 } = options;
+  const { camera: camera2 } = view2;
   const width = cssWidth * scale;
   const height = cssHeight * scale;
   const count2 = width * height;
-  const passes = new Passes(width, height, new Uint32Array(count2), new Float32Array(count2).fill(BACKGROUND_DEPTH), new Uint8Array(count2), new Uint32Array(count2));
+  const passes = new Passes(
+    width,
+    height,
+    new Uint32Array(count2),
+    new Float32Array(count2).fill(BACKGROUND_DEPTH),
+    new Uint8Array(count2),
+    new Uint32Array(count2)
+  );
   const all = [...meshes, ...shells, ...thin, ...lines];
-  const scene2 = idScene(all);
-  const materials = {
-    id: [passMaterial("id", false), passMaterial("id", true)],
-    band: [passMaterial("band", false), passMaterial("band", true)],
-    depth: [passMaterial("depth", false), passMaterial("depth", true)]
+  const scene2 = idScene(all, view2.origin);
+  const used = [];
+  const keep = (material) => {
+    used.push(material);
+    return material;
   };
-  const pick = (pass) => (mesh) => materials[pass][roleOf(mesh).shape === "polyhedron" ? 1 : 0];
-  const maskShell = shellMaterial(outlineScale2);
-  const maskPlain = occluderMaterial(false);
-  const maskFaces = occluderMaterial(true);
-  const maskPick = (mesh) => roleOf(mesh).role === "shell" ? maskShell : roleOf(mesh).shape === "polyhedron" ? maskFaces : maskPlain;
-  const lineIdMaterial = passMaterial("id", false);
-  const linePick = (mesh) => {
-    const role = roleOf(mesh);
-    return role.role === "line" || role.role === "thin" ? lineIdMaterial : role.shape === "polyhedron" ? maskFaces : maskPlain;
+  const solid = (pass) => {
+    const atoms = keep(passMaterial(pass, false));
+    const faces = keep(passMaterial(pass, true));
+    return (mesh) => roleOf(mesh).shape === "polyhedron" ? faces : atoms;
   };
-  const show2 = (pass) => {
-    for (const m of shells) m.visible = pass === "mask";
-    for (const m of [...thin, ...lines]) m.visible = pass === "line";
+  const idSolid = solid("id");
+  const bandSolid = solid("band");
+  const depthSolid = solid("depth");
+  const maskShell = keep(shellMaterial(outlineScale2));
+  const maskPlain = keep(occluderMaterial(false));
+  const maskFaces = keep(occluderMaterial(true));
+  const occluder = (mesh) => roleOf(mesh).shape === "polyhedron" ? maskFaces : maskPlain;
+  const lineIdMaterial = keep(passMaterial("id", false));
+  const PASSES = [
+    { read: "ids", shown: null, materialOf: idSolid },
+    { read: "bands", shown: null, materialOf: bandSolid },
+    { read: "depths", shown: null, materialOf: depthSolid },
+    {
+      read: "masks",
+      shown: "shells",
+      materialOf: (mesh) => roleOf(mesh).role === "shell" ? maskShell : occluder(mesh)
+    },
+    {
+      read: "lineIds",
+      shown: "lines",
+      materialOf: (mesh) => {
+        const { role } = roleOf(mesh);
+        return role === "line" || role === "thin" ? lineIdMaterial : occluder(mesh);
+      }
+    }
+  ];
+  const showOnly = (shown2) => {
+    for (const m2 of shells) m2.visible = shown2 === "shells";
+    for (const m2 of [...thin, ...lines]) m2.visible = shown2 === "lines";
   };
   const tile = renderer.capabilities.maxTextureSize;
-  camera.updateMatrixWorld();
+  camera2.updateMatrixWorld();
   try {
     for (let y0 = 0; y0 < height; y0 += tile) {
       for (let x0 = 0; x0 < width; x0 += tile) {
         const tw = Math.min(tile, width - x0);
         const th = Math.min(tile, height - y0);
-        camera.setViewOffset(width, height, x0, y0, tw, th);
-        show2("id");
-        const ids = readPass(scene2, all, pick("id"), tw, th);
-        show2("band");
-        const bands = readPass(scene2, all, pick("band"), tw, th);
-        show2("depth");
-        const depths = readPass(scene2, all, pick("depth"), tw, th);
-        show2("mask");
-        const masks = readPass(scene2, all, maskPick, tw, th);
-        show2("line");
-        const lineIds = readPass(scene2, all, linePick, tw, th);
-        storeTile(passes, { x0, y0, tw, th, ids, bands, depths, masks, lineIds });
+        camera2.setViewOffset(width, height, x0, y0, tw, th);
+        const reads = {};
+        for (const step of PASSES) {
+          showOnly(step.shown);
+          reads[step.read] = readPass(scene2, camera2, all, step.materialOf, tw, th);
+        }
+        storeTile(passes, { x0, y0, tw, th, ...reads });
       }
     }
   } finally {
     renderer.setRenderTarget(null);
-    camera.clearViewOffset();
-    for (const material of [...Object.values(materials).flat(), maskShell, maskPlain, maskFaces, lineIdMaterial]) material.dispose();
+    camera2.clearViewOffset();
+    for (const material of used) material.dispose();
   }
   return passes;
 }
-function storeTile(out, t) {
-  for (let row = 0; row < t.th; row++) {
-    const topRow = t.th - 1 - row;
-    for (let col = 0; col < t.tw; col++) {
-      const src = (row * t.tw + col) * 4;
-      const dst = (t.y0 + topRow) * out.width + t.x0 + col;
-      out.shell[dst] = t.masks[src] >= CHANNEL_ON ? 1 : 0;
-      out.lineId[dst] = unpack24(t.lineIds, src);
-      const id = unpack24(t.ids, src);
+function storeTile(out, t2) {
+  for (let row = 0; row < t2.th; row++) {
+    const topRow = t2.th - 1 - row;
+    for (let col = 0; col < t2.tw; col++) {
+      const src = (row * t2.tw + col) * 4;
+      const dst = (t2.y0 + topRow) * out.width + t2.x0 + col;
+      out.shell[dst] = t2.masks[src] >= CHANNEL_ON ? 1 : 0;
+      out.lineId[dst] = unpack24(t2.lineIds, src);
+      const id = unpack24(t2.ids, src);
       if (id === 0) continue;
-      out.keys[dst] = t.bands[src] < CHANNEL_ON ? darkKey(id) : litKey(id);
-      out.depth[dst] = unpack24(t.depths, src) / DEPTH_SCALE;
+      out.keys[dst] = t2.bands[src] < CHANNEL_ON ? darkKey(id) : litKey(id);
+      out.depth[dst] = unpack24(t2.depths, src) / DEPTH_SCALE;
     }
   }
 }
-function readPass(scene2, all, materialOf, tw, th) {
+function readPass(scene2, camera2, all, materialOf, tw, th) {
   for (const mesh of all) mesh.material = materialOf(mesh);
-  const target = new THREE11.WebGLRenderTarget(tw, th, { depthBuffer: true, minFilter: THREE11.NearestFilter, magFilter: THREE11.NearestFilter, generateMipmaps: false });
+  const target = new THREE14.WebGLRenderTarget(tw, th, {
+    depthBuffer: true,
+    minFilter: THREE14.NearestFilter,
+    magFilter: THREE14.NearestFilter,
+    generateMipmaps: false
+  });
   try {
     renderer.setRenderTarget(target);
-    renderer.render(scene2, camera);
+    renderer.render(scene2, camera2);
     const pixels = new Uint8Array(tw * th * 4);
     renderer.readRenderTargetPixels(target, 0, 0, tw, th, pixels);
     return pixels;
@@ -3159,1049 +5104,399 @@ function readPass(scene2, all, materialOf, tw, th) {
 function disposeMeshes(meshes) {
   for (const mesh of meshes) mesh.geometry.dispose();
 }
-function projector(width, height) {
-  return (p) => {
-    const ndc = p.clone().add(root.position).applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
+function projector(width, height, view2) {
+  return (p2) => {
+    const { camera: camera2 } = view2;
+    const ndc = p2.clone().add(view2.origin).applyMatrix4(camera2.matrixWorldInverse).applyMatrix4(camera2.projectionMatrix);
     return { x: (ndc.x + 1) / 2 * width, y: (1 - ndc.y) / 2 * height, depth: ndc.z / 2 + 0.5 };
   };
 }
 
-// src/trace/stretch.ts
-var SNAP_TOL_RENDER_PX = 0.6;
-var BAND_OFFSETS_PX = [0.5, 1, 1.5];
-var FLAG_HALF_WINDOW = 3;
-var BACKGROUND = 0;
-function stretchesOf(ring, id, passes, scale) {
-  const labels = fillGaps(ring.map(([x, y]) => labelAt(x, y, id, passes)));
-  if (labels === null) return { stretches: [], whole: false };
-  const css = ring.map(([x, y]) => [x / scale, y / scale]);
-  const ctx = { id, passes, scale };
-  if (labels.every((l) => l === labels[0])) return wholeRing(css, labels[0], ctx);
-  const [pts, rotatedLabels] = rotateToChange(css, labels);
-  return { stretches: splitAtLabelChanges(pts, rotatedLabels, ctx), whole: false };
-}
-function wholeRing(css, label, ctx) {
-  const flags = shellFlags(css, true, ctx);
-  if (flags.every((f) => f === flags[0])) return { stretches: [{ pts: css, label, outlined: flags[0] }], whole: true };
-  return { stretches: cyclicRuns(css, flags, label), whole: false };
-}
-function fillGaps(labels) {
-  const first = labels.find((l) => l !== null);
-  if (first === void 0) return null;
-  let prev = first;
-  return labels.map((l) => {
-    if (l === null) return prev;
-    prev = l;
-    return l;
+// src/trace/triad-trace.ts
+import * as THREE15 from "three";
+var CLIP_PREFIX = "t";
+function traceTriad(o2, view2, scale) {
+  const directions = o2.lattice.map((vector) => {
+    const v2 = vec3(vector);
+    return [v2.dot(view2.right), v2.dot(view2.up), v2.dot(view2.back)];
   });
-}
-function rotateToChange(css, labels) {
-  const start = labels.findIndex((l, i) => l !== labels[(i - 1 + labels.length) % labels.length]);
-  return [[...css.slice(start), ...css.slice(0, start)], [...labels.slice(start), ...labels.slice(0, start)]];
-}
-function splitAtLabelChanges(pts, labels, ctx) {
-  const stretches = [];
-  for (let i = 0; i < pts.length; ) {
-    let j = i;
-    while (j + 1 < pts.length && labels[j + 1] === labels[i]) j++;
-    const span2 = pts.slice(i, j + 1);
-    for (const piece of runsOf(span2, shellFlags(span2, false, ctx))) {
-      stretches.push({ pts: piece.pts, label: labels[i], outlined: piece.outlined });
+  const layout = triadLayout(directions, o2.width, o2.height);
+  const exact = triadCorner(layout, o2.width, o2.height);
+  const corner = { ...exact, width: Math.ceil(exact.width), height: Math.ceil(exact.height) };
+  const top = o2.height - corner.height;
+  const orientation = new THREE15.Quaternion().fromArray(o2.quaternion);
+  const camera2 = new THREE15.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  placeTriadCamera(camera2, orientation, corner, layout.length);
+  const model = triadModel(
+    layout.length,
+    o2.lattice.map((vector) => new THREE15.Vector3(...vector))
+  );
+  const fadeOf = (part) => part.axis === null ? 0 : layout.items.find((item) => item.index === part.axis)?.fade ?? 0;
+  const parts = model.map((part) => ({ part, fade: fadeOf(part) }));
+  const { meshes, shells, dispose } = solidMeshes(model);
+  const pass = { camera: camera2, origin: new THREE15.Vector3() };
+  const passes = renderPasses(
+    { meshes, shells, thin: [], lines: [] },
+    { cssWidth: corner.width, cssHeight: corner.height, scale, outlineScale: o2.outlineScale, view: pass }
+  );
+  const group = triadGroup({
+    passes,
+    project: projector(passes.width, passes.height, pass),
+    view: viewOfCorner(orientation, [corner.originX, corner.height - corner.originY]),
+    scale,
+    parts,
+    outlines: {
+      on: o2.outlines,
+      hex: linearHex(LOOK.outline),
+      width: OUTLINE_THICKNESS * corner.height,
+      scale: o2.outlineScale,
+      // The live triad's shells are plain meshes, so their outline is not capped to the arrow's radius.
+      capped: false
     }
-    i = j + 1;
-  }
-  return stretches;
-}
-function labelAt(x, y, id, passes) {
-  const left = Math.floor(x - 0.5);
-  const top = Math.floor(y - 0.5);
-  let inside = false;
-  const votes = [];
-  for (let dy = 0; dy <= 1; dy++) {
-    for (let dx = 0; dx <= 1; dx++) {
-      const key2 = passes.keyAt(left + dx, top + dy);
-      if (key2 !== 0 && idOf(key2) === id) {
-        inside = true;
-        continue;
-      }
-      votes.push(key2 === 0 ? BACKGROUND : idOf(key2));
-    }
-  }
-  return inside ? mostCommon(votes) : null;
-}
-function mostCommon(values) {
-  const counts = /* @__PURE__ */ new Map();
-  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
-  let best = null;
-  let bestCount = 0;
-  for (const [value, count2] of counts) {
-    if (count2 > bestCount) {
-      best = value;
-      bestCount = count2;
-    }
-  }
-  return best;
-}
-function shellFlags(pts, closed, ctx) {
-  const n = pts.length;
-  const raw = pts.map((p, i) => {
-    const a = closed ? pts[(i - 1 + n) % n] : pts[Math.max(0, i - 1)];
-    const b = closed ? pts[(i + 1) % n] : pts[Math.min(n - 1, i + 1)];
-    const [nx, ny] = outwardNormal(p, a, b, ctx);
-    let hits = 0;
-    for (const d of BAND_OFFSETS_PX) if (shellAt([p[0] + nx * d / ctx.scale, p[1] + ny * d / ctx.scale], ctx)) hits++;
-    return hits * 2 > BAND_OFFSETS_PX.length;
   });
-  return majority(raw, closed);
+  const layers = traceRegions(group);
+  const letters = layout.items.map((item) => letter(item, layout.fontSize, top));
+  dispose();
+  return { node: triadNode(layers, letters, top), paths: layers.paths };
 }
-function outwardNormal(p, a, b, ctx) {
-  const tx = b[0] - a[0];
-  const ty = b[1] - a[1];
-  const len = Math.hypot(tx, ty) || 1;
-  const n = [ty / len, -tx / len];
-  return ownAt([p[0] + n[0] / ctx.scale, p[1] + n[1] / ctx.scale], ctx) ? [-n[0], -n[1]] : n;
-}
-function majority(flags, closed) {
-  const n = flags.length;
-  return flags.map((_, i) => {
-    let count2 = 0;
-    let seen = 0;
-    for (let k = -FLAG_HALF_WINDOW; k <= FLAG_HALF_WINDOW; k++) {
-      const j = closed ? (i + k + n * 2) % n : i + k;
-      if (j < 0 || j >= n) continue;
-      seen++;
-      if (flags[j]) count2++;
-    }
-    return count2 * 2 > seen;
+function solidMeshes(solids2) {
+  const placeholder = new THREE15.MeshBasicMaterial();
+  const meshes = [];
+  const shells = [];
+  solids2.forEach((part, index) => {
+    const geometry = shapeGeometry(part.shape);
+    const count2 = geometry.getAttribute("position").count;
+    geometry.setAttribute("objectId", new THREE15.BufferAttribute(new Float32Array(count2).fill(index + 1), 1));
+    meshes.push(placed(new THREE15.Mesh(geometry, placeholder), part, "solid"));
+    shells.push(placed(new THREE15.Mesh(geometry, placeholder), part, "shell"));
   });
+  const dispose = () => {
+    disposeMeshes([...meshes, ...shells]);
+    placeholder.dispose();
+  };
+  return { meshes, shells, dispose };
 }
-var pixelOf = (p, ctx) => [Math.floor(p[0] * ctx.scale), Math.floor(p[1] * ctx.scale)];
-function ownAt(p, ctx) {
-  const key2 = ctx.passes.keyAt(...pixelOf(p, ctx));
-  return key2 !== 0 && idOf(key2) === ctx.id;
+function placed(mesh, part, role) {
+  mesh.position.copy(part.position);
+  mesh.quaternion.copy(part.quaternion);
+  mesh.userData = { shape: part.shape.kind, role };
+  return mesh;
 }
-function shellAt(p, ctx) {
-  return ctx.passes.shellAt(...pixelOf(p, ctx));
+function triadGroup({ passes, project, view: view2, scale, parts, outlines: outlines2 }) {
+  const objects = parts.map(({ part }) => ({
+    kind: part.shape.kind,
+    material: null,
+    alpha: 1,
+    outlined: true,
+    centre: [part.position.x, part.position.y, part.position.z],
+    matrix: partMatrix(part)
+  }));
+  const index = new Map(objects.map((obj, i2) => [obj, i2]));
+  const rgbOf = parts.map(({ part }) => hexRgb(part.colour));
+  const own = (id) => ownCurves(objects[id - 1], view2);
+  return {
+    scale,
+    objects,
+    passes,
+    stats: objectBoxes(passes, objects.length),
+    view: view2,
+    project,
+    linePass: new LinePass(project, passes, scale),
+    curves: curveLookup(own, () => []),
+    tol: snapTolerance(scale),
+    paint: {
+      rgb: (obj) => rgbOf[index.get(obj)],
+      opacity: (obj) => 1 - parts[index.get(obj)].fade
+    },
+    outlines: outlines2,
+    thin: () => false,
+    edgeLine: () => null,
+    clipPrefix: CLIP_PREFIX
+  };
 }
-function runsOf(pts, flags) {
-  const out = [];
-  if (pts.length < 2) return [{ pts, outlined: flags[0] }];
-  let i = 0;
-  while (i < pts.length - 1) {
-    let j = i + 1;
-    while (j + 1 < pts.length && flags[j + 1] === flags[i]) j++;
-    out.push({ pts: pts.slice(i, j + 1), outlined: flags[i] });
-    i = j;
-  }
-  return out;
+function letter(item, fontSize, top) {
+  const attrs = {
+    x: item.label.x,
+    y: item.label.y - top,
+    fill: LOOK.axisColors[item.index],
+    opacity: 1 - item.fade,
+    "text-anchor": "middle",
+    "dominant-baseline": "central",
+    "font-family": `'${AXIS_FONT.family}', sans-serif`,
+    "font-style": "italic",
+    "font-weight": 700,
+    "font-size": fontSize
+  };
+  return svgEl("text", attrs, [AXIS_LETTERS[item.index]]);
 }
-function cyclicRuns(pts, flags, label) {
-  const n = pts.length;
-  const change = flags.findIndex((f, i) => f !== flags[(i - 1 + n) % n]);
-  const from = change < 0 ? 0 : change;
-  const rotatedPts = [...pts.slice(from), ...pts.slice(0, from), pts[from]];
-  const rotatedFlags = [...flags.slice(from), ...flags.slice(0, from), flags[from]];
-  return runsOf(rotatedPts, rotatedFlags).map((piece) => ({ pts: piece.pts, label, outlined: piece.outlined }));
+function triadNode(layers, letters, top) {
+  return svgEl("g", { id: "triad", "stroke-linecap": "round", transform: `translate(0 ${fmt(top)})` }, [
+    svgEl("defs", {}, layers.clips),
+    ...layers.fills,
+    ...layers.outlines,
+    ...letters
+  ]);
 }
-function ringPaths(stretches, whole, candidates, tol) {
-  if (stretches.length === 0) return { fill: "", outline: "" };
-  if (whole) {
-    const st = stretches[0];
-    const best = bestCurve(candidates(st), st.pts, tol);
-    if (best?.kind === "ellipse") {
-      const d3 = `M${startOf(best.e, st.pts[0])}${fullEllipseArcs(best.e, pointAt(best.e, paramOf(best.e, st.pts[0])))}Z`;
-      return { fill: d3, outline: st.outlined ? d3 : "" };
-    }
-    const d2 = closedPath(st.pts);
-    return { fill: d2, outline: st.outlined ? d2 : "" };
-  }
-  const bests = stretches.map((st) => bestCurve(candidates(st), st.pts, tol));
-  let cur = startOn(bests[0], stretches[0].pts[0]);
-  let d = `M${fmtPt(cur)}`;
-  const pieces = [];
-  stretches.forEach((st, index) => {
-    const start = cur;
-    const piece = pieceFor(st, bests[index], start);
-    cur = piece.end;
-    d += piece.cmd;
-    pieces.push({ start, cmd: piece.cmd, outlined: st.outlined });
-  });
-  d += "Z";
-  return { fill: d, outline: outlineOf2(pieces) };
-}
-function pieceFor(st, best, start) {
-  const last = st.pts[st.pts.length - 1];
-  if (best?.kind === "line") {
-    const end = onLine(best.a, best.b, last);
-    return { cmd: `L${fmtPt(end)}`, end };
-  }
-  if (best?.kind === "ellipse") {
-    const end = pointAt(best.e, paramOf(best.e, last));
-    return { cmd: arcTo(best.e, pointAt(best.e, paramOf(best.e, start)), end, st.pts), end };
-  }
-  return { cmd: fitCommands([start, ...st.pts.slice(1)]), end: last };
-}
-function outlineOf2(pieces) {
-  let out = "";
-  let open = false;
-  for (const p of pieces) {
-    if (!p.outlined) {
-      open = false;
-      continue;
-    }
-    if (!open) out += `M${fmtPt(p.start)}`;
-    out += p.cmd;
-    open = true;
-  }
-  return out;
-}
-function bestCurve(curves, pts, tol) {
-  let best = null;
-  let bestRms = tol;
-  for (const c of curves) {
-    const rms = curveRms(c, pts);
-    if (rms <= bestRms) {
-      best = c;
-      bestRms = rms;
-    }
-  }
-  return best;
-}
-function snapTolerance(scale) {
-  return SNAP_TOL_RENDER_PX / scale;
-}
-function startOn(curve, p) {
-  if (!curve) return p;
-  if (curve.kind === "line") return onLine(curve.a, curve.b, p);
-  return pointAt(curve.e, paramOf(curve.e, p));
-}
-function startOf(e, p) {
-  return fmtPt(pointAt(e, paramOf(e, p)));
+function hexRgb(hex) {
+  return [1, 3, 5].map((i2) => parseInt(hex.slice(i2, i2 + 2), 16) / 255);
 }
 
 // src/trace/traced.ts
 var TRACE_SCALE = 2;
-var SEAM_TRAP_PX = 0.5;
-var SEAM_STROKE_WIDTH = 2 * SEAM_TRAP_PX;
-var THIN_AS_LINE_PX = 3;
 var EDGE_WIDTH = 1;
 var BOX_LINE_WIDTH = 1;
-var SILHOUETTE_SAMPLES = 48;
-var MIN_REGION_PX = 4;
-var MIN_STRIP_PX = 1;
-var MIN_SILHOUETTE_PX = 1;
-var MIN_PERIMETER_PX = 1e-9;
-var Layers = class {
-  clips = [];
-  fills = [];
-  outlines = [];
-  paths = 0;
-  counted(markup) {
-    this.paths++;
-    return markup;
-  }
-};
+var THIN_AS_LINE_PX = 3;
 function buildTracedSvg(options) {
   const started = performance.now();
-  const view = makeView(options);
-  const prepared = prepareScene(options, view);
+  const view2 = makeView(options);
+  const prepared = prepareScene(options, view2);
   try {
     const shown2 = (mesh) => options.show.atoms || roleOf(mesh).shape !== "sphere";
     const { built, lines } = prepared;
+    const pass = { camera: camera.value, origin: root.position };
     const passes = renderPasses(
       { meshes: built.meshes.filter(shown2), shells: built.shells.filter(shown2), thin: built.thin, lines },
-      options.width,
-      options.height,
-      TRACE_SCALE,
-      options.outlineScale
+      {
+        cssWidth: options.width,
+        cssHeight: options.height,
+        scale: TRACE_SCALE,
+        outlineScale: options.outlineScale,
+        view: pass
+      }
     );
-    const frame3 = makeFrame(options, view, prepared, passes);
-    const layers = new Layers();
-    for (const { id, obj } of drawOrder(frame3)) {
-      if (obj.kind !== "polyhedron" && isThin(view, obj)) traceThin(frame3, layers, id, obj);
-      else traceObject(frame3, layers, id, obj);
-    }
-    const text = documentText(frame3, layers);
-    return { text, paths: layers.paths, ms: performance.now() - started };
+    const group = makeGroup(options, view2, prepared, passes, pass);
+    const layers = traceRegions(group);
+    const box = cellBoxMarkup(options, prepared, group.linePass, layers);
+    const triad = traceTriad(options, view2, TRACE_SCALE);
+    const text = documentText(options, layers, box, triad.node);
+    return { text, paths: layers.paths + triad.paths, ms: performance.now() - started };
   } finally {
     disposeMeshes([...prepared.built.meshes, ...prepared.built.shells, ...prepared.built.thin, ...prepared.lines]);
   }
 }
-function prepareScene(options, view) {
-  const built = buildIdMeshes(options.data, passMaterial("id", false), (obj) => !isThin(view, obj));
-  const points2 = new Map(options.data.points.map((p) => [p.id, p.position]));
-  const topologies = new Map(options.data.topologies.map((t) => [t.id, t]));
+function prepareScene(options, view2) {
+  const built = buildIdMeshes(options.data, passMaterial("id", false), (obj) => !isThin(view2, obj));
+  const points = new Map(options.data.points.map((p2) => [p2.id, p2.position]));
+  const topologies = new Map(options.data.topologies.map((t2) => [t2.id, t2]));
   const edgeSpans = [];
   let nextId = built.objects.length + 1;
   built.objects.forEach((obj, index) => {
     if (obj.kind !== "polyhedron") return;
     const poly = options.data.primitives.polyhedra[obj.poly];
-    for (const [a, b] of hardEdges(topologies.get(poly.topology_id), points2)) edgeSpans.push({ owner: index + 1, a, b, id: nextId++ });
+    for (const [a2, b2] of polyhedronEdges(topologies.get(poly.topology_id), points))
+      edgeSpans.push({ owner: index + 1, a: a2, b: b2, id: nextId++ });
   });
   const boxId = nextId;
-  const boxEdges = options.show.box && options.data.cell ? cellEdges(options.data.cell) : [];
-  const edgeLines = lineSet(edgeSpans.map((e) => [e.a, e.b, e.id]));
-  const boxLines = lineSet(boxEdges.map(([a, b]) => [a, b, boxId]));
+  const boxEdges = options.show.box && options.data.cell ? cellEdges(options.data.cell).map(vectorPair) : [];
+  const edgeLines = lineSet(edgeSpans.map((e3) => [e3.a, e3.b, e3.id]));
+  const boxLines = lineSet(boxEdges.map(([a2, b2]) => [a2, b2, boxId]));
   const lines = [edgeLines, boxLines].filter((set) => set.geometry.getAttribute("position").count > 0);
-  return { built, points: points2, topologies, edgeSpans, boxEdges, boxId, lines };
+  return { built, points, topologies, edgeSpans, boxEdges, boxId, lines };
+}
+function polyhedronEdges(topo, points) {
+  return hardEdges(topo, points).map(vectorPair);
+}
+function vectorPair([a2, b2]) {
+  return [vec3(a2), vec3(b2)];
 }
 function lineSet(segments) {
   const positions = new Float32Array(segments.length * 6);
   const ids = new Float32Array(segments.length * 2);
-  segments.forEach(([a, b, id], k) => {
-    positions.set([a.x, a.y, a.z, b.x, b.y, b.z], 6 * k);
+  segments.forEach(([a2, b2, id], k) => {
+    positions.set([a2.x, a2.y, a2.z, b2.x, b2.y, b2.z], 6 * k);
     ids.set([id, id], 2 * k);
   });
-  const geometry = new THREE12.BufferGeometry();
-  geometry.setAttribute("position", new THREE12.BufferAttribute(positions, 3));
-  geometry.setAttribute("objectId", new THREE12.BufferAttribute(ids, 1));
-  const set = new THREE12.LineSegments(geometry, new THREE12.LineBasicMaterial());
+  const geometry = new THREE16.BufferGeometry();
+  geometry.setAttribute("position", new THREE16.BufferAttribute(positions, 3));
+  geometry.setAttribute("objectId", new THREE16.BufferAttribute(ids, 1));
+  const set = new THREE16.LineSegments(geometry, new THREE16.LineBasicMaterial());
   set.userData = { role: "line" };
   return set;
 }
-function makeFrame(options, view, prepared, passes) {
-  const project = projector(passes.width, passes.height);
+function makeGroup(options, view2, prepared, passes, pass) {
+  const project = projector(passes.width, passes.height, pass);
+  const linePass = new LinePass(project, passes, TRACE_SCALE);
+  const edgeHex = srgbHex(LOOK.outline);
+  const edgesOf = /* @__PURE__ */ new Map();
+  for (const span2 of prepared.edgeSpans) {
+    const list = edgesOf.get(span2.owner);
+    if (list) list.push(span2);
+    else edgesOf.set(span2.owner, [span2]);
+  }
   return {
-    options,
-    view,
-    prepared,
+    scale: TRACE_SCALE,
+    objects: prepared.built.objects,
     passes,
     stats: objectBoxes(passes, prepared.built.objects.length),
+    view: view2,
     project,
-    linePass: new LinePass(project, passes, TRACE_SCALE),
-    curves: makeCurveLookup(options, view, prepared),
+    linePass,
+    curves: makeCurveLookup(options, view2, prepared),
     tol: snapTolerance(TRACE_SCALE),
-    edgeHex: srgbHex(LOOK.outline),
-    outlineHex: linearHex(LOOK.outline),
-    // The live view's outline is OUTLINE_THICKNESS of the image height; a centred stroke of half of it shows its visible width.
-    outlineWidth: OUTLINE_THICKNESS * options.height
+    paint: { rgb: (obj) => fillRgb(options, obj), opacity: () => 1 },
+    // The live view's outline is OUTLINE_THICKNESS of the image height; a centred stroke of half of it shows its
+    // visible width.
+    outlines: {
+      on: options.outlines,
+      hex: linearHex(LOOK.outline),
+      width: OUTLINE_THICKNESS * options.height,
+      scale: options.outlineScale,
+      capped: true
+    },
+    thin: (obj) => isThin(view2, obj),
+    edgeLine: (id) => {
+      const d2 = segmentsPath((edgesOf.get(id) ?? []).flatMap((e3) => linePass.spansOf(e3.a, e3.b, e3.id)));
+      return d2 ? svgEl("path", { d: d2, fill: "none", stroke: edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" }) : null;
+    },
+    clipPrefix: "k"
   };
 }
-function drawOrder(f) {
-  return f.prepared.built.objects.map((obj, i) => ({ id: i + 1, nearestDepth: isThin(f.view, obj) ? f.project(vec3(obj.centre)).depth : f.stats.nearest[i + 1], obj })).sort((p, q) => q.nearestDepth - p.nearestDepth);
-}
-function traceObject(f, layers, id, obj) {
-  const box2 = boxOf(f.stats.boxes, id);
-  if (box2.x1 < box2.x0) return;
-  const rgb = fillRgb(f.options, obj);
-  const lit = srgbHex(rgb);
-  const dark = shadedBand(rgb, LOOK.dark);
-  const common = { "fill-rule": "evenodd", ...obj.alpha < 1 ? { "fill-opacity": obj.alpha } : {} };
-  const region = regionFill(f, id, obj, box2);
-  let body = "";
-  if (region.fill) {
-    body += layers.counted(seamTrapped(region.fill, lit, common));
-    layers.clips.push(el("clipPath", { id: `k${id}` }, el("path", { d: region.fill, "clip-rule": "evenodd" })));
-  }
-  const band = darkBandPath(f, id, box2);
-  if (band) body += layers.counted(seamTrapped(band, dark, { ...common, "clip-path": region.fill ? `url(#k${id})` : void 0 }));
-  if (obj.kind === "polyhedron") {
-    const d = polyhedronEdgePath(f, id);
-    if (d) body += layers.counted(el("path", { d, fill: "none", stroke: f.edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" }));
-  }
-  layers.fills.push(el("g", {}, body));
-  if (f.options.outlines && obj.outlined && region.outline) layers.outlines.push(layers.counted(outlineMarkup(f, obj, region.outline)));
-}
-function regionFill(f, id, obj, box2) {
-  const { passes, stats } = f;
-  const regionPx = stats.pixels[id] / (TRACE_SCALE * TRACE_SCALE);
-  let regionRingsOf = regionRings(passes, box2, (k) => idOf(k) === id);
-  let fill = "";
-  if (regionPx < MIN_REGION_PX) {
-    const exact = f.curves.own(id).find((c) => c.kind === "ellipse");
-    const centre2 = f.project(vec3(obj.centre));
-    if (exact && exact.kind === "ellipse" && keyAtCentre(passes, centre2) === id && regionPx >= MIN_SILHOUETTE_PX) {
-      fill = closedPath(silhouettePoints(exact.e));
-    }
-    regionRingsOf = [];
-  } else {
-    regionRingsOf = regionRingsOf.filter((ring) => ringArea(ring, TRACE_SCALE) >= MIN_REGION_PX);
-  }
-  let outline = "";
-  for (const ring of regionRingsOf) {
-    const { stretches, whole } = stretchesOf(ring, id, passes, TRACE_SCALE);
-    const parts = ringPaths(stretches, whole, (st) => f.curves.candidatesFor(id, st), f.tol);
-    fill += parts.fill;
-    outline += parts.outline;
-  }
-  return { fill, outline };
-}
-function darkBandPath(f, id, box2) {
-  const { passes } = f;
-  const rings = regionRings(passes, box2, (k) => k === darkKey(id)).filter((ring) => ringArea(ring, TRACE_SCALE) >= MIN_REGION_PX && ringArea(ring, TRACE_SCALE) / Math.max(ringPerimeter(ring, TRACE_SCALE), MIN_PERIMETER_PX) >= MIN_STRIP_PX);
-  return rings.map((ring) => closedPath(toCss(ring, TRACE_SCALE))).join("");
-}
-function toCss(ring, scale) {
-  return ring.map(([x, y]) => [x / scale, y / scale]);
-}
-function polyhedronEdgePath(f, id) {
-  return segmentsPath(f.prepared.edgeSpans.filter((e) => e.owner === id).flatMap((e) => f.linePass.spansOf(e.a, e.b, e.id)));
-}
-function outlineMarkup(f, obj, d) {
-  const r = radiusPx(f.view, obj);
-  const width = r === null ? f.outlineWidth / 2 : Math.min(f.outlineWidth / 2, 2 * OUTLINE_SIZE_FRACTION * r);
-  const strokeWidth = f.options.outlineScale * width;
-  return el("path", { d, fill: "none", stroke: f.outlineHex, "stroke-width": strokeWidth, "stroke-linejoin": "round" });
-}
 function fillRgb(options, obj) {
-  return obj.material === null ? arrowColor() : colorOf(options, obj.material);
+  const rgb = obj.material === null ? ARROW.color : options.data.materials[obj.material].base_color;
+  return rgb.slice(0, 3);
 }
-function seamTrapped(d, colour, extra) {
-  return el("path", { d, fill: colour, stroke: colour, "stroke-width": SEAM_STROKE_WIDTH, "stroke-linejoin": "round", ...extra });
-}
-function traceThin(f, layers, id, obj) {
-  const lit = srgbHex(fillRgb(f.options, obj));
-  const radius = radiusPx(f.view, obj) ?? 0;
-  const thinSvg = obj.kind === "dot" ? dotMarkup(obj, lit, id, f.linePass, radius) : barMarkup(obj, lit, id, f.linePass, radius);
-  if (thinSvg) layers.fills.push(layers.counted(thinSvg));
-}
-function dotMarkup(obj, lit, id, lines, radius) {
-  const p = lines.project(vec3(obj.centre));
-  if (!onScreen(p)) return "";
-  if (!lines.shows(id, Math.floor(p.x), Math.floor(p.y))) return "";
-  return el("circle", { cx: p.x / lines.scale, cy: p.y / lines.scale, r: radius, fill: lit });
-}
-function barMarkup(obj, lit, id, lines, radius) {
-  const m = obj.matrix;
-  const c = vec3(obj.centre);
-  const axis = new THREE12.Vector3(m[4], m[5], m[6]).multiplyScalar(HALF_AXIS);
-  const d = segmentsPath(lines.spansOf(c.clone().sub(axis), c.clone().add(axis), id));
-  return d ? el("path", { d, fill: "none", stroke: lit, "stroke-width": 2 * radius, "stroke-linecap": "round" }) : "";
-}
-function documentText(f, layers) {
-  const { options, view } = f;
-  const body = `${el("defs", {}, layers.clips.join(""))}
-${layers.fills.join("\n")}
-${cellBoxMarkup(f, layers)}
-${layers.outlines.join("\n")}
-${triadSvg({ o: options, view })}`;
-  const style = textEl("style", {}, axisFontFace(["700"]));
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: options.width, height: options.height, viewBox: `0 0 ${options.width} ${options.height}` }, `
-${style}
-${body}
-`);
-  return `${svg}
+function documentText(options, layers, box, triad) {
+  const svg = svgEl(
+    "svg",
+    { width: options.width, height: options.height, viewBox: `0 0 ${options.width} ${options.height}` },
+    [
+      svgEl("style", {}, [axisFontFace("700")]),
+      svgEl("defs", {}, layers.clips),
+      ...layers.fills,
+      box,
+      ...layers.outlines,
+      triad
+    ]
+  );
+  return `${new XMLSerializer().serializeToString(svg)}
 `;
 }
-function cellBoxMarkup(f, layers) {
-  const { options, prepared } = f;
-  if (!options.show.box || !options.data.cell) return "";
-  const d = segmentsPath(prepared.boxEdges.flatMap(([a, b]) => f.linePass.spansOf(a, b, prepared.boxId)));
-  return d ? layers.counted(el("path", { d, fill: "none", stroke: options.boxColor, "stroke-width": BOX_LINE_WIDTH })) : "";
+function cellBoxMarkup(options, prepared, linePass, layers) {
+  if (!options.show.box || !options.data.cell) return null;
+  const d2 = segmentsPath(prepared.boxEdges.flatMap(([a2, b2]) => linePass.spansOf(a2, b2, prepared.boxId)));
+  return d2 ? layers.counted(svgEl("path", { d: d2, fill: "none", stroke: options.boxColor, "stroke-width": BOX_LINE_WIDTH })) : null;
 }
-function makeCurveLookup(options, view, prepared) {
-  const screen = screenOf(view);
-  const { built, points: points2 } = prepared;
-  const own2 = memo((id) => {
+function makeCurveLookup(options, view2, prepared) {
+  const screen = screenOf(view2);
+  const { built, points } = prepared;
+  const own = (id) => {
     const obj = built.objects[id - 1];
-    if (obj.kind === "polyhedron") return edgeCurves(hardEdges(topologyOf(options, prepared, obj.poly), points2), screen);
-    if (obj.kind === "sphere" || obj.kind === "dot") return sphereCurves(view, vec3(obj.centre), obj.matrix[0]);
-    if (obj.kind === "cylinder") return cylinderCurves(obj.matrix, screen);
-    return [];
-  });
+    if (obj.kind === "polyhedron")
+      return edgeCurves(polyhedronEdges(topologyOf(options, prepared, obj.poly), points), screen);
+    return ownCurves(obj, view2);
+  };
   const facesOf = memo((poly) => {
     const topo = topologyOf(options, prepared, poly);
-    return topo.faces.map(([i, j, k]) => [i, j, k].map((q) => vec3(points2.get(topo.point_ids[q]))));
+    return topo.faces.map(([i2, j2, k]) => [i2, j2, k].map((q) => vec3(points.get(topo.point_ids[q]))));
   });
   const sectionOfFace = (poly, other, mid) => {
     const face = nearestFace(facesOf(poly.poly), mid, screen);
     return face ? sectionCurves(other, face, screen) : [];
   };
   const crossing = (id, label, mid) => {
-    const a = built.objects[id - 1];
-    const b = built.objects[label - 1];
-    if (a.kind === "polyhedron" && b.kind !== "polyhedron") return sectionOfFace(a, b, mid);
-    if (b.kind === "polyhedron" && a.kind !== "polyhedron") return sectionOfFace(b, a, mid);
+    const a2 = built.objects[id - 1];
+    const b2 = built.objects[label - 1];
+    if (a2.kind === "polyhedron" && b2.kind !== "polyhedron") return sectionOfFace(a2, b2, mid);
+    if (b2.kind === "polyhedron" && a2.kind !== "polyhedron") return sectionOfFace(b2, a2, mid);
     return [];
   };
-  const candidatesFor = (id, st) => {
-    if (st.label <= 0) return own2(id);
-    const mid = st.pts[Math.floor(st.pts.length / 2)];
-    return [...own2(id), ...own2(st.label), ...crossing(id, st.label, mid)];
-  };
-  return { own: own2, candidatesFor };
+  return curveLookup(own, crossing);
 }
 function sectionCurves(other, face, screen) {
   if (other.kind === "sphere" || other.kind === "dot") {
-    const c = sectionCurve(vec3(other.centre), other.matrix[0], face, screen);
-    return c ? [c] : [];
+    const c2 = sectionCurve(vec3(other.centre), other.matrix[0], face, screen);
+    return c2 ? [c2] : [];
   }
   if (other.kind === "cylinder") {
-    const c = cylinderSectionCurve(other.matrix, face, screen);
-    return c ? [c] : [];
+    const c2 = cylinderSectionCurve(other.matrix, face, screen);
+    return c2 ? [c2] : [];
   }
   return [];
 }
 function topologyOf(options, prepared, poly) {
   return prepared.topologies.get(options.data.primitives.polyhedra[poly].topology_id);
 }
-function memo(compute) {
-  const cache = /* @__PURE__ */ new Map();
-  return (key2) => {
-    if (!cache.has(key2)) cache.set(key2, compute(key2));
-    return cache.get(key2);
+function isThin(view2, obj) {
+  return (obj.kind === "cylinder" || obj.kind === "dot") && (radiusPx(view2, obj) ?? Infinity) * 2 < THIN_AS_LINE_PX;
+}
+
+// src/export/settings.ts
+var EXPORT_LONG_SIDE = 1600;
+function exportView(view2) {
+  const { quaternion, zoom: zoom2, target, centre, box, width, height } = view2;
+  return {
+    projection: view2.projection ?? "ortho",
+    lens: view2.projection === "persp" ? view2.lens : void 0,
+    direction: applyQuaternion(quaternion, [0, 0, 1]).map((x2) => roundTo(x2, 4)),
+    up: applyQuaternion(quaternion, [0, 1, 0]).map((x2) => roundTo(x2, 4)),
+    zoom: roundTo(zoom2, 3),
+    target: target.map((t2, i2) => roundTo(t2 + centre[i2], 4)),
+    cellBox: Boolean(box),
+    resolution: resolutionFor(width, height)
   };
 }
-function screenOf(view) {
-  return (p) => {
-    const s = view.toScreen(view.toCam(p));
-    return [s.x, s.y];
+function settingsObject(view2) {
+  return {
+    look: { preset: "3to2d" },
+    camera: {
+      projection: view2.projection,
+      ...view2.lens === void 0 ? {} : { lens: view2.lens },
+      direction: view2.direction,
+      up: view2.up,
+      zoom: view2.zoom,
+      target: view2.target
+    },
+    cell_box: { show: view2.cellBox },
+    quality: { resolution: view2.resolution }
   };
 }
-function silhouettePoints(e) {
-  return Array.from({ length: SILHOUETTE_SAMPLES }, (_, i) => pointAt(e, 2 * Math.PI * i / SILHOUETTE_SAMPLES));
+var settingsJson = (view2) => `${JSON.stringify(settingsObject(view2), null, 2)}
+`;
+function settingsToml(view2) {
+  return Object.entries(settingsObject(view2)).map(
+    ([table, keys]) => `[${table}]
+${Object.entries(keys).map(([k, v2]) => `${k} = ${tomlValue(v2)}`).join("\n")}
+`
+  ).join("\n");
 }
-function radiusPx(view, obj) {
-  if (obj.kind === "polyhedron") return null;
-  const m = obj.matrix;
-  const unit = obj.kind === "cylinder" ? Math.hypot(m[0], m[1], m[2]) : obj.kind === "sphere" || obj.kind === "dot" ? m[0] : null;
-  return unit === null ? null : unit * view.pxPerUnit(view.toCam(vec3(obj.centre)));
+function renderCommand(view2, sceneFile) {
+  const [w2, h2] = view2.resolution;
+  return [
+    "gemmy render",
+    "--scene",
+    shellWord(sceneFile),
+    "--look.preset 3to2d",
+    `--camera.projection ${view2.projection}`,
+    ...view2.lens === void 0 ? [] : [`--camera.lens ${view2.lens}`],
+    `--camera.direction ${view2.direction.join(" ")}`,
+    `--camera.up ${view2.up.join(" ")}`,
+    `--camera.zoom ${view2.zoom}`,
+    `--camera.target ${view2.target.join(" ")}`,
+    `--cell-box.show ${view2.cellBox ? "True" : "False"}`,
+    `--quality.resolution ${w2} ${h2}`,
+    "--out view.png"
+  ].join(" ");
 }
-function isThin(view, obj) {
-  return (obj.kind === "cylinder" || obj.kind === "dot") && (radiusPx(view, obj) ?? Infinity) * 2 < THIN_AS_LINE_PX;
+function resolutionFor(width, height) {
+  const scale = EXPORT_LONG_SIDE / Math.max(width, height);
+  return [Math.round(width * scale), Math.round(height * scale)];
 }
-
-// src/ui/theme.ts
-var THEME_KEY = "gemmy.theme";
-var THEME_CHOICES = ["auto", "light", "dark"];
-var AUTO = "auto";
-var THEME_ATTRIBUTE = "data-theme";
-function isThemeChoice(value) {
-  return THEME_CHOICES.some((choice) => choice === value);
-}
-var listeners = [];
-function onThemeChange(listener) {
-  listeners.push(listener);
-}
-function readStoredChoice() {
-  try {
-    const value = localStorage.getItem(THEME_KEY);
-    return isThemeChoice(value) ? value : AUTO;
-  } catch {
-    return AUTO;
-  }
-}
-function storeTheme(choice) {
-  try {
-    localStorage.setItem(THEME_KEY, choice);
-  } catch {
-  }
-}
-function applyToPage(choice) {
-  if (choice === AUTO) document.documentElement.removeAttribute(THEME_ATTRIBUTE);
-  else document.documentElement.setAttribute(THEME_ATTRIBUTE, choice);
-}
-var current2 = readStoredChoice();
-applyToPage(current2);
-function currentTheme() {
-  return current2;
-}
-function setTheme(choice) {
-  current2 = choice;
-  storeTheme(choice);
-  applyToPage(choice);
-  for (const listener of listeners) listener(choice);
-}
-function cycleTheme() {
-  const next = (THEME_CHOICES.indexOf(current2) + 1) % THEME_CHOICES.length;
-  setTheme(THEME_CHOICES[next]);
-}
-
-// src/ui/outline-scale.ts
-var OUTLINE_SCALE_KEY = "gemmy.outline-scale";
-var OUTLINE_SCALE_CHOICES = [0.5, 1, 1.75];
-var DEFAULT_SCALE = 1;
-function isOutlineScale(value) {
-  return OUTLINE_SCALE_CHOICES.some((choice) => choice === value);
-}
-function readStoredScale() {
-  try {
-    const value = Number(localStorage.getItem(OUTLINE_SCALE_KEY));
-    return isOutlineScale(value) ? value : DEFAULT_SCALE;
-  } catch {
-    return DEFAULT_SCALE;
-  }
-}
-function storeScale(scale) {
-  try {
-    localStorage.setItem(OUTLINE_SCALE_KEY, String(scale));
-  } catch {
-  }
-}
-var listeners2 = [];
-function onOutlineScaleChange(listener) {
-  listeners2.push(listener);
-}
-var current3 = readStoredScale();
-setOutlineScale(current3);
-function outlineScale() {
-  return current3;
-}
-function chooseOutlineScale(scale) {
-  current3 = scale;
-  storeScale(scale);
-  setOutlineScale(scale);
-  requestRender();
-  for (const listener of listeners2) listener(scale);
-}
-
-// src/scene/read.ts
-var SCENE_FILE = /\.json(\.gz)?$/i;
-var MEGABYTE = 1024 * 1024;
-var MAX_SCENE_BYTES = 200 * MEGABYTE;
-var GZIP_FIRST_BYTE = 31;
-var GZIP_SECOND_BYTE = 139;
-var SceneError = class extends Error {
+var roundTo = (x2, digits) => {
+  const scale = 10 ** digits;
+  return Math.round(x2 * scale) / scale || 0;
 };
-var messageOf = (error) => error instanceof Error ? error.message : String(error);
-var isObject = (value) => typeof value === "object" && value !== null;
-function isGzip(bytes) {
-  return bytes[0] === GZIP_FIRST_BYTE && bytes[1] === GZIP_SECOND_BYTE;
-}
-async function readCapped(stream, what) {
-  const reader = stream.getReader();
-  const chunks = [];
-  let total = 0;
-  for (; ; ) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > MAX_SCENE_BYTES) {
-      await reader.cancel();
-      throw new SceneError(`${what} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
-    }
-    chunks.push(value);
-  }
-  const all = new Uint8Array(total);
-  let at = 0;
-  for (const chunk of chunks) {
-    all.set(chunk, at);
-    at += chunk.byteLength;
-  }
-  return all;
-}
-async function sceneText(bytes) {
-  if (!isGzip(bytes)) return new TextDecoder().decode(bytes);
-  let plain;
-  try {
-    const unzipped = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-    plain = await readCapped(unzipped, "The decompressed scene");
-  } catch (error) {
-    if (error instanceof SceneError) throw error;
-    throw new SceneError(`The gzip data could not be read: ${messageOf(error)}`);
-  }
-  return new TextDecoder().decode(plain);
-}
-async function sceneFromBytes(bytes) {
-  return parseScene(await sceneText(bytes));
-}
-async function sceneFromFile(file) {
-  if (!SCENE_FILE.test(file.name)) throw new SceneError(`${file.name} is not a .json or .json.gz scene file.`);
-  if (file.size > MAX_SCENE_BYTES) throw new SceneError(`${file.name} is larger than ${MAX_SCENE_BYTES / MEGABYTE} MB.`);
-  return sceneFromBytes(new Uint8Array(await file.arrayBuffer()));
-}
-function parseScene(text) {
-  let value;
-  try {
-    value = JSON.parse(text);
-  } catch (error) {
-    throw new SceneError(`The scene is not valid JSON: ${messageOf(error)}`);
-  }
-  return checkScene(value);
-}
-function checkScene(value) {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new SceneError("The JSON is not a gemmy scene (it is not an object).");
-  }
-  const { schema_version: version } = value;
-  if (version !== GEMMY.sceneSchemaVersion) {
-    throw new SceneError(
-      `This scene has schema_version ${String(version)}; this viewer reads version ${GEMMY.sceneSchemaVersion}. Compile it again with this gemmy.`
-    );
-  }
-  const doc = value;
-  if (!Array.isArray(doc.points) || !isObject(doc.primitives) || !isObject(doc.materials)) {
-    throw new SceneError("The JSON has a schema_version but no points, primitives and materials: it is not a gemmy scene.");
-  }
-  return doc;
-}
+var tomlValue = (v2) => Array.isArray(v2) ? `[${v2.map(tomlValue).join(", ")}]` : JSON.stringify(v2);
+var shellWord = (text) => /^[\w@%+=:,./-]+$/.test(text) ? text : `'${text.replace(/'/g, "'\\''")}'`;
 
-// src/scene/gist.ts
-function pickGistFile(files, wanted) {
-  const all = Object.values(files);
-  if (wanted !== null) {
-    const named = all.find((file) => file.filename === wanted);
-    if (!named) throw new Error(`The gist has no file named "${wanted}".`);
-    return named;
-  }
-  const scene2 = all.find((file) => SCENE_FILE.test(file.filename));
-  if (!scene2) throw new Error("The gist has no .json or .json.gz file.");
-  return scene2;
-}
-
-// src/scene/source.ts
-var SCENE_PARAM = "scene";
-var GIST_PARAM = "gist";
-var FILE_PARAM = "file";
-var GIST_ID = /^[A-Za-z0-9]+$/;
-var WEB_PROTOCOLS = ["http:", "https:"];
-var SourceError = class extends Error {
-};
-function parseSources(search, base) {
-  const query = new URLSearchParams(search);
-  const urls = query.getAll(SCENE_PARAM);
-  const gist = query.get(GIST_PARAM);
-  if (gist !== null && urls.length > 0) throw new SourceError("Give scene= or gist=, not both.");
-  if (gist !== null) {
-    if (!GIST_ID.test(gist)) throw new SourceError(`gist= should be a gist id (letters and digits), got "${gist}".`);
-    return [{ kind: "gist", id: gist, file: query.get(FILE_PARAM) || null }];
-  }
-  return urls.map((value) => ({ kind: "url", url: resolveWebUrl(value, base) }));
-}
-function resolveWebUrl(value, base) {
-  if (value.trim() === "") throw new SourceError("scene= needs a URL.");
-  let url;
-  try {
-    url = new URL(value.trim(), base);
-  } catch {
-    throw new SourceError(`"${value}" is not a URL.`);
-  }
-  if (!WEB_PROTOCOLS.includes(url.protocol)) throw new SourceError(`Only http and https scene URLs can be opened, not "${value}".`);
-  return url.href;
-}
-function pathSegments(url) {
-  return new URL(url).pathname.split("/").filter(Boolean).map((segment) => {
-    try {
-      return decodeURIComponent(segment);
-    } catch {
-      return segment;
-    }
-  });
-}
-function sourcesToOpen(search, base, defaults) {
-  const sources = parseSources(search, base);
-  if (sources.length > 0) return sources.map((source) => ({ source, byDefault: false }));
-  return defaults.map((scene2) => ({ source: { kind: "url", url: resolveWebUrl(scene2, base) }, byDefault: true }));
-}
-function linkFor(source, byDefault, pageHref) {
-  const link = new URL(pageHref);
-  link.hash = "";
-  const query = byDefault ? {} : source.kind === "gist" ? { gist: source.id, ...source.file === null ? {} : { file: source.file } } : { scene: source.url };
-  link.search = new URLSearchParams(query).toString();
-  return link.href;
-}
-function sceneName(source) {
-  if (source.kind === "gist") return source.file ?? `gist ${source.id}`;
-  const segments = pathSegments(source.url);
-  const stem = (segments.at(-1) ?? source.url).replace(SCENE_FILE, "");
-  return stem === "scene" ? segments.at(-2) ?? stem : stem;
-}
-
-// src/scene/fetch.ts
-var GIST_API = "https://api.github.com/gists/";
-var GIST_ACCEPT = "application/vnd.github+json";
-async function get(url, accept) {
-  let response;
-  try {
-    response = await fetch(url, { headers: accept ? { Accept: accept } : {}, referrerPolicy: "no-referrer" });
-  } catch {
-    throw new SceneError(`Could not fetch ${url}: the network failed, or the server does not allow this page to read it (CORS).`);
-  }
-  if (!response.ok) {
-    const status = [response.status, response.statusText].filter(Boolean).join(" ");
-    throw new SceneError(`The server answered ${status} for ${url}.`);
-  }
-  return response;
-}
-async function fetchScene(url) {
-  const response = await get(url);
-  if (!response.body) throw new SceneError(`${url} sent no data.`);
-  return sceneFromBytes(await readCapped(response.body, `The scene at ${url}`));
-}
-async function fetchGist(id, file) {
-  const response = await get(GIST_API + encodeURIComponent(id), GIST_ACCEPT);
-  let gist;
-  try {
-    gist = await response.json();
-  } catch {
-    throw new SceneError(`GitHub sent no gist data for ${id}.`);
-  }
-  const picked = pickGistFile(gist.files ?? {}, file);
-  const raw = resolveWebUrl(picked.raw_url, GIST_API);
-  return { name: picked.filename, doc: await fetchScene(raw) };
-}
-
-// src/ui/overflow.ts
-var EDGE_SLACK_PX = 2;
-var watched = /* @__PURE__ */ new Set();
-function markOverflow(el2) {
-  const { scrollLeft, scrollWidth, clientWidth } = el2;
-  el2.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
-  el2.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
-}
-function watchOverflow(el2) {
-  if (!watched.has(el2)) {
-    watched.add(el2);
-    el2.addEventListener("scroll", () => markOverflow(el2), { passive: true });
-  }
-  markOverflow(el2);
-}
-window.addEventListener("resize", () => watched.forEach(markOverflow));
-
-// src/ui/tab-model.ts
-function tabsOf(tabs2, current4 = 0) {
-  return { tabs: tabs2, current: current4 };
-}
-function addTab(list, tab) {
-  return { tabs: [...list.tabs, tab], current: list.tabs.length };
-}
-function chooseTab(list, k) {
-  return k >= 0 && k < list.tabs.length ? { tabs: list.tabs, current: k } : list;
-}
-function closeTab(list, k) {
-  if (list.tabs.length < 2 || k < 0 || k >= list.tabs.length) return list;
-  const tabs2 = list.tabs.filter((_, j) => j !== k);
-  if (k === list.current) return { tabs: tabs2, current: Math.max(0, k - 1) };
-  return { tabs: tabs2, current: k < list.current ? list.current - 1 : list.current };
-}
-function uniqueLabel(label, taken) {
-  if (!taken.includes(label)) return label;
-  let n = 2;
-  while (taken.includes(`${label} (${n})`)) n += 1;
-  return `${label} (${n})`;
-}
-
-// src/ui/loader.ts
-var empty = byId("empty");
-var emptyStatus = byId("empty-status");
-var emptyError = byId("empty-error");
-var urlForm = byId("empty-url");
-var urlInput = byId("scene-url");
-var fileInput = byId("scene-file");
-var closeButton = byId("empty-close");
-var messageOf2 = (error) => error instanceof Error ? error.message : String(error);
-var sceneOpen = false;
-var showScene = () => {
-};
-var tabs = tabsOf([]);
-var bar = null;
-var ownLink = null;
-function showCard() {
-  empty.hidden = false;
-  closeButton.hidden = !sceneOpen;
-  document.body.classList.add("no-scene");
-}
-function hideCard() {
-  empty.hidden = true;
-  emptyStatus.textContent = "";
-  emptyError.hidden = true;
-  document.body.classList.remove("no-scene");
-}
-function busy(text) {
-  showCard();
-  emptyError.hidden = true;
-  emptyStatus.textContent = text;
-}
-function fail(text) {
-  showCard();
-  emptyStatus.textContent = "";
-  emptyError.textContent = text;
-  emptyError.hidden = false;
-}
-function labelOf(source) {
-  return source.kind === "gist" ? `gist ${source.id}` : source.url;
-}
-async function loadSource(source, byDefault) {
-  const link = linkFor(source, byDefault, location.href);
-  if (source.kind === "gist") {
-    const { name, doc } = await fetchGist(source.id, source.file);
-    return { doc, name, from: labelOf(source), link };
-  }
-  return { doc: await fetchScene(source.url), name: sceneName(source), from: source.url, link };
-}
-async function readFile(file) {
-  return { doc: await sceneFromFile(file), name: file.name, from: "local file", link: null };
-}
-async function present(what, loading, show2) {
-  busy(`Loading ${what}\u2026`);
-  try {
-    show2(await loading());
-    sceneOpen = true;
-    hideCard();
-  } catch (error) {
-    fail(`Could not load ${what}: ${messageOf2(error)}`);
-  }
-}
-function tabFor(label, what, local2, load2) {
-  return { label, what, local: local2, load: load2, loaded: null };
-}
-function loadOnce(tab) {
-  tab.loaded ??= tab.load().catch((error) => {
-    tab.loaded = null;
-    throw error;
-  });
-  return tab.loaded;
-}
-function showCurrent() {
-  const tab = tabs.tabs[tabs.current];
-  return present(tab.what, () => loadOnce(tab), showScene);
-}
-function choose(k) {
-  tabs = chooseTab(tabs, k);
-  renderBar();
-  return showCurrent();
-}
-function closeAt(k) {
-  const wasCurrent = k === tabs.current;
-  tabs = closeTab(tabs, k);
-  renderBar();
-  return wasCurrent ? showCurrent() : Promise.resolve();
-}
-function renderBar() {
-  const strip = bar;
-  if (strip === null) return;
-  strip.querySelectorAll(".local-tab").forEach((element) => element.remove());
-  tabs.tabs.forEach((tab, k) => {
-    if (k !== 0 || ownLink === null) strip.appendChild(tabElement(tab, k));
-  });
-  if (ownLink !== null) {
-    if (tabs.current === 0) ownLink.setAttribute("aria-current", "page");
-    else ownLink.removeAttribute("aria-current");
-  }
-  watchOverflow(strip);
-  strip.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
-}
-function tabElement(tab, k) {
-  const wrap = document.createElement("span");
-  wrap.className = "local-tab";
-  const choice = document.createElement("button");
-  choice.type = "button";
-  choice.textContent = tab.label;
-  if (k === tabs.current) choice.setAttribute("aria-current", "page");
-  choice.addEventListener("click", () => void choose(k));
-  wrap.appendChild(choice);
-  if (tab.local && tabs.tabs.length > 1) wrap.appendChild(tabCloseButton(tab, k));
-  return wrap;
-}
-var CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
-function tabCloseButton(tab, k) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "tab-close";
-  button.title = `Close ${tab.label}`;
-  button.setAttribute("aria-label", `Close ${tab.label}`);
-  button.innerHTML = CLOSE_ICON;
-  button.addEventListener("click", () => void closeAt(k));
-  return button;
-}
-function ensureBar() {
-  if (bar !== null) return;
-  const built = document.querySelector(".tabs");
-  if (built) {
-    bar = built;
-    ownLink = built.querySelector('a[aria-current="page"]');
-    ownLink?.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (tabs.current !== 0) void choose(0);
-    });
-    return;
-  }
-  const nav = document.createElement("nav");
-  nav.className = "tabs";
-  nav.setAttribute("aria-label", "Scenes");
-  byId("menu-island").insertBefore(nav, document.querySelector(".name"));
-  bar = nav;
-}
-function addFiles(files) {
-  if (files.length === 0) return;
-  ensureBar();
-  for (const file of files) {
-    const label = uniqueLabel(file.name, tabs.tabs.map((tab) => tab.label));
-    tabs = addTab(tabs, tabFor(label, file.name, true, () => readFile(file)));
-  }
-  void choose(tabs.tabs.length - 1);
-}
-function defaultScenes() {
-  return [...document.querySelectorAll('meta[name="gemmy-default-scene"]')].map((meta) => meta.content).filter((scene2) => scene2 !== "");
-}
-function startLoader(open) {
-  showScene = open;
-  let openings;
-  try {
-    openings = sourcesToOpen(location.search, location.href, defaultScenes());
-  } catch (error) {
-    fail(messageOf2(error));
-    return;
-  }
-  if (openings.length === 0) {
-    showCard();
-    return;
-  }
-  tabs = tabsOf(openings.map(({ source, byDefault }) => tabFor(sceneName(source), labelOf(source), false, () => loadSource(source, byDefault))));
-  if (tabs.tabs.length > 1) ensureBar();
-  void choose(0);
-}
-function showUrlForm() {
-  showCard();
-  urlInput.focus();
-}
-function closeUrlForm() {
-  if (empty.hidden || !sceneOpen) return false;
-  hideCard();
-  return true;
-}
-function attachOpeners(open, own2) {
-  showScene = open;
-  if (own2) tabs = tabsOf([tabFor(own2.label, own2.label, false, own2.load)]);
-  closeButton.addEventListener("click", () => closeUrlForm());
-  window.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    document.body.classList.add("dragging");
-  });
-  window.addEventListener("dragleave", (event) => {
-    if (event.relatedTarget === null) document.body.classList.remove("dragging");
-  });
-  window.addEventListener("drop", (event) => {
-    event.preventDefault();
-    document.body.classList.remove("dragging");
-    addFiles(Array.from(event.dataTransfer?.files ?? []));
-  });
-  fileInput.addEventListener("change", () => {
-    const files = Array.from(fileInput.files ?? []);
-    fileInput.value = "";
-    addFiles(files);
-  });
-  byId("open-scene").addEventListener("click", () => fileInput.click());
-  byId("empty-open").addEventListener("click", () => fileInput.click());
-  urlForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    try {
-      const url = resolveWebUrl(urlInput.value, location.href);
-      location.search = new URLSearchParams({ scene: url }).toString();
-    } catch (error) {
-      fail(messageOf2(error));
-    }
-  });
-}
-
-// src/ui/menus.ts
+// src/ui/export.ts
 var PNG_SCALE = 2;
 var KB = 1024;
 var DOWNLOAD_REVOKE_MS = 1e4;
 var DEFAULT_SCENE_FILE = "scene.json";
-function projectionName() {
-  return isPersp() ? "persp" : "ortho";
-}
 var currentView = () => exportView({
-  quaternion: camera.quaternion.toArray(),
-  zoom: currentZoom(),
-  target: controls.target.toArray(),
-  centre,
-  box: show.box,
-  width: stage.clientWidth,
-  height: stage.clientHeight,
-  projection: projectionName(),
-  lens
+  ...pageCamera(),
+  centre: loaded.value.centre,
+  box: showBox.value
 });
 var exportStatus = byId("export-status");
 function say(text, failed = false) {
@@ -4241,22 +5536,23 @@ function copyText(text, what) {
   }
 }
 function exportPng(transparent) {
-  const w = stage.clientWidth, h = stage.clientHeight, ratio = renderer.getPixelRatio();
+  const w2 = stage.clientWidth, h2 = stage.clientHeight, ratio = renderer.getPixelRatio();
   renderer.setPixelRatio(PNG_SCALE);
-  renderer.setSize(w, h);
-  renderer.render(scene, camera);
+  renderer.setSize(w2, h2);
+  renderer.render(scene, camera.value);
+  renderTriad(transparent);
   const out = document.createElement("canvas");
-  out.width = w * PNG_SCALE;
-  out.height = h * PNG_SCALE;
+  out.width = w2 * PNG_SCALE;
+  out.height = h2 * PNG_SCALE;
   const ctx = out.getContext("2d");
   if (!transparent) {
     ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
     ctx.fillRect(0, 0, out.width, out.height);
   }
   ctx.drawImage(renderer.domElement, 0, 0);
-  ctx.drawImage(triadAt(PNG_SCALE), 0, 0);
+  ctx.drawImage(triadAt(PNG_SCALE, transparent), 0, 0);
   renderer.setPixelRatio(ratio);
-  renderer.setSize(w, h);
+  renderer.setSize(w2, h2);
   requestRender();
   out.toBlob((blob) => {
     if (blob) {
@@ -4267,30 +5563,29 @@ function exportPng(transparent) {
     }
   }, "image/png");
 }
-function triadAt(scale) {
+function triadAt(scale, transparent) {
   const canvas = document.createElement("canvas");
-  drawTriad(canvas, canvas.getContext("2d"), scale);
+  drawTriad(canvas, canvas.getContext("2d"), scale, transparent);
   return canvas;
 }
 function exportSvg() {
+  const { data } = loaded.value;
+  if (!data) {
+    say("Load a scene first: there is no scene on show to export.", true);
+    return;
+  }
   const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
   let result;
   try {
     result = buildTracedSvg({
       data,
-      centre,
-      extent,
-      quaternion: camera.quaternion.toArray(),
-      zoom: currentZoom(),
-      target: controls.target.toArray(),
-      projection: projectionName(),
-      lens,
-      width: stage.clientWidth,
-      height: stage.clientHeight,
-      show,
-      outlines,
-      outlineScale: outlineScale(),
-      lattice: lattice.map((v) => v.toArray()),
+      centre: loaded.value.centre,
+      extent: loaded.value.extent,
+      ...pageCamera(),
+      show: { atoms: showAtoms.value, box: showBox.value },
+      outlines: outlines.value,
+      outlineScale: outlineScale.value,
+      lattice: loaded.value.lattice.map((v2) => v2.toArray()),
       boxColor
     });
   } catch (error) {
@@ -4304,191 +5599,159 @@ function exportSvg() {
     say("Saved view.svg, but nothing in this view is visible: the file has no shapes.", true);
     return;
   }
-  say(`Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`);
+  say(
+    `Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`
+  );
 }
-var EXPORTS = {
-  svg: exportSvg,
-  png: () => exportPng(byId("png-transparent").checked),
-  "save-toml": () => saveFile("render-settings.toml", "application/toml", settingsToml(currentView())),
-  "save-json": () => saveFile("render-settings.json", "application/json", settingsJson(currentView())),
-  "copy-toml": () => copyText(settingsToml(currentView()), "the TOML settings"),
-  "copy-json": () => copyText(settingsJson(currentView()), "the JSON settings"),
-  "copy-command": () => copyText(renderCommand(currentView(), sceneFileName()), "the command")
-};
 function sceneFileName() {
   const meta = document.querySelector('meta[name="gemmy-scene-file"]');
   return meta?.content || DEFAULT_SCENE_FILE;
 }
+var EXPORTS = /* @__PURE__ */ new Map([
+  ["svg", exportSvg],
+  ["png", () => exportPng(byId("png-transparent").checked)],
+  ["save-toml", () => saveFile("render-settings.toml", "application/toml", settingsToml(currentView()))],
+  ["save-json", () => saveFile("render-settings.json", "application/json", settingsJson(currentView()))],
+  ["copy-toml", () => copyText(settingsToml(currentView()), "the TOML settings")],
+  ["copy-json", () => copyText(settingsJson(currentView()), "the JSON settings")],
+  ["copy-command", () => copyText(renderCommand(currentView(), sceneFileName()), "the command")]
+]);
+function registerExport(name, run) {
+  EXPORTS.set(name, run);
+}
+function runExport(name, item) {
+  EXPORTS.get(name ?? "")?.(item);
+}
+
+// src/ui/menus.ts
 var POPOVER_GAP_PX = 6;
 var POPOVER_MARGIN_PX = 8;
 var POPOVER_CLEARANCE_PX = 14;
 function placePopover(button, panel) {
-  const r = button.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
-  const below = r.top + r.height / 2 < H / 2;
-  panel.style.maxHeight = `${(below ? H - r.bottom : r.top) - POPOVER_CLEARANCE_PX}px`;
-  const w = panel.offsetWidth, h = panel.offsetHeight;
-  const left = r.left + r.width / 2 < W / 2 ? r.left : r.right - w;
-  panel.style.left = `${clamp(left, POPOVER_MARGIN_PX, W - w - POPOVER_MARGIN_PX)}px`;
-  panel.style.top = `${below ? r.bottom + POPOVER_GAP_PX : r.top - POPOVER_GAP_PX - h}px`;
+  const r2 = button.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+  const below = r2.top + r2.height / 2 < H / 2;
+  panel.style.maxHeight = `${(below ? H - r2.bottom : r2.top) - POPOVER_CLEARANCE_PX}px`;
+  const w2 = panel.offsetWidth, h2 = panel.offsetHeight;
+  const left = r2.left + r2.width / 2 < W / 2 ? r2.left : r2.right - w2;
+  panel.style.left = `${MathUtils8.clamp(left, POPOVER_MARGIN_PX, W - w2 - POPOVER_MARGIN_PX)}px`;
+  panel.style.top = `${below ? r2.bottom + POPOVER_GAP_PX : r2.top - POPOVER_GAP_PX - h2}px`;
 }
 function focusable(panel) {
-  return [...panel.querySelectorAll("button, input")].filter((el2) => !el2.hidden && !el2.closest("[hidden]"));
+  return [...panel.querySelectorAll("button, input")].filter(
+    (el) => !el.hidden && !el.closest("[hidden]")
+  );
 }
 function moveFocus(key2, list) {
-  const i = list.indexOf(document.activeElement);
-  if (key2 === "ArrowDown") list[(i + 1) % list.length]?.focus();
-  else if (key2 === "ArrowUp") list[(i + list.length - 1) % list.length]?.focus();
+  const i2 = list.indexOf(document.activeElement);
+  if (key2 === "ArrowDown") list[(i2 + 1) % list.length]?.focus();
+  else if (key2 === "ArrowUp") list[(i2 + list.length - 1) % list.length]?.focus();
   else if (key2 === "Home") list[0]?.focus();
   else if (key2 === "End") list[list.length - 1]?.focus();
   else return false;
   return true;
 }
-var popovers = [];
-function popover(button, panel) {
-  const self = {
-    button,
-    panel,
-    place: () => placePopover(button, panel),
-    open() {
-      for (const other of popovers) if (other !== self) other.close();
-      panel.hidden = false;
-      self.place();
-      button.setAttribute("aria-expanded", "true");
-      focusable(panel)[0]?.focus();
-    },
-    close(refocus = false) {
-      if (panel.hidden) return;
-      panel.hidden = true;
-      button.setAttribute("aria-expanded", "false");
-      if (refocus) button.focus();
-    },
-    toggle() {
-      if (panel.hidden) self.open();
-      else self.close();
-    }
-  };
-  button.addEventListener("click", self.toggle);
-  panel.addEventListener("keydown", (e) => {
-    if (e.key === "Tab") {
-      self.close();
-      return;
-    }
-    if (moveFocus(e.key, focusable(panel))) e.preventDefault();
+function wirePopover(button, panel) {
+  panel.addEventListener("toggle", (e3) => {
+    const open = e3.newState === "open";
+    button.setAttribute("aria-expanded", String(open));
+    if (!open) return;
+    placePopover(button, panel);
+    focusable(panel)[0]?.focus();
   });
-  popovers.push(self);
-  return self;
+  panel.addEventListener("keydown", (e3) => {
+    if (e3.key === "Tab") panel.hidePopover();
+    else if (moveFocus(e3.key, focusable(panel))) e3.preventDefault();
+  });
+  window.addEventListener("resize", () => {
+    if (panel.matches(":popover-open")) placePopover(button, panel);
+  });
 }
 var exportMenu = byId("export-menu");
-var exportPopover = popover(byId("export-button"), exportMenu);
-var mainMenu = popover(byId("menu-button"), byId("main-menu"));
+wirePopover(byId("export-button"), exportMenu);
+var mainMenu = byId("main-menu");
+wirePopover(byId("menu-button"), mainMenu);
 byId("open-url").addEventListener("click", () => {
-  mainMenu.close();
+  mainMenu.hidePopover();
   showUrlForm();
 });
-var themeSegments = [...document.querySelectorAll("[data-theme-choice]")];
-function showThemeChoice(choice) {
-  for (const segment of themeSegments) segment.setAttribute("aria-pressed", String(segment.dataset.themeChoice === choice));
-}
-function chooseFromSegment(segment) {
-  const choice = segment.dataset.themeChoice;
-  if (isThemeChoice(choice)) setTheme(choice);
-}
-for (const segment of themeSegments) segment.addEventListener("click", () => chooseFromSegment(segment));
-onThemeChange(showThemeChoice);
-showThemeChoice(currentTheme());
-var outlineSegments = [...document.querySelectorAll("[data-outline-scale]")];
-function showOutlineScale(scale) {
-  for (const segment of outlineSegments) segment.setAttribute("aria-pressed", String(Number(segment.dataset.outlineScale) === scale));
-}
-for (const segment of outlineSegments) {
-  segment.addEventListener("click", () => chooseOutlineScale(Number(segment.dataset.outlineScale)));
-}
-onOutlineScaleChange(showOutlineScale);
-showOutlineScale(outlineScale());
-var helpPopover = popover(byId("help-button"), byId("help"));
-exportMenu.addEventListener("click", (e) => {
-  const item = closestOf(e.target, "[data-export]");
-  if (item) EXPORTS[item.dataset.export ?? ""]?.(item);
-});
-window.addEventListener("keydown", (e) => {
-  const open = popovers.find((p) => !p.panel.hidden);
-  if (e.key === "Escape" && open) {
-    open.close(true);
-    e.preventDefault();
-  }
-});
-document.addEventListener("pointerdown", (e) => {
-  for (const p of popovers) {
-    const inside = p.panel.contains(e.target) || p.button.contains(e.target);
-    if (!inside) p.close();
-  }
-});
-window.addEventListener("resize", () => {
-  for (const p of popovers) if (!p.panel.hidden) p.place();
+var helpPanel = byId("help");
+wirePopover(byId("help-button"), helpPanel);
+exportMenu.addEventListener("click", (e3) => {
+  const item = closestOf(e3.target, "[data-export]");
+  if (item) runExport(item.dataset.export, item);
 });
 
-// src/ui/ui.ts
-var DRAG_FEEL = { rotateSpeed: 3, zoomSpeed: 1.2, panSpeed: 0.8, staticMoving: true };
-Object.assign(controls, DRAG_FEEL);
-function viewDirection(azimuthDeg, elevationDeg) {
-  const a = THREE13.MathUtils.degToRad(azimuthDeg), e = THREE13.MathUtils.degToRad(elevationDeg);
-  return new THREE13.Vector3(Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e));
+// src/ui/keyboard.ts
+function arrow(dx, dy, shift) {
+  if (shift) pan(dx, dy, STEP.pan);
+  else if (dy) rotate("x", dy * STEP.rotate);
+  else rotate("y", -dx * STEP.rotate);
 }
-var VIEWS = {
-  a: () => viewFrom(lattice[0], lattice[2]),
-  b: () => viewFrom(lattice[1], lattice[2]),
-  c: () => viewFrom(lattice[2], lattice[1]),
-  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE13.Vector3(0, 0, 1))
+var zoomIn = () => zoom(STEP.zoom);
+var zoomOut = () => zoom(1 / STEP.zoom);
+var KEY_ACTIONS = {
+  ArrowUp: (shift) => arrow(0, 1, shift),
+  ArrowDown: (shift) => arrow(0, -1, shift),
+  ArrowLeft: (shift) => arrow(-1, 0, shift),
+  ArrowRight: (shift) => arrow(1, 0, shift),
+  "+": zoomIn,
+  "=": zoomIn,
+  "-": zoomOut,
+  _: zoomOut,
+  "0": () => fit(),
+  "[": () => rotate("z", -STEP.rotate),
+  "]": () => rotate("z", STEP.rotate),
+  t: cycleTheme
+  // Auto → Light → Dark
 };
-for (const button of document.querySelectorAll("[data-view]")) {
-  button.addEventListener("click", () => VIEWS[button.dataset.view ?? ""]());
+function isTurnKey(e3) {
+  return e3.key.startsWith("Arrow") && !e3.shiftKey || e3.key === "[" || e3.key === "]";
 }
+function isForFieldOrShortcut(e3) {
+  return closestOf(e3.target, "input, textarea, .popover") !== null || e3.metaKey || e3.ctrlKey || e3.altKey;
+}
+function runShortcut(e3) {
+  if (e3.key === "?") {
+    helpPanel.togglePopover();
+    return true;
+  }
+  if (e3.key === "i" && !e3.shiftKey) {
+    toggleInfo();
+    return true;
+  }
+  if (FLY[e3.code]) {
+    flying.add(e3.code);
+    return true;
+  }
+  if (!Object.hasOwn(KEY_ACTIONS, e3.key)) return false;
+  KEY_ACTIONS[e3.key](e3.shiftKey);
+  return true;
+}
+function wireKeyboard() {
+  window.addEventListener("keydown", (e3) => {
+    setShiftHeld(e3.shiftKey);
+    const menuOpen = document.querySelector(":popover-open") !== null;
+    if (e3.key === "Escape" && !menuOpen && closeUrlForm()) return;
+    if (isForFieldOrShortcut(e3)) return;
+    if (e3.key === "Escape") {
+      if (!menuOpen) {
+        select(null);
+        releasePivot();
+      }
+      return;
+    }
+    if (isTurnKey(e3) && !e3.repeat) beginRotation();
+    if (runShortcut(e3)) e3.preventDefault();
+  });
+}
+
+// src/ui/lens-bar.ts
 var ORTHO_LENS = Infinity;
 var ORTHO_TAG = "inf";
-var FIT_EPSILON = 1e-9;
 var lensGroup = byId("lens-group");
-function isLensOn(button) {
+function isLensOn(button, persp, focal) {
   const value = button.dataset.lens;
-  return value === ORTHO_TAG ? !isPersp() : isPersp() && Number(value) === lens;
-}
-function syncLensButtons() {
-  for (const button of lensGroup.querySelectorAll("[data-lens]")) {
-    button.setAttribute("aria-pressed", String(isLensOn(button)));
-  }
-}
-function switchProjection(mode2, newLens = lens) {
-  if (mode2 === "persp" === isPersp() && newLens === lens) return;
-  const view = captureView();
-  setLens(newLens);
-  installCamera(mode2 === "persp" ? perspCamera : orthoCamera, view);
-  syncLensButtons();
-  requestRender();
-}
-function captureView() {
-  const target = controls.target.clone();
-  return {
-    target,
-    direction: camera.position.clone().sub(target).normalize(),
-    orthoZoom: isPersp() ? perspToOrthoZoom(extent, lens, currentZoom()) : camera.zoom,
-    fitted: Math.abs(shownZoom() - fitValue) < FIT_EPSILON
-  };
-}
-function installCamera(next, view) {
-  const persp = next instanceof THREE13.PerspectiveCamera;
-  next.up.copy(camera.up);
-  setCamera(next);
-  camera.add(key, key.target);
-  controls.object = camera;
-  camera.position.copy(view.target).addScaledVector(view.direction, cameraDistance(persp, view.orthoZoom));
-  if (!persp) camera.zoom = view.orthoZoom;
-  camera.lookAt(view.target);
-  resize();
-  if (view.fitted) setZoom(fitFor(stage.clientWidth, stage.clientHeight));
-  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
-}
-function cameraDistance(persp, orthoZoom) {
-  if (persp) return baseDistance(extent) / orthoToPerspZoom(extent, lens, orthoZoom);
-  return extent * ORTHO_VIEW_DISTANCE;
+  return value === ORTHO_TAG ? !persp : persp && Number(value) === focal;
 }
 function addLensButton(focalLength) {
   const ortho = focalLength === ORTHO_LENS;
@@ -4501,14 +5764,24 @@ function addLensButton(focalLength) {
   });
   button.dataset.lens = ortho ? ORTHO_TAG : String(focalLength);
   button.setAttribute("aria-label", ortho ? "Orthographic" : `${focalLength} mm`);
-  button.addEventListener("click", () => ortho ? switchProjection("ortho") : switchProjection("persp", focalLength));
+  button.addEventListener("click", () => {
+    if (ortho) switchProjection("ortho");
+    else switchProjection("persp", focalLength);
+  });
   if (ortho) lensGroup.insertAdjacentHTML("beforeend", '<span class="unit">mm</span>');
   lensGroup.appendChild(button);
 }
-for (const focalLength of [...GEMMY.lenses, ORTHO_LENS]) addLensButton(focalLength);
-syncLensButtons();
-var MS_PER_SECOND2 = 1e3;
-var MAX_FRAME_SECONDS = 0.05;
+function wireLensBar() {
+  for (const focalLength of [...GEMMY.lenses, ORTHO_LENS]) addLensButton(focalLength);
+  x(() => {
+    const persp = projection.value === "persp";
+    for (const button of lensGroup.querySelectorAll("[data-lens]")) {
+      button.setAttribute("aria-pressed", String(isLensOn(button, persp, lens.value)));
+    }
+  });
+}
+
+// src/ui/toolbar-buttons.ts
 var HOLD_DELAY_MS = 300;
 var CLICK = { held: false };
 function act(button, amount) {
@@ -4519,8 +5792,8 @@ function act(button, amount) {
     const axis = button.dataset.axis;
     if (isScreenAxis(axis)) rotate(axis, sign * turn);
   } else if (kind === "pan") {
-    const move = amount.held ? RATE.pan * amount.seconds : STEP.pan;
-    pan(Number(button.dataset.dx), Number(button.dataset.dy), move);
+    const move2 = amount.held ? RATE.pan * amount.seconds : STEP.pan;
+    pan(Number(button.dataset.dx), Number(button.dataset.dy), move2);
   } else if (kind === "zoom") {
     const factor = amount.held ? RATE.zoom ** amount.seconds : STEP.zoom;
     zoom(factor ** sign);
@@ -4528,6 +5801,7 @@ function act(button, amount) {
     fit();
   }
 }
+var waitsForRelease = (e3) => e3.pointerType === "touch";
 var isRotateButton = (button) => button.dataset.act === "rotate";
 function wirePressButton(button) {
   let press2 = null;
@@ -4540,463 +5814,142 @@ function wirePressButton(button) {
   const repeatWhileHeld = () => {
     if (!press2) return;
     press2.repeating = true;
-    const tick = (t) => {
+    const tick = (t2) => {
       if (!press2) return;
-      if (press2.last) act(button, { held: true, seconds: Math.min((t - press2.last) / MS_PER_SECOND2, MAX_FRAME_SECONDS) });
-      press2.last = t;
+      if (press2.last)
+        act(button, { held: true, seconds: Math.min((t2 - press2.last) / MS_PER_SECOND, MAX_FRAME_SECONDS) });
+      press2.last = t2;
       press2.frame = requestAnimationFrame(tick);
     };
     press2.frame = requestAnimationFrame(tick);
   };
-  button.addEventListener("pointerdown", (e) => {
+  button.addEventListener("pointerdown", (e3) => {
     if (isRotateButton(button)) beginRotation();
-    const touch = e.pointerType === "touch";
-    if (!touch) {
-      e.preventDefault();
-      button.setPointerCapture(e.pointerId);
+    const waits = waitsForRelease(e3);
+    if (!waits) {
+      e3.preventDefault();
+      button.setPointerCapture(e3.pointerId);
       act(button, CLICK);
     }
-    press2 = { touch, last: 0, repeating: false, timer: 0, frame: 0 };
+    press2 = { waitsForRelease: waits, last: 0, repeating: false, timer: 0, frame: 0 };
     if (button.dataset.act === "fit") return;
     press2.timer = window.setTimeout(repeatWhileHeld, HOLD_DELAY_MS);
   });
   button.addEventListener("pointerup", () => {
-    if (press2?.touch && !press2.repeating) act(button, CLICK);
+    if (press2?.waitsForRelease && !press2.repeating) act(button, CLICK);
     stop();
   });
   for (const ev of ["pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
-  button.addEventListener("click", (e) => {
-    if (e.detail !== 0) return;
+  button.addEventListener("click", (e3) => {
+    if (e3.detail !== 0) return;
     if (isRotateButton(button)) beginRotation();
     act(button, CLICK);
   });
 }
-for (const button of document.querySelectorAll("[data-act]")) wirePressButton(button);
-for (const el2 of document.querySelectorAll(".island, .tabs")) watchOverflow(el2);
-document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+function wireToolbarButtons() {
+  for (const button of document.querySelectorAll("[data-act]")) wirePressButton(button);
+  for (const el of document.querySelectorAll(".island, .tabs")) watchOverflow(el);
+  document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+// src/ui/tooltip.ts
+import { MathUtils as MathUtils9 } from "three";
 var TIP_DELAY_MS = 300;
 var TIP_GAP_PX = 8;
 var tip = Object.assign(document.createElement("div"), { id: "tip", role: "tooltip" });
-document.body.appendChild(tip);
 var tipTimer = 0;
 function hideTip() {
   window.clearTimeout(tipTimer);
   tip.classList.remove("on");
 }
-function showTip(el2) {
-  tip.textContent = el2.dataset.tip ?? "";
-  placeTip(el2);
+function showTip(el) {
+  tip.textContent = el.dataset.tip ?? "";
+  placeTip(el);
   tip.classList.add("on");
 }
-function placeTip(el2) {
-  const r = el2.getBoundingClientRect(), t = tip.getBoundingClientRect();
-  const [x, y] = el2.closest("#bottom") ? tipBesideLeftColumn(r, t) : tipCentredVertically(r, t);
-  tip.style.left = `${clamp(x, TIP_GAP_PX, innerWidth - t.width - TIP_GAP_PX)}px`;
-  tip.style.top = `${clamp(y, TIP_GAP_PX, innerHeight - t.height - TIP_GAP_PX)}px`;
+function placeTip(el) {
+  const r2 = el.getBoundingClientRect(), t2 = tip.getBoundingClientRect();
+  const [x2, y2] = el.closest("#bottom") ? tipBesideLeftColumn(r2, t2) : tipCentredVertically(r2, t2);
+  tip.style.left = `${MathUtils9.clamp(x2, TIP_GAP_PX, innerWidth - t2.width - TIP_GAP_PX)}px`;
+  tip.style.top = `${MathUtils9.clamp(y2, TIP_GAP_PX, innerHeight - t2.height - TIP_GAP_PX)}px`;
 }
-function tipBesideLeftColumn(r, t) {
-  return [r.right + TIP_GAP_PX, r.top + r.height / 2 - t.height / 2];
+function tipBesideLeftColumn(r2, t2) {
+  return [r2.right + TIP_GAP_PX, r2.top + r2.height / 2 - t2.height / 2];
 }
-function tipCentredVertically(r, t) {
-  const x = r.left + r.width / 2 - t.width / 2;
-  const y = r.top < innerHeight / 2 ? r.bottom + TIP_GAP_PX : r.top - TIP_GAP_PX - t.height;
-  return [x, y];
+function tipCentredVertically(r2, t2) {
+  const x2 = r2.left + r2.width / 2 - t2.width / 2;
+  const y2 = r2.top < innerHeight / 2 ? r2.bottom + TIP_GAP_PX : r2.top - TIP_GAP_PX - t2.height;
+  return [x2, y2];
 }
-document.addEventListener("pointerover", (e) => {
-  const el2 = closestOf(e.target, "[title], [data-tip]");
-  if (!el2 || e.pointerType === "touch") return;
-  if (el2.hasAttribute("title")) {
-    el2.dataset.tip = el2.title;
-    el2.removeAttribute("title");
-  }
-  window.clearTimeout(tipTimer);
-  tipTimer = window.setTimeout(() => showTip(el2), TIP_DELAY_MS);
-});
-document.addEventListener("pointerout", (e) => {
-  if (closestOf(e.target, "[data-tip]")) hideTip();
-});
-for (const ev of ["pointerdown", "keydown", "wheel"]) document.addEventListener(ev, hideTip, { passive: true });
-function arrow(dx, dy, shift) {
-  if (shift) pan(dx, dy, STEP.pan);
-  else if (dy) rotate("x", dy * STEP.rotate);
-  else rotate("y", -dx * STEP.rotate);
-}
-var KEY_ACTIONS = {
-  ArrowUp: (shift) => arrow(0, 1, shift),
-  ArrowDown: (shift) => arrow(0, -1, shift),
-  ArrowLeft: (shift) => arrow(-1, 0, shift),
-  ArrowRight: (shift) => arrow(1, 0, shift),
-  "+": () => zoom(STEP.zoom),
-  "=": () => zoom(STEP.zoom),
-  "-": () => zoom(1 / STEP.zoom),
-  "_": () => zoom(1 / STEP.zoom),
-  "0": () => fit(),
-  "[": () => rotate("z", -STEP.rotate),
-  "]": () => rotate("z", STEP.rotate),
-  t: cycleTheme
-  // Auto → Light → Dark
-};
-function isTurnKey(e) {
-  return e.key.startsWith("Arrow") && !e.shiftKey || e.key === "[" || e.key === "]";
-}
-function isTyping(e) {
-  return closestOf(e.target, "input, textarea, .popover") !== null || e.metaKey || e.ctrlKey || e.altKey;
-}
-function runShortcut(e) {
-  if (e.key === "?") {
-    helpPopover.toggle();
-    return true;
-  }
-  if (e.key === "i" && !e.shiftKey) {
-    toggleInfo();
-    return true;
-  }
-  if (FLY[e.code]) {
-    flying.add(e.code);
-    return true;
-  }
-  if (!Object.hasOwn(KEY_ACTIONS, e.key)) return false;
-  KEY_ACTIONS[e.key](e.shiftKey);
-  return true;
-}
-var escapeClosesMenu = false;
-window.addEventListener("keydown", (e) => {
-  escapeClosesMenu = e.key === "Escape" && document.querySelector(".popover:not([hidden])") !== null;
-}, { capture: true });
-window.addEventListener("keydown", (e) => {
-  setShiftHeld(e.shiftKey);
-  if (e.key === "Escape" && !escapeClosesMenu && closeUrlForm()) return;
-  if (isTyping(e)) return;
-  if (e.key === "Escape") {
-    if (!escapeClosesMenu) {
-      select(null);
-      releasePivot();
+function wireTooltips() {
+  document.body.appendChild(tip);
+  document.addEventListener("pointerover", (e3) => {
+    const el = closestOf(e3.target, "[title], [data-tip]");
+    if (!el || e3.pointerType === "touch") return;
+    if (el.hasAttribute("title")) {
+      el.dataset.tip = el.title;
+      el.removeAttribute("title");
     }
-    return;
-  }
-  if (isTurnKey(e) && !e.repeat) beginRotation();
-  if (runShortcut(e)) e.preventDefault();
-});
-function wireShowToggle(id, apply) {
-  const button = byId(id);
-  button.addEventListener("click", () => {
-    const on = button.getAttribute("aria-pressed") !== "true";
-    button.setAttribute("aria-pressed", String(on));
-    apply(on);
-    requestRender();
+    window.clearTimeout(tipTimer);
+    tipTimer = window.setTimeout(() => showTip(el), TIP_DELAY_MS);
+  });
+  document.addEventListener("pointerout", (e3) => {
+    if (closestOf(e3.target, "[data-tip]")) hideTip();
+  });
+  for (const ev of ["pointerdown", "keydown", "wheel"]) document.addEventListener(ev, hideTip, { passive: true });
+}
+
+// src/ui/live.ts
+var LIVE_TOAST_MS = 3e3;
+function startLive(page2) {
+  disableOpenUrl();
+  const banner = byId("banner");
+  const errorLine = banner.querySelector(".err");
+  const followLine = byId("follow-note");
+  const refreshBanner = () => {
+    banner.hidden = followLine.hidden && errorLine.hidden;
+  };
+  followNote(page2, followLine, refreshBanner);
+  const renderViewItem = addRenderItem();
+  const showError = (text) => {
+    errorLine.textContent = text;
+    errorLine.hidden = banner.hidden = false;
+  };
+  let renderedAt;
+  const showStatus = (status) => {
+    const r2 = status.render;
+    renderViewItem.hidden = !r2.enabled;
+    errorLine.textContent = [status.error, r2.error ? `Blender error: ${r2.error}` : ""].filter(Boolean).join("\n\n");
+    errorLine.hidden = !errorLine.textContent;
+    refreshBanner();
+    if (r2.state === "rendering") note(`Rendering ${r2.output}\u2026`, STAY);
+    else if (r2.time && r2.time !== renderedAt && renderedAt !== void 0) note(`${r2.output} updated`, LIVE_TOAST_MS);
+    else if (noteText().startsWith("Rendering")) hideNote();
+    renderedAt = r2.time;
+  };
+  const events = new EventSource("events");
+  events.addEventListener("status", (e3) => {
+    const status = JSON.parse(e3.data);
+    showStatus(status);
+    reloadLive(status.version).catch((error) => showError(String(error)));
   });
 }
-wireShowToggle("toggle-atoms", (on) => {
-  show.atoms = on;
-  atomGroup.visible = on;
-});
-wireShowToggle("toggle-outline", (on) => {
-  setOutlines(on);
-  outlineMaterial.visible = on;
-});
-wireShowToggle("toggle-box", (on) => {
-  show.box = on;
-  if (box) box.visible = on;
-});
-
-// src/scene/load.ts
-import * as THREE14 from "three";
-function load(doc, bounds) {
-  disposeScene();
-  select(null);
-  setData(doc);
-  setPoints(new Map(doc.points.map((p) => [p.id, p])));
-  setPolyhedra(doc.primitives.polyhedra);
-  frame2(bounds, doc.cell);
-  addAtomsBondsAndArrows();
-  addPolyhedra2();
-  addCellBox(doc.cell);
-  resize();
-}
-function frame2(bounds, cell) {
-  setCentre(bounds.centre);
-  setExtent(bounds.extent);
-  if (cell) setLattice(cell.vectors.map((vec) => new THREE14.Vector3(...vec).normalize()));
-  root.position.set(-centre[0], -centre[1], -centre[2]);
-  orthoCamera.far = extent * ORTHO_FAR_EXTENTS;
-  controls.minDistance = baseDistance(extent) / ZOOM_MAX;
-  controls.maxDistance = baseDistance(extent) / ZOOM_MIN;
-}
-function addAtomsBondsAndArrows() {
-  setAtomGroup(new THREE14.Group());
-  const bondGroup = new THREE14.Group();
-  const shapes = /* @__PURE__ */ new Map();
-  for (const g of instanceGroups(data)) {
-    const shapeName = g.shape;
-    let shape = shapes.get(shapeName);
-    if (!shape) {
-      shape = SHAPES[shapeName]();
-      shapes.set(shapeName, shape);
-    }
-    const mesh = instanced(shape, toon(g.material), g.matrices);
-    const isAtom = g.shape === "sphere";
-    const owner = isAtom ? atomGroup : bondGroup;
-    owner.add(mesh);
-    if (isAtom) mesh.userData = { atoms: g.refs };
-    if (g.outlined) owner.add(outlineOf(mesh));
-  }
-  atomGroup.visible = show.atoms;
-  root.add(atomGroup, bondGroup);
-}
-function addPolyhedra2() {
-  setPolyGroup(new THREE14.Group());
-  setPolyTargets(new Array(polyhedra.length));
-  for (const g of polyhedronGroups(data)) {
-    const ghost = (data.materials[g.material].alpha ?? 1) < 1;
-    const geometry = new THREE14.BufferGeometry();
-    geometry.setAttribute("position", new THREE14.Float32BufferAttribute(g.positions, 3));
-    geometry.computeVertexNormals();
-    const mesh = new THREE14.Mesh(geometry, toon(g.material, { faces: true, ghost }));
-    mesh.userData = { owner: g.owner };
-    if (ghost) mesh.renderOrder = 1;
-    for (const [index, first, count2] of g.ranges) {
-      polyTargets[index] = { kind: "polyhedron", poly: polyhedra[index], ghost, mesh, first, count: count2 };
-    }
-    const edgeGeometry = new THREE14.BufferGeometry();
-    edgeGeometry.setAttribute("position", new THREE14.Float32BufferAttribute(g.edges, 3));
-    polyGroup.add(mesh, new THREE14.LineSegments(edgeGeometry, edgeMaterial));
-    if (!ghost) polyGroup.add(outlineOf(mesh));
-  }
-  root.add(polyGroup);
-}
-function addCellBox(cell) {
-  setBox(null);
-  if (!cell) return;
-  const positions = [];
-  const corners = Array.from({ length: 8 }, (_, n) => cellCorner(cell, n));
-  for (let n = 0; n < 8; n++) {
-    for (let axis = 0; axis < 3; axis++) {
-      const bit = 1 << axis;
-      if (n & bit) continue;
-      positions.push(...corners[n], ...corners[n | bit]);
-    }
-  }
-  const boxGeometry = new THREE14.BufferGeometry();
-  boxGeometry.setAttribute("position", new THREE14.Float32BufferAttribute(positions, 3));
-  const cellBox = new THREE14.LineSegments(boxGeometry, boxMaterial);
-  setBox(cellBox);
-  cellBox.visible = show.box;
-  root.add(cellBox);
-}
-function cellCorner(cell, n) {
-  const [a, b, c] = cell.vectors;
-  return [0, 1, 2].map(
-    (d) => cell.origin[d] + (n & 1) * a[d] + (n >> 1 & 1) * b[d] + (n >> 2 & 1) * c[d]
-  );
-}
-
-// src/camera/viewhash.ts
-var VIEW_KEY2 = "view";
-var SIGNIFICANT_DIGITS = 4;
-var FIELD_SEPARATOR = ";";
-var VECTOR_SEPARATOR = ",";
-var VECTOR_LENGTH = 3;
-function roundFigures(x) {
-  return Number(x.toPrecision(SIGNIFICANT_DIGITS));
-}
-var numberText = (x) => String(roundFigures(x));
-var vectorText = (v) => v.map(numberText).join(VECTOR_SEPARATOR);
-function encodeView(pose) {
-  const size = pose.projection === "persp" ? `lens=${numberText(pose.lens)}` : `zoom=${numberText(pose.zoom)}`;
-  return [pose.projection, size, `eye=${vectorText(pose.eye)}`, `at=${vectorText(pose.at)}`, `up=${vectorText(pose.up)}`].join(FIELD_SEPARATOR);
-}
-function decodeView(text) {
-  const [projection, ...rest] = text.split(FIELD_SEPARATOR);
-  if (projection !== "persp" && projection !== "ortho") return null;
-  const fields = new URLSearchParams(rest.join("&"));
-  const vector2 = (name) => {
-    const parts = (fields.get(name) ?? "").split(VECTOR_SEPARATOR).map(Number);
-    return parts.length === VECTOR_LENGTH && parts.every(Number.isFinite) ? parts : null;
-  };
-  const size = Number(fields.get(projection === "persp" ? "lens" : "zoom"));
-  const eye = vector2("eye"), at = vector2("at"), up = vector2("up");
-  if (!(size > 0) || !Number.isFinite(size) || !eye || !at || !up) return null;
-  return {
-    projection,
-    lens: projection === "persp" ? size : 0,
-    zoom: projection === "ortho" ? size : 1,
-    eye,
-    at,
-    up
-  };
-}
-function placedPose(pose, extent3, limits) {
-  const numbers = [...pose.eye, ...pose.at, ...pose.up, pose.zoom];
-  if (!numbers.every(Number.isFinite)) return null;
-  const separation = span(pose.eye, pose.at);
-  if (separation === 0 || Math.hypot(...pose.up) === 0) return null;
-  const direction = vunit(vsub(pose.eye, pose.at));
-  const distance2 = pose.projection === "ortho" ? extent3 * ORTHO_VIEW_DISTANCE : Math.min(Math.max(separation, limits.minDistance), limits.maxDistance);
-  return {
-    eye: vadd(pose.at, vscale(direction, distance2)),
-    at: [...pose.at],
-    up: vunit(pose.up),
-    zoom: pose.zoom
-  };
-}
-
-// src/ui/toast.ts
-var DEFAULT_MS = 6e3;
-var toast = byId("toast");
-function note(text, ms = DEFAULT_MS) {
-  toast.textContent = text;
-  toast.hidden = false;
-  setTimeout(() => {
-    toast.hidden = true;
-  }, ms);
-}
-
-// src/ui/share.ts
-var SETTLE_MS = 200;
-var NOTE_MS = 5e3;
-var vector = (v) => [v.x, v.y, v.z];
-function currentPose() {
-  return {
-    projection: isPersp() ? "persp" : "ortho",
-    lens,
-    zoom: camera.zoom,
-    eye: vector(camera.position),
-    at: vector(controls.target),
-    up: vector(camera.up)
-  };
-}
-function applyPose(pose) {
-  const placed = placedPose(pose, extent, controls);
-  if (!placed) {
-    VIEWS.rotated();
-    return;
-  }
-  switchProjection(pose.projection, pose.projection === "persp" ? pose.lens : lens);
-  camera.position.fromArray(placed.eye);
-  controls.target.fromArray(placed.at);
-  camera.up.fromArray(placed.up);
-  camera.lookAt(controls.target);
-  if (pose.projection === "ortho") {
-    camera.zoom = placed.zoom;
-    camera.updateProjectionMatrix();
-  }
-  writeAddress(encodeView(currentPose()));
-  requestRender();
-}
-var pending = readAddressPose();
-function readAddressPose() {
-  const text = new URLSearchParams(location.hash.slice(1)).get(VIEW_KEY2);
-  return text === null ? null : decodeView(text);
-}
-function takePendingPose() {
-  const pose = pending;
-  pending = null;
-  return pose;
-}
-function writeAddress(text) {
-  const url = new URL(location.href);
-  url.hash = `${VIEW_KEY2}=${text}`;
-  history.replaceState(history.state, "", url.href);
-}
-var watching = false;
-function watchView() {
-  if (watching) return;
-  watching = true;
-  let written = encodeView(currentPose());
-  let previous = written;
-  setInterval(() => {
-    const now = encodeView(currentPose());
-    if (now === previous && now !== written) {
-      written = now;
-      writeAddress(now);
-    }
-    previous = now;
-  }, SETTLE_MS);
-}
-var sceneLink = null;
-function setSceneLink(link) {
-  sceneLink = link;
-}
-function copyLink() {
-  const url = new URL(sceneLink ?? location.href);
-  url.hash = `${VIEW_KEY2}=${encodeView(currentPose())}`;
-  const said = sceneLink === null ? "Copied the view only: an embedded or local scene cannot go in a link, so the link opens this page at this view." : "Copied the link: this scene, at this view.";
-  const refused = () => note("Could not copy the link: the browser refused the clipboard.", NOTE_MS);
-  try {
-    navigator.clipboard.writeText(url.href).then(() => note(said, NOTE_MS), refused);
-  } catch {
-    refused();
-  }
-}
-byId("copy-link").addEventListener("click", copyLink);
-
-// src/main.ts
-function openScene(doc, view = null) {
-  load(doc, sceneBounds(doc));
-  if (view) applyPose(view);
-  else VIEWS.rotated();
-  const middle = [...polyTargets].sort((p, q) => dist(points.get(p.poly.center_point_id).position, centre) - dist(points.get(q.poly.center_point_id).position, centre))[0];
-  select(middle ?? null);
-  showInfo(infoChoice ?? (Boolean(middle) && !narrowScreen.matches));
-  watchView();
-}
-function showLoaded(shown2) {
-  setSceneLink(shown2.link);
-  openScene(shown2.doc, takePendingPose());
-  document.querySelector(".name h1").textContent = shown2.name;
-  document.querySelector(".name .sub").textContent = shown2.from;
-  document.title = `gemmy: ${shown2.name}`;
-}
-var embedded = document.getElementById("scene-data").textContent.trim();
-var mode = document.querySelector('meta[name="gemmy-mode"]')?.content;
-var pageName = document.querySelector(".name h1").textContent;
-var pageFrom = document.querySelector(".name .sub").textContent;
-var following = mode === "live";
-function showTab(shown2) {
-  showLoaded(shown2);
-  if (mode !== "live") return;
-  following = shown2.live === true;
-  const note2 = document.getElementById("follow-note");
-  const banner = document.getElementById("banner");
-  note2.textContent = `Showing ${shown2.name} \u2014 choose ${pageName} to follow the server again`;
-  note2.hidden = following;
-  banner.hidden = note2.hidden && banner.querySelector(".err").hidden;
-}
-async function fetchLive() {
-  const response = await fetch("scene.json", { cache: "no-store" });
-  if (!response.ok) throw new Error(`The server answered ${response.status} for scene.json.`);
-  return response.json();
-}
-var own = null;
-if (embedded) {
-  const doc = JSON.parse(embedded);
-  openScene(doc, takePendingPose());
-  own = { label: pageName, load: async () => ({ doc, name: pageName, from: pageFrom, link: null }) };
-} else if (mode === "live") {
-  describe(null);
-  resize();
-  const banner = document.getElementById("banner");
-  const errorLine = banner.querySelector(".err"), toast2 = document.getElementById("toast");
-  const followNote = document.getElementById("follow-note");
-  const openUrl = document.getElementById("open-url");
+function disableOpenUrl() {
+  const openUrl = byId("open-url");
   openUrl.disabled = true;
   openUrl.title = "Not on a gemmy serve page: it has no loader for an address (drop a file, or Open scene\u2026)";
-  let seen = null, opened = false, renderedAt, toastTimer;
-  const showToast = (text, stay) => {
-    clearTimeout(toastTimer);
-    toast2.textContent = text;
-    toast2.hidden = false;
-    toast2.classList.remove("fade");
-    if (!stay) toastTimer = setTimeout(() => {
-      toast2.classList.add("fade");
-      toastTimer = setTimeout(() => {
-        toast2.hidden = true;
-      }, 400);
-    }, 3e3);
-  };
-  const renderViewItem = exportMenu.querySelector('[data-export="render-view"]');
-  EXPORTS["render-view"] = async () => {
-    exportPopover.close(true);
+}
+function followNote(page2, followLine, refreshBanner) {
+  onTabChange((source) => {
+    followLine.hidden = source.kind === "live";
+    if (!followLine.hidden)
+      followLine.textContent = `Showing ${nameOf(source)} \u2014 choose ${page2.name} to follow the server again`;
+    refreshBanner();
+  });
+}
+function addRenderItem() {
+  registerExport("render-view", async () => {
+    exportMenu.hidePopover();
     try {
       const response = await fetch("render-view", {
         method: "POST",
@@ -5004,51 +5957,37 @@ if (embedded) {
         body: settingsJson(currentView())
       });
       const reply = await response.json();
-      if (response.ok) showToast("Render queued with this view");
-      else showToast(`Could not use this view: ${reply.error}`, true);
+      if (response.ok) note("Render queued with this view", LIVE_TOAST_MS);
+      else note(`Could not use this view: ${reply.error}`, STAY);
     } catch (error) {
-      showToast(`Could not use this view: ${error}`, true);
-    }
-  };
-  const showStatus = (s) => {
-    const r = s.render;
-    renderViewItem.hidden = !r?.enabled;
-    errorLine.textContent = [s.error, r?.error ? `Blender error: ${r.error}` : ""].filter(Boolean).join("\n\n");
-    errorLine.hidden = !errorLine.textContent;
-    banner.hidden = errorLine.hidden && followNote.hidden;
-    if (r?.state === "rendering") showToast(`Rendering ${r.output}\u2026`, true);
-    else if (r?.time && r.time !== renderedAt && renderedAt !== void 0) showToast(`${r.output} updated`);
-    else if (toast2.textContent.startsWith("Rendering")) toast2.hidden = true;
-    renderedAt = r?.time ?? null;
-  };
-  const refresh = async () => {
-    try {
-      const response = await fetch("scene.json", { cache: "no-store" });
-      if (!response.ok) return;
-      const doc = await response.json();
-      if (opened) {
-        load(doc, sceneBounds(doc));
-        requestRender();
-      } else {
-        openScene(doc, takePendingPose());
-        opened = true;
-      }
-    } catch (error) {
-      errorLine.textContent = String(error);
-      errorLine.hidden = banner.hidden = false;
-    }
-  };
-  const events = new EventSource("events");
-  events.addEventListener("status", (e) => {
-    const s = JSON.parse(e.data);
-    showStatus(s);
-    if (following && s.version && s.version !== seen) {
-      seen = s.version;
-      refresh();
+      note(`Could not use this view: ${error}`, STAY);
     }
   });
-  own = { label: pageName, load: async () => ({ doc: await fetchLive(), name: pageName, from: pageFrom, link: null, live: true }) };
-} else {
-  startLoader(showTab);
+  return exportMenu.querySelector('[data-export="render-view"]');
 }
-attachOpeners(showTab, own);
+
+// src/main.ts
+var embedded = document.getElementById("scene-data").textContent.trim();
+var mode = document.querySelector('meta[name="gemmy-mode"]')?.content;
+var page = pageName.read();
+function pageSources() {
+  if (embedded) return [{ kind: "embedded", doc: JSON.parse(embedded), page }];
+  if (mode === "live") return [{ kind: "live", page }];
+  return sourcesToOpen(location.search, location.href, defaultScenes());
+}
+function defaultScenes() {
+  return [...document.querySelectorAll('meta[name="gemmy-default-scene"]')].map((meta) => meta.content).filter((scene2) => scene2 !== "");
+}
+wireStage();
+wireViewButtons();
+wireLensBar();
+wireToolbarButtons();
+wireTooltips();
+wireReadout();
+wirePicking(releasePivot);
+wirePanels();
+wireKeyboard();
+wireFlyKeys();
+if (mode === "live") startLive(page);
+startTabs(pageSources);
+attachOpeners();

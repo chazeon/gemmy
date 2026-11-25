@@ -1,53 +1,29 @@
 // Sharing the view: the camera in the page's address (#view=...), restored when the first scene is shown, and the Copy
 // link item of the ☰ menu. The address is written when the camera has stopped moving, quietly (replaceState).
-import * as THREE from "three";
-import { isPersp } from "../camera/view";
-import { VIEW_KEY, type ViewPose, decodeView, encodeView, placedPose } from "../camera/viewhash";
-import { controls } from "../render/draw";
-import { camera, extent, lens, requestRender } from "../state";
-import type { Vec3 } from "../types";
+import { setView, viewNow } from "../camera/view";
+import { VIEW_KEY, type ViewPose, decodeView, encodeView, poseOf, viewFromPose } from "../camera/viewhash";
+import { lens, loaded } from "../state";
 import { byId } from "./dom";
 import { note } from "./toast";
-import { VIEWS, switchProjection } from "./ui";
+import { VIEWS } from "./views";
 
 const SETTLE_MS = 200; // the address is written once the camera has been still for a read this long
 const NOTE_MS = 5000;
 
-const vector = (v: THREE.Vector3): Vec3 => [v.x, v.y, v.z];
-
 // The camera as the address describes it.
-export function currentPose(): ViewPose {
-  return {
-    projection: isPersp() ? "persp" : "ortho",
-    lens,
-    zoom: camera.zoom,
-    eye: vector(camera.position),
-    at: vector(controls.target),
-    up: vector(camera.up),
-  };
-}
+const currentPose = (): ViewPose => poseOf(viewNow(), loaded.value.extent);
 
-// The camera goes to the pose: its projection and lens first (as the lens buttons switch), then position, target and up.
-// The pose is placed for this structure first (placedPose: an orthographic eye at the standard distance, a perspective
-// one clamped to the trackball's limits); a pose with no usable direction shows the default view. The address then holds
-// the pose as shown, so a bad address is replaced by the good one.
+// The camera goes to the pose: the state it gives for this structure (camera/viewhash.ts viewFromPose: an orthographic
+// eye's distance is not used, a perspective one is the zoom). A pose with no usable direction shows the default view.
+// The address then holds the pose as shown, so a bad address is replaced by the good one.
 export function applyPose(pose: ViewPose): void {
-  const placed = placedPose(pose, extent, controls);
-  if (!placed) {
+  const next = viewFromPose(pose, loaded.value.extent, lens.value);
+  if (!next) {
     VIEWS.rotated();
     return;
   }
-  switchProjection(pose.projection, pose.projection === "persp" ? pose.lens : lens);
-  camera.position.fromArray(placed.eye);
-  controls.target.fromArray(placed.at);
-  camera.up.fromArray(placed.up);
-  camera.lookAt(controls.target);
-  if (pose.projection === "ortho") {
-    camera.zoom = placed.zoom;
-    camera.updateProjectionMatrix();
-  }
+  setView(next);
   writeAddress(encodeView(currentPose()));
-  requestRender();
 }
 
 // The view in the address is for the first scene shown; it is taken once, so a scene opened later keeps its own view.
@@ -69,9 +45,9 @@ function writeAddress(text: string): void {
   history.replaceState(history.state, "", url.href);
 }
 
-// Writes the view when the camera has stopped: the pose is read every SETTLE_MS and written once two reads in a row agree
-// and differ from what the address holds. A drag or a glide therefore writes once, at its end. Started once a scene is
-// shown, from the view it shows, so the address is not rewritten before there is anything to describe.
+// Writes the view when the camera has stopped: the pose is read every SETTLE_MS and written once two reads in a row
+// agree and differ from what the address holds. A drag or a glide therefore writes once, at its end. Started once a
+// scene is shown, from the view it shows, so the address is not rewritten before there is anything to describe.
 let watching = false;
 export function watchView(): void {
   if (watching) return;
@@ -88,8 +64,8 @@ export function watchView(): void {
   }, SETTLE_MS);
 }
 
-// The address that opens the scene shown (its own link, for a scene from ?scene= or ?gist=), or null for an embedded or
-// local scene, which no link can carry: then the link has the view only, and opens this page.
+// The address that opens the scene shown (linkOf in scene/source.ts), or null for an embedded or dropped scene, which
+// no link can carry: then Copy link gives the view only, which opens this page.
 let sceneLink: string | null = null;
 export function setSceneLink(link: string | null): void {
   sceneLink = link;
@@ -98,9 +74,11 @@ export function setSceneLink(link: string | null): void {
 function copyLink(): void {
   const url = new URL(sceneLink ?? location.href);
   url.hash = `${VIEW_KEY}=${encodeView(currentPose())}`;
-  const said = sceneLink === null
-    ? "Copied the view only: an embedded or local scene cannot go in a link, so the link opens this page at this view."
-    : "Copied the link: this scene, at this view.";
+  const said =
+    sceneLink === null
+      ? "Copied the view only: an embedded or local scene cannot go in a link, " +
+        "so the link opens this page at this view."
+      : "Copied the link: this scene, at this view.";
   const refused = () => note("Could not copy the link: the browser refused the clipboard.", NOTE_MS);
   try {
     navigator.clipboard.writeText(url.href).then(() => note(said, NOTE_MS), refused);

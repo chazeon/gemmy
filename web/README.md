@@ -7,21 +7,34 @@ The page that `gemmy view` and `gemmy serve` write is built from here: TypeScrip
     npm --prefix web ci         # once
     npm --prefix web run build  # after a change here: commit the built files too
     npm --prefix web run check  # tsc
+    npm --prefix web run lint   # Biome (biome.json): lint and format check; no writes
+    npm --prefix web run format # Biome: writes the formatting
+
+Biome's `noNonNullAssertion` is off: the viewer reads ids and points out of a scene that `gemmy` has already
+checked (`check_references`), so a Map lookup for one is known to hit, and a guard for each would hide a broken scene.
+Biome's import sorting (`organizeImports`) is off: the imports stay in the order the code is written.
 
 ## How a scene reaches the page
 
-`src/main.ts` starts the page one of three ways, decided by what the page carries:
+Every scene the page shows is a tab, and a tab's scene has a source (`src/scene/source.ts`, `Source`). `src/main.ts`
+makes the page's tabs at startup and the first one is shown; then every way of adding a scene adds a tab (`src/ui/loader.ts`).
+The sources:
 
-- **Embedded** (`gemmy view`, the examples' own pages): the scene is in `#scene-data`.
-- **Live** (`gemmy serve`, meta `gemmy-mode` = `live`): the page fetches `scene.json` and follows the server's events.
-- **Loader** (`view/` on the site, and the examples' pages, mode `load`): `src/ui/loader.ts` opens the scene named by
-  `?scene=` or `?gist=` (`src/scene/source.ts` parses them; `src/scene/fetch.ts` fetches), else the page's
-  `gemmy-default-scene` metas (one per scene, in document order: several open as tabs, which is the front page; one is
-  an example's page), else the empty state. `sourcesToOpen` and `linkFor` in `source.ts` decide this and a tab's link. It also takes a dropped file or Open scene… (`src/scene/read.ts`: gzip by
-  its magic bytes, the size cap, the schema check).
+- **Embedded** (`gemmy view`, the examples' own pages): the scene is in `#scene-data`. Its link is the view only.
+- **Live** (`gemmy serve`, meta `gemmy-mode` = `live`): `scene.json` as the server holds it. While its tab is the one
+  shown, a new version (from the server's status events) is loaded in place; another tab pauses that, and choosing the
+  live tab again loads it. Its link is the page.
+- **URL** (`?scene=`, the page's `gemmy-default-scene` metas, Open URL…): `src/scene/fetch.ts` fetches it. A default's
+  link is the page, since the page opens it. `sourcesToOpen` parses the address (`src/scene/source.ts`) or the defaults:
+  several open as tabs, which is the front page; one is an example's page.
+- **Gist** (`?gist=`): the gist's file, fetched from its raw address.
+- **File** (dropped on the page, or Open scene…): read in the browser (`src/scene/read.ts`: gzip by its magic bytes, the
+  size cap, the schema check). Its link is the view only.
+
+`nameOf`, `fromOf` and `linkOf` (`source.ts`) give a tab's title, the line under it and its Copy link address.
 
 `src/ui/share.ts` keeps the camera in the address as `#view=` (`src/camera/viewhash.ts` encodes and decodes it) and
-restores it once the first scene is shown; Copy link is there too.
+restores it once the first scene is shown; Copy link is there too. `src/ui/stage.ts` puts a scene on the stage.
 
 ## The hosted site
 
@@ -37,7 +50,8 @@ no scene, and each example's page has its own scene as its one default.
 - `scene/`: the scene document's loading (above), `load.ts` builds the three.js objects, `bounds.ts` the framing.
 - `camera/`: the view, the pivot, the fly and glide moves, the framing numbers (shared with the Blender render).
 - `render/`: the renderer, the frame loop, instancing and the triad.
-- `ui/`: the toolbar and menus, the readout, the picking, the loader, the share menu, the toast.
+- `ui/`: the toolbar and menus, the readout, the picking, the loader (the tabs and the card), `stage.ts` (putting a
+  scene on the stage), `live.ts` (the serve page's status and follow note), the share menu, the toast.
 - `export/`, `geom/`, `trace/`: the vector exports (SVG and traced SVG).
 - `config.ts` and the placeholders: `__CONSTANTS_JSON__` and `__AXIS_FONTS_JSON__` are filled in by `gemmy.view` (the
   numbers the Blender render uses), so the page and the render agree.

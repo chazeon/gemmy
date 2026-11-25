@@ -20,13 +20,17 @@ from .materials import ShaderSpec, resolve_shader, shade_bands
 
 @dataclasses.dataclass(frozen=True)
 class AxesSpec:
-    """The axis indicator: label, world direction (unit) and material name for each of three axes."""
+    """The axis indicator: label, world direction (unit) and material name for each of three axes, each axis's
+    shader before any depth fade, the origin ball's material, and the colour the depth fade mixes toward."""
 
     labels: tuple[str, str, str]
     directions: tuple[Vec3, Vec3, Vec3]
     materials: tuple[str, str, str]
     size: float
     margin: float
+    shaders: tuple[ShaderSpec, ShaderSpec, ShaderSpec]
+    hub: str  # material of the origin ball
+    background: Vec3  # the world colour as the frame shows it: an axis fades toward it
     font: str | None = None  # label font file; None = Blender's built-in font
 
 
@@ -272,6 +276,9 @@ def _lattice_directions(vectors) -> tuple[Vec3, Vec3, Vec3]:
     return tuple(normalize(v) for v in vecs)  # type: ignore[return-value]
 
 
+AXES_HUB_MATERIAL = "PBB_Axes_Hub"
+
+
 def _axes_spec(scene: SceneDocument, backend, plan: RenderPlan) -> AxesSpec | None:
     axes = plan.axes
     if not axes.enabled:
@@ -284,14 +291,30 @@ def _axes_spec(scene: SceneDocument, backend, plan: RenderPlan) -> AxesSpec | No
         labels = ("a", "b", "c")
         directions = _lattice_directions(scene.cell.vectors)
     look = plan.look
-    materials = []
+    materials, shaders = [], []
     for label, color in zip(labels, look.axis_colors, strict=True):
         name = f"PBB_Axis_{label}"
-        backend.ensure_material(
-            name, resolve_shader(_plain_material((*color, 1.0), 1.0), matte=True, srgb=look.srgb_colors)
-        )
+        shader = resolve_shader(_plain_material((*color, 1.0), 1.0), matte=True, srgb=look.srgb_colors)
+        backend.ensure_material(name, shader)
         materials.append(name)
-    return AxesSpec(labels, directions, tuple(materials), axes.size, axes.margin, axes.font)  # type: ignore[arg-type]
+        shaders.append(shader)
+    # The origin ball takes the display box's colour, as the web viewer's ball takes the box colour.
+    backend.ensure_material(
+        AXES_HUB_MATERIAL,
+        resolve_shader(_plain_material(plan.cell_box.color, 0.5), matte=True, srgb=look.srgb_colors),
+    )
+    background = tuple(channel * look.world_strength for channel in look.world_color)
+    return AxesSpec(
+        labels,
+        directions,
+        tuple(materials),  # type: ignore[arg-type]
+        axes.size,
+        axes.margin,
+        tuple(shaders),  # type: ignore[arg-type]
+        AXES_HUB_MATERIAL,
+        background,  # type: ignore[arg-type]
+        axes.font,
+    )
 
 
 def build_scene_with_backend(scene: SceneDocument, backend, plan: RenderPlan) -> None:

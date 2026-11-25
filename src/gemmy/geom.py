@@ -187,6 +187,31 @@ def triad_layout(
     return tuple(out)
 
 
+def disc(radius: float, sides: int) -> list[tuple[float, float]]:
+    """The outline of a flat disc about the origin: `sides` points on a circle of `radius`, in the image plane."""
+    return [
+        (radius * math.cos(2 * math.pi * k / sides), radius * math.sin(2 * math.pi * k / sides)) for k in range(sides)
+    ]
+
+
+class TriadDraw(NamedTuple):
+    order: tuple[int, ...]  # axis indices, back to front: the farthest first, so nearer axes draw over farther ones
+    behind: int  # the first `behind` of `order` point away from the viewer: they are drawn under the origin ball
+    fades: tuple[float, ...]  # per axis index: the share of the background its colour is mixed with
+
+
+def triad_draw(depths: Sequence[float], fade_max: float) -> TriadDraw:
+    """Draw order and depth fade of the triad's axes, from each axis's camera-space depth (larger is nearer).
+
+    An axis pointing away from the viewer (depth < 0) goes under the origin ball, which covers its root; one pointing
+    towards it (depth >= 0) goes over the ball. The further an axis points away, the more it fades, up to `fade_max`.
+    """
+    order = tuple(sorted(range(len(depths)), key=lambda i: depths[i]))
+    behind = sum(1 for depth in depths if depth < 0.0)
+    fades = tuple(fade_max * max(0.0, -depth) for depth in depths)
+    return TriadDraw(order, behind, fades)
+
+
 def look_at(target: Vec3, direction: Vec3, distance: float, up: Vec3 | None = None) -> tuple[Vec3, Quat]:
     """Location and rotation of a camera (or light) that looks at `target` from along `direction`."""
     right, true_up, back = camera_basis(direction, up)

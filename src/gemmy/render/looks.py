@@ -166,6 +166,10 @@ AXES_LABEL_SIZE = 0.5  # label font size
 AXES_LABEL_REACH = 2.2  # labels sit this many arrow radii beyond the tip
 AXES_HEAD_RADIUS_RATIO = 2.2  # arrow head radius over shaft radius
 AXES_HEAD_LENGTH_RATIO = 0.22  # arrow head length over arrow length
+AXES_DOT_RADIUS = 0.0875  # the origin ball: wide enough to hide the roots of the axes pointing away (2.4 shaft widths)
+# An axis pointing straight away from the viewer is mixed this far toward the background (0 = no fade). The web
+# viewer and the SVG export read it from render_constants; Blender fades the axis material the same way.
+DEPTH_FADE_MAX = 0.35
 
 
 def camera_distance(extent: float, zoom: float) -> float:

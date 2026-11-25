@@ -57,7 +57,8 @@ console.log(JSON.stringify(cases.map((c) => {
   const view = exportView(c);
   return { view, toml: settingsToml(view), json: settingsJson(view), command: renderCommand(view, c.sceneFile),
            frame: orthoFrame(c.extent, c.width, c.height), fit: fitZoom(c.width, c.height),
-           position: cameraPosition(c.quaternion, c.target, c.zoom, c.extent), 
+           position: cameraPosition({ target: c.target, orientation: c.quaternion, zoom: c.zoom,
+             projection: c.projection ?? "ortho", lens: c.lens ?? 70 }, c.extent),
            fov: perspFov(c.lens ?? 70, c.width, c.height),
            fitPersp: fitZoomPersp(c.extent, c.lens ?? 70, c.width, c.height),
            roundTrip: perspToOrthoZoom(c.extent, c.lens ?? 70, orthoToPerspZoom(c.extent, c.lens ?? 70, c.zoom)) };

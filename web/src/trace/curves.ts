@@ -8,7 +8,8 @@ import { fmt, fmtPt } from "../export/markup";
 // Lengths are CSS px unless a name says otherwise.
 const RESAMPLE_PX = 0.25; // spacing of the points the fit sees
 const CORNER_ANGLE_DEG = 50; // a turn sharper than this is a corner: the curve is split there
-const CORNER_WINDOW_PX = 1; // the turn is measured across this much arc, so a corner is one turn, not a staircase of small ones
+// The turn is measured across this much arc, so a corner is one turn, not a staircase of small ones.
+const CORNER_WINDOW_PX = 1;
 const WINDOW_SAMPLES = Math.max(1, Math.round(CORNER_WINDOW_PX / RESAMPLE_PX)); // the window in samples
 const FIT_ERROR_PX = 0.3; // the largest distance between a fitted curve and the points (fit-curve takes the square)
 
@@ -24,7 +25,8 @@ export function closedPath(points: Pt[]): string {
   return pathFrom(points, true);
 }
 
-// The fitted curve commands of an open line, without the leading M: for a stretch that continues from a point already set.
+// The fitted curve commands of an open line, without the leading M: for a stretch that continues from a point already
+// set.
 export function fitCommands(points: Pt[]): string {
   return smoothPieces(points, false).map(fitPiece).join("");
 }
@@ -50,7 +52,8 @@ function smoothPieces(points: Pt[], closed: boolean): Pt[][] {
 function resample(points: Pt[], closed: boolean, spacing: number): Pt[] {
   const ring = closed ? [...points, points[0]] : points;
   const lengths = [0];
-  for (let i = 1; i < ring.length; i++) lengths.push(lengths[i - 1] + Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]));
+  for (let i = 1; i < ring.length; i++)
+    lengths.push(lengths[i - 1] + Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]));
   const total = lengths[lengths.length - 1];
   if (total === 0) return [];
   const count = Math.max(2, Math.round(total / spacing));
@@ -69,8 +72,8 @@ function resample(points: Pt[], closed: boolean, spacing: number): Pt[] {
   return out;
 }
 
-// The turn in degrees at each point: the angle between the chord from the point before (across the window) and the chord
-// to the point after it. Ends of an open line have no turn; the caller makes them corners.
+// The turn in degrees at each point: the angle between the chord from the point before (across the window) and the
+// chord to the point after it. Ends of an open line have no turn; the caller makes them corners.
 function turningAngles(line: Pt[], closed: boolean): number[] {
   const n = line.length;
   const step = WINDOW_SAMPLES;
@@ -108,8 +111,8 @@ function cornerIndices(turns: number[], closed: boolean): number[] {
   return corners;
 }
 
-// A closed ring cut at its corners: each piece runs corner to corner, and the last one wraps to the first corner. With no
-// corner the ring is one piece that starts and ends at the same point.
+// A closed ring cut at its corners: each piece runs corner to corner, and the last one wraps to the first corner. With
+// no corner the ring is one piece that starts and ends at the same point.
 function ringPieces(line: Pt[], corners: number[]): Pt[][] {
   const n = line.length;
   if (corners.length === 0) return [[...line, line[0]]];
@@ -137,7 +140,16 @@ function linePieces(line: Pt[], corners: number[]): Pt[][] {
 
 // The commands of one piece, starting where the previous piece ended: fitted curves, or a straight line for two points.
 function fitPiece(piece: Pt[]): string {
-  if (piece.length < 3) return piece.slice(1).map((p) => `L${fmt(p[0])} ${fmt(p[1])}`).join("");
-  const curves = fitCurve(piece.map((p) => [p[0], p[1]] as [number, number]), FIT_ERROR_PX * FIT_ERROR_PX);
-  return curves.map(([, c1, c2, end]) => `C${fmt(c1[0])} ${fmt(c1[1])} ${fmt(c2[0])} ${fmt(c2[1])} ${fmt(end[0])} ${fmt(end[1])}`).join("");
+  if (piece.length < 3)
+    return piece
+      .slice(1)
+      .map((p) => `L${fmt(p[0])} ${fmt(p[1])}`)
+      .join("");
+  const curves = fitCurve(
+    piece.map((p) => [p[0], p[1]] as [number, number]),
+    FIT_ERROR_PX * FIT_ERROR_PX,
+  );
+  return curves
+    .map(([, c1, c2, end]) => `C${fmt(c1[0])} ${fmt(c1[1])} ${fmt(c2[0])} ${fmt(c2[1])} ${fmt(end[0])} ${fmt(end[1])}`)
+    .join("");
 }

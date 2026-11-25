@@ -2,11 +2,10 @@
 // also opens the details panel (panels.ts), and the readout's text comes from readout.ts.
 import * as THREE from "three";
 import { renderer } from "../render/draw";
-import { atomGroup, camera, polyGroup, polyTargets, requestRender, type Target, type PolyTarget } from "../state";
+import { camera, loaded, requestRender, type Target, type PolyTarget } from "../state";
 import { describe } from "./readout";
 import { showInfo } from "./panels";
-import { glideTo } from "../camera/glide";
-import { releasePivot } from "../camera/pivot";
+import { glideTarget } from "../camera/view";
 import { POINTER_SLOP_PX } from "../config";
 
 // ---- the selection highlight ----
@@ -38,12 +37,13 @@ function highlightAtom(target: AtomTarget): THREE.Mesh {
   const mesh = new THREE.Mesh(target.mesh.geometry, highlightMaterial(target.mesh.material as THREE.MeshToonMaterial));
   target.mesh.getMatrixAt(target.index, mesh.matrix); // the copy sits where the picked instance sits
   mesh.matrixAutoUpdate = false;
-  atomGroup.add(mesh);
+  loaded.value.atomGroup.add(mesh);
   return mesh;
 }
 // A polyhedron's triangles are a range of its material's merged mesh, so the highlight copies that range.
 function highlightPolyhedron(target: PolyTarget): THREE.Mesh {
-  const from = target.first * FLOATS_PER_TRIANGLE, to = (target.first + target.count) * FLOATS_PER_TRIANGLE;
+  const from = target.first * FLOATS_PER_TRIANGLE,
+    to = (target.first + target.count) * FLOATS_PER_TRIANGLE;
   const geometry = new THREE.BufferGeometry();
   for (const name of ["position", "normal"]) {
     const values = target.mesh.geometry.getAttribute(name).array.slice(from, to);
@@ -52,7 +52,7 @@ function highlightPolyhedron(target: PolyTarget): THREE.Mesh {
   const mesh = new THREE.Mesh(geometry, highlightMaterial(target.mesh.material as THREE.MeshToonMaterial));
   mesh.userData.own = true; // its own geometry, so it is disposed with the highlight
   mesh.renderOrder = target.ghost ? GHOST_RENDER_ORDER : 0;
-  polyGroup.add(mesh);
+  loaded.value.polyGroup.add(mesh);
   return mesh;
 }
 
@@ -73,10 +73,11 @@ function targetOf(hit: THREE.Intersection): Target {
     return { kind: "atom", atom: mesh.userData.atoms[index], mesh: mesh as THREE.InstancedMesh, index };
   }
   const face = hit.faceIndex!; // a merged polyhedron hit always has a faceIndex
-  return polyTargets[mesh.userData.owner[face]];
+  return loaded.value.polyTargets[mesh.userData.owner[face]];
 }
 // The meshes a click can hit: the atoms (while they are shown) and the polyhedron meshes.
 function pickableObjects(): THREE.Object3D[] {
+  const { atomGroup, polyGroup } = loaded.value;
   const atoms = atomGroup.visible ? atomGroup.children.filter((o) => o.userData.atoms) : [];
   const polys = polyGroup.children.filter((o) => (o as THREE.Mesh).isMesh && o.userData.owner);
   return [...atoms, ...polys];
@@ -88,7 +89,7 @@ const ray = new THREE.Raycaster();
 function hitAt(clientX: number, clientY: number): THREE.Intersection | null {
   const r = renderer.domElement.getBoundingClientRect();
   const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
-  ray.setFromCamera(ndc, camera);
+  ray.setFromCamera(ndc, camera.value);
   const hits = ray.intersectObjects(pickableObjects(), false);
   return hits.find((h) => !isGhostHit(h)) ?? hits[0] ?? null;
 }
@@ -124,18 +125,22 @@ function completesDoubleClick(e: PointerEvent): boolean {
   return true;
 }
 
-renderer.domElement.addEventListener("pointerdown", (e) => {
-  pressedAt = [e.clientX, e.clientY];
-});
-renderer.domElement.addEventListener("pointerup", (e) => {
-  if (!pressedAt) return;
-  if (Math.hypot(e.clientX - pressedAt[0], e.clientY - pressedAt[1]) > POINTER_SLOP_PX) return;
-  const double = completesDoubleClick(e);
-  const hit = hitAt(e.clientX, e.clientY);
-  select(hit ? targetOf(hit) : null);
-  if (hit) showInfo(true); // a pick opens the details; clearing it leaves them as they are
-  // The pivot follows the selection. Only a double-click sets it (the glide makes the hit the target); a single click
-  // on another object leaves it where it is, and clearing the selection (a click on empty space, or Esc) lets it go.
-  if (double && hit) glideTo(hit.point); // a double-click on empty space is a click on empty space: it lets go
-  else if (!hit) releasePivot();
-});
+// Wires the canvas's clicks. `releaseRotation` lets go of the rotation's pivot when a click clears the selection (the
+// pivot's own module is pivot.ts; main.ts passes it, so picking.ts and pivot.ts do not import each other).
+export function wirePicking(releaseRotation: () => void): void {
+  renderer.domElement.addEventListener("pointerdown", (e) => {
+    pressedAt = [e.clientX, e.clientY];
+  });
+  renderer.domElement.addEventListener("pointerup", (e) => {
+    if (!pressedAt) return;
+    if (Math.hypot(e.clientX - pressedAt[0], e.clientY - pressedAt[1]) > POINTER_SLOP_PX) return;
+    const double = completesDoubleClick(e);
+    const hit = hitAt(e.clientX, e.clientY);
+    select(hit ? targetOf(hit) : null);
+    if (hit) showInfo(true); // a pick opens the details; clearing it leaves them as they are
+    // The pivot follows the selection. Only a double-click sets it (the glide makes the hit the target); a single click
+    // on another object leaves it where it is, and clearing the selection (a click on empty space, or Esc) lets it go.
+    if (double && hit) glideTarget(hit.point);
+    else if (!hit) releaseRotation(); // a double-click on empty space is a click on empty space: it lets go
+  });
+}

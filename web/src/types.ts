@@ -2,10 +2,10 @@
 // key, including the ones scene.py gives a default, so those are required here too; `| null` is a Python None.
 export type Vec3 = [number, number, number];
 export type Color = [number, number, number, number];
-export type BondStyle = "solid" | "dashed" | "dotted";
-export type DisplacementMode = "arrow" | "line";
-export type ArrowAnchor = "tail" | "tip";
-export type TopologyMode = "topology_locked" | "topology_adaptive";
+type BondStyle = "solid" | "dashed" | "dotted";
+type DisplacementMode = "arrow" | "line";
+type ArrowAnchor = "tail" | "tip";
+type TopologyMode = "topology_locked" | "topology_adaptive";
 
 export interface Material {
   type: string;
@@ -69,7 +69,7 @@ export interface DisplacementPrimitive {
   material_id: string;
 }
 
-export interface Primitives {
+interface Primitives {
   atoms: AtomPrimitive[];
   bonds: BondPrimitive[];
   polyhedra: PolyhedronPrimitive[];
@@ -110,5 +110,7 @@ export interface Constants {
     labelReach: number;
     headRadiusRatio: number;
     headLengthRatio: number;
+    dotRadius: number;
+    depthFadeMax: number;
   };
 }

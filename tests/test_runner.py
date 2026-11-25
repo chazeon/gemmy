@@ -215,6 +215,17 @@ def test_axes_spec_abc_uses_the_cell_vectors_and_xyz_the_cartesian_axes(tmp_path
     assert backend.of("set_axes_overlay")[0][0] == (None,)
 
 
+def test_axes_spec_carries_the_shaders_the_depth_fade_mixes_and_the_origin_ball(tmp_path: Path) -> None:
+    plan = _plan(tmp_path, axes={"enabled": True})
+    backend = RecordingBackend()
+    build_scene_with_backend(_scene(), backend, plan)
+    spec = backend.of("set_axes_overlay")[0][0][0]
+    made = {args[0]: args[1] for args, _ in backend.of("ensure_material")}
+    assert spec.hub == "PBB_Axes_Hub" and "PBB_Axes_Hub" in made
+    assert spec.shaders == tuple(made[name] for name in spec.materials)
+    assert spec.background == pytest.approx(tuple(c * plan.look.world_strength for c in plan.look.world_color))
+
+
 def test_3to2d_resolves_ortho_rotated_view_with_bands(tmp_path: Path) -> None:
     plan = _plan(tmp_path, look={"preset": "3to2d", "shadow": 0.5})
     shot = plan.shots[0]

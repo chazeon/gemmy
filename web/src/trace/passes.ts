@@ -1,21 +1,19 @@
-// The offscreen passes the traced SVG reads back, all with the live camera and the live structure's transform, so each
-// pixel lines up with the live view exactly:
-//   - the object id of every pixel (the depth test decides which object is in front, so occlusion and intersections come
-//     out of the GPU);
+// The offscreen passes the traced SVG reads back, all with the camera and the transform they are given (PassView: the
+// live camera and the structure's transform for the structure, so each pixel lines up with the live view exactly):
+//   - the object id of every pixel (the depth test decides which object is in front, so occlusion and intersections
+//     come out of the GPU);
 //   - the toon band of every pixel (lit or dark);
 //   - the depth of the nearest object at every pixel (for the sub-pixel visibility of edges and the cell box, and the
 //     depth jumps that make a silhouette).
-// The keys combine the first two: key = 2 * id + dark, so each object has a lit key and a dark key; key 0 is background.
+// The keys combine the first two: key = 2 * id + dark, so each object has a lit key and a dark key; key 0 is
+// background.
 import * as THREE from "three";
 import { LOOK } from "../config";
-import { OUTLINE_THICKNESS, OUTLINE_VERTEX_SHADER, renderer, root } from "../render/draw";
-import { camera } from "../state";
+import { OUTLINE_THICKNESS, OUTLINE_VERTEX_SHADER, renderer } from "../render/draw";
+import { LIT_CUT, polygonOffsetOf } from "../render/toon";
 import { BACKGROUND_DEPTH, Passes, darkKey, litKey } from "./buffers";
 import { roleOf } from "./objects";
 
-// draw.ts builds its toon gradient with this many texels. The band pass must put the lit/dark edge where the gradient
-// does, so the same count gives the same cut (see LIT_CUT).
-const TOON_STEPS = 16;
 const DEPTH_SCALE = 16777215; // 2^24 - 1: the depth is packed into the three bytes of a pixel
 
 // The id pass: a flat colour per object, no lighting, no tone mapping, no antialiasing. The id is split into bytes, low
@@ -81,40 +79,40 @@ const PLAIN_VERTEX = `
       gl_Position = projectionMatrix * modelViewMatrix * local;
     }`;
 
-// The toon gradient is looked up at dotNL * 0.5 + 0.5 and the texel is floor(coord * TOON_STEPS). A texel is lit from
-// firstLit on (draw.ts makeToonGradient), so the lit test is dotNL >= 2 * firstLit / TOON_STEPS - 1.
-const FIRST_LIT = Math.ceil(((LOOK.threshold + 1) / 2) * TOON_STEPS);
-const LIT_CUT = (2 * FIRST_LIT) / TOON_STEPS - 1;
-
-// The polyhedron faces are pushed back a little in the depth test, as draw.ts does (FACE_OFFSET_FACTOR and _UNITS), so the
-// atoms that touch a face's vertex are in front of it in every pass, as in the live view.
-const FACE_OFFSET_FACTOR = 1;
-const FACE_OFFSET_UNITS = 1;
-
-// One pass's shader material. faces: the polyhedron faces' version, with the offset above. The passes must agree on the
-// offset, or a face would win a pixel in one pass and lose it in another.
-export function passMaterial(pass: Pass, faces: boolean): THREE.ShaderMaterial {
-  const offset = faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR, polygonOffsetUnits: FACE_OFFSET_UNITS } : {};
-  switch (pass) {
-    case "id":
-      return new THREE.ShaderMaterial({ vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, ...offset });
-    case "band":
-      return new THREE.ShaderMaterial({
-        vertexShader: BAND_VERTEX,
-        fragmentShader: BAND_FRAGMENT,
-        uniforms: { lightDir: { value: new THREE.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } },
-        ...offset,
-      });
-    case "depth":
-      return new THREE.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, ...offset });
-  }
-}
+// The three per-pixel passes: id, band (lit or shaded) and depth.
 type Pass = "id" | "band" | "depth";
 
-// The id scene: the structure's transform (root.position, the centre offset), then the object meshes.
-function idScene(meshes: Drawable[]): THREE.Scene {
+const PASS_SHADERS: Record<
+  Pass,
+  { vertexShader: string; fragmentShader: string; uniforms: () => Record<string, THREE.IUniform> }
+> = {
+  id: { vertexShader: ID_VERTEX, fragmentShader: ID_FRAGMENT, uniforms: () => ({}) },
+  band: {
+    vertexShader: BAND_VERTEX,
+    fragmentShader: BAND_FRAGMENT,
+    uniforms: () => ({ lightDir: { value: new THREE.Vector3(...LOOK.key).normalize() }, litCut: { value: LIT_CUT } }),
+  },
+  depth: { vertexShader: PLAIN_VERTEX, fragmentShader: DEPTH_FRAGMENT, uniforms: () => ({}) },
+};
+
+// One pass's shader material. faces: the polyhedron faces' version, with the polygon offset of toon.ts. The passes must
+// agree on the offset, or a face would win a pixel in one pass and lose it in another.
+export function passMaterial(pass: Pass, faces: boolean): THREE.ShaderMaterial {
+  const { vertexShader, fragmentShader, uniforms } = PASS_SHADERS[pass];
+  return new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms: uniforms(), ...polygonOffsetOf(faces) });
+}
+
+// The camera the passes draw with, and the offset of the objects (the structure sits at the centre offset, the triad at
+// the origin).
+export interface PassView {
+  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+  origin: THREE.Vector3;
+}
+
+// The id scene: the objects, moved by the pass view's origin.
+function idScene(meshes: Drawable[], origin: THREE.Vector3): THREE.Scene {
   const group = new THREE.Group();
-  group.position.copy(root.position);
+  group.position.copy(origin);
   group.add(...meshes);
   const scene = new THREE.Scene();
   scene.add(group);
@@ -141,68 +139,121 @@ const ZERO_FRAGMENT = `
     }`;
 
 // The shell's material: the back faces only, as in the live view.
-const shellMaterial = (outlineScale: number): THREE.ShaderMaterial => new THREE.ShaderMaterial({
-  vertexShader: OUTLINE_VERTEX_SHADER,
-  fragmentShader: SHELL_FRAGMENT,
-  side: THREE.BackSide,
-  uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale } },
-});
+const shellMaterial = (outlineScale: number): THREE.ShaderMaterial =>
+  new THREE.ShaderMaterial({
+    vertexShader: OUTLINE_VERTEX_SHADER,
+    fragmentShader: SHELL_FRAGMENT,
+    side: THREE.BackSide,
+    uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale } },
+  });
 
-// The mask's occluders: the normal geometry writes depth and outputs 0, so a shell only shows where nothing nearer covers it.
-// Polyhedron faces take the same polygon offset as the other passes, so their depth agrees with the live view's.
-const occluderMaterial = (faces: boolean): THREE.ShaderMaterial => new THREE.ShaderMaterial({
-  vertexShader: PLAIN_VERTEX,
-  fragmentShader: ZERO_FRAGMENT,
-  ...(faces ? { polygonOffset: true, polygonOffsetFactor: FACE_OFFSET_FACTOR, polygonOffsetUnits: FACE_OFFSET_UNITS } : {}),
-});
+// The mask's occluders: the normal geometry writes depth and outputs 0, so a shell only shows where nothing nearer
+// covers it. Polyhedron faces take the same polygon offset as the other passes, so their depth agrees with the live
+// view's.
+const occluderMaterial = (faces: boolean): THREE.ShaderMaterial =>
+  new THREE.ShaderMaterial({ vertexShader: PLAIN_VERTEX, fragmentShader: ZERO_FRAGMENT, ...polygonOffsetOf(faces) });
 
 // Drawn objects: meshes and line segments. A drawable's id is its objectId attribute; `kind` says which pass shows it.
-export type Drawable = THREE.Mesh | THREE.LineSegments;
+type Drawable = THREE.Mesh | THREE.LineSegments;
 
 // The drawable groups renderPasses shows in each pass:
 //   meshes: the objects of the id, band and depth passes (and the occluders of the other passes);
 //   shells: the live view's outline shells, in the mask pass only;
 //   thin: thin bonds and dots (drawn as lines), in the line pass only, with their table ids;
 //   lines: the polyhedron edges and the cell box, in the line pass only, with their own ids.
-export interface Groups {
+interface Groups {
   meshes: THREE.Mesh[];
   shells: THREE.Mesh[];
   thin: THREE.Mesh[];
   lines: THREE.LineSegments[];
 }
 
-// Renders `cssWidth` x `cssHeight` at `scale` times the stage, tile by tile when the GPU's texture limit is smaller. Each
-// tile gets five passes; the readback is bottom-up, so storeTile flips the rows.
-export function renderPasses(groups: Groups, cssWidth: number, cssHeight: number, scale: number, outlineScale: number): Passes {
+// The image renderPasses covers: its CSS size, the render scale, the user's outline width, and the view it draws with.
+export interface PassOptions {
+  cssWidth: number;
+  cssHeight: number;
+  scale: number; // render px per CSS px
+  outlineScale: number;
+  view: PassView;
+}
+
+// The readbacks of a tile, by what they hold.
+type Readback = "ids" | "bands" | "depths" | "masks" | "lineIds";
+// The group that is on while a readback is drawn: the outline shells (the mask pass) or the thin shapes and lines (the
+// line pass). The other passes show neither.
+type Shown = "shells" | "lines" | null;
+// One readback of a tile: the group it shows, and the material each drawable takes.
+interface PassStep {
+  read: Readback;
+  shown: Shown;
+  materialOf: (mesh: Drawable) => THREE.Material;
+}
+
+// Renders the image tile by tile when the GPU's texture limit is smaller than it. Each tile gets its five readbacks, in
+// the order of the table in renderPasses; storeTile flips the rows, as the readback is bottom-up.
+export function renderPasses(groups: Groups, options: PassOptions): Passes {
   const { meshes, shells, thin, lines } = groups;
+  const { cssWidth, cssHeight, scale, outlineScale, view } = options;
+  const { camera } = view;
   const width = cssWidth * scale;
   const height = cssHeight * scale;
   const count = width * height;
-  const passes = new Passes(width, height, new Uint32Array(count), new Float32Array(count).fill(BACKGROUND_DEPTH), new Uint8Array(count), new Uint32Array(count));
+  const passes = new Passes(
+    width,
+    height,
+    new Uint32Array(count),
+    new Float32Array(count).fill(BACKGROUND_DEPTH),
+    new Uint8Array(count),
+    new Uint32Array(count),
+  );
   // One scene for every pass: each group is switched on for the passes that use it.
   const all: Drawable[] = [...meshes, ...shells, ...thin, ...lines];
-  const scene = idScene(all);
-  // Each pass has an atom material and a polyhedron-face material; a mesh takes the one its shape calls for.
-  const materials: Record<Pass, [THREE.ShaderMaterial, THREE.ShaderMaterial]> = {
-    id: [passMaterial("id", false), passMaterial("id", true)],
-    band: [passMaterial("band", false), passMaterial("band", true)],
-    depth: [passMaterial("depth", false), passMaterial("depth", true)],
+  const scene = idScene(all, view.origin);
+  // Every material made here is freed when the passes are done.
+  const used: THREE.Material[] = [];
+  const keep = <T extends THREE.Material>(material: T): T => {
+    used.push(material);
+    return material;
   };
-  const pick = (pass: Pass) => (mesh: Drawable) => materials[pass][roleOf(mesh).shape === "polyhedron" ? 1 : 0];
-  const maskShell = shellMaterial(outlineScale);
-  const maskPlain = occluderMaterial(false);
-  const maskFaces = occluderMaterial(true);
-  const maskPick = (mesh: Drawable) => (roleOf(mesh).role === "shell" ? maskShell : roleOf(mesh).shape === "polyhedron" ? maskFaces : maskPlain);
-  // The line pass: occluders are the normal geometry (zero output); thin bonds and lines write their ids.
-  const lineIdMaterial = passMaterial("id", false);
-  const linePick = (mesh: Drawable) => {
-    const role = roleOf(mesh);
-    return role.role === "line" || role.role === "thin" ? lineIdMaterial : role.shape === "polyhedron" ? maskFaces : maskPlain;
+  // A solid pass: the atom material and the polyhedron-face material; a mesh takes the one its shape calls for.
+  const solid = (pass: Pass) => {
+    const atoms = keep(passMaterial(pass, false));
+    const faces = keep(passMaterial(pass, true));
+    return (mesh: Drawable) => (roleOf(mesh).shape === "polyhedron" ? faces : atoms);
   };
-  // Which groups are on in each pass.
-  const show = (pass: "id" | "band" | "depth" | "mask" | "line") => {
-    for (const m of shells) m.visible = pass === "mask";
-    for (const m of [...thin, ...lines]) m.visible = pass === "line";
+  // The materials are made in this order, and it matters: three.js draws opaque objects in material-id order, so where
+  // two surfaces tie in depth the one drawn first wins a pixel. The solid passes come first, then the mask's, then the
+  // line pass's, as the traced output was made before this table.
+  const idSolid = solid("id");
+  const bandSolid = solid("band");
+  const depthSolid = solid("depth");
+  const maskShell = keep(shellMaterial(outlineScale));
+  // The occluders of the mask and line passes: the normal geometry, drawn as zero.
+  const maskPlain = keep(occluderMaterial(false));
+  const maskFaces = keep(occluderMaterial(true));
+  const occluder = (mesh: Drawable) => (roleOf(mesh).shape === "polyhedron" ? maskFaces : maskPlain);
+  const lineIdMaterial = keep(passMaterial("id", false));
+  const PASSES: PassStep[] = [
+    { read: "ids", shown: null, materialOf: idSolid },
+    { read: "bands", shown: null, materialOf: bandSolid },
+    { read: "depths", shown: null, materialOf: depthSolid },
+    {
+      read: "masks",
+      shown: "shells",
+      materialOf: (mesh) => (roleOf(mesh).role === "shell" ? maskShell : occluder(mesh)),
+    },
+    {
+      read: "lineIds",
+      shown: "lines",
+      materialOf: (mesh) => {
+        const { role } = roleOf(mesh);
+        return role === "line" || role === "thin" ? lineIdMaterial : occluder(mesh);
+      },
+    },
+  ];
+  const showOnly = (shown: Shown) => {
+    for (const m of shells) m.visible = shown === "shells";
+    for (const m of [...thin, ...lines]) m.visible = shown === "lines";
   };
   const tile = renderer.capabilities.maxTextureSize;
   camera.updateMatrixWorld();
@@ -212,42 +263,28 @@ export function renderPasses(groups: Groups, cssWidth: number, cssHeight: number
         const tw = Math.min(tile, width - x0);
         const th = Math.min(tile, height - y0);
         camera.setViewOffset(width, height, x0, y0, tw, th); // the full image's camera, looking at this tile only
-        show("id");
-        const ids = readPass(scene, all, pick("id"), tw, th);
-        show("band");
-        const bands = readPass(scene, all, pick("band"), tw, th);
-        show("depth");
-        const depths = readPass(scene, all, pick("depth"), tw, th);
-        show("mask");
-        const masks = readPass(scene, all, maskPick, tw, th);
-        show("line");
-        const lineIds = readPass(scene, all, linePick, tw, th);
-        storeTile(passes, { x0, y0, tw, th, ids, bands, depths, masks, lineIds });
+        const reads = {} as Record<Readback, Uint8Array>;
+        for (const step of PASSES) {
+          showOnly(step.shown);
+          reads[step.read] = readPass(scene, camera, all, step.materialOf, tw, th);
+        }
+        storeTile(passes, { x0, y0, tw, th, ...reads });
       }
     }
   } finally {
     // A failed pass must not leave the live view with a tile's camera or a render target bound.
     renderer.setRenderTarget(null);
     camera.clearViewOffset();
-    for (const material of [...Object.values(materials).flat(), maskShell, maskPlain, maskFaces, lineIdMaterial]) material.dispose();
+    for (const material of used) material.dispose();
   }
   return passes;
 }
 
 // The readbacks of one tile, at (x0, y0) of the full image, tw by th pixels.
-interface Tile {
-  x0: number;
-  y0: number;
-  tw: number;
-  th: number;
-  ids: Uint8Array;
-  bands: Uint8Array;
-  depths: Uint8Array;
-  masks: Uint8Array;
-  lineIds: Uint8Array;
-}
+type Tile = { x0: number; y0: number; tw: number; th: number } & Record<Readback, Uint8Array>;
 
-// Copies a tile's readbacks into the passes: each pixel's object and band become its key, the rows are flipped to top-first.
+// Copies a tile's readbacks into the passes: each pixel's object and band become its key, the rows are flipped to
+// top-first.
 function storeTile(out: Passes, t: Tile): void {
   for (let row = 0; row < t.th; row++) {
     const topRow = t.th - 1 - row; // readRenderTargetPixels is bottom-up
@@ -264,10 +301,23 @@ function storeTile(out: Passes, t: Tile): void {
   }
 }
 
-// One pass over one tile: every drawable drawn with `materialOf`, the pixels read back as RGBA bytes (bottom row first).
-function readPass(scene: THREE.Scene, all: Drawable[], materialOf: (mesh: Drawable) => THREE.Material, tw: number, th: number): Uint8Array {
+// One pass over one tile: every drawable drawn with `materialOf`, the pixels read back as RGBA bytes (bottom row
+// first).
+function readPass(
+  scene: THREE.Scene,
+  camera: PassView["camera"],
+  all: Drawable[],
+  materialOf: (mesh: Drawable) => THREE.Material,
+  tw: number,
+  th: number,
+): Uint8Array {
   for (const mesh of all) mesh.material = materialOf(mesh);
-  const target = new THREE.WebGLRenderTarget(tw, th, { depthBuffer: true, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false });
+  const target = new THREE.WebGLRenderTarget(tw, th, {
+    depthBuffer: true,
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    generateMipmaps: false,
+  });
   try {
     renderer.setRenderTarget(target);
     renderer.render(scene, camera);
@@ -285,8 +335,8 @@ export function disposeMeshes(meshes: Drawable[]): void {
   for (const mesh of meshes) mesh.geometry.dispose();
 }
 
-// Maps a scene point to the render's pixel grid: x and y in render-scale pixels (y down), and the NDC depth in 0..1, by the
-// same camera and structure transform the passes used.
+// Maps a scene point to the render's pixel grid: x and y in render-scale pixels (y down), and the NDC depth in 0..1, by
+// the same camera and offset the passes used.
 export interface Projected {
   x: number; // render px, y down
   y: number;
@@ -294,9 +344,14 @@ export interface Projected {
 }
 export type Project = (p: THREE.Vector3) => Projected;
 
-export function projector(width: number, height: number): Project {
+export function projector(width: number, height: number, view: PassView): Project {
   return (p) => {
-    const ndc = p.clone().add(root.position).applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix);
+    const { camera } = view;
+    const ndc = p
+      .clone()
+      .add(view.origin)
+      .applyMatrix4(camera.matrixWorldInverse)
+      .applyMatrix4(camera.projectionMatrix);
     return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height, depth: ndc.z / 2 + 0.5 };
   };
 }
