@@ -1,0 +1,93 @@
+[
+  {
+    "name": "nacl",
+    "title": "NaCl",
+    "description": "Rock salt, Na and Cl spheres",
+    "scene": "nacl/scene.json.gz",
+    "thumbnail": "nacl/thumbnail.png"
+  },
+  {
+    "name": "methane-clathrate-si",
+    "title": "Methane hydrate",
+    "description": "sI clathrate, CH₄ guests, H-bonds dashed",
+    "scene": "methane-clathrate-si/scene.json.gz",
+    "thumbnail": "methane-clathrate-si/thumbnail.png"
+  },
+  {
+    "name": "ice-ih",
+    "title": "Ice Ih",
+    "description": "H₂O, proton-disordered, H-bonds dashed",
+    "scene": "ice-ih/scene.json.gz",
+    "thumbnail": "ice-ih/thumbnail.png"
+  },
+  {
+    "name": "stishovite",
+    "title": "Stishovite",
+    "description": "SiO₂, rutile-type, octahedra",
+    "scene": "stishovite/scene.json.gz",
+    "thumbnail": "stishovite/thumbnail.png"
+  },
+  {
+    "name": "dry-ice",
+    "title": "Dry ice",
+    "description": "CO₂, Pa-3, linear molecules",
+    "scene": "dry-ice/scene.json.gz",
+    "thumbnail": "dry-ice/thumbnail.png"
+  },
+  {
+    "name": "uio-66",
+    "title": "UiO-66",
+    "description": "Zr₆ clusters, ZrO₈ polyhedra, BDC linkers",
+    "scene": "uio-66/scene.json.gz",
+    "thumbnail": "uio-66/thumbnail.png"
+  },
+  {
+    "name": "c60",
+    "title": "C₆₀ solid",
+    "description": "fcc, bonded C₆₀ molecules",
+    "scene": "c60/scene.json.gz",
+    "thumbnail": "c60/thumbnail.png"
+  },
+  {
+    "name": "c60-cage",
+    "title": "C₆₀ cages",
+    "description": "fcc, each molecule a truncated icosahedron",
+    "scene": "c60-cage/scene.json.gz",
+    "thumbnail": "c60-cage/thumbnail.png"
+  },
+  {
+    "name": "dna-1bna",
+    "title": "B-DNA dodecamer",
+    "description": "1BNA, duplex, no hydrogens",
+    "scene": "dna-1bna/scene.json.gz",
+    "thumbnail": "dna-1bna/thumbnail.png"
+  },
+  {
+    "name": "glut1-4pyp",
+    "title": "GLUT1",
+    "description": "4PYP, glucose transporter, protein atoms",
+    "scene": "glut1-4pyp/scene.json.gz",
+    "thumbnail": "glut1-4pyp/thumbnail.png"
+  },
+  {
+    "name": "nav17-6j8i",
+    "title": "Nav1.7",
+    "description": "6J8I, sodium channel with beta subunits and toxins",
+    "scene": "nav17-6j8i/scene.json.gz",
+    "thumbnail": "nav17-6j8i/thumbnail.png"
+  },
+  {
+    "name": "nucleosome-1kx5",
+    "title": "Nucleosome",
+    "description": "1KX5, histones and DNA",
+    "scene": "nucleosome-1kx5/scene.json.gz",
+    "thumbnail": "nucleosome-1kx5/thumbnail.png"
+  },
+  {
+    "name": "apoferritin",
+    "title": "Apoferritin",
+    "description": "1IER, 24-mer protein cage",
+    "scene": "apoferritin/scene.json.gz",
+    "thumbnail": "apoferritin/thumbnail.png"
+  }
+]
