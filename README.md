@@ -157,12 +157,14 @@ tabs between them. The links are relative, so the folder works under any path.
 ### Sharing a scene
 
 The viewer can open a scene from an address, a gist or a file, so a scene can be shared without building a page for it.
-On the published site, <https://chazeon.github.io/gemmy/view/> opens with no scene; these are the ways to fill it:
+On the published site, the front page <https://chazeon.github.io/gemmy/> is the viewer with the examples as tabs, and
+<https://chazeon.github.io/gemmy/view/> opens with no scene. These are the ways to fill the viewer:
 
     https://chazeon.github.io/gemmy/view/?scene=https://example.org/ice-ih.json.gz
     https://chazeon.github.io/gemmy/view/?scene=../nacl/scene.json.gz&scene=../ice-ih/scene.json.gz   # tabs
     https://chazeon.github.io/gemmy/view/?gist=0123abcd                  # the first .json or .json.gz file
     https://chazeon.github.io/gemmy/view/?gist=0123abcd&file=ice.json.gz  # or the file named
+    https://chazeon.github.io/gemmy/?gist=0123abcd                        # the front page takes them too
 
 - **Addresses.** `scene=` takes any http or https address the browser may read; it is resolved against the page, so a
   relative one works on a site. The host must allow cross-origin reads (CORS), as GitHub's raw files and gists do.
@@ -180,7 +182,8 @@ The scene is checked before it is drawn: its `schema_version` must be the one th
 `gemmy view --hosted` writes the site the examples are published as, the way GitHub Pages serves it: the viewer and its
 stylesheet once at the root, named `viewer.<hash>.js` and `style.<hash>.css` (the hash is of their content, so an update
 is never served from a cache as the old file), `<example>/scene.json.gz` and a small `<example>/index.html` for each example, the viewer
-with no scene at `view/`, and a front page. `scripts/build_site.sh` builds it from the committed examples into `site/`.
+with no scene at `view/`, and the front page: the viewer with every example as a tab, so the site's root opens the
+examples. `scripts/build_site.sh` builds it from the committed examples into `site/`.
 
 The examples are published with GitHub Pages at https://chazeon.github.io/gemmy/ from the `gh-pages` branch (Settings →
 Pages → Deploy from a branch → `gh-pages`, `/ (root)`). To update it, see the list of its files in

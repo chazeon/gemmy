@@ -2,7 +2,7 @@
 // (the built site's example pages), from a URL typed into the empty state, or from a file (dropped on the page, or the ☰
 // menu's Open scene…). A file is read here and never uploaded. Whatever a load reports is shown as plain text.
 import { fetchGist, fetchScene } from "../scene/fetch";
-import { type SceneSource, parseSources, resolveWebUrl, sourceName, tabLabel } from "../scene/source";
+import { type Opening, type SceneSource, linkFor, resolveWebUrl, sourceName, sourcesToOpen, tabLabel } from "../scene/source";
 import { sceneFromFile } from "../scene/read";
 import type { Scene } from "../types";
 import { byId } from "./dom";
@@ -55,22 +55,13 @@ function fail(text: string): void {
 function labelOf(source: SceneSource): string {
   return source.kind === "gist" ? `gist ${source.id}` : source.url;
 }
-// The address that opens the scene again: this page's address with the scene's query (a default scene needs none).
-function linkMaking(source: SceneSource, byDefault: boolean): string {
-  const link = new URL(location.href);
-  link.hash = "";
-  const query: Record<string, string> = byDefault ? {}
-    : source.kind === "gist" ? { gist: source.id, ...(source.file === null ? {} : { file: source.file }) }
-    : { scene: source.url };
-  link.search = new URLSearchParams(query).toString();
-  return link.href;
-}
 async function loadSource(source: SceneSource, byDefault: boolean): Promise<Shown> {
+  const link = linkFor(source, byDefault, location.href);
   if (source.kind === "gist") {
     const { name, doc } = await fetchGist(source.id, source.file);
-    return { doc, name, from: labelOf(source), link: linkMaking(source, byDefault) };
+    return { doc, name, from: labelOf(source), link };
   }
-  return { doc: await fetchScene(source.url), name: sourceName(source.url), from: source.url, link: linkMaking(source, byDefault) };
+  return { doc: await fetchScene(source.url), name: sourceName(source.url), from: source.url, link };
 }
 
 // Shows a loaded scene, or says what failed (the load or the drawing) under the card, naming what was asked for.
@@ -89,41 +80,39 @@ function fromFile(file: File, show: Show): Promise<void> {
   return present(file.name, async () => ({ doc: await sceneFromFile(file), name: file.name, from: "local file", link: null }), show);
 }
 
-// The scenes the page opens: the address's (?scene= or ?gist=), else the page's default scene, else none.
-function sourcesToOpen(): { sources: SceneSource[]; byDefault: boolean } {
-  const sources = parseSources(location.search, location.href);
-  const defaultScene = document.querySelector<HTMLMetaElement>('meta[name="gemmy-default-scene"]')?.content ?? "";
-  if (sources.length > 0 || defaultScene === "") return { sources, byDefault: false };
-  return { sources: [{ kind: "url", url: resolveWebUrl(defaultScene, location.href) }], byDefault: true };
+// The page's default scenes: one gemmy-default-scene meta per scene, in document order.
+function defaultScenes(): string[] {
+  return [...document.querySelectorAll<HTMLMetaElement>('meta[name="gemmy-default-scene"]')]
+    .map((meta) => meta.content)
+    .filter((scene) => scene !== "");
 }
 
 export function startLoader(show: Show): void {
-  let opening: ReturnType<typeof sourcesToOpen>;
+  let openings: Opening[];
   try {
-    opening = sourcesToOpen();
+    openings = sourcesToOpen(location.search, location.href, defaultScenes());
   } catch (error) {
     fail(messageOf(error));
     return;
   }
-  const { sources, byDefault } = opening;
-  if (sources.length === 0) {
+  if (openings.length === 0) {
     showCard();
-  } else if (sources.length === 1) {
-    const [only] = sources;
-    void present(labelOf(only), () => loadSource(only, byDefault), show);
+  } else if (openings.length === 1) {
+    const [only] = openings;
+    void present(labelOf(only.source), () => loadSource(only.source, only.byDefault), show);
   } else {
-    openTabs(sources, show);
+    openTabs(openings, show);
   }
 }
 
 // Several scenes as tabs in the title bar, in the look of the built site's tabs. Each scene loads once, when its tab is
 // first chosen; the first tab is chosen at once.
-function openTabs(sources: SceneSource[], show: Show): void {
+function openTabs(openings: Opening[], show: Show): void {
   const bar = document.createElement("nav");
   bar.className = "tabs";
   bar.setAttribute("aria-label", "Scenes");
   const loaded = new Map<number, Shown>();
-  const buttons = sources.map((source, k) => {
+  const buttons = openings.map(({ source }, k) => {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = tabLabel(source);
@@ -136,8 +125,9 @@ function openTabs(sources: SceneSource[], show: Show): void {
       if (j === k) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    void present(labelOf(sources[k]), async () => {
-      const shown = loaded.get(k) ?? (await loadSource(sources[k], false));
+    const { source, byDefault } = openings[k];
+    void present(labelOf(source), async () => {
+      const shown = loaded.get(k) ?? (await loadSource(source, byDefault));
       loaded.set(k, shown);
       return shown;
     }, show);

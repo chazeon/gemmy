@@ -27,7 +27,7 @@ from .settings import Axes
 
 VIEWER = Path(__file__).with_name("viewer")
 _PLACEHOLDER = re.compile(
-    r"__(TITLE|SUBTITLE|SCENE_JSON|SCENE_FILE|MODE|DEFAULT_SCENE|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__"
+    r"__(TITLE|SUBTITLE|SCENE_JSON|SCENE_FILE|MODE|DEFAULT_SCENES|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__"
 )
 # The elements of page.html that a linked page replaces with references to the site's shared files.
 _INLINE_STYLE = "<style>\n/*__STYLE__*/</style>"
@@ -119,13 +119,14 @@ def _page(
     tabs: Sequence[tuple[str, str]] = (),
     tab: int = 0,
     mode: str = "scene",
-    default_scene: str = "",
+    default_scenes: Sequence[str] = (),
     assets: tuple[str, str] | None = None,
 ) -> str:
     """The page with its placeholders filled. `mode` tells the viewer what to do when no scene is embedded: "live"
-    (follow gemmy serve) or "load" (the loader), and `default_scene` is the scene the loader opens then (a URL
-    relative to the page). An embedded scene is always shown. `assets` (the hrefs of the shared style and viewer) makes
-    the page use the site's shared files instead of carrying its own (see _template)."""
+    (follow gemmy serve) or "load" (the loader), and `default_scenes` are the scenes the loader opens then, in order
+    (URLs relative to the page; several become tabs). An embedded scene is always shown. `assets` (the hrefs of the
+    shared style and viewer) makes the page use the site's shared files instead of carrying its own (see _template)."""
+    metas = "".join(f'<meta name="gemmy-default-scene" content="{html.escape(scene)}">' for scene in default_scenes)
     values = {
         **_constant_values(),
         "TITLE": html.escape(title),
@@ -133,7 +134,7 @@ def _page(
         "SCENE_JSON": scene_text,
         "SCENE_FILE": html.escape(scene_file),
         "MODE": mode,
-        "DEFAULT_SCENE": html.escape(default_scene),
+        "DEFAULT_SCENES": metas,
         "TABS": _tabs(tabs, tab),
     }
     # One pass, so text inside the scene or the title is never mistaken for a placeholder.
@@ -168,10 +169,13 @@ def render_live_page(
     return _page("", title, subtitle, scene_file, tabs, tab, "live")
 
 
-def render_loader_page(title: str = "Scene viewer", assets: tuple[str, str] | None = None) -> str:
-    """A page with no scene: it opens one from the address (?scene=, ?gist=), a URL typed in, or a dropped file (see
-    web/src/ui/loader.ts). With no `assets` it needs no server and no other file than the viewer's own."""
-    return _page("", title, "", mode="load", assets=assets)
+def render_loader_page(
+    title: str = "Scene viewer", assets: tuple[str, str] | None = None, default_scenes: Sequence[str] = ()
+) -> str:
+    """A page with no scene: it opens one from the address (?scene=, ?gist=), the default scenes, a URL typed in, or a
+    dropped file (see web/src/ui/loader.ts). With no `assets` it needs no server and no other file than the viewer's
+    own."""
+    return _page("", title, "", mode="load", default_scenes=default_scenes, assets=assets)
 
 
 def write_viewer(
@@ -264,43 +268,14 @@ def _shared_files() -> _SharedFiles:
     )
 
 
-def _landing(names: Sequence[str], subtitle: str, style_href: str) -> str:
-    """The site's front page: each example, its own page and the viewer with its scene, and every example as tabs.
-    It uses the viewer's stylesheet for its colours and fonts; the stylesheet makes the body a fixed stage, so the
-    front page gives the body its own height and lets it scroll."""
-    items = "".join(
-        f'<li><a href="{html.escape(quote(name))}/">{html.escape(name)}</a> · '
-        f'<a href="{html.escape(_viewer_link([name]))}">in the viewer</a></li>'
-        for name in names
-    )
-    everything = html.escape(_viewer_link(names))
-    note = f"<p>{html.escape(subtitle)}</p>" if subtitle else ""
-    return (
-        '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>gemmy examples</title>\n'
-        f'<link rel="stylesheet" href="{html.escape(style_href)}">\n'
-        "<style>body{height:auto;overflow:auto;font:16px/1.5 system-ui,sans-serif;max-width:36rem;margin:0 auto;"
-        "padding:16px}a{color:#3861cc}li{margin:.3rem 0}</style>\n"
-        f"<h1>gemmy examples</h1>\n{note}\n"
-        f"<ul>{items}</ul>\n"
-        f'<p><a href="{everything}">All examples as tabs</a>, or the <a href="view/">viewer</a> for any scene file.'
-        "</p>\n"
-    )
-
-
-def _viewer_link(names: Sequence[str]) -> str:
-    """The viewer's address with the scenes of the named examples (relative to the site's front page)."""
-    scenes = [f"{_SITE_ROOT}{quote(name)}/{HOSTED_SCENE_FILE}" for name in names]
-    return "view/?" + "&".join(f"scene={quote(scene, safe='/.')}" for scene in scenes)
-
-
 def write_hosted_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = "") -> Path:
     """A hosted site (GitHub Pages): one viewer and one stylesheet at the root, named by their content's hash
     (viewer.<hash>.js, style.<hash>.css), shared by every page. Per scene, a folder with `scene.json.gz` (gzip, no
     timestamp, so the same scene gives the same bytes; not hashed, since a stale copy of a scene is harmless) and an
     index.html that opens it, a small page with the viewer's default scene. `view/index.html` is the viewer with no
-    scene, which opens any scene by address or file. `index.html` is the front page. Every scene is checked before
-    anything is written; links are relative, so the site works under any path. Returns `out/index.html`."""
+    scene, which opens any scene by address or file. `index.html` is the front page: the viewer with every scene as a
+    default tab, in order. Every scene is checked before anything is written; links are relative, so the site works
+    under any path. Returns `out/index.html`."""
     paths = [Path(scene) for scene in scenes]
     names = _scene_names(paths)
     texts = [path.read_text(encoding="utf-8") for path in paths]
@@ -318,11 +293,13 @@ def write_hosted_site(scenes: Sequence[str | Path], out: str | Path, subtitle: s
         folder.mkdir(parents=True, exist_ok=True)
         (folder / HOSTED_SCENE_FILE).write_bytes(gzip.compress(text.encode("utf-8"), mtime=0))
         page = _page(
-            "", name, subtitle, path.name, tabs, k, mode="load", default_scene=HOSTED_SCENE_FILE, assets=assets
+            "", name, subtitle, path.name, tabs, k, mode="load", default_scenes=[HOSTED_SCENE_FILE], assets=assets
         )
         (folder / "index.html").write_text(page, encoding="utf-8")
     (out / "view").mkdir(exist_ok=True)
     (out / "view" / "index.html").write_text(render_loader_page(assets=assets), encoding="utf-8")
+    scenes_at_root = [f"{name}/{HOSTED_SCENE_FILE}" for name in names]
+    front = render_loader_page("gemmy", assets=shared.hrefs(""), default_scenes=scenes_at_root)
     index = out / "index.html"
-    index.write_text(_landing(names, subtitle, shared.style), encoding="utf-8")
+    index.write_text(front, encoding="utf-8")
     return index

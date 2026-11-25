@@ -17,6 +17,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = sorted(p.parent.name for p in (ROOT / "examples").glob("*/config.toml"))
+# The examples in the order scripts/build_site.sh compiles them: the front page's tabs follow this order.
+BUILD_ORDER = re.search(r"for example in ([^;]+);", (ROOT / "scripts" / "build_site.sh").read_text()).group(1).split()
 GEMMY = Path(sys.executable).with_name("gemmy")  # the console script of this environment
 # A page with its viewer inline is over 200 KB; the example pages are a few KB and load the shared viewer.
 PAGE_BYTES_LIMIT = 30_000
@@ -25,6 +27,8 @@ VIEWER_NAME = re.compile(rf"viewer\.({HASH})\.js")
 STYLE_NAME = re.compile(rf"style\.({HASH})\.css")
 # A reference to a file in a page (href or src), relative to the page's folder.
 REFERENCE = re.compile(r'(?:href|src)="(?:\.\./)?([^"/]+)"')
+# The default scenes a page opens, in document order (the loader reads them the same way).
+DEFAULT_SCENE = re.compile(r'<meta name="gemmy-default-scene" content="([^"]*)">')
 
 
 @pytest.fixture(scope="module")
@@ -68,8 +72,14 @@ def test_every_page_references_the_hashed_names_and_no_others(site: Path) -> Non
         referenced = {match for match in REFERENCE.findall(page)}
         assert style in referenced, path
         assert not re.search(r'(?:href|src)="(?:\.\./)?(?:viewer|style)\.(?:js|css)"', page), path
-        if path != "index.html":  # the front page has no viewer, only the stylesheet for its look
-            assert viewer in referenced, path
+        assert viewer in referenced, path
+
+
+def test_the_front_page_is_the_viewer_with_every_example_as_a_default_tab(site: Path) -> None:
+    assert sorted(BUILD_ORDER) == EXAMPLES
+    page = (site / "index.html").read_text(encoding="utf-8")
+    assert '<script type="module" src="viewer.' in page  # the shared viewer, not an inlined copy
+    assert DEFAULT_SCENE.findall(page) == [f"{name}/scene.json.gz" for name in BUILD_ORDER]
 
 
 @pytest.mark.parametrize("name", EXAMPLES)
@@ -79,4 +89,4 @@ def test_each_example_has_its_scene_gzipped_and_a_small_page(site: Path, name: s
     page = (site / name / "index.html").read_text(encoding="utf-8")
     assert len(page.encode("utf-8")) < PAGE_BYTES_LIMIT
     assert '<script type="module">' not in page  # no inlined copy of the viewer
-    assert 'content="scene.json.gz"' in page  # the default scene: the folder's own scene file
+    assert DEFAULT_SCENE.findall(page) == ["scene.json.gz"]  # its own scene file, its only default

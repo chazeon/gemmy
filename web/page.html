@@ -7,7 +7,7 @@
 <title>gemmy preview (__TITLE__)</title>
 <meta name="gemmy-scene-file" content="__SCENE_FILE__">
 <meta name="gemmy-mode" content="__MODE__">
-<meta name="gemmy-default-scene" content="__DEFAULT_SCENE__"><!-- the loader opens this when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
+__DEFAULT_SCENES__<!-- the loader opens these, one per gemmy-default-scene meta in order (tabs when several), when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
 <script>
   // The theme, set before the first paint so a dark page never flashes light. It reads the key that web/src/ui/theme.ts
   // writes (gemmy.theme) and sets data-theme only for Light or Dark; Auto leaves it off, so the system's scheme applies.

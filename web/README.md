@@ -16,7 +16,8 @@ The page that `gemmy view` and `gemmy serve` write is built from here: TypeScrip
 - **Live** (`gemmy serve`, meta `gemmy-mode` = `live`): the page fetches `scene.json` and follows the server's events.
 - **Loader** (`view/` on the site, and the examples' pages, mode `load`): `src/ui/loader.ts` opens the scene named by
   `?scene=` or `?gist=` (`src/scene/source.ts` parses them; `src/scene/fetch.ts` fetches), else the page's
-  `gemmy-default-scene`, else the empty state. It also takes a dropped file or Open scene… (`src/scene/read.ts`: gzip by
+  `gemmy-default-scene` metas (one per scene, in document order: several open as tabs, which is the front page; one is
+  an example's page), else the empty state. `sourcesToOpen` and `linkFor` in `source.ts` decide this and a tab's link. It also takes a dropped file or Open scene… (`src/scene/read.ts`: gzip by
   its magic bytes, the size cap, the schema check).
 
 `src/ui/share.ts` keeps the camera in the address as `#view=` (`src/camera/viewhash.ts` encodes and decodes it) and
@@ -28,6 +29,8 @@ restores it once the first scene is shown; Copy link is there too.
 10 hex digits of their SHA-256 (`viewer.<hash>.js`, `style.<hash>.css`). Every page references those names, so a new
 build never gets an old, cached file under the same name. The names are computed in one place
 (`gemmy.view._shared_files`), and the page writers take them as hrefs. The scene files (`scene.json.gz`) are not hashed.
+The front page (`index.html`) is the viewer too, with every example's scene as a default tab; `view/` is the viewer with
+no scene, and each example's page has its own scene as its one default.
 
 ## Where things are
 

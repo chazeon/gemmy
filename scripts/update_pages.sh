@@ -2,7 +2,7 @@
 # Rebuild the gh-pages branch (GitHub Pages) from the committed examples with scripts/build_site.sh, and commit it.
 # It does not push: run `git push github gh-pages` afterwards. No Blender.
 # The branch holds exactly these files, and nothing else:
-#   index.html                    the front page (links to each example and to the viewer)
+#   index.html                    the front page: the viewer, with every example as a default tab
 #   viewer.<hash>.js              the one viewer, shared by every page; the hash is the first 10 hex digits of its
 #   style.<hash>.css              SHA-256, so a new build is never served a stale copy (GitHub Pages caches ~10 min)
 #   view/index.html               the viewer with no scene (?scene=, ?gist=, or a dropped file)

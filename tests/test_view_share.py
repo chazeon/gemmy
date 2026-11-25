@@ -263,6 +263,49 @@ console.log(JSON.stringify([
     assert _run(body, {}, tmp_path) == ["nacl", "ice-ih", "a b", "ice.json.gz"]
 
 
+def test_the_page_opens_its_defaults_unless_the_address_names_scenes(tmp_path: Path) -> None:
+    body = """
+const base = "https://chazeon.github.io/gemmy/";
+const defaults = ["nacl/scene.json.gz", "ice-ih/scene.json.gz", "stishovite/scene.json.gz"];
+const shown = (openings) => openings.map((o) => ({
+  what: o.source.kind === "url" ? o.source.url : `gist ${o.source.id}`, byDefault: o.byDefault,
+}));
+console.log(JSON.stringify({
+  front: shown(sourcesToOpen("", base, defaults)),
+  sceneOverrides: shown(sourcesToOpen("?scene=https://example.org/a.json", base, defaults)),
+  gistOverrides: shown(sourcesToOpen("?gist=0123", base, defaults)),
+  nothing: sourcesToOpen("", base, []),
+  secondTab: tabLabel(sourcesToOpen("", base, defaults)[1].source),
+}));
+"""
+    found = _run(body, {}, tmp_path)
+    assert found["front"] == [
+        {"what": "https://chazeon.github.io/gemmy/nacl/scene.json.gz", "byDefault": True},
+        {"what": "https://chazeon.github.io/gemmy/ice-ih/scene.json.gz", "byDefault": True},
+        {"what": "https://chazeon.github.io/gemmy/stishovite/scene.json.gz", "byDefault": True},
+    ]
+    assert found["sceneOverrides"] == [{"what": "https://example.org/a.json", "byDefault": False}]
+    assert found["gistOverrides"] == [{"what": "gist 0123", "byDefault": False}]
+    assert found["nothing"] == []
+    assert found["secondTab"] == "ice-ih"
+
+
+def test_a_default_tab_links_to_the_page_and_a_scene_tab_to_its_scene(tmp_path: Path) -> None:
+    body = """
+const page = "https://chazeon.github.io/gemmy/#view=persp;lens=50";
+console.log(JSON.stringify({
+  defaultTab: linkFor({ kind: "url", url: "https://chazeon.github.io/gemmy/nacl/scene.json.gz" }, true, page),
+  sceneTab: linkFor({ kind: "url", url: "https://example.org/a.json" }, false, page),
+  gistTab: linkFor({ kind: "gist", id: "0123", file: null }, false, page),
+}));
+"""
+    assert _run(body, {}, tmp_path) == {
+        "defaultTab": "https://chazeon.github.io/gemmy/",
+        "sceneTab": "https://chazeon.github.io/gemmy/?scene=https%3A%2F%2Fexample.org%2Fa.json",
+        "gistTab": "https://chazeon.github.io/gemmy/?gist=0123",
+    }
+
+
 # ---- the pages that carry the mode (the loader needs no scene in the page) ----
 
 

@@ -56,6 +56,32 @@ export function sourceName(url: string): string {
   return pathSegments(url).at(-1) ?? url;
 }
 
+// A scene to open, and whether it is a default of the page (its link is then the page's own address, with no scene in it).
+export interface Opening {
+  source: SceneSource;
+  byDefault: boolean;
+}
+
+// What the page opens, in order: the scenes the address asks for (?scene= or ?gist=), else the page's default scenes
+// (the built site's front page has every example, an example's page its own), else none. Only the address can override them.
+export function sourcesToOpen(search: string, base: string, defaults: readonly string[]): Opening[] {
+  const sources = parseSources(search, base);
+  if (sources.length > 0) return sources.map((source) => ({ source, byDefault: false }));
+  return defaults.map((scene) => ({ source: { kind: "url", url: resolveWebUrl(scene, base) }, byDefault: true }));
+}
+
+// The address that opens a scene again: the page's address (without its #view) with the scene's query. A default scene
+// needs none, so its link is the page's address.
+export function linkFor(source: SceneSource, byDefault: boolean, pageHref: string): string {
+  const link = new URL(pageHref);
+  link.hash = "";
+  const query: Record<string, string> = byDefault ? {}
+    : source.kind === "gist" ? { gist: source.id, ...(source.file === null ? {} : { file: source.file }) }
+    : { scene: source.url };
+  link.search = new URLSearchParams(query).toString();
+  return link.href;
+}
+
 // The label of a scene's tab: the folder of a scene file that is named scene.json(.gz) (nacl/scene.json.gz is "nacl"),
 // else the file name without its extension; a gist's tab is its file.
 export function tabLabel(source: SceneSource): string {
