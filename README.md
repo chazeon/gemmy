@@ -16,8 +16,8 @@ gemmy render --scene scene.json --look.preset 3to2d --out picture.png
 Try the web viewer on the examples: **https://chazeon.github.io/gemmy/**
 
 <p align="center">
-  <img src="docs/images/viewer-desktop.png" height="380" alt="The web viewer on a desktop browser: the three examples as tabs, ice Ih selected with an oxygen atom and its info card">
-  <img src="docs/images/viewer-phone.png" height="380" alt="The web viewer on a phone: ice Ih with an oxygen atom selected, its info card over the axis triad">
+  <img src="docs/images/viewer-desktop.png" height="380" alt="The web viewer on a desktop browser: the three examples as tabs, ice Ih with an oxygen atom selected and its info card, the axis triad, the lens row and the toolbar">
+  <img src="docs/images/viewer-phone.png" height="380" alt="The web viewer on a phone: ice Ih with an oxygen atom selected and its info card, in a phone frame">
 </p>
 
 Blender renders of the examples (`3to2d` look):
@@ -170,7 +170,7 @@ On the published site, the front page <https://chazeon.github.io/gemmy/> is the 
   relative one works on a site. The host must allow cross-origin reads (CORS), as GitHub's raw files and gists do.
   Plain JSON and gzip (`.json.gz`, detected by its first bytes) both load. Several `scene=` are tabs.
 - **Gists.** A secret gist works by its id. The first `.json` or `.json.gz` file is shown unless `file=` names one.
-- **Files.** Drop a `.json` or `.json.gz` anywhere on the page, or use ☰ → Open scene…. The file is read in the browser
+- **Files.** Drop a `.json` or `.json.gz` anywhere on the page, or use ☰ → Open local file…. The file is read in the browser
   and never uploaded.
 - **The view.** The camera is in the address too: `#view=persp;lens=50;eye=…;at=…;up=…` (or `ortho;zoom=…`), to four
   significant figures. ☰ → Copy link copies the scene's address with this view. An embedded or a local scene cannot go

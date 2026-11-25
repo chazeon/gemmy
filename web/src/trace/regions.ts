@@ -75,7 +75,6 @@ export interface Group {
   project: Project;
   linePass: LinePass;
   curves: CurveLookup;
-  tol: number; // the snap tolerance, in CSS px
   paint: Paint;
   outlines: Outlines;
   thin: (obj: TracedObject) => boolean; // drawn as a line, not traced as a region
@@ -195,7 +194,7 @@ function regionFill(g: Group, id: number, obj: TracedObject, box: Box): { fill: 
   );
   for (const ring of rings) {
     const { stretches, whole } = stretchesOf(ring, id, passes, scale);
-    const parts = ringPaths(stretches, whole, (st) => g.curves.candidatesFor(id, st), g.tol);
+    const parts = ringPaths(stretches, whole, (st) => g.curves.candidatesFor(id, st), g.scale);
     fill += parts.fill;
     outline += parts.outline;
   }

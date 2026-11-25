@@ -11,6 +11,7 @@ import pytest
 
 from gemmy.compile.pipeline import compile_scene_from_files
 from gemmy.config import load_scene_config
+from slow_examples import example_param
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 CONFIGS = sorted((p.parent.name, p.name) for p in [*EXAMPLES.glob("*/config*.json"), *EXAMPLES.glob("*/config*.toml")])
@@ -20,7 +21,7 @@ def _compile(name: str, config: str):
     return compile_scene_from_files(EXAMPLES / name / config)  # each config names its own POSCAR
 
 
-@pytest.mark.parametrize(("name", "config"), CONFIGS)
+@pytest.mark.parametrize(("name", "config"), [example_param(name, config) for name, config in CONFIGS])
 def test_example_compiles(name: str, config: str) -> None:
     scene = _compile(name, config)
     assert scene.primitives.atoms or scene.primitives.polyhedra

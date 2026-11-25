@@ -7,6 +7,7 @@
 import { type Curve, curveRms, onLine } from "./candidates";
 import { arcTo, fullEllipseArcs, paramOf, pointAt } from "./ellipse";
 import { closedPath, fitCommands, type Pt } from "./curves";
+import { intersectCurves } from "./intersect";
 import { type Passes, idOf } from "./buffers";
 import { fmtPt } from "../export/markup";
 import type { Ellipse } from "../export/view";
@@ -14,6 +15,9 @@ import type { Ellipse } from "../export/view";
 // The RMS distance (render px) under which a stretch counts as lying on a curve. About a pixel of the id render at 1x
 // is 1 CSS px, so 0.6 render px is 0.6 px at 1x and 0.3 px at 2x.
 const SNAP_TOL_RENDER_PX = 0.6;
+// Two snapped stretches meet at the exact crossing of their curves when it lies this close to the traced junction (render
+// px). Farther, the curves do not cross there (or they are tangent), and each stretch keeps its own projected end.
+const JOIN_TOL_RENDER_PX = 2;
 // The outline decision samples the shell mask at these distances outside the boundary (render px): a band 1.5 px wide.
 // A point is outlined when more than half of its samples are shell.
 const BAND_OFFSETS_PX = [0.5, 1, 1.5];
@@ -225,9 +229,10 @@ export function ringPaths(
   stretches: Stretch[],
   whole: boolean,
   candidates: (st: Stretch) => Curve[],
-  tol: number,
+  scale: number,
 ): RingPaths {
   if (stretches.length === 0) return { fill: "", outline: "" };
+  const tol = snapTolerance(scale);
   if (whole) {
     const st = stretches[0];
     const best = bestCurve(candidates(st), st.pts, tol);
@@ -242,13 +247,19 @@ export function ringPaths(
   }
   // Each stretch's curve is chosen first, so the path can start on the first stretch's curve: an arc is drawn from the
   // current point, so that point must lie on its ellipse.
+  const n = stretches.length;
   const bests = stretches.map((st) => bestCurve(candidates(st), st.pts, tol));
-  let cur: Pt = startOn(bests[0], stretches[0].pts[0]);
+  // The junction before each stretch: the exact crossing of its curve and its predecessor's (both snapped), else null.
+  const joints = stretches.map((st, k) =>
+    n > 1 ? junctionOf(bests[(k - 1 + n) % n], bests[k], stretches[(k - 1 + n) % n], st, scale) : null,
+  );
+  let cur: Pt = joints[0] ?? startOn(bests[0], stretches[0].pts[0]);
   let d = `M${fmtPt(cur)}`;
   const pieces: { start: Pt; cmd: string; outlined: boolean }[] = [];
   stretches.forEach((st, index) => {
     const start = cur;
-    const piece = pieceFor(st, bests[index], start);
+    // the wrap-around junction (the last stretch to the first) closes the ring at the path's start
+    const piece = pieceFor(st, bests[index], start, joints[(index + 1) % n]);
     cur = piece.end;
     d += piece.cmd;
     pieces.push({ start, cmd: piece.cmd, outlined: st.outlined });
@@ -257,16 +268,30 @@ export function ringPaths(
   return { fill: d, outline: outlineOf(pieces) };
 }
 
+// The exact junction between two consecutive stretches: where their snapped curves cross, nearest the traced junction
+// (the midpoint of the two traced points either side of it), if that crossing is within JOIN_TOL_RENDER_PX of it.
+// Null when either stretch is a Bézier, or the curves do not cross there.
+function junctionOf(before: Curve | null, after: Curve | null, prev: Stretch, next: Stretch, scale: number): Pt | null {
+  if (!before || !after) return null;
+  const a = prev.pts[prev.pts.length - 1];
+  const b = next.pts[0];
+  const hint: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const at = intersectCurves(before, after, hint);
+  if (!at || Math.hypot(at[0] - hint[0], at[1] - hint[1]) > joinTolerance(scale)) return null;
+  return at;
+}
+
 // The command that carries the walk from `start` along a stretch on its best curve (a line, an arc, or the fitted
-// Bézier), and the point it ends at.
-function pieceFor(st: Stretch, best: Curve | null, start: Pt): { cmd: string; end: Pt } {
+// Bézier), and the point it ends at: `exactEnd` (the junction after it, when that is an exact crossing) or else its own
+// projected end.
+function pieceFor(st: Stretch, best: Curve | null, start: Pt, exactEnd: Pt | null): { cmd: string; end: Pt } {
   const last = st.pts[st.pts.length - 1];
   if (best?.kind === "line") {
-    const end = onLine(best.a, best.b, last);
+    const end = exactEnd ?? onLine(best.a, best.b, last);
     return { cmd: `L${fmtPt(end)}`, end };
   }
   if (best?.kind === "ellipse") {
-    const end = pointAt(best.e, paramOf(best.e, last));
+    const end = exactEnd ?? pointAt(best.e, paramOf(best.e, last));
     return { cmd: arcTo(best.e, pointAt(best.e, paramOf(best.e, start)), end, st.pts), end };
   }
   return { cmd: fitCommands([start, ...st.pts.slice(1)]), end: last };
@@ -302,8 +327,13 @@ function bestCurve(curves: Curve[], pts: Pt[], tol: number): Curve | null {
 }
 
 // The snap tolerance in CSS px, from the render-px constant and the render scale.
-export function snapTolerance(scale: number): number {
+function snapTolerance(scale: number): number {
   return SNAP_TOL_RENDER_PX / scale;
+}
+
+// The junction tolerance in CSS px.
+function joinTolerance(scale: number): number {
+  return JOIN_TOL_RENDER_PX / scale;
 }
 
 // The point a stretch starts from: its first point, moved onto the curve it is written as.

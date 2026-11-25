@@ -19,7 +19,7 @@ import {
   viewForward,
 } from "./framing";
 import { EPS } from "../config";
-import { type Vec, lerp, span, vadd, vdot, vscale } from "../geom/vector";
+import { type Vec, lerp, span, vadd, vdot, vscale, vsub } from "../geom/vector";
 
 export interface ViewState {
   target: Vec; // the orbit point (the structure's centre is the origin)
@@ -105,6 +105,19 @@ export function dollied(view: ViewState, wanted: number, extent: number): ViewSt
 export function zoomedTo(view: ViewState, wanted: number, extent: number): ViewState {
   const level = MathUtils.clamp(wanted, ZOOM_MIN, ZOOM_MAX);
   return view.projection === "persp" ? dollied(view, level, extent) : { ...view, zoom: level };
+}
+
+// The point `distance` in front of a camera at `place` that looks along `orientation`.
+export const inFrontOf = (place: Vec, orientation: Quat, distance: number): number[] =>
+  vsub(place, vscale(backAxis(orientation), distance));
+
+// Turns the camera in place (look-around): its place and its distance to the target stay, the orientation turns, and the
+// target moves to stay that distance in front of it, so the zoom holds.
+export function turnedInPlace(view: ViewState, screenAxis: Vec, degrees: number, extent: number): ViewState {
+  const place = cameraPosition(view, extent);
+  const distance = span(place, view.target);
+  const turned = rotated(view, screenAxis, degrees);
+  return { ...turned, target: inFrontOf(place, turned.orientation, distance) };
 }
 
 // Turns about a screen axis by `degrees`, about the target (the distance from it does not change).

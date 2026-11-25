@@ -68,6 +68,12 @@ class View:
     """Write a hosted site instead (--out is its folder, as for GitHub Pages): one shared viewer, a scene.json.gz per
     scene and a small page for each, view/ for any scene by address or file, and a front page: the viewer with
     every scene as a tab. Needs a web server."""
+    gallery: Path | None = None
+    """With --hosted: a folder with <scene name>/gallery.json (title and description) for every scene. Writes
+    examples.json, the scenes in order, for the site's start screen."""
+    thumbnails: Path | None = None
+    """With --hosted and --gallery: a folder with <scene name>.png (the start screen's picture of each scene), copied
+    into the site. Needed with --gallery, and the other way round."""
 
 
 @dataclass(frozen=True)

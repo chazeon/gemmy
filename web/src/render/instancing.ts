@@ -24,13 +24,16 @@ const LINE_RADIUS_SHARE = 0.7;
 // and the SVG trace both use hardEdges.
 const HARD_EDGE_ANGLE_DEG = 1;
 
-// The kinds of instanced mesh, by shape and material. `outlined` is whether the mesh gets an outline shell.
+// The kinds of instanced mesh, by shape and material. `outlined` is whether the mesh gets an outline shell. refs[i] is
+// the atom instance i stands for, and bonds[i] the bond it comes from (a dash or a dot, or a solid bond's cylinder); both
+// are undefined or null for the rest, the arrows among them.
 export interface InstanceGroup {
   shape: "sphere" | "cylinder" | "dot" | "cone";
   material: string | null;
   outlined: boolean;
   matrices: number[];
   refs: (AtomPrimitive | null)[];
+  bonds: (BondPrimitive | undefined)[];
 }
 
 // All polyhedra of one material as one triangle soup. `owner` gives, per triangle, the index of its polyhedron, and
@@ -49,7 +52,7 @@ interface Face {
 }
 
 // Collects the instances of a scene into groups, by what one draw call can share: the shape, the material and whether
-// the instance is outlined. refs[i] is what instance i stands for: the atom, or null. Dashes and dots get no outline.
+// the instance is outlined. Dashes and dots get no outline.
 class InstanceCollector {
   private readonly groups = new Map<string, InstanceGroup>();
 
@@ -60,15 +63,17 @@ class InstanceCollector {
     outlined: boolean,
     matrix: readonly number[],
     ref: AtomPrimitive | null = null,
+    bond?: BondPrimitive,
   ): void {
     const key = `${shape}|${material}|${outlined}`;
     let group = this.groups.get(key);
     if (!group) {
-      group = { shape, material, outlined, matrices: [], refs: [] };
+      group = { shape, material, outlined, matrices: [], refs: [], bonds: [] };
       this.groups.set(key, group);
     }
     group.matrices.push(...matrix);
     group.refs.push(ref);
+    group.bonds.push(bond);
   }
 
   // A cylinder from a to b, centred on the midpoint. Two coincident ends draw nothing.
@@ -78,10 +83,11 @@ class InstanceCollector {
     radius: number,
     material: string | null,
     outlined: boolean,
+    bond?: BondPrimitive,
   ): void {
     const len = span(a, b);
     if (len <= EPS) return;
-    this.add("cylinder", material, outlined, alongMatrix(lerp(a, b, 0.5), vunit(vsub(b, a)), radius, len));
+    this.add("cylinder", material, outlined, alongMatrix(lerp(a, b, 0.5), vunit(vsub(b, a)), radius, len), null, bond);
   }
 
   groupList(): InstanceGroup[] {
@@ -123,27 +129,30 @@ export function polyhedronGroups(data: Scene): PolyhedronGroup[] {
 }
 
 // ---- instances: bonds and displacements ----
+// Every instance of a bond carries the bond, so a pick can find the bond from any of its dashes or dots.
 function addBond(collector: InstanceCollector, bond: BondPrimitive, pos: Map<string, Vec3>): void {
   const a = pos.get(bond.a_point_id)!;
   const b = pos.get(bond.b_point_id)!;
   const style = bond.style ?? "solid";
-  if (style === "dashed") addDashes(collector, a, b, bond.radius, bond.material_id);
-  else if (style === "dotted") addDots(collector, a, b, bond.radius, bond.material_id);
-  else collector.cylinder(a, b, bond.radius, bond.material_id, true);
+  if (style === "dashed") addDashes(collector, a, b, bond);
+  else if (style === "dotted") addDots(collector, a, b, bond);
+  else collector.cylinder(a, b, bond.radius, bond.material_id, true, bond);
 }
 
 // A dashed bond: cylinders of a dash length in bond radii (with a floor), each followed by a gap.
-function addDashes(collector: InstanceCollector, a: Vec3, b: Vec3, radius: number, material: string): void {
-  const dash = Math.max(DASH.length * radius, DASH.min);
+function addDashes(collector: InstanceCollector, a: Vec3, b: Vec3, bond: BondPrimitive): void {
+  const dash = Math.max(DASH.length * bond.radius, DASH.min);
   const gap = (dash * DASH.gap) / DASH.length;
-  for (const [start, end] of dashSegments(a, b, dash, gap)) collector.cylinder(start, end, radius, material, false);
+  for (const [start, end] of dashSegments(a, b, dash, gap)) {
+    collector.cylinder(start, end, bond.radius, bond.material_id, false, bond);
+  }
 }
 
 // A dotted bond: spheres along the bond, spaced in bond radii (with a floor).
-function addDots(collector: InstanceCollector, a: Vec3, b: Vec3, radius: number, material: string): void {
-  const spacing = Math.max(DOT.spacing * radius, DOT.spacingMin);
+function addDots(collector: InstanceCollector, a: Vec3, b: Vec3, bond: BondPrimitive): void {
+  const spacing = Math.max(DOT.spacing * bond.radius, DOT.spacingMin);
   for (const centre of dotCentres(a, b, spacing)) {
-    collector.add("dot", material, false, sphereMatrix(centre, DOT.radius * radius));
+    collector.add("dot", bond.material_id, false, sphereMatrix(centre, DOT.radius * bond.radius), null, bond);
   }
 }
 

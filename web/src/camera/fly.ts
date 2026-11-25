@@ -1,13 +1,15 @@
 // WASD and Q/E: the camera flies while the keys are held. The keys are read in keyboard.ts. The scroll wheel is
 // different on purpose: it is the trackball's dolly, which orbits towards the target and stops at minDistance and
 // maxDistance (scene/load.ts). Only W/S fly on, through the structure and past it.
-import { RATE } from "../config";
-import { flyForward, isPersp, pan, zoom } from "./view";
+// The held turns, pans and zooms (the arrows, [ ], Shift+arrows, and the toolbar's buttons) are presses on the same
+// frame loop: a press moves by its tap step, then keeps moving at the rate for as long as it is held.
+import { RATE, STEP } from "../config";
+import { type ScreenAxis, flyForward, isPersp, pan, rotate, zoom } from "./view";
 
-// Animation frame times are in milliseconds. The toolbar's held buttons share these (toolbar-buttons.ts).
-export const MS_PER_SECOND = 1000;
+// Animation frame times are in milliseconds.
+const MS_PER_SECOND = 1000;
 // A frame that comes late (a stalled tab) counts at most this many seconds, so the view does not jump.
-export const MAX_FRAME_SECONDS = 0.05;
+const MAX_FRAME_SECONDS = 0.05;
 // The first frame of a hold has no previous frame to measure, so it moves a frame's worth: a tap still moves.
 const FIRST_STEP_SECONDS = 1 / 60;
 
@@ -33,6 +35,50 @@ export const FLY: Record<string, Move> = {
 // With Shift held, W/S move up and down instead of in and out (so W/A/S/D pan like the arrow pad).
 const FLY_SHIFT: Record<string, Move> = { KeyW: ["pan", 0, -1], KeyS: ["pan", 0, 1] };
 
+// What a held input moves. `step` is what a press moves at once (a tap), `rate` what it moves per second while held, and
+// `move` applies an amount of it to the view.
+export interface Motion {
+  step: number;
+  rate: number;
+  move: (amount: number) => void;
+}
+// One press in progress: how far it has moved, and whether it has been let go (its tap still finishes after that).
+export interface Held {
+  motion: Motion;
+  moved: number;
+  released: boolean;
+}
+const holds = new Set<Held>();
+
+export const turnMotion = (axis: ScreenAxis, sign: number): Motion => ({
+  step: STEP.rotate,
+  rate: RATE.rotate,
+  move: (amount) => rotate(axis, sign * amount),
+});
+export const panMotion = (dx: number, dy: number): Motion => ({
+  step: STEP.pan,
+  rate: RATE.pan,
+  move: (amount) => pan(dx, dy, amount),
+});
+// Zoom adds up in logarithms: a step and a rate are amounts of the logarithm of the zoom factor.
+export const zoomMotion = (sign: number): Motion => ({
+  step: Math.log(STEP.zoom),
+  rate: Math.log(RATE.zoom),
+  move: (amount) => zoom(Math.exp(sign * amount)),
+});
+
+// Starts a press. It moves on the next frame, and keeps moving until it is let go.
+export function press(motion: Motion): Held {
+  const held: Held = { motion, moved: 0, released: false };
+  holds.add(held);
+  return held;
+}
+// Lets a press go: it stops after its tap, if it has not yet moved that far. `cancel` drops it where it is.
+export function letGo(held: Held, cancel = false): void {
+  if (cancel) holds.delete(held);
+  else held.released = true;
+}
+
 // The one place shift is recorded: the keys' own events and the window's blur go through here.
 export function setShiftHeld(held: boolean): void {
   shiftHeld = held;
@@ -51,9 +97,20 @@ function advance(direction: number, seconds: number): void {
   else zoom(RATE.zoom ** (direction * seconds)); // the orthographic clip planes are fixed (scene/load.ts)
 }
 
+// A press moves by the rate for this frame, or by what is left of its tap once it is let go.
+function advanceHeld(held: Held, seconds: number): void {
+  const { step, rate, move } = held.motion;
+  const amount = held.released ? Math.min(rate * seconds, step - held.moved) : rate * seconds;
+  if (amount > 0) {
+    move(amount);
+    held.moved += amount;
+  }
+  if (held.released && held.moved >= step) holds.delete(held);
+}
+
 // Called once per animation frame with its timestamp in milliseconds. Every held key moves the camera a step.
 export function fly(now: number): void {
-  if (!flying.size) {
+  if (!flying.size && !holds.size) {
     flyLast = 0;
     return;
   }
@@ -64,9 +121,11 @@ export function fly(now: number): void {
     if (move[0] === "fly") advance(move[1], seconds);
     else pan(move[1], move[2], RATE.pan * seconds);
   }
+  for (const held of holds) advanceHeld(held, seconds);
 }
 
-// Releasing a key stops it; switching windows loses the key-up events, so nothing may stay stuck in the flying state.
+// Releasing a key stops it; switching windows loses the key-up events, so nothing may stay stuck in the flying state
+// or in a held press.
 export function wireFlyKeys(): void {
   window.addEventListener("keyup", (e) => {
     flying.delete(e.code);
@@ -74,6 +133,7 @@ export function wireFlyKeys(): void {
   });
   window.addEventListener("blur", () => {
     flying.clear();
+    holds.clear();
     setShiftHeld(false);
   });
 }

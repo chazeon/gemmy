@@ -169,7 +169,7 @@ interface Groups {
 }
 
 // The image renderPasses covers: its CSS size, the render scale, the user's outline width, and the view it draws with.
-export interface PassOptions {
+interface PassOptions {
   cssWidth: number;
   cssHeight: number;
   scale: number; // render px per CSS px

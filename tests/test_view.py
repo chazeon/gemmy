@@ -13,6 +13,7 @@ import pytest
 from gemmy.cli import main
 from gemmy.compile.pipeline import compile_to_json
 from gemmy.view import render_live_page, render_viewer, write_viewer
+from slow_examples import example_param
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 NAMES = sorted(p.parent.name for p in EXAMPLES.glob("*/config.toml"))
@@ -52,7 +53,9 @@ def test_script_cannot_be_closed_by_the_scene() -> None:
     scene = json.loads(json.dumps(SCENE))
     scene["source_comment"] = "</script><script>alert(1)</script><!-- __TITLE__"
     page = render_viewer(scene, "t")
-    assert page.count("</script>") == page.count("<script")  # only the template's own tags
+    # React's bundled code holds "<script>" as a string (never with "</script>"), so the count of "<script" is not the
+    # template's; the scene's own closing tag is what must not appear in the page.
+    assert "</script><script>alert(1)" not in page
     assert _embedded(page) == scene
 
 
@@ -73,8 +76,17 @@ def test_template_pins_three_and_uses_no_other_host() -> None:
     page = render_viewer(SCENE, "t")
     hosts = set(re.findall(r"https://([^/\"']+)", page))
     # api.github.com is the gist loader (web/src/scene/fetch.ts): it is called only for ?gist=, never on its own.
-    # github.com is the project link in the help panel: a new-tab link the page never fetches.
-    assert hosts == {"cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com", "api.github.com", "github.com"}
+    # github.com is the project link in the help panel: a new-tab link the page never fetches. react.dev is the link
+    # in React's error messages, and "tailwindcss.com *" the licence comment at the top of the stylesheet (a string).
+    assert hosts == {
+        "cdn.jsdelivr.net",
+        "fonts.googleapis.com",
+        "fonts.gstatic.com",
+        "api.github.com",
+        "github.com",
+        "react.dev",
+        "tailwindcss.com *",
+    }
     assert all("three@0.160.0" in u for u in re.findall(r"https://cdn\.jsdelivr\.net/\S+", page) if "three" in u)
 
 
@@ -84,7 +96,7 @@ def test_cli_writes_a_page(tmp_path: Path) -> None:
     out = tmp_path / "sub" / "page.html"
     assert main(["view", str(scene_path), "--out", str(out), "--subtitle", "demo"]) == 0
     page = out.read_text(encoding="utf-8")
-    assert "<h1>nacl</h1>" in page and "demo" in page and 'class="tabs"' not in page
+    assert 'data-title="nacl"' in page and 'data-subtitle="demo"' in page and 'class="tabs"' not in page
     assert _embedded(page) == SCENE
 
 
@@ -118,7 +130,7 @@ def test_cli_reports_a_bad_scene(tmp_path: Path, capsys: pytest.CaptureFixture[s
     assert "nope" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("name", NAMES)
+@pytest.mark.parametrize("name", [example_param(name) for name in NAMES])
 def test_every_example_makes_a_page(name: str, tmp_path: Path) -> None:
     scene_path = tmp_path / f"{name}.json"
     compile_to_json(EXAMPLES / name / "config.toml", scene_path)

@@ -1,0 +1,26 @@
+# Solid C60 (idealised: all molecules in one orientation), fcc, 2x2x2 conventional cells (1920 atoms).
+structure = "POSCAR"
+
+[elements.C]
+radius = 0.2
+color = [0.5, 0.5, 0.5, 1.0]
+material = "matte"
+
+[materials.covalent]
+type = "principled"
+base_color = [0.85, 0.85, 0.85, 1.0]
+roughness = 0.4
+
+[cells]
+supercell = [2, 2, 2]
+periodic = [true, true, true]
+
+# C60 bonds are 1.40 and 1.45 A; intermolecular C-C is about 3 A, outside the window.
+[[bonds]]
+a = "C"
+b = "C"
+min = 1.3
+max = 1.5
+radius = 0.05
+material = "covalent"
+complete = "ends"

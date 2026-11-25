@@ -3,9 +3,8 @@
 import { setView, viewNow } from "../camera/view";
 import { VIEW_KEY, type ViewPose, decodeView, encodeView, poseOf, viewFromPose } from "../camera/viewhash";
 import { lens, loaded } from "../state";
-import { byId } from "./dom";
 import { note } from "./toast";
-import { VIEWS } from "./views";
+import { showRotated } from "./views";
 
 const SETTLE_MS = 200; // the address is written once the camera has been still for a read this long
 const NOTE_MS = 5000;
@@ -19,7 +18,7 @@ const currentPose = (): ViewPose => poseOf(viewNow(), loaded.value.extent);
 export function applyPose(pose: ViewPose): void {
   const next = viewFromPose(pose, loaded.value.extent, lens.value);
   if (!next) {
-    VIEWS.rotated();
+    showRotated();
     return;
   }
   setView(next);
@@ -71,7 +70,7 @@ export function setSceneLink(link: string | null): void {
   sceneLink = link;
 }
 
-function copyLink(): void {
+export function copyLink(): void {
   const url = new URL(sceneLink ?? location.href);
   url.hash = `${VIEW_KEY}=${encodeView(currentPose())}`;
   const said =
@@ -86,4 +85,3 @@ function copyLink(): void {
     refused();
   }
 }
-byId("copy-link").addEventListener("click", copyLink);

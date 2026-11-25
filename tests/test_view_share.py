@@ -395,7 +395,7 @@ def test_closing_the_current_tab_makes_the_previous_one_current(tmp_path: Path) 
     found = _tab_list(
         """
 const list = tabsOf([own, ice, drop], 2);
-const closed = closeTab(list, 2);
+const closed = closeTab(list, 2, "home");
 console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
 """,
         tmp_path,
@@ -406,7 +406,7 @@ console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: c
 def test_closing_the_first_tab_while_it_is_current_leaves_the_next_one_first(tmp_path: Path) -> None:
     found = _tab_list(
         """
-const closed = closeTab(tabsOf([ice, drop], 0), 0);
+const closed = closeTab(tabsOf([ice, drop], 0), 0, "home");
 console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
 """,
         tmp_path,
@@ -418,7 +418,7 @@ def test_closing_a_tab_before_the_current_one_keeps_the_same_tab_current(tmp_pat
     found = _tab_list(
         """
 const list = tabsOf([own, ice, drop], 2);
-const closed = closeTab(list, 0);
+const closed = closeTab(list, 0, "home");
 console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
 """,
         tmp_path,
@@ -430,17 +430,12 @@ def test_closing_a_tab_after_the_current_one_changes_nothing_but_the_list(tmp_pa
     found = _tab_list(
         """
 const list = tabsOf([own, ice, drop], 0);
-const closed = closeTab(list, 2);
+const closed = closeTab(list, 2, "home");
 console.log(JSON.stringify({ labels: closed.tabs.map((t) => t.label), current: closed.current }));
 """,
         tmp_path,
     )
     assert found == {"labels": ["nacl", "ice-ih"], "current": 0}
-
-
-def test_the_last_tab_is_never_closed(tmp_path: Path) -> None:
-    found = _tab_list("const list = tabsOf([own]); console.log(JSON.stringify(closeTab(list, 0) === list));", tmp_path)
-    assert found is True
 
 
 def test_a_repeated_label_gets_the_smallest_free_number(tmp_path: Path) -> None:

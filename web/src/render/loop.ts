@@ -6,17 +6,26 @@ import { fly } from "../camera/fly";
 import { orthoFrame } from "../camera/framing";
 import { fitFor, readBack, shownNow, syncClip, zoomTo } from "../camera/view";
 import { EPS } from "../config";
-import { camera, fitValue, lens, loaded, outlines, requestRender, showAtoms, showBox, takeDirty } from "../state";
+import {
+  camera,
+  fitValue,
+  lens,
+  loaded,
+  outlines,
+  requestRender,
+  showAtoms,
+  showBox,
+  takeDirty,
+  zoomLabel,
+} from "../state";
 import { outlineScale } from "../ui/outline-scale";
 import { systemDark, theme } from "../ui/theme";
 import { boxMaterial, controls, cssVar, orthoCamera, perspCamera, renderer, scene, stage } from "./draw";
 import { drawLiveTriad } from "./triad";
 import { renderTriad } from "./triad3d";
 
-// The zoom that shows the structure at its fit is 100%.
-const FIT_PERCENT = 100;
-
-const zoomLevel = document.getElementById("zoom-level") as HTMLElement;
+// The zoom readout's steps: tenths below 10× (1.5×, 0.8×), whole numbers from there.
+const WHOLE_FROM = 10;
 
 // Refits everything to the stage's size. A view that is at its fit stays at the fit (so the window resize does not
 // leave it zoomed in or out); a zoomed view keeps its zoom.
@@ -76,14 +85,18 @@ function drawView(): void {
   showZoom();
 }
 
-// The zoom readout: the percentage of the fit, as the view stands. It is written on each drawn frame, and every camera
-// move, refit and resize asks for one. The percent is NaN until the stage has a size: fitValue comes from fitZoom, which
-// divides the shorter side by the longer, so an unlaid-out stage (0 by 0) gives 0/0. The label stays blank until then.
-// The label is written only when its text changes: a write each frame would repaint the zoom buttons' column.
+// The zoom readout: the zoom as a multiple of the fit (1× fits the structure to the window), as the view stands. It is
+// written on each drawn frame, and every camera move, refit and resize asks for one. The ratio is NaN until the stage
+// has a size: fitValue comes from fitZoom, which divides the shorter side by the longer, so an unlaid-out stage (0 by 0)
+// gives 0/0. The label stays blank until then. The signal skips a write of the same text, so the row (React) is not
+// redrawn each frame.
 function showZoom(): void {
-  const percent = Math.round((shownNow() / fitValue.value) * FIT_PERCENT);
-  const text = Number.isFinite(percent) ? `${percent}%` : "";
-  if (zoomLevel.textContent !== text) zoomLevel.textContent = text;
+  const times = shownNow() / fitValue.value;
+  zoomLabel.value = Number.isFinite(times) ? `${zoomText(times)}×` : "";
+}
+
+export function zoomText(times: number): string {
+  return times >= WHOLE_FROM ? String(Math.round(times)) : String(Number(times.toFixed(1)));
 }
 
 // ---- start ----

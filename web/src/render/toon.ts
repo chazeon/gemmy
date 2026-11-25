@@ -5,9 +5,9 @@ import * as THREE from "three";
 import { LOOK } from "../config";
 
 // The texels of the one-row gradient: each one is a flat band (NearestFilter).
-export const TOON_STEPS = 16;
+const TOON_STEPS = 16;
 // The first lit texel. Three looks up N.L * 0.5 + 0.5, and the texel is floor(coordinate * TOON_STEPS).
-export const FIRST_LIT = Math.ceil(((LOOK.threshold + 1) / 2) * TOON_STEPS);
+const FIRST_LIT = Math.ceil(((LOOK.threshold + 1) / 2) * TOON_STEPS);
 // The N.L at which a surface turns lit: a texel is lit from FIRST_LIT on, so the lit test is dotNL >= LIT_CUT.
 export const LIT_CUT = (2 * FIRST_LIT) / TOON_STEPS - 1;
 

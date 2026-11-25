@@ -10,7 +10,7 @@ const MIN_DEPTH = 1e-3;
 // Radians: a sphere whose silhouette cone reaches the eye plane is left out.
 const HORIZON_MARGIN = 1e-3;
 
-export interface ViewOptions {
+interface ViewOptions {
   centre: Vec3; // the scene's centre, added back to the page coordinates
   target: Vec3; // the orbit target, in page coordinates
   quaternion: number[]; // the camera orientation, x y z w (three.js order)

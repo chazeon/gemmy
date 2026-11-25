@@ -1,0 +1,87 @@
+/* Tailwind v4 for the React overlay (src/react) and its shadcn/ui components (src/components/ui). The theme and the
+   utilities are imported; the preflight is not, so the page's own stylesheet (style.css) styles everything it styled
+   before. build.mjs puts the layers in order: style.css is the `legacy` layer, which these utilities override.
+
+   shadcn's colour names are the viewer's own tokens (style.css), so a shadcn component takes the page's light and dark
+   colours with no second palette. The accent is the viewer's blue, as primary. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "tw-animate-css";
+
+/* shadcn's dark variant: the class on <html> that ui/theme.ts sets when the page is dark (Dark, or Auto with a dark system) */
+@custom-variant dark (&:is(.dark *));
+
+@source "./src";
+
+/* The buttons of the overlay take no native frame, and the viewer's font and colour. Scoped to #overlay (page.html), where
+   only React draws, and to the popovers, which Radix draws in a portal outside it (the ☰ panel's rows), so the page's
+   own buttons (style.css) keep theirs; a utility (a border, a background) still wins. */
+@layer base {
+  #overlay button, [data-radix-popper-content-wrapper] button {
+    border-width: 0;
+    background-color: transparent;
+    color: var(--fg);
+    font-family: var(--ui);
+  }
+}
+
+/* Every overlay button answers the pointer: on hover its lines thicken and its icon moves as the button does (a turn
+   rocks, a move nudges; react/motion.ts) or else grows a little; on a press the button dips. The icon is the button's own svg, or the lens in a lens choice (react/lens-icon.tsx); the a/b/c buttons
+   draw their own stronger hover (react/axis-view-icon.tsx), and a utility class on an icon wins over this. */
+@layer base {
+  #overlay button > svg, #overlay button .lucide-lens, #overlay .lens-icon {
+    transition: stroke-width 120ms ease-out, scale 120ms ease-out, translate 120ms ease-out, rotate 160ms ease-out;
+  }
+  #overlay button:hover > svg, #overlay button:hover .lucide-lens { stroke-width: 2.25; }
+  #overlay button:hover > svg, #overlay button:hover .lens-icon {
+    scale: var(--grow, 1.08);
+    translate: var(--nudge-x, 0) var(--nudge-y, 0);
+    rotate: var(--spin, 0deg);
+  }
+  #overlay button { transition-property: color, background-color, scale; transition-duration: 120ms; }
+  #overlay button:active:not(:disabled) { scale: 0.94; }
+  @media (prefers-reduced-motion: reduce) {
+    #overlay button, #overlay button > svg, #overlay button .lucide-lens, #overlay .lens-icon { transition: none; }
+    #overlay button:active:not(:disabled), #overlay button:hover > svg, #overlay button:hover .lens-icon {
+      scale: none; translate: none; rotate: none;
+    }
+  }
+}
+
+/* shadcn's border colour (its `border` utilities take the theme's border token). Without preflight a border would take
+   currentColor, which is near-black in the light theme. Only the colour: no border width or style, so an element with
+   no border draws none. The page's own rules (the legacy layer) set their colours above this one. */
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--rule);
+  }
+}
+
+@theme inline {
+  --font-sans: var(--ui);
+  --font-mono: var(--num);
+
+  --color-background: var(--bar);
+  --color-foreground: var(--fg);
+  --color-card: var(--bar);
+  --color-card-foreground: var(--fg);
+  --color-popover: var(--bar);
+  --color-popover-foreground: var(--fg);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-secondary: var(--hover);
+  --color-secondary-foreground: var(--fg);
+  --color-muted: var(--hover);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--hover);
+  --color-accent-foreground: var(--fg);
+  --color-destructive: var(--err);
+  --color-border: var(--rule);
+  --color-input: var(--rule);
+  --color-ring: var(--accent);
+
+  --radius-sm: 6px;
+  --radius-md: var(--radius-small);
+  --radius-lg: var(--radius);
+  --radius-xl: 14px;
+}

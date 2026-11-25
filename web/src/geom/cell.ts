@@ -3,7 +3,7 @@
 import type { Cell, Vec3 } from "../types";
 
 // Corner n of the cell: the origin, plus a for bit 0, b for bit 1 and c for bit 2 of n.
-export function cellCorner(cell: Cell, n: number): Vec3 {
+function cellCorner(cell: Cell, n: number): Vec3 {
   const [a, b, c] = cell.vectors;
   return [0, 1, 2].map((d) => cell.origin[d] + (n & 1) * a[d] + ((n >> 1) & 1) * b[d] + ((n >> 2) & 1) * c[d]) as Vec3;
 }

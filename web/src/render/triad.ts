@@ -15,7 +15,7 @@ const triadCanvas = document.getElementById("triad") as HTMLCanvasElement;
 const triadContext = triadCanvas.getContext("2d") as CanvasRenderingContext2D;
 
 // The axis faces join the page once, as FontFace objects: the bold italic for the letters and the regular italic for
-// the a/b/c buttons (style.css). The triad waits for the bold one, since a canvas never falls back to another font and
+// the a/b/c buttons (react/toolbar.tsx). The triad waits for the bold one, since a canvas never falls back to another font and
 // redraws by itself: the letters are skipped until it has loaded, and requestRender then draws them.
 for (const [weight, base64] of Object.entries(AXIS_FONT.faces)) {
   document.fonts.add(

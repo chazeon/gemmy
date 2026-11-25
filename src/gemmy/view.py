@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+from .datafile import read_data
 from .render import looks
 from .scene import SCENE_SCHEMA_VERSION, SceneDocument, check_references, from_dict
 from .settings import Axes
@@ -36,6 +37,14 @@ _INLINE_SCRIPT = '<script type="module">\n//__SCRIPT__</script>'
 HOSTED_SCENE_FILE = "scene.json.gz"
 _SITE_ROOT = "../"  # from a scene's folder, or from view/, back to the site root
 HASH_CHARS = 10  # hex digits of a shared file's SHA-256 in its name: a new build never gets an old file's name
+# The gallery: each scene's folder holds GALLERY_FILE (its title and description); the site root gets EXAMPLES_FILE, the
+# list of the scenes in order for the start screen: {name, title, description, scene}.
+GALLERY_FILE = "gallery.json"
+GALLERY_KEYS = ("title", "description")
+EXAMPLES_FILE = "examples.json"
+# The start screen's picture of a scene: pre-rendered PNGs (scripts/render_thumbnails.sh) in a folder with <scene
+# name>.png, copied into the scene's folder as THUMBNAIL_FILE and named by examples.json's "thumbnail".
+THUMBNAIL_FILE = "thumbnail.png"
 
 
 def scene_json_for_html(data: Mapping[str, Any]) -> str:
@@ -270,16 +279,57 @@ def _shared_files() -> _SharedFiles:
     )
 
 
-def write_hosted_site(scenes: Sequence[str | Path], out: str | Path, subtitle: str = "") -> Path:
+def _gallery_entries(folder: Path, names: Sequence[str], thumbnails: Path) -> list[dict[str, str]]:
+    """examples.json's entries, in scene order: each scene's title and description from `folder/<name>/gallery.json`,
+    and its thumbnail from `thumbnails/<name>.png`. Every scene needs both, with exactly those keys and string
+    values."""
+    entries = []
+    for name in names:
+        path = folder / name / GALLERY_FILE
+        if not path.is_file():
+            raise ValueError(f"no gallery entry for scene {name}: expected {path}")
+        data = read_data(path)
+        if not isinstance(data, dict) or sorted(data) != sorted(GALLERY_KEYS):
+            raise ValueError(f"{path} must be an object with exactly the keys {', '.join(GALLERY_KEYS)}")
+        if not all(isinstance(data[key], str) for key in GALLERY_KEYS):
+            raise ValueError(f"{path}: {' and '.join(GALLERY_KEYS)} must be strings")
+        picture = thumbnails / f"{name}.png"
+        if not picture.is_file():
+            raise ValueError(f"no thumbnail for scene {name}: expected {picture}")
+        entries.append(
+            {
+                "name": name,
+                **{key: data[key] for key in GALLERY_KEYS},
+                "scene": f"{name}/{HOSTED_SCENE_FILE}",
+                "thumbnail": f"{name}/{THUMBNAIL_FILE}",
+            }
+        )
+    return entries
+
+
+def write_hosted_site(
+    scenes: Sequence[str | Path],
+    out: str | Path,
+    subtitle: str = "",
+    gallery: str | Path | None = None,
+    thumbnails: str | Path | None = None,
+) -> Path:
     """A hosted site (GitHub Pages): one viewer and one stylesheet at the root, named by their content's hash
     (viewer.<hash>.js, style.<hash>.css), shared by every page. Per scene, a folder with `scene.json.gz` (gzip, no
     timestamp, so the same scene gives the same bytes; not hashed, since a stale copy of a scene is harmless) and an
     index.html that opens it, a small page with the viewer's default scene. `view/index.html` is the viewer with no
-    scene, which opens any scene by address or file. `index.html` is the front page: the viewer with every scene as a
-    default tab, in order. Every scene is checked before anything is written; links are relative, so the site works
-    under any path. Returns `out/index.html`."""
+    scene, which opens any scene by address or file. `index.html` is the front page. With `gallery` (a folder
+    with <scene name>/gallery.json for each scene), it is the start screen, which lists the scenes from examples.json
+    (written alongside, the scenes in order as {name, title, description, scene, thumbnail}) and opens one when chosen;
+    each scene's folder then gets its thumbnail (`thumbnails`, a folder with <scene name>.png). A gallery needs
+    thumbnails, and the other way round. Without `gallery`, there is no examples.json, so the front page opens every
+    scene as a default tab, in order. Every scene is checked before anything is written; links are relative, so the
+    site works under any path. Returns `out/index.html`."""
     paths = [Path(scene) for scene in scenes]
     names = _scene_names(paths)
+    if (gallery is None) != (thumbnails is None):
+        raise ValueError("a gallery needs thumbnails, and thumbnails need a gallery (--gallery and --thumbnails)")
+    entries = None if gallery is None else _gallery_entries(Path(gallery), names, Path(thumbnails))
     texts = [path.read_text(encoding="utf-8") for path in paths]
     for text in texts:
         validate_scene_dict(json.loads(text))
@@ -294,6 +344,8 @@ def write_hosted_site(scenes: Sequence[str | Path], out: str | Path, subtitle: s
         folder = out / name
         folder.mkdir(parents=True, exist_ok=True)
         (folder / HOSTED_SCENE_FILE).write_bytes(gzip.compress(text.encode("utf-8"), mtime=0))
+        if thumbnails is not None:
+            (folder / THUMBNAIL_FILE).write_bytes((Path(thumbnails) / f"{name}.png").read_bytes())
         page = _page(
             "", name, subtitle, path.name, tabs, k, mode="load", default_scenes=[HOSTED_SCENE_FILE], assets=assets
         )
@@ -304,4 +356,6 @@ def write_hosted_site(scenes: Sequence[str | Path], out: str | Path, subtitle: s
     front = render_loader_page("gemmy", assets=shared.hrefs(""), default_scenes=scenes_at_root)
     index = out / "index.html"
     index.write_text(front, encoding="utf-8")
+    if entries is not None:
+        (out / EXAMPLES_FILE).write_text(json.dumps(entries, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return index

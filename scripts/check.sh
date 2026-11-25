@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Run before every commit: format check, lint, tests. `--blender` also runs the real-Blender suite
-# (pytest -m blender, bpy in a separate Python 3.13 environment).
+# (pytest -m blender, bpy in a separate Python 3.13 environment). `--browser` runs the viewer in headless Chrome
+# (pytest -m browser, ~20 s; skipped when Chrome or Node 22 is missing). `--slow` runs the heavy examples and the
+# hosted site build (pytest -m slow, about a minute).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 has_node=0
@@ -21,6 +23,11 @@ if [[ $has_node == 1 ]]; then
 else
   echo "viewer: skipped (node not found)"
 fi
-if [[ "${1:-}" == "--blender" ]]; then
-  UV_PROJECT_ENVIRONMENT=.venv-blender uv run --python 3.13 --group blender pytest -q -m blender
-fi
+for option in "$@"; do
+  case "$option" in
+    --blender) UV_PROJECT_ENVIRONMENT=.venv-blender uv run --python 3.13 --group blender pytest -q -m blender ;;
+    --browser) uv run pytest -q -m browser -rs ;;
+    --slow) uv run pytest -q -m slow ;;
+    *) echo "check.sh: unknown option $option" >&2; exit 2 ;;
+  esac
+done

@@ -128,9 +128,12 @@ def main(argv: list[str] | None = None) -> int:
         if len(args.scenes) > 1 and args.title is not None:
             print("error: --title takes one scene; with several, each page is named after its file.", file=sys.stderr)
             return 2
+        if (args.gallery is not None or args.thumbnails is not None) and not args.hosted:
+            print("error: --gallery and --thumbnails need --hosted.", file=sys.stderr)
+            return 2
         try:
             if args.hosted:
-                out = write_hosted_site(args.scenes, args.out, args.subtitle)
+                out = write_hosted_site(args.scenes, args.out, args.subtitle, args.gallery, args.thumbnails)
             elif len(args.scenes) == 1:
                 out = write_viewer(args.scenes[0], args.out, args.title, args.subtitle)
             else:

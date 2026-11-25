@@ -36,9 +36,6 @@ function build(doc: Scene, bounds: Bounds): LoadedScene {
   const extent = bounds.extent;
   const centre = bounds.centre;
   frame(centre, extent);
-  const atomGroup = addAtomsBondsAndArrows(doc);
-  const { polyGroup, polyTargets } = addPolyhedra(doc);
-  const box = addCellBox(doc.cell);
   return {
     data: doc,
     points: new Map(doc.points.map((p) => [p.id, p])),
@@ -47,11 +44,21 @@ function build(doc: Scene, bounds: Bounds): LoadedScene {
     extent,
     // A scene without a cell keeps the lattice of the scene before it.
     lattice: doc.cell ? latticeOf(doc.cell) : loaded.peek().lattice,
-    atomGroup,
-    polyGroup,
-    box,
-    polyTargets,
+    ...addObjects(doc, root),
   };
+}
+
+// The objects a scene draws, added under `parent`: the structure's root on the stage, or the group of a thumbnail,
+// which draws the scene apart from the stage. The atoms' and the bonds' groups are returned for the Atoms toggle and
+// picking.
+function addObjects(
+  doc: Scene,
+  parent: THREE.Object3D,
+): Pick<LoadedScene, "atomGroup" | "bondGroup" | "polyGroup" | "polyTargets" | "box"> {
+  const { atomGroup, bondGroup } = addAtomsBondsAndArrows(doc, parent);
+  const { polyGroup, polyTargets } = addPolyhedra(doc, parent);
+  const box = addCellBox(doc.cell, parent);
+  return { atomGroup, bondGroup, polyGroup, polyTargets, box };
 }
 
 // Puts the structure's centre at the origin, and sets the camera's distance limits and far plane from its size.
@@ -69,10 +76,14 @@ function latticeOf(cell: Cell): THREE.Vector3[] {
 
 type ShapeName = keyof typeof SHAPES;
 
-// One InstancedMesh per (shape, material). Picking maps an instance back to its atom, so only atoms carry `atoms`.
+// One InstancedMesh per (shape, material). Picking maps an instance back to its atom (`atoms`) or to its bond (`bonds`,
+// undefined for an arrow's instance).
 // An outline shell goes in the group of the mesh it outlines, so hiding that group (the Atoms toggle) hides it too.
-// Returns the atoms' group; the bonds and arrows are in the structure's root.
-function addAtomsBondsAndArrows(doc: Scene): THREE.Group {
+// Returns the atoms' group and the bonds' group (the arrows are in the bonds' group too, with no bond).
+function addAtomsBondsAndArrows(
+  doc: Scene,
+  parent: THREE.Object3D,
+): { atomGroup: THREE.Group; bondGroup: THREE.Group } {
   const atomGroup = new THREE.Group();
   const bondGroup = new THREE.Group();
   const shapes = new Map<ShapeName, THREE.BufferGeometry>();
@@ -87,17 +98,17 @@ function addAtomsBondsAndArrows(doc: Scene): THREE.Group {
     const isAtom = g.shape === "sphere";
     const owner = isAtom ? atomGroup : bondGroup;
     owner.add(mesh);
-    if (isAtom) mesh.userData = { atoms: g.refs };
+    mesh.userData = isAtom ? { atoms: g.refs } : { bonds: g.bonds };
     if (g.outlined) owner.add(outlineOf(mesh));
   }
-  root.add(atomGroup, bondGroup);
-  return atomGroup;
+  parent.add(atomGroup, bondGroup);
+  return { atomGroup, bondGroup };
 }
 
 // One triangle soup per material, with flat faces wound outwards, and its edges as one set of line segments. Materials
 // with alpha < 1 are see-through ghosts drawn after the opaque atoms. A click gives a triangle, and owner[] says which
 // polyhedron it is.
-function addPolyhedra(doc: Scene): { polyGroup: THREE.Group; polyTargets: PolyTarget[] } {
+function addPolyhedra(doc: Scene, parent: THREE.Object3D): { polyGroup: THREE.Group; polyTargets: PolyTarget[] } {
   const polyGroup = new THREE.Group();
   const polyTargets = new Array<PolyTarget>(doc.primitives.polyhedra.length);
   for (const g of polyhedronGroups(doc)) {
@@ -116,16 +127,16 @@ function addPolyhedra(doc: Scene): { polyGroup: THREE.Group; polyTargets: PolyTa
     polyGroup.add(mesh, new THREE.LineSegments(edgeGeometry, edgeMaterial));
     if (!ghost) polyGroup.add(outlineOf(mesh));
   }
-  root.add(polyGroup);
+  parent.add(polyGroup);
   return { polyGroup, polyTargets };
 }
 
 // The twelve edges of the cell's parallelepiped, drawn as line segments. Shown only when the scene has a cell.
-function addCellBox(cell: Cell | null): THREE.LineSegments | null {
+function addCellBox(cell: Cell | null, parent: THREE.Object3D): THREE.LineSegments | null {
   if (!cell) return null;
   const boxGeometry = new THREE.BufferGeometry();
   boxGeometry.setAttribute("position", new THREE.Float32BufferAttribute(cellEdges(cell).flat(2), 3));
   const cellBox = new THREE.LineSegments(boxGeometry, boxMaterial);
-  root.add(cellBox);
+  parent.add(cellBox);
   return cellBox;
 }

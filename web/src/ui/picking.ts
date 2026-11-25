@@ -1,6 +1,7 @@
-// Picking: a click selects the atom or polyhedron under it, shows its readout and highlights it in the scene. A pick
+// Picking: a click selects the atom, bond or polyhedron under it, shows its readout and highlights it in the scene. A pick
 // also opens the details panel (panels.ts), and the readout's text comes from readout.ts.
 import * as THREE from "three";
+import type { BondPrimitive } from "../types";
 import { renderer } from "../render/draw";
 import { camera, loaded, requestRender, type Target, type PolyTarget } from "../state";
 import { describe } from "./readout";
@@ -9,7 +10,7 @@ import { glideTarget } from "../camera/view";
 import { POINTER_SLOP_PX } from "../config";
 
 // ---- the selection highlight ----
-// The selection is drawn as an extra mesh over the picked atom or polyhedron: a copy of its material, lit up by an
+// The selection is drawn as an extra mesh over the picked atom, bond or polyhedron: a copy of its material, lit up by an
 // emissive term and pulled slightly forward. The instanced and merged meshes themselves are never touched.
 const HIGHLIGHT_GLOW = 0.55; // emissive as a fraction of the object's own colour
 const PULL_FORWARD = -1; // pulled slightly forward, so the highlight wins the depth test against the original
@@ -17,6 +18,7 @@ const GHOST_RENDER_ORDER = 2; // a see-through polyhedron is drawn over its own 
 const FLOATS_PER_TRIANGLE = 3 * 3; // three vertices of three numbers each
 
 type AtomTarget = Extract<Target, { kind: "atom" }>;
+type BondTarget = Extract<Target, { kind: "bond" }>;
 
 let highlight: THREE.Mesh | null = null;
 
@@ -25,6 +27,7 @@ function clearHighlight() {
   highlight.removeFromParent();
   (highlight.material as THREE.Material).dispose();
   if (highlight.userData.own) highlight.geometry.dispose();
+  if (highlight instanceof THREE.InstancedMesh) highlight.dispose(); // frees its instance matrices on the GPU
   highlight = null;
 }
 function highlightMaterial(base: THREE.MeshToonMaterial): THREE.MeshToonMaterial {
@@ -38,6 +41,20 @@ function highlightAtom(target: AtomTarget): THREE.Mesh {
   target.mesh.getMatrixAt(target.index, mesh.matrix); // the copy sits where the picked instance sits
   mesh.matrixAutoUpdate = false;
   loaded.value.atomGroup.add(mesh);
+  return mesh;
+}
+// A bond's instances (one, or the dashes or dots of a bond) are copied into a new instanced mesh, sharing the geometry.
+function highlightBond(target: BondTarget): THREE.InstancedMesh {
+  const material = highlightMaterial(target.mesh.material as THREE.MeshToonMaterial);
+  const mesh = new THREE.InstancedMesh(target.mesh.geometry, material, target.indices.length);
+  const matrix = new THREE.Matrix4();
+  target.indices.forEach((index, copy) => {
+    target.mesh.getMatrixAt(index, matrix);
+    mesh.setMatrixAt(copy, matrix);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  loaded.value.bondGroup.add(mesh);
   return mesh;
 }
 // A polyhedron's triangles are a range of its material's merged mesh, so the highlight copies that range.
@@ -56,31 +73,59 @@ function highlightPolyhedron(target: PolyTarget): THREE.Mesh {
   return mesh;
 }
 
+// Whether something is selected (the pivot rule, ui/pivot.ts).
+export const hasSelection = (): boolean => highlight !== null;
+
 // Selects a target (or clears the selection), shows its readout and redraws.
 export function select(target: Target | null) {
   clearHighlight();
-  if (target) highlight = target.kind === "atom" ? highlightAtom(target) : highlightPolyhedron(target);
+  if (target) highlight = highlightOf(target);
   describe(target);
   requestRender();
 }
+function highlightOf(target: Target): THREE.Mesh {
+  switch (target.kind) {
+    case "atom":
+      return highlightAtom(target);
+    case "bond":
+      return highlightBond(target);
+    case "polyhedron":
+      return highlightPolyhedron(target);
+  }
+}
 
 // ---- picking ----
-// What a ray hit stands for: an instanced atom (by instanceId) or a triangle of a merged polyhedron mesh.
+// What a ray hit stands for: an instanced atom or bond (by instanceId), or a triangle of a merged polyhedron mesh.
 function targetOf(hit: THREE.Intersection): Target {
   const mesh = hit.object;
   if (mesh.userData.atoms) {
     const index = hit.instanceId!; // an instanced hit always has an instanceId
     return { kind: "atom", atom: mesh.userData.atoms[index], mesh: mesh as THREE.InstancedMesh, index };
   }
+  if (mesh.userData.bonds) return bondTargetOf(mesh as THREE.InstancedMesh, hit.instanceId!);
   const face = hit.faceIndex!; // a merged polyhedron hit always has a faceIndex
   return loaded.value.polyTargets[mesh.userData.owner[face]];
 }
-// The meshes a click can hit: the atoms (while they are shown) and the polyhedron meshes.
+// The bond of an instance, with every instance of that bond in the same mesh (its dashes or dots).
+function bondTargetOf(mesh: THREE.InstancedMesh, index: number): BondTarget {
+  const bonds: (BondPrimitive | undefined)[] = mesh.userData.bonds;
+  const bond = bonds[index]!; // isPickable: a hit on an arrow is not a bond, and hitAt drops it
+  const indices = bonds.flatMap((b, i) => (b === bond ? [i] : []));
+  return { kind: "bond", bond, mesh, indices };
+}
+// Whether a hit is picked: every atom and polyhedron, and a bond's instance (an arrow's instance is not).
+function isPickable(hit: THREE.Intersection): boolean {
+  const bonds: (BondPrimitive | undefined)[] | undefined = hit.object.userData.bonds;
+  return !bonds || bonds[hit.instanceId!] !== undefined;
+}
+// The meshes a click can hit: the atoms (while they are shown), the bonds (while they are shown) and the polyhedron
+// meshes. The arrows share the bonds' group, and isPickable leaves their instances out.
 function pickableObjects(): THREE.Object3D[] {
-  const { atomGroup, polyGroup } = loaded.value;
+  const { atomGroup, bondGroup, polyGroup } = loaded.value;
   const atoms = atomGroup.visible ? atomGroup.children.filter((o) => o.userData.atoms) : [];
+  const bonds = bondGroup.visible ? bondGroup.children.filter((o) => o.userData.bonds) : [];
   const polys = polyGroup.children.filter((o) => (o as THREE.Mesh).isMesh && o.userData.owner);
-  return [...atoms, ...polys];
+  return [...atoms, ...bonds, ...polys];
 }
 
 const ray = new THREE.Raycaster();
@@ -90,7 +135,7 @@ function hitAt(clientX: number, clientY: number): THREE.Intersection | null {
   const r = renderer.domElement.getBoundingClientRect();
   const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera.value);
-  const hits = ray.intersectObjects(pickableObjects(), false);
+  const hits = ray.intersectObjects(pickableObjects(), false).filter(isPickable);
   return hits.find((h) => !isGhostHit(h)) ?? hits[0] ?? null;
 }
 function isGhostHit(hit: THREE.Intersection): boolean {
@@ -98,7 +143,7 @@ function isGhostHit(hit: THREE.Intersection): boolean {
   return target.kind === "polyhedron" && target.ghost;
 }
 
-// The world point a screen position hits (the atoms and polyhedra a click can pick), or null when it hits nothing.
+// The world point a screen position hits (the atoms, bonds and polyhedra a click can pick), or null when it hits nothing.
 // Rotation pivots on the ray to this point (camera/view.ts).
 export function pickPointAt(clientX: number, clientY: number): THREE.Vector3 | null {
   const hit = hitAt(clientX, clientY);

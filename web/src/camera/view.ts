@@ -10,12 +10,14 @@ import {
   fitZoomFor,
   flown,
   framed,
+  inFrontOf,
   interpolated,
   panned,
   pivoted,
   released,
   rotated,
   shownZoom,
+  turnedInPlace,
   upAxis,
   viewedFrom,
   visibleHeight,
@@ -29,6 +31,9 @@ import { camera, fitValue, lens, loaded, projection, requestRender } from "../st
 import { span } from "../geom/vector";
 
 const GLIDE_MS = 300;
+// Test hook: tests/browser/driver.mjs sets window.__gemmyTest before the page loads, so a glide lands at once and the
+// draw counts of a step do not depend on how fast the frames came. Read once, here; nothing else looks at it.
+const GLIDES_INSTANTLY = (window as { __gemmyTest?: boolean }).__gemmyTest === true;
 // A clip plane moves the projection matrix only when it has changed by more than this.
 const CLIP_CHANGE_TOLERANCE = 1e-6;
 
@@ -154,18 +159,45 @@ export const zoomTo = (level: number): void => move((s) => zoomedTo(s, level, ex
 
 // The screen's axes in camera space: x right, y up, z towards the viewer.
 const SCREEN_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] } as const;
-type ScreenAxis = keyof typeof SCREEN_AXES;
-export function isScreenAxis(name: string | undefined): name is ScreenAxis {
-  return name !== undefined && Object.hasOwn(SCREEN_AXES, name);
+export type ScreenAxis = keyof typeof SCREEN_AXES;
+
+// Look-around (ui/pivot.ts startLooking): a turn inside the structure with nothing selected turns the camera where it
+// stands, not about the target. The flag is set when a turn starts; the anchor is where the camera was then.
+let looking = false;
+let anchor = { place: [0, 0, 0], distance: 0 };
+export function startLooking(on: boolean): void {
+  looking = on;
+  if (!on) return;
+  const now = viewNow();
+  const place = cameraPosition(now, extentNow());
+  anchor = { place, distance: span(place, now.target) };
 }
 
-// Turns about a screen axis, about the target. Positive: tilt up, turn left, spin clockwise.
+// Turns about a screen axis. Positive: tilt up, turn left, spin clockwise. About the target, or in place when looking.
 export function rotate(axis: ScreenAxis, degrees: number): void {
-  move((s) => rotated(s, SCREEN_AXES[axis], degrees));
+  move((s) =>
+    looking ? turnedInPlace(s, SCREEN_AXES[axis], degrees, extentNow()) : rotated(s, SCREEN_AXES[axis], degrees),
+  );
 }
 
-// Looks at the structure from a direction (world), with `up` as the world direction shown up on screen.
+// A trackball drag turns the camera about the target, so while looking its moves are put back: the camera stays at its
+// anchor place, and the target moves back in front of it at the anchor distance (the in-place turn, for the drag).
+// Called on each trackball move of a drag (ui/pivot.ts).
+export function keepInPlace(): void {
+  if (!looking) return;
+  const cam = camera.value;
+  cam.position.fromArray(anchor.place);
+  controls.target.fromArray(inFrontOf(anchor.place, cam.quaternion.toArray(), anchor.distance));
+  requestRender();
+}
+
+// Looks at the structure from a direction (world), with `up` as the world direction shown up on screen, glided to (the
+// a, b, c and rotated buttons).
 export function viewFrom(dir: THREE.Vector3, up: THREE.Vector3): void {
+  glideMove((s) => viewedFrom(s, dir.toArray(), up.toArray()));
+}
+// The same view at once: a scene's first view and an address that cannot be used.
+export function snapViewFrom(dir: THREE.Vector3, up: THREE.Vector3): void {
   move((s) => viewedFrom(s, dir.toArray(), up.toArray()));
 }
 
@@ -180,9 +212,9 @@ export function flyForward(fraction: number): void {
   move((s) => flown(s, visibleHeight(s, extentNow(), frameSize()) * fraction));
 }
 
-// Fits the structure to the window, at once.
+// Fits the structure to the window, glided to (the fit button and the 0 key). The fit size is the new one at once.
 export function fit(): void {
-  move((s) => framed(s, [0, 0, 0], extentNow(), extentNow(), frameSize()));
+  glideMove((s) => framed(s, [0, 0, 0], extentNow(), extentNow(), frameSize()));
   refit();
 }
 
@@ -207,6 +239,10 @@ export function switchProjection(mode: Projection, newLens = lens.value): void {
 // Glides the view to `end` over GLIDE_MS (a smoothstep share each frame). A move or a drag stops it.
 function glideTo(end: ViewState): void {
   const id = ++glideId;
+  if (GLIDES_INSTANTLY) {
+    commit(end);
+    return;
+  }
   const start = viewNow();
   const started = performance.now();
   const step = (): void => {
@@ -218,9 +254,21 @@ function glideTo(end: ViewState): void {
   requestAnimationFrame(step);
 }
 
+// A move the user asks for, glided to: the end is worked out from the view as it is now.
+function glideMove(change: (state: ViewState) => ViewState): void {
+  glideTo(change(viewNow()));
+}
+
 // Centres on an object (its centre and size in scene units), glided to.
 export function centreOn(centre: THREE.Vector3, size: number): void {
   glideTo(framed(viewNow(), centre.toArray(), size, extentNow(), frameSize()));
+}
+
+// Looks along a direction at an object: the view turns to the direction and frames the object, in one glide (the
+// selection card's a, b and c).
+export function centreOnFrom(centre: THREE.Vector3, size: number, dir: THREE.Vector3, up: THREE.Vector3): void {
+  const turned = viewedFrom(viewNow(), dir.toArray(), up.toArray());
+  glideTo(framed(turned, centre.toArray(), size, extentNow(), frameSize()));
 }
 
 // Glides so that `point` comes to the middle of the screen (a double-click), the camera moving with the target.

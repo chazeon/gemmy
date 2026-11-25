@@ -1,7 +1,7 @@
 // Where a tab's scene comes from. A tab is one source: the page's own scene (embedded in the page, or live from
 // gemmy serve), a scene the address names (?scene= or ?gist=), a default scene of the page (the built site's example
-// pages and front page), or a file the user dropped or chose. Each source says what it is called and what link opens
-// it again (linkOf); loader.ts loads it. A URL is resolved against the page's own address, so a relative one
+// pages), a file the user dropped or chose, or the home tab, which has no scene (the start screen). Each source says
+// what it is called and what link opens it again (linkOf); loader.ts loads it. A URL is resolved against the page's own address, so a relative one
 // (../nacl/scene.json.gz) works on a site, and whatever it resolves to must be http or https: a file: or data: scene is
 // not fetched.
 import type { Scene } from "../types";
@@ -11,6 +11,7 @@ const SCENE_PARAM = "scene";
 const GIST_PARAM = "gist";
 const FILE_PARAM = "file";
 const GIST_ID = /^[A-Za-z0-9]+$/; // GitHub's ids are hex; the check only keeps other characters out of the API path
+const HOME_NAME = "Home";
 const WEB_PROTOCOLS = ["http:", "https:"];
 
 // The page's own names: its title, and the line under it.
@@ -20,16 +21,37 @@ export interface PageNames {
 }
 
 // A scene the address names. A default is one of the page's own (its link is the page, which opens it by default).
-type SceneSource = { kind: "url"; url: string; byDefault: boolean } | { kind: "gist"; id: string; file: string | null };
+export type SceneSource =
+  | { kind: "url"; url: string; byDefault: boolean }
+  | { kind: "gist"; id: string; file: string | null };
 
 export type Source =
   | SceneSource
   | { kind: "embedded"; doc: Scene; page: PageNames }
   | { kind: "live"; page: PageNames }
-  | { kind: "file"; file: File };
+  | { kind: "file"; file: File }
+  | { kind: "home" };
+
+export const HOME: Source = { kind: "home" };
 
 // A message for the page to show as it is: the query or URL the user wrote is named in it.
 class SourceError extends Error {}
+
+// The gist a user typed: a gist id, or an address of a gist (https://gist.github.com/<user>/<id>).
+export function gistSourceOf(text: string): SceneSource {
+  const value = text.trim();
+  const id = GIST_ID.test(value) ? value : lastPathSegment(value);
+  if (!GIST_ID.test(id)) throw new SourceError(`"${value}" is not a gist id or a gist address.`);
+  return { kind: "gist", id, file: null };
+}
+
+function lastPathSegment(value: string): string {
+  try {
+    return new URL(value).pathname.split("/").filter(Boolean).at(-1) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 // The sources the address asks for: several scene= give several, a gist= gives one.
 export function parseSources(search: string, base: string): SceneSource[] {
@@ -72,8 +94,9 @@ function pathSegments(url: string): string[] {
     });
 }
 
-// The scenes the page opens, in order: the ones the address asks for (?scene= or ?gist=), else the page's defaults (the
-// built site's front page has every example, an example's page its own), else none. Only the address overrides them.
+// The scenes the page opens, in order: the ones the address asks for (?scene= or ?gist=), else the page's defaults (an
+// example's page has its own), else none. Only the address overrides them. The loader (main.ts) passes no defaults on
+// the front page of a hosted site, which opens the start screen instead.
 export function sourcesToOpen(search: string, base: string, defaults: readonly string[]): SceneSource[] {
   const sources = parseSources(search, base);
   if (sources.length > 0) return sources;
@@ -89,6 +112,8 @@ export function nameOf(source: Source): string {
       return source.page.name;
     case "file":
       return source.file.name;
+    case "home":
+      return HOME_NAME;
     case "url":
     case "gist":
       return sceneName(source);
@@ -101,6 +126,8 @@ export function fromOf(source: Source): string {
     case "embedded":
     case "live":
       return source.page.from;
+    case "home":
+      return "";
     case "file":
       return "local file";
     case "url":
@@ -125,6 +152,7 @@ function queryOf(source: Source): string | null {
   switch (source.kind) {
     case "embedded":
     case "file":
+    case "home":
       return null;
     case "live":
       return "";

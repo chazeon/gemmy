@@ -1,8 +1,7 @@
 // Putting a scene on the stage. Showing a scene sets its view (the address's #view, else the rotated view), selects the
 // polyhedron nearest the middle and opens the readout. A live scene's new version is loaded in place instead, so the
-// view and the selection stay as the user left them. The stage's controls and the Show toggles (the ☰ menu's checkboxes)
-// are set up here too.
-import { batch, effect, type Signal } from "@preact/signals-core";
+// view and the selection stay as the user left them. The stage's controls are set up here too.
+import { batch, effect } from "@preact/signals-core";
 import { controls, outlineMaterial } from "../render/draw";
 import { resize } from "../render/loop";
 import { sceneBounds } from "../scene/bounds";
@@ -14,8 +13,7 @@ import { applyPose, watchView } from "./share";
 import { select } from "./picking";
 import { dist } from "./readout";
 import { infoChoice, narrowScreen, showInfo } from "./panels";
-import { VIEWS } from "./views";
-import { byId } from "./dom";
+import { showRotated } from "./views";
 
 // ---- how the controls feel ----
 // The feel of a drag on the stage: how far it turns, zooms and pans the view (three's orbit controls), with no easing
@@ -34,7 +32,7 @@ function place(doc: Scene): void {
 export function openScene(doc: Scene, view: ViewPose | null): void {
   place(doc);
   if (view) applyPose(view);
-  else VIEWS.rotated();
+  else showRotated();
   const { centre, points, polyTargets } = loaded.value;
   const middle = [...polyTargets].sort(
     (p, q) =>
@@ -50,22 +48,11 @@ export function updateScene(doc: Scene): void {
   place(doc);
 }
 
-// ---- the Show toggles ----
-// Each checkbox in the ☰ menu flips its flag. The button shows the flag, and the object the flag shows follows it.
-function wireShowToggle(id: string, flag: Signal<boolean>) {
-  const button = byId(id);
-  button.addEventListener("click", () => {
-    flag.value = !flag.value;
-  });
-  effect(() => button.setAttribute("aria-pressed", String(flag.value)));
-}
-
+// ---- the Show flags ----
+// The ☰ menu's checks set the flags (react/main-menu.tsx); the objects they show follow them here. A new scene's objects
+// are hidden or shown by the flags too, since they follow `loaded`.
 export function wireStage(): void {
   Object.assign(controls, DRAG_FEEL);
-  wireShowToggle("toggle-atoms", showAtoms);
-  wireShowToggle("toggle-outline", outlines);
-  wireShowToggle("toggle-box", showBox);
-  // The objects the flags show. A new scene's objects are hidden or shown by the flags too, since they follow `loaded`.
   effect(() => {
     loaded.value.atomGroup.visible = showAtoms.value;
   });

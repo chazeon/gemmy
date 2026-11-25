@@ -35,7 +35,14 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-markers = ["blender: drives the real Blender backend in-process (needs bpy; skipped when it is not importable)"]
+# The browser suite (headless Chrome, ~20 s) and the slow tests (heavy examples, the site build) stay out of the default
+# run; scripts/check.sh --browser and --slow select them.
+addopts = ["-m", "not browser and not slow"]
+markers = [
+    "blender: drives the real Blender backend in-process (needs bpy; skipped when it is not importable)",
+    "browser: drives the viewer in headless Chrome (needs Chrome and Node 22+; skipped when either is missing)",
+    "slow: compiles the heavy examples or builds the hosted site (about a second or more each; scripts/check.sh --slow)",
+]
 
 [dependency-groups]
 blender = [

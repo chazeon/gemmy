@@ -23,7 +23,6 @@ import { LinePass } from "./edges";
 import type { MeshRole, TracedObject } from "./objects";
 import { type PassView, type Project, disposeMeshes, projector, renderPasses } from "./passes";
 import { type Group, type Layers, type Outlines, curveLookup, ownCurves, traceRegions } from "./regions";
-import { snapTolerance } from "./stretch";
 
 // The triad's solids are numbered after the structure's objects in their own id space (their own passes), so their clip
 // ids have their own prefix.
@@ -146,7 +145,6 @@ function triadGroup({ passes, project, view, scale, parts, outlines }: TriadGrou
     project,
     linePass: new LinePass(project, passes, scale),
     curves: curveLookup(own, () => []),
-    tol: snapTolerance(scale),
     paint: {
       rgb: (obj) => rgbOf[index.get(obj)!],
       opacity: (obj) => 1 - parts[index.get(obj)!].fade,

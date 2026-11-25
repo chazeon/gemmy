@@ -22,20 +22,19 @@
     --num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
     --label: "Gemmy Axis Labels", "IBM Plex Sans", sans-serif; /* the triad's face, loaded by render/triad.ts */
 
-    /* sizes: the window margin, the corner radii, a toolbar button, and the step from one round button to the next */
+    /* sizes: the window margin, the corner radii, and the step from one round button to the next */
     --edge: 16px;
     --radius: 10px; /* islands, popovers, the readout */
     --radius-small: 8px; /* buttons and tabs inside an island */
-    --tool: 36px;
+    /* a gallery card's corner radius (the thumbnail is clipped by the card's own corners) */
+    --card-radius: var(--radius);
     --button-step: 48px; /* a 40 px round button and its 8 px gap */
     /* the window's inset on each side: the margin, or the device's safe area where it is larger (a notch) */
     --inset-top: max(var(--edge), env(safe-area-inset-top, 0px));
     --inset-right: max(var(--edge), env(safe-area-inset-right, 0px));
     --inset-bottom: max(var(--edge), env(safe-area-inset-bottom, 0px));
     --inset-left: max(var(--edge), env(safe-area-inset-left, 0px));
-    --radius-tiny: 7px; /* menu rows, the settings box */
-    --radius-key: 5px; /* a keyboard key in the help */
-    /* the faded edge of a scrolling toolbar: its width, and how dark the edge gets */
+      /* the faded edge of a scrolling toolbar: its width, and how dark the edge gets */
     --fade-width: 40px;
     --fade-floor: rgb(0 0 0 / 0.15);
   }
@@ -54,6 +53,9 @@
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--fg); font-family: var(--ui); overflow: hidden; }
 
+  /* the React overlay's container: a box of no size, so its islands are the grid's items (see #ui) */
+  #overlay { display: contents; }
+
   /* ---- the island layer: a grid over the whole window. Only the islands take the pointer, so a drag anywhere else
      still reaches the stage ---- */
   #ui {
@@ -71,14 +73,10 @@
     background: var(--bar); border-radius: var(--radius); box-shadow: var(--shadow);
   }
   .island::-webkit-scrollbar { display: none; }
-  #menu-island { grid-area: left; justify-self: start; overflow: hidden; } /* the tabs scroll, the menu button stays */
-  #tools { grid-area: center; justify-self: center; }
-  #export-button { grid-area: right; justify-self: end; }
   #msgs { grid-area: msgs; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
   /* ---- scrolling toolbars: on a phone the tool row scrolls sideways, and a finger may pan it from a button. A faded
      edge marks buttons hidden past it, on every island and on the tab strip ---- */
-  #tools .tool { touch-action: pan-x; -webkit-touch-callout: none; }
   :is(.island, .tabs).more-right { --fade: linear-gradient(to left, var(--fade-floor), #000 var(--fade-width)); }
   :is(.island, .tabs).more-left { --fade: linear-gradient(to right, var(--fade-floor), #000 var(--fade-width)); }
   :is(.island, .tabs).more-left.more-right {
@@ -86,176 +84,35 @@
   }
   :is(.island, .tabs):is(.more-left, .more-right) { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
 
-  /* ---- the bottom-left column: the lens over zoom (+, 100%, -, fit), always one slim column beside the triad ---- */
-  #bottom {
+  /* ---- the bottom-left row (react/lens-column.tsx): the aperture button in the corner, then the lenses, the zoom and
+     fit in one island, under the triad (which stays where the Blender render draws it) ---- */
+  #lens-column {
     position: fixed; left: var(--inset-left); bottom: var(--inset-bottom);
-    pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    pointer-events: none; display: flex; align-items: center; gap: 8px;
   }
-  #bottom .island { flex-direction: column; width: 44px; overflow: visible; }
-  /* The aperture button folds the lens and zoom away (folded by default on a phone, where they cover the triad). */
-  #view-toggle { width: 44px; height: 40px; border-radius: var(--radius); background: var(--bar); box-shadow: var(--shadow); pointer-events: auto; }
-  #view-toggle[aria-expanded="true"] { background: var(--hover); }
-  #bottom.folded .island { display: none; }
-  #bottom [data-act="zoom"][data-sign="1"] { order: -2; }
-  #bottom #zoom-level { order: -1; min-width: 0; font-size: 12px; padding: 4px 0; }
-  #bottom #zoom-group .sep { width: auto; height: 1px; align-self: stretch; margin: 4px 6px; }
-  #bottom .pill.lens { width: 36px; height: 30px; padding: 0; }
-  #bottom .unit { padding: 0 0 2px; font-size: 11px; }
-  #help-button { grid-row: 4; grid-column: 3; justify-self: end; align-self: end; }
+  /* the bottom-right island (react/corner-buttons.tsx): the grid's bottom row, on the right */
+  #corner-buttons { grid-row: 4; grid-column: 3; justify-self: end; align-self: end; }
 
-  /* ---- the name, and the tabs that replace it ---- */
-  .name { display: grid; line-height: 1.2; flex: none; padding: 0 10px 0 4px; }
-  h1 { margin: 0; font-size: 15px; font-weight: 600; white-space: nowrap; }
-  .sub { margin: 0; color: var(--muted); font-size: 12px; white-space: nowrap; }
-  .sub:empty { display: none; }
-  /* `gemmy serve` with several configs: one tab per structure, in place of the name. */
-  .tabs { display: flex; gap: 2px; flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tabs + .name { display: none; }
-  .tabs a, .tabs button {
-    font: 400 13px var(--ui); color: var(--fg); text-decoration: none; border-radius: var(--radius-small); padding: 9px 10px; white-space: nowrap;
-    background: transparent; border: 0; cursor: pointer;
-  }
-  .tabs a:hover, .tabs button:hover { background: var(--hover); }
-  .tabs a[aria-current="page"], .tabs button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
-  .tabs a:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  /* A tab the user added (a dropped file): its name and its ✕ share one highlight, and the ✕ is small beside the name. */
-  .tabs .local-tab { display: flex; align-items: center; flex: none; border-radius: var(--radius-small); }
-  .tabs .local-tab:hover { background: var(--hover); }
-  .tabs .local-tab:has(> [aria-current="page"]) { background: var(--accent-soft); color: var(--accent); }
-  .tabs .local-tab > button { background: transparent; }
-  .tabs .local-tab > button:first-child { padding-right: 2px; }
-  .tabs .tab-close {
-    width: 24px; height: 24px; padding: 0; display: grid; place-items: center; flex: none; margin-right: 4px;
-    border-radius: 50%; color: var(--muted); background: transparent; border: 0; cursor: pointer;
-  }
-  .tabs .tab-close:hover { background: var(--rule); color: var(--fg); }
-  .tabs .tab-close svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; }
-
-  /* ---- buttons: round tool buttons with Lucide icons, pills with text, and the separators between groups ---- */
-  .group { display: flex; align-items: center; gap: 2px; flex: none; }
-  .sep { width: 1px; align-self: stretch; margin: 6px 4px; background: var(--rule); flex: none; }
-  .pill.lens { padding: 0 8px; font-variant-numeric: tabular-nums; }
-  .unit { color: var(--muted); font-size: 12px; padding: 0 6px 0 2px; user-select: none; }
-  .tool {
-    width: var(--tool); height: var(--tool); display: grid; place-items: center; padding: 0; flex: none;
-    border: 0; border-radius: var(--radius-small); background: transparent; color: var(--fg); cursor: pointer;
-    touch-action: none; user-select: none; -webkit-user-select: none;
-  }
-  .tool:hover { background: var(--hover); }
-  .tool:active { background: var(--rule); }
-  /* Lucide icons: 24-unit grid; 1.75 strokes at 20px draw 1.46px lines, crisp on 1x and 2x screens. */
-  .tool svg, #export-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
-  .tool.axis { font: italic 400 20px var(--label); } /* the triad's a, b, c, at a weight that matches the icon strokes */
-  .pill {
-    font: 400 13px var(--ui); color: var(--fg); background: transparent; border: 0; border-radius: var(--radius-small);
-    height: var(--tool); padding: 0 10px; cursor: pointer; white-space: nowrap; flex: none;
-  }
-  .pill:hover { background: var(--hover); }
-  .pill[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  #zoom-level { min-width: 52px; text-align: center; font: 400 13px var(--ui); font-variant-numeric: tabular-nums; user-select: none; }
-  #export-button, #help-button { pointer-events: auto; box-shadow: var(--shadow); }
-  #export-button {
-    display: flex; align-items: center; gap: 8px;
-    height: 44px; padding: 0 18px 0 14px; border: 0; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
-    font: 500 14px var(--ui); color: var(--on-accent); background: var(--accent);
-  }
-  #export-button:hover { filter: brightness(1.08); }
-  #export-button svg { width: 18px; height: 18px; stroke-width: 2; }
-  #help-button { width: 40px; height: 40px; border-radius: var(--radius); background: var(--bar); }
+  /* ---- buttons (the React overlay's own classes, react/*.tsx; these are the page's rules for its buttons) ---- */
+  #export-button, #theme-button { pointer-events: auto; }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .island button:focus-visible { outline-offset: -2px; }
 
-  /* ---- popovers: the ☰ menu, Export and help are native popovers (top layer, so an island's scroll cannot clip them).
-     The browser's [popover] style centres them, so the position is reset here and menus.ts places them by the button. ---- */
-  .popover {
-    position: fixed; inset: auto; margin: 0; z-index: 3; box-sizing: border-box; width: min(320px, calc(100vw - 16px));
-    overflow: auto; padding: 6px; display: grid; gap: 2px; font: 400 13px var(--ui); color: var(--fg);
-    background: var(--bar); border-radius: var(--radius); box-shadow: var(--shadow), 0 12px 28px rgba(0, 0, 0, 0.14);
-  }
-  .popover:not(:popover-open) { display: none; }
-  #main-menu { width: min(220px, calc(100vw - 16px)); }
-  .mhead { margin: 4px 8px 2px; color: var(--muted); font-size: 12px; }
-  .mcheck {
-    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 8px;
-    font: 500 13px var(--ui); color: var(--fg); background: transparent; border: 0; border-radius: var(--radius-tiny); cursor: pointer;
-  }
-  .mcheck::before { content: ""; width: 14px; height: 14px; flex: none; }
-  /* Lucide "check", as a mask so it takes the accent colour. */
-  .mcheck[aria-pressed="true"]::before {
-    background: var(--accent);
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
-  }
-  .mcheck:hover { background: var(--hover); }
-  .mcheck:disabled { color: var(--muted); cursor: default; }
-  .mcheck:disabled:hover { background: transparent; }
-  /* The theme row: three segments in a box, the one in use pressed as the lens pills are. */
-  .segment { display: flex; gap: 2px; margin: 0 2px 4px; padding: 2px; border: 1px solid var(--rule); border-radius: var(--radius-tiny); }
-  .segment button {
-    flex: 1; padding: 5px 0; font: 500 13px var(--ui); color: var(--fg); background: transparent; border: 0;
-    border-radius: calc(var(--radius-tiny) - 2px); cursor: pointer;
-  }
-  .segment button:hover { background: var(--hover); }
-  .segment button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  .mrow { display: flex; align-items: center; gap: 4px; padding: 2px 4px; }
-  .mrow .lbl { flex: 1; min-width: 0; }
-  .mrow .note { color: var(--muted); font-size: 12px; }
-  .mrow button, .mitem {
-    font: 500 13px var(--ui); color: var(--fg); background: transparent; border: 1px solid var(--rule); border-radius: var(--radius-tiny);
-    padding: 5px 10px; cursor: pointer; white-space: nowrap;
-  }
-  .mrow button:hover, .mitem:hover { background: var(--hover); }
-  .mitem { width: 100%; text-align: left; border-color: transparent; }
-  .mrow label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  #export-menu input[type="checkbox"] { accent-color: var(--accent); }
-  #export-menu hr { border: 0; border-top: 1px solid var(--rule); margin: 4px 0; width: 100%; }
-  #export-text {
-    width: 100%; box-sizing: border-box; height: 8em; font: 12px var(--num); color: var(--fg); background: var(--bg);
-    border: 1px solid var(--rule); border-radius: var(--radius-tiny); padding: 6px;
-  }
-  #export-status { margin: 2px 6px; color: var(--muted); font-size: 12px; min-height: 1.2em; }
-  #export-status.err { color: var(--err); }
-  #help { width: min(340px, calc(100vw - 16px)); padding: 12px 14px; }
-  #help h2 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
-  #help dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: baseline; }
-  #help dt { white-space: nowrap; }
-  #help dd { margin: 0; color: var(--muted); }
-  #help .project { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
-  #help .project a { color: inherit; }
-  kbd {
-    display: inline-block; min-width: 1.4em; padding: 1px 5px; text-align: center; font: 500 11.5px var(--num);
-    color: var(--fg); background: var(--bg); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: var(--radius-key);
-  }
-
   /* ---- the stage, the triad and the selection readout ---- */
   main { position: fixed; inset: 0; }
+  /* The page fades in once its first tab is shown (main.ts revealWhenReady): page.html hides main and #ui while the body
+     is booting, here they fade in when it stops. #ui, not #overlay, which takes no box (display: contents), so opacity
+     does nothing on it. */
+  main, #ui { transition: opacity 220ms ease-out; }
+  @media (prefers-reduced-motion: reduce) { main, #ui { transition: none; } }
   #stage { position: absolute; inset: 0; touch-action: none; }
   #stage canvas { display: block; }
   #triad { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; }
-  #info {
-    position: absolute; z-index: 2; right: var(--inset-right); bottom: calc(var(--inset-bottom) + var(--button-step));
-    width: min(300px, calc(100% - 32px)); padding: 14px 16px; display: grid; gap: 8px; font-size: 13px;
-    background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  }
-  #info[hidden] { display: none; }
-  #info-body { display: grid; gap: 8px; }
-  #info h2 { margin: 0; padding-right: 28px; font-size: 15px; font-weight: 600; }
-  /* Collapsed, the details are a round (i) beside "?"; open, a close control in the panel's corner. */
-  #info-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; color: var(--muted); }
-  #info-close svg { width: 18px; height: 18px; }
-  #info-button {
-    position: fixed; z-index: 2; right: calc(var(--inset-right) + var(--button-step)); bottom: var(--inset-bottom);
-    width: 40px; height: 40px; border-radius: var(--radius); background: var(--bar); box-shadow: var(--shadow); pointer-events: auto;
-  }
-  #info-button[hidden] { display: none; }
-  #info dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
-  #info dt { color: var(--muted); }
-  #info dd { margin: 0; font-family: var(--num); font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
-  .hint { color: var(--muted); font-size: 12px; margin: 0; }
-  button.copy { padding: 1px 8px; font: 500 12px var(--ui); margin-left: 6px; color: var(--fg); background: transparent; border: 1px solid var(--rule); border-radius: 999px; cursor: pointer; }
-  button.copy:hover { border-color: var(--accent); }
+  /* The selection card (src/react/info-card.tsx) is drawn by React in the island layer, above the corner island: its
+     corner here, one 8 px gap above the 44 px island, as the help opens (react/placement.ts). Its look is its shadcn
+     classes. */
+  #info { position: absolute; z-index: 2; right: var(--inset-right); bottom: calc(var(--inset-bottom) + 44px + 8px);
+    width: min(300px, calc(100% - 32px)); pointer-events: auto; }
 
   /* ---- live mode (gemmy serve): compile errors and Blender state, under the top islands; and the progress pill ---- */
   #banner {
@@ -274,62 +131,97 @@
   #toast.fade { opacity: 0; }
   @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
 
-  /* ---- the loader (no scene yet): the empty card in the middle of the stage, the toolbars waiting for a scene, and the
-     outline while a file is dragged over the page ---- */
-  #empty {
-    position: fixed; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); box-sizing: border-box;
-    width: min(420px, calc(100vw - 32px)); padding: 18px 20px; display: grid; gap: 12px; justify-items: start;
-    font-size: 14px; background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);
+  /* ---- the start screen (the home tab, drawn by React: src/react/home.tsx). #home is the first item of the overlay's grid
+     and spans the whole grid, so it covers the window, with the islands drawn over it. It scrolls. The first screen (the
+     window's height) holds the Open card, centred; the gallery starts --peek above the first screen's bottom edge, so its
+     top shows there, and the fade (.home-fade) at that edge follows the scroll. ---- */
+  #home {
+    --gutter: 24px;
+    --peek: 96px;
+    grid-column: 1 / -1; grid-row: 1 / -1; align-self: stretch; contain: size; box-sizing: border-box; min-height: 0;
+    margin: calc(-1 * var(--inset-top)) calc(-1 * var(--inset-right)) calc(-1 * var(--inset-bottom)) calc(-1 * var(--inset-left));
+    overflow-y: auto; pointer-events: auto; background: var(--bg); font-size: 14px;
   }
-  #empty[hidden] { display: none; }
-  #empty h2 { margin: 0; font-size: 16px; }
-  #empty p { margin: 0; }
-  #empty form { display: grid; gap: 6px; width: 100%; }
-  #empty form label { color: var(--muted); font-size: 12.5px; }
-  #empty input[type="url"] {
-    box-sizing: border-box; width: 100%; padding: 7px 9px; font: 13px var(--num); color: var(--fg);
-    background: var(--bar); border: 1px solid var(--rule); border-radius: var(--radius-small);
+  .home-first {
+    box-sizing: border-box; height: 100vh; height: 100dvh; padding: 0 var(--gutter);
+    display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center;
   }
-  #empty form button, #empty > button { padding: 6px 12px; font: 500 13px var(--ui); color: var(--fg); background: var(--bar); border: 1px solid var(--rule); border-radius: var(--radius-small); cursor: pointer; }
-  #empty #empty-status { color: var(--muted); font-size: 12.5px; }
-  #empty .err { color: var(--err); font-family: var(--num); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
-  #empty .err[hidden] { display: none; }
-  /* Over a scene, the card has a close control in its corner (as the info card's); the id selector beats "#empty > button". */
-  #empty #empty-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; padding: 0; color: var(--muted); background: transparent; border: 0; }
-  #empty #empty-close[hidden] { display: none; }
-  #empty #empty-close svg { width: 18px; height: 18px; }
-  body.no-scene #tools, body.no-scene #bottom, body.no-scene #export-button, body.no-scene #info-button,
-  body.no-scene #help-button { display: none; }
+  .home-card { grid-row: 2; }
+  /* the served scene (gemmy serve) sits under the card, out of the centring */
+  .home-served { grid-row: 3; align-self: start; margin-top: 12px; }
+  .home-gallery {
+    box-sizing: border-box; max-width: 1040px; margin: calc(-1 * var(--peek)) auto 0; padding: 0 var(--gutter) 96px;
+    display: grid; gap: 12px;
+  }
+  .home-gallery h2 { margin: 0; }
+  .home-fade {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 64px; pointer-events: none; opacity: 1;
+    background: linear-gradient(to top, var(--bg), transparent);
+  }
+  /* the columns follow the window's width: 4, then 3, then 2 (a phone) */
+  .examples {
+    list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 768px) { .examples { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .examples { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  /* a card: the picture fills it (3:2, so a row's cards are equal); the title sits on a frosted label sized to its text, and
+     the description on a label above it, shown on hover or focus (always on a touch screen) */
+  .example {
+    position: relative; display: block; width: 100%; aspect-ratio: 3 / 2; padding: 0; overflow: hidden; font: inherit;
+    text-align: left; color: var(--fg); background: var(--rule); border: 1px solid var(--rule);
+    border-radius: var(--card-radius); cursor: pointer;
+  }
+  .example:hover, .example:focus-visible { border-color: var(--accent); outline: none; }
+  .example .thumb { position: absolute; inset: 0; display: block; }
+  .example .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .example .caption {
+    position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; flex-direction: column-reverse;
+    align-items: flex-start; gap: 4px; pointer-events: none;
+  }
+  .example .label {
+    display: inline-block; max-width: 100%; box-sizing: border-box; padding: 3px 8px; border-radius: var(--radius-small);
+    background: color-mix(in srgb, var(--panel) 70%, transparent);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;
+  }
+  .example strong.label { font-weight: 600; font-size: 13px; }
+  .example .description { display: none; color: var(--muted); font-size: 12px; white-space: normal; }
+  .example:hover .description, .example:focus-visible .description { display: inline-block; animation: card-reveal 150ms ease-out; }
+  @keyframes card-reveal { from { opacity: 0; transform: translateY(4px); } }
+  @media (hover: none) { .example .description { display: inline-block; } }
+  @media (prefers-reduced-motion: reduce) { .example .description { animation: none !important; } }
+  /* With no scene (the start screen) the scene's controls go; the Export button hides itself (a utility class, as its
+     own display is a utility that would win over this layer), and the theme button stays. */
+  body.no-scene #tools, body.no-scene #lens-column, body.no-scene #corner-buttons {
+    display: none;
+  }
   body.dragging #stage { outline: 2px dashed var(--accent); outline-offset: -12px; }
 
-  /* ---- hover tooltips (from each control's title), drawn by the page so they appear quickly and match the islands ---- */
-  #tip {
-    position: fixed; z-index: 50; pointer-events: none; max-width: 280px; padding: 5px 8px; border-radius: 6px;
-    background: var(--fg); color: var(--bar); font: 400 12px/1.35 var(--ui); box-shadow: var(--shadow);
-    opacity: 0; transition: opacity 0.12s;
-  }
-  #tip.on { opacity: 1; }
+  /* a tab that has just opened (ui/tab-bar.ts pulseTab) pulses once in the accent colour */
+  .tab-opened { animation: tab-opened 0.9s ease-out; }
+  @keyframes tab-opened { from { background-color: var(--accent-soft); } }
+  @media (prefers-reduced-motion: reduce) { .tab-opened { animation: none; } }
 
   /* ---- breakpoints. Both must come after the rules above, so they win. ---- */
-  /* Too narrow for the tools between name and Export: they get a row of their own. No twin in the TS. */
+  /* Too narrow for the tools between name and Export: they get a row of their own. */
   @media (max-width: 1080px) {
     #ui {
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-rows: auto auto auto 1fr auto;
       grid-template-areas: "left right" "center center" "msgs msgs" ". ." "bottom bottom";
     }
-    #help-button { grid-row: 5; grid-column: 2; }
+    #corner-buttons { grid-row: 5; grid-column: 2; }
   }
   /* Phone: every control at the top (the bottom is the triad's and the readout's), the readout across the width.
-     640px is PHONE_MAX_WIDTH in web/src/ui/picking.ts, which opens and closes the panels by the same width: keep them
+     640px is PHONE_MAX_WIDTH in web/src/ui/panels.ts, which opens and closes the panels by the same width: keep them
      equal. */
   @media (max-width: 640px) {
     #ui {
       grid-template-rows: auto auto auto auto 1fr;
       grid-template-areas: "left right" "center center" "bottom help" "msgs msgs" ". .";
     }
-    #help-button { grid-area: help; align-self: start; }
-    #info { left: var(--inset-left); width: auto; bottom: calc(var(--inset-bottom) + var(--button-step)); } /* above the aperture and (i) */
-    #info-button { right: var(--inset-right); } /* "?" is at the top here */
-    .sub { display: none; }
+    #corner-buttons { grid-area: help; align-self: start; }
+    #info { left: var(--inset-left); width: auto; } /* above the corner island and the lens column */
+    #home { --gutter: 16px; }
+    .examples { gap: 10px; }
   }

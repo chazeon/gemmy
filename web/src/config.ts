@@ -18,8 +18,9 @@ export const LOOK = {
 export const DASH = { length: 6, gap: 4, min: 0.1 };
 export const DOT = { radius: 1.6, spacing: 8, spacingMin: 0.12 };
 export const ARROW = { radius: 0.05, color: [0.04, 0.04, 0.05], headRadiusRatio: 2.8, headLengthRatio: 0.6 };
-// One click on a toolbar button; holding it keeps going at the per-second rate.
-export const STEP = { rotate: 15, pan: 0.05, zoom: 1.1 }; // degrees, fraction of the view height, factor
+// One tap of a turn, pan or zoom key or toolbar button (a press moves this much at once, smoothly); holding it keeps
+// going at the per-second rate.
+export const STEP = { rotate: 5, pan: 0.05, zoom: 1.1 }; // degrees, fraction of the view height, factor
 export const RATE = { rotate: 90, pan: 0.4, zoom: 1.8 }; // per second while held
 export const EPS = 1e-9; // a tolerance on lengths, zooms and dot products: below it a value counts as zero
 // How far a pointer may move between press and release and still be a click (picking) or not yet a drag (the pivot).

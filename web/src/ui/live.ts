@@ -3,9 +3,8 @@
 // reloadLive). A file's tab pauses the following; choosing the live tab again resumes it.
 import { settingsJson } from "../export/settings";
 import { type PageNames, nameOf } from "../scene/source";
-import { currentView, registerExport } from "./export";
-import { exportMenu } from "./menus";
-import { onTabChange, reloadLive } from "./loader";
+import { currentView, renderView } from "./export";
+import { onTabChange, openUrlUnavailable, reloadLive } from "./loader";
 import { STAY, hideNote, note, noteText } from "./toast";
 import { byId } from "./dom";
 
@@ -17,7 +16,7 @@ interface RenderStatus {
   time: string | null; // when the last good render finished (HH:MM:SS); null before the first
   error: string | null;
 }
-export interface ServeStatus {
+interface ServeStatus {
   version: string | null;
   error: string | null; // the last compile's error, if the last compile failed
   render: RenderStatus;
@@ -36,8 +35,6 @@ export function startLive(page: PageNames): void {
     banner.hidden = followLine.hidden && errorLine.hidden;
   };
   followNote(page, followLine, refreshBanner);
-  const renderViewItem = addRenderItem();
-
   const showError = (text: string): void => {
     errorLine.textContent = text;
     errorLine.hidden = banner.hidden = false;
@@ -46,7 +43,7 @@ export function startLive(page: PageNames): void {
   let renderedAt: string | null | undefined;
   const showStatus = (status: ServeStatus): void => {
     const r = status.render;
-    renderViewItem.hidden = !r.enabled;
+    renderView.value = r.enabled ? sendRenderView : null; // the menu's item shows when Blender is set up
     errorLine.textContent = [status.error, r.error ? `Blender error: ${r.error}` : ""].filter(Boolean).join("\n\n");
     errorLine.hidden = !errorLine.textContent;
     refreshBanner();
@@ -65,11 +62,10 @@ export function startLive(page: PageNames): void {
   });
 }
 
-// Opening a URL needs the hosted pages' loader, which a serve page does not have: the item says so.
+// Opening a URL needs the hosted pages' loader, which a serve page does not have: the menu's item says so.
 function disableOpenUrl(): void {
-  const openUrl = byId<HTMLButtonElement>("open-url");
-  openUrl.disabled = true;
-  openUrl.title = "Not on a gemmy serve page: it has no loader for an address (drop a file, or Open scene…)";
+  openUrlUnavailable.value =
+    "Not on a gemmy serve page: it has no loader for an address (drop a file, or Open local file…)";
 }
 
 // The follow note says how to get the server's scene back, whenever another tab is the one shown.
@@ -83,22 +79,18 @@ function followNote(page: PageNames, followLine: HTMLElement, refreshBanner: () 
 }
 
 // The serve-only Export item: it sends the view's settings (the camera and the cell box are what the server takes),
-// and the server renders them with Blender. Returns the item, which the status shows when Blender is set up.
-function addRenderItem(): HTMLElement {
-  registerExport("render-view", async () => {
-    exportMenu.hidePopover();
-    try {
-      const response = await fetch("render-view", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: settingsJson(currentView()),
-      });
-      const reply = (await response.json()) as { error?: string };
-      if (response.ok) note("Render queued with this view", LIVE_TOAST_MS);
-      else note(`Could not use this view: ${reply.error}`, STAY);
-    } catch (error) {
-      note(`Could not use this view: ${error}`, STAY);
-    }
-  });
-  return exportMenu.querySelector<HTMLElement>('[data-export="render-view"]')!;
+// and the server renders them with Blender. The menu shows the item when Blender is set up (ui/export.ts renderView).
+async function sendRenderView(): Promise<void> {
+  try {
+    const response = await fetch("render-view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: settingsJson(currentView()),
+    });
+    const reply = (await response.json()) as { error?: string };
+    if (response.ok) note("Render queued with this view", LIVE_TOAST_MS);
+    else note(`Could not use this view: ${reply.error}`, STAY);
+  } catch (error) {
+    note(`Could not use this view: ${error}`, STAY);
+  }
 }

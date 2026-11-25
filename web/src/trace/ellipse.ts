@@ -64,7 +64,7 @@ export function paramOf(e: Ellipse, p: Pt): number {
 }
 
 // The point's coordinates in the ellipse's frame, centred and unrotated.
-function local(e: Ellipse, p: Pt): Pt {
+export function local(e: Ellipse, p: Pt): Pt {
   const dx = p[0] - e.cx;
   const dy = p[1] - e.cy;
   const cos = Math.cos(e.phi);

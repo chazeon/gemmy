@@ -6,9 +6,11 @@
     "moduleResolution": "bundler",
     "target": "es2022",
     "lib": ["es2022", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./src/*"],
       "three": ["./node_modules/@types/three"],
       "three/addons/*": ["./node_modules/@types/three/examples/jsm/*"]
     }

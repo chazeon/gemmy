@@ -6,6 +6,8 @@ then renders that scene inside Blender. Minimum Blender: 4.2 LTS (Python 3.11).
 ## Check command (run before every commit)
 
     scripts/check.sh      # ruff format --check, ruff check, pytest -q; with node also tsc and a fresh viewer build; all must pass
+    scripts/check.sh --browser   # also the viewer in headless Chrome (pytest -m browser, ~20 s); --blender for the Blender suite
+    scripts/check.sh --slow      # also the heavy examples and the hosted site build (pytest -m slow, about a minute)
 
 The pre-commit hook (`scripts/hooks/pre-commit`: ruff on staged Python, Biome on staged viewer source) is enabled per
 clone with `git config core.hooksPath scripts/hooks`.
@@ -28,7 +30,7 @@ Outer process (may use numpy/scipy/ASE/pydantic):
 Render side (stdlib + bpy only; bpy imported lazily inside Blender code):
 - `render/`: `runner` (`render_plan`, `build_scene_with_backend`, the backend Protocols `Geometry`/`Stage`) · `looks` (look presets, named views, framing) · `materials` (scene material -> `ShaderSpec`) · `launch` (find and spawn Blender).
 - `view.py` (`gemmy view`, stdlib only): writes the viewer page from `viewer/` (built files, see `web/` below); `serve.py` is the live preview.
-- `web/` (dev only, not in the wheel): the viewer's TypeScript source, ES modules under `web/src` with the scene JSON typed in `types.ts` and shared state in `state.ts`, plus `page.html` and `style.css`. `npm --prefix web run build` (esbuild) writes the built `viewer.js`, `page.html` and `style.css` into `src/gemmy/viewer/`; never edit those built files. `npm --prefix web run check` is tsc. `web/test/entry.ts` is the pure part the node tests bundle (`tests/viewer_bundle.py`).
+- `web/` (dev only, not in the wheel): the viewer. Plain TypeScript under `web/src` draws the canvas; the overlay is React in `web/src/react`, with shadcn/ui components in `web/src/components/ui` on Tailwind v4 (`tailwind.css`). `page.html` and `style.css` are the page's own. `npm --prefix web run build` writes the built `viewer.js`, `page.html` and `style.css` into `src/gemmy/viewer/`; never edit those built files. `npm --prefix web run check` is tsc. `web/test/entry.ts` is the pure part the node tests bundle (`tests/viewer_bundle.py`). `web/README.md` has the structure.
 - `render/blender/`: one mixin per concern: `atoms` (linked duplicates + Geometry Nodes instancing), `primitives`, `materials`, `world` (lights, backdrop, camera), `renderer` (device and engine choice, output), `overlay` (axes triad).
 - `scripts/blender_build_scene.py`: sys.path shim only.
 
@@ -71,13 +73,18 @@ Import rules are enforced by `tests/test_import_boundaries.py` (a table of rules
 - Never commit research data (real POSCARs, displacement files, renders). Use synthetic fixtures.
   The owner's private data lives in `examples/private/` (gitignored); read it, never `git add -f` it.
   Committed examples (`examples/<name>/`) are public structures: POSCAR, `config.toml` + `config.json` (kept equal by
-  a test), README and `render.sh`; no scene.json. Their small README pictures live in `docs/images/`, made by
+  a test), README, `render.sh` and `gallery.json` (title and description; the hosted front page's start screen lists
+  them, `gemmy view --hosted --gallery examples`, scripts/build_site.sh); no scene.json. Their small README pictures live in `docs/images/`, made by
   `scripts/render_examples.sh`. `tests/test_examples.py` compiles them, so keep configs current when keys change.
 - Do not push or merge unless asked.
 
 ## Workflow
 
 - Work in a git worktree on its own branch.
+- A new worktree: run `scripts/worktree-setup.sh` once. It runs `uv sync` (a .venv per worktree, because the
+  editable install points at its own src) and links `web/node_modules` to the main checkout's when the two
+  `web/package-lock.json` files match, else runs `npm ci`. Measured: warm setup 0.5 s; cold caches, uv sync 2.7 s and
+  npm ci 2.9 s. Never run `npm install` or `npm ci` inside a linked worktree: it changes the main checkout's modules too.
 - One concern per commit; message `<step>: <goal>` plus a short body.
 - End every commit message with:
 

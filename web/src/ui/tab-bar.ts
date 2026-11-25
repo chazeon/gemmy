@@ -1,78 +1,67 @@
-// The tab strip: one button per tab, and for a file a ✕ while another tab remains (the last tab stays). A page built
-// with its own strip (the server's) keeps its links: the page's own scene is its link (tab 0), so that tab has no
-// button of its own there, and the link is current only while that scene is shown.
-import { watchOverflow } from "./overflow";
-import { byId, cloneTemplate } from "./dom";
+// The tab strip's state, as a signal (@preact/signals-core). The loader (ui/loader.ts) writes it whenever the tabs change,
+// and the React strip (src/react/tab-strip.tsx) shows it. A page built with its own strip (gemmy serve's, a static
+// site's) has that strip's links read once, when the overlay mounts, and removed from the page: React draws them from
+// then on. The link of the page's own scene is the first tab (its button chooses the tab, without navigating).
+import { signal } from "@preact/signals-core";
+import { type StripLink, linksShown } from "./tab-model";
 
-export interface TabBar {
-  element: HTMLElement;
-  ownLink: HTMLAnchorElement | null;
-}
-export interface TabEntry {
+export interface StripTab {
   label: string;
   closable: boolean;
 }
-export interface TabActions {
+export interface TabHandlers {
   choose(k: number): void;
   close(k: number): void;
+  add(): void;
+  own(): void;
+}
+export interface TabBarView {
+  visible: boolean; // the strip shows in place of the page's name
+  links: readonly (StripLink & { current: boolean })[];
+  tabs: readonly StripTab[];
+  hasOwnLink: boolean; // tab 0 is the page's own link (in links), so the strip does not list it as a tab again
+  current: number;
+  handlers: TabHandlers;
 }
 
-// The strip the page has, or one made above the page's name (the name is hidden behind the strip, as on a server-built
-// strip). `onOwnLink` runs when the page's own link is clicked: that tab is chosen without navigating.
-export function makeBar(onOwnLink: () => void): TabBar {
-  const built = document.querySelector<HTMLElement>(".tabs");
-  if (built) {
-    const ownLink = built.querySelector<HTMLAnchorElement>('a[aria-current="page"]');
-    ownLink?.addEventListener("click", (event) => {
-      event.preventDefault();
-      onOwnLink();
-    });
-    return { element: built, ownLink };
-  }
-  const nav = document.createElement("nav");
-  nav.className = "tabs";
-  nav.setAttribute("aria-label", "Scenes");
-  byId("menu-island").insertBefore(nav, document.querySelector(".name"));
-  return { element: nav, ownLink: null };
+// The tab that has just opened and a count of openings, so the strip pulses that tab once (react/tab-strip.tsx). The
+// loader calls pulseTab with the index of the tab it opened or made.
+export const tabPulse = signal({ tab: -1, serial: 0 });
+export function pulseTab(k: number): void {
+  tabPulse.value = { tab: k, serial: tabPulse.peek().serial + 1 };
 }
 
-// Rebuilds the tab buttons from the entries, and marks the current one.
-export function renderTabs(bar: TabBar, entries: readonly TabEntry[], current: number, actions: TabActions): void {
-  const strip = bar.element;
-  strip.querySelectorAll(".local-tab").forEach((element) => {
-    element.remove();
-  });
-  entries.forEach((entry, k) => {
-    if (k !== 0 || bar.ownLink === null) strip.appendChild(tabElement(entry, k === current, k, actions));
-  });
-  if (bar.ownLink !== null) {
-    if (current === 0) bar.ownLink.setAttribute("aria-current", "page");
-    else bar.ownLink.removeAttribute("aria-current");
-  }
-  watchOverflow(strip);
-  strip.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+const NO_HANDLERS: TabHandlers = { choose() {}, close() {}, add() {}, own() {} };
+let serverLinks: StripLink[] = [];
+export const tabBar = signal<TabBarView>({
+  visible: false,
+  links: [],
+  tabs: [],
+  hasOwnLink: false,
+  current: 0,
+  handlers: NO_HANDLERS,
+});
+
+// Reads the strip the server built into `container` (its nav.tabs, if any), and removes it from the page.
+export function takeServerLinks(container: HTMLElement): void {
+  const nav = container.querySelector("nav.tabs");
+  if (nav === null) return;
+  serverLinks = [...nav.querySelectorAll("a")].map((a) => ({
+    label: a.textContent ?? "",
+    href: a.getAttribute("href") ?? "",
+    own: a.getAttribute("aria-current") === "page",
+  }));
+  nav.remove();
 }
 
-function tabElement(entry: TabEntry, isCurrent: boolean, k: number, actions: TabActions): HTMLElement {
-  const wrap = document.createElement("span");
-  wrap.className = "local-tab";
-  const choice = document.createElement("button");
-  choice.type = "button";
-  choice.textContent = entry.label;
-  if (isCurrent) choice.setAttribute("aria-current", "page");
-  choice.addEventListener("click", () => actions.choose(k));
-  wrap.appendChild(choice);
-  if (entry.closable) wrap.appendChild(closeButton(entry.label, () => actions.close(k)));
-  return wrap;
-}
-
-function closeButton(label: string, onClick: () => void): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "tab-close";
-  button.title = `Close ${label}`;
-  button.setAttribute("aria-label", `Close ${label}`);
-  button.append(cloneTemplate("close-icon"));
-  button.addEventListener("click", onClick);
-  return button;
+// The strip's state for the tabs now: `needed` says the loader needs a strip (more than one tab, or the start screen).
+export function showTabs(tabs: readonly StripTab[], current: number, needed: boolean, handlers: TabHandlers): void {
+  tabBar.value = {
+    visible: needed || serverLinks.length > 0,
+    links: linksShown(serverLinks, current),
+    tabs,
+    hasOwnLink: serverLinks.some((link) => link.own),
+    current,
+    handlers,
+  };
 }

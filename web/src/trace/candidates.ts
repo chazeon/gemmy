@@ -47,7 +47,7 @@ export function onLine(a: Pt, b: Pt, p: Pt): Pt {
 
 // An instance's frame from its matrix (column-major, as instancing.ts writes it): its centre, the half axis (column 1 is
 // the full axis, from one end to the other), and the two radius columns, ux (column 0) and uz (column 2).
-export interface InstanceFrame {
+interface InstanceFrame {
   centre: THREE.Vector3;
   axis: THREE.Vector3;
   ux: THREE.Vector3;

@@ -1,0 +1,67 @@
+{
+  "structure": "POSCAR",
+  "elements": {
+    "O": {
+      "radius": 0.3,
+      "color": [
+        0.9,
+        0.05,
+        0.05,
+        1.0
+      ],
+      "material": "matte"
+    },
+    "C": {
+      "radius": 0.18,
+      "color": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "material": "matte"
+    }
+  },
+  "materials": {
+    "hbond": {
+      "type": "principled",
+      "base_color": [
+        0.3,
+        0.3,
+        0.3,
+        1.0
+      ],
+      "roughness": 0.5
+    }
+  },
+  "cells": {
+    "supercell": [
+      1,
+      1,
+      1
+    ],
+    "periodic": [
+      true,
+      true,
+      true
+    ]
+  },
+  "bonds": [
+    {
+      "a": "O",
+      "b": "O",
+      "min": 2.6,
+      "max": 3.0,
+      "radius": 0.03,
+      "material": "hbond",
+      "color": [
+        0.3,
+        0.3,
+        0.3,
+        1.0
+      ],
+      "complete": "ends",
+      "style": "dashed"
+    }
+  ]
+}

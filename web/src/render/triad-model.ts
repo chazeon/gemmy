@@ -16,7 +16,7 @@ const HEAD_LENGTH = T.headLengthRatio;
 // at the viewer still sits in front of it.
 const BALL_TO_HEAD_BASE = 1.1; // the ball radius over the head base radius (1.0 to 1.15 reads as a ball)
 const BALL_RADIUS = BALL_TO_HEAD_BASE * HEAD_RADIUS;
-export const BALL_COLOUR = "#ffffff";
+const BALL_COLOUR = "#ffffff";
 const SIDES = 24; // around a shaft or a head, as the structure's tubes (draw.ts TUBE_SEGMENTS)
 const BALL_SEGMENTS = { width: 32, height: 16 };
 // The corner the triad is drawn in, in triad lengths from the origin (the arrows and the ball; the labels are on the
@@ -29,7 +29,7 @@ const FAR_LENGTHS = 5;
 const UP = new THREE.Vector3(0, 1, 0); // the cylinder and cone geometry run along +y
 
 // A solid: a cylinder or a cone along its own +y axis, centred, or a sphere. Sizes in CSS px.
-export interface Shape {
+interface Shape {
   kind: "cylinder" | "cone" | "sphere";
   radius: number;
   height: number;

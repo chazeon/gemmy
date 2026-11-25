@@ -40,7 +40,6 @@ import {
 import { type PassView, disposeMeshes, passMaterial, projector, renderPasses } from "./passes";
 import { OUTLINE_THICKNESS, root } from "../render/draw";
 import { camera } from "../state";
-import { snapTolerance } from "./stretch";
 import { traceTriad } from "./triad-trace";
 
 // The render scale: the id, band and depth passes are this many times the stage in each direction.
@@ -173,7 +172,6 @@ function makeGroup(options: SvgOptions, view: View, prepared: Prepared, passes: 
     project,
     linePass,
     curves: makeCurveLookup(options, view, prepared),
-    tol: snapTolerance(TRACE_SCALE),
     paint: { rgb: (obj) => fillRgb(options, obj), opacity: () => 1 },
     // The live view's outline is OUTLINE_THICKNESS of the image height; a centred stroke of half of it shows its
     // visible width.

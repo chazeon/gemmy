@@ -96,7 +96,7 @@ def bump_mtime(path: Path) -> None:
 def test_serves_page_scene_and_status(scene_path: Path) -> None:
     with Running(preview_for(scene_path)) as run:
         code, page = run.get("/")
-        assert code == 200 and b"<h1>demo</h1>" in page and b'id="scene-data"></script>' in page
+        assert code == 200 and b'data-title="demo"' in page and b'id="scene-data"></script>' in page
         assert run.scene()["source_comment"] == "v1"
         status = run.status()
         assert status["error"] is None and status["version"] and status["render"]["enabled"] is False

@@ -1,5 +1,6 @@
 // DOM helpers for the ui files. The page (web/page.html) is fixed, so a missing element means a broken page: the
 // lookup fails with the id it could not find.
+import { signal } from "@preact/signals-core";
 import type { PageNames } from "../scene/source";
 
 export function byId<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -13,25 +14,9 @@ export function closestOf(target: EventTarget | null, selector: string): HTMLEle
   return target instanceof Element ? target.closest<HTMLElement>(selector) : null;
 }
 
-// A copy of a page's <template>, as a fragment the caller fills in and inserts.
-export function cloneTemplate(id: string): DocumentFragment {
-  return byId<HTMLTemplateElement>(id).content.cloneNode(true) as DocumentFragment;
-}
-
-// The text of a template's slot (an element marked data-slot="name"). Text only, never HTML.
-export function setSlot(root: ParentNode, name: string, text: string): void {
-  root.querySelector<HTMLElement>(`[data-slot="${name}"]`)!.textContent = text;
-}
-
-// The page's name and its line under it (the title in the menu island).
-const nameHeading = document.querySelector<HTMLElement>(".name h1")!;
-const nameLine = document.querySelector<HTMLElement>(".name .sub")!;
-export const pageName = {
-  read(): PageNames {
-    return { name: nameHeading.textContent!, from: nameLine.textContent! };
-  },
-  show(name: string, from: string): void {
-    nameHeading.textContent = name;
-    nameLine.textContent = from;
-  },
-};
+// The page's name and its line under it: the top bar's title, or the tab strip's place (ui/tab-bar.ts). The page's own
+// name is in the overlay's data attributes (web/page.html); the loader sets the name as each scene opens.
+export const pageName = signal<PageNames>({
+  name: byId("overlay").dataset.title ?? "",
+  from: byId("overlay").dataset.subtitle ?? "",
+});

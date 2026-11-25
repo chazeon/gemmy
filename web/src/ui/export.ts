@@ -1,6 +1,8 @@
 // The Export menu's actions: the PNG and SVG pictures, and the render settings (saved as TOML or JSON, or copied with
-// the render command). Each action is an entry of EXPORTS, keyed by its button's data-export name; a feature adds an
-// item of its own with registerExport (ui/live.ts does for the serve page's render item).
+// the render command). The menu (src/react/export-menu.tsx) runs one by its name; each action says what happened in the
+// page's toast (ui/toast.ts). Two signals hold what the menu shows: the text the clipboard refused (a dialog to copy it
+// by hand), and the serve page's Render item (set by ui/live.ts).
+import { signal } from "@preact/signals-core";
 import { renderer, scene, stage } from "../render/draw";
 import { buildTracedSvg } from "../trace/traced";
 import { exportView, renderCommand, settingsJson, settingsToml } from "../export/settings";
@@ -9,7 +11,7 @@ import { renderTriad } from "../render/triad3d";
 import { pageCamera } from "../camera/view";
 import { camera, loaded, outlines, requestRender, showAtoms, showBox } from "../state";
 import { outlineScale } from "./outline-scale";
-import { byId } from "./dom";
+import { note } from "./toast";
 
 const PNG_SCALE = 2; // the PNG is twice the window in each direction, whatever the screen's own pixel ratio
 const KB = 1024;
@@ -24,12 +26,12 @@ export const currentView = () =>
     box: showBox.value,
   });
 
+// The text the clipboard refused: the menu shows it in a dialog, selected, for the user to copy.
+export const copyFallback = signal<{ text: string; what: string } | null>(null);
+// The serve page's Render item: its action, when the server has Blender set up (ui/live.ts), else null.
+export const renderView = signal<(() => void) | null>(null);
+
 // ---- saving and copying ----
-const exportStatus = byId("export-status");
-function say(text: string, failed = false) {
-  exportStatus.textContent = text;
-  exportStatus.classList.toggle("err", failed);
-}
 function download(name: string, blob: Blob) {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -41,28 +43,19 @@ function download(name: string, blob: Blob) {
 }
 function saveFile(name: string, type: string, text: string) {
   download(name, new Blob([text], { type }));
-  say(`Saved ${name}.`);
+  note(`Saved ${name}.`);
 }
 
-// The text box that holds the settings when the clipboard refuses them: the text is selected for the user to copy.
-const exportText = byId<HTMLTextAreaElement>("export-text");
-function showSelectedText(text: string, what: string) {
-  exportText.value = text;
-  exportText.hidden = false;
-  exportText.focus();
-  exportText.select();
-  say(`Could not use the clipboard: ${what} is selected, press Ctrl/Cmd+C.`, true);
-}
-// Copy inside the click handler (browsers only allow it there); when refused, show the text selected instead.
+// Copy inside the click (browsers only allow it there); when the clipboard refuses, the dialog shows the text instead.
 function copyText(text: string, what: string) {
-  const fallback = () => showSelectedText(text, what);
+  const refused = () => {
+    copyFallback.value = { text, what };
+    note(`Could not use the clipboard: ${what} is shown, press Ctrl/Cmd+C to copy it.`);
+  };
   try {
-    navigator.clipboard.writeText(text).then(() => {
-      exportText.hidden = true;
-      say(`Copied ${what}.`);
-    }, fallback);
+    navigator.clipboard.writeText(text).then(() => note(`Copied ${what}.`), refused);
   } catch {
-    fallback();
+    refused();
   }
 }
 
@@ -93,9 +86,9 @@ function exportPng(transparent: boolean) {
   out.toBlob((blob) => {
     if (blob) {
       download("view.png", blob);
-      say(`Saved view.png (${out.width} × ${out.height}).`);
+      note(`Saved view.png (${out.width} × ${out.height}).`);
     } else {
-      say("The browser could not make the PNG.", true);
+      note("The browser could not make the PNG.");
     }
   }, "image/png");
 }
@@ -109,7 +102,7 @@ function triadAt(scale: number, transparent: boolean): HTMLCanvasElement {
 function exportSvg() {
   const { data } = loaded.value;
   if (!data) {
-    say("Load a scene first: there is no scene on show to export.", true);
+    note("Load a scene first: there is no scene on show to export.");
     return;
   }
   const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
@@ -127,17 +120,17 @@ function exportSvg() {
       boxColor,
     });
   } catch (error) {
-    say(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`, true);
+    note(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`);
     return;
   } finally {
     requestRender(); // the passes drew into the GPU's buffers: the live view is redrawn either way
   }
   download("view.svg", new Blob([result.text], { type: "image/svg+xml" }));
   if (result.paths === 0) {
-    say("Saved view.svg, but nothing in this view is visible: the file has no shapes.", true);
+    note("Saved view.svg, but nothing in this view is visible: the file has no shapes.");
     return;
   }
-  say(
+  note(
     `Saved view.svg (${Math.round(result.text.length / KB)} kB, ${result.paths} paths, ${Math.round(result.ms)} ms).`,
   );
 }
@@ -147,23 +140,43 @@ function sceneFileName(): string {
   return meta?.content || DEFAULT_SCENE_FILE;
 }
 
-// ---- the menu's items ----
-type ExportRun = (item?: HTMLElement) => unknown;
-const EXPORTS = new Map<string, ExportRun>([
-  ["svg", exportSvg],
-  ["png", () => exportPng(byId<HTMLInputElement>("png-transparent").checked)],
-  ["save-toml", () => saveFile("render-settings.toml", "application/toml", settingsToml(currentView()))],
-  ["save-json", () => saveFile("render-settings.json", "application/json", settingsJson(currentView()))],
-  ["copy-toml", () => copyText(settingsToml(currentView()), "the TOML settings")],
-  ["copy-json", () => copyText(settingsJson(currentView()), "the JSON settings")],
-  ["copy-command", () => copyText(renderCommand(currentView(), sceneFileName()), "the command")],
-]);
+// ---- the menu's actions ----
+export type ExportAction =
+  | "png"
+  | "svg"
+  | "save-toml"
+  | "save-json"
+  | "copy-toml"
+  | "copy-json"
+  | "copy-command"
+  | "render-view";
 
-// Adds an item to the menu, under its data-export name.
-export function registerExport(name: string, run: ExportRun): void {
-  EXPORTS.set(name, run);
-}
-// Runs the item with this data-export name (a name with no item does nothing).
-export function runExport(name: string | undefined, item: HTMLElement): void {
-  EXPORTS.get(name ?? "")?.(item);
+// Runs one action of the menu. The PNG takes whether its background is transparent.
+export function runExport(action: ExportAction, options: { transparent?: boolean } = {}): void {
+  switch (action) {
+    case "png":
+      exportPng(options.transparent ?? true);
+      return;
+    case "svg":
+      exportSvg();
+      return;
+    case "save-toml":
+      saveFile("render-settings.toml", "application/toml", settingsToml(currentView()));
+      return;
+    case "save-json":
+      saveFile("render-settings.json", "application/json", settingsJson(currentView()));
+      return;
+    case "copy-toml":
+      copyText(settingsToml(currentView()), "the TOML settings");
+      return;
+    case "copy-json":
+      copyText(settingsJson(currentView()), "the JSON settings");
+      return;
+    case "copy-command":
+      copyText(renderCommand(currentView(), sceneFileName()), "the command");
+      return;
+    case "render-view":
+      renderView.peek()?.();
+      return;
+  }
 }

@@ -1,7 +1,8 @@
 // The colour theme. Auto follows the system's light or dark setting; Light and Dark set data-theme on <html>, which
-// web/style.css reads (Light and Dark both override the system). The choice is kept per browser under THEME_KEY. The
-// inline script in web/page.html reads the same key before the first paint, so keep the key and the values equal.
-import { effect, signal } from "@preact/signals-core";
+// web/style.css reads (Light and Dark both override the system). The overlay's shadcn components read the same choice
+// as the `dark` class on <html> (their dark variants). The choice is kept per browser under THEME_KEY. The inline
+// script in web/page.html reads the same key before the first paint, so keep the key and the values equal.
+import { computed, effect, signal } from "@preact/signals-core";
 import { remembered } from "./storage";
 
 type ThemeChoice = "auto" | "light" | "dark";
@@ -11,8 +12,9 @@ const THEME_CHOICES: readonly ThemeChoice[] = ["auto", "light", "dark"];
 const AUTO: ThemeChoice = "auto";
 const THEME_ATTRIBUTE = "data-theme";
 const DARK_QUERY = "(prefers-color-scheme: dark)";
+const DARK_CLASS = "dark"; // shadcn's dark variant (web/tailwind.css)
 
-export function isThemeChoice(value: unknown): value is ThemeChoice {
+function isThemeChoice(value: unknown): value is ThemeChoice {
   return THEME_CHOICES.some((choice) => choice === value);
 }
 
@@ -23,7 +25,7 @@ function applyToPage(choice: ThemeChoice): void {
 }
 
 const stored = remembered<ThemeChoice>(THEME_KEY, (raw) => (isThemeChoice(raw) ? raw : AUTO));
-// The choice in use: the menu's segments and the box's colour follow it.
+// The choice in use: the ☰ menu and the box's colour follow it.
 export const theme = signal<ThemeChoice>(stored.read());
 applyToPage(theme.peek());
 
@@ -34,8 +36,14 @@ systemQuery.addEventListener("change", (event) => {
   systemDark.value = event.matches;
 });
 
+// The page is dark when the choice is Dark, or Auto with a dark system: the class on <html> follows that.
+const isDark = computed(() => theme.value === "dark" || (theme.value === "auto" && systemDark.value));
+effect(() => {
+  document.documentElement.classList.toggle(DARK_CLASS, isDark.value);
+});
+
 // The page's attribute is set before the signal changes, so an effect that reads the colours sees the new ones.
-export function setTheme(choice: ThemeChoice): void {
+function setTheme(choice: ThemeChoice): void {
   applyToPage(choice);
   stored.write(choice);
   theme.value = choice;
@@ -46,19 +54,3 @@ export function cycleTheme(): void {
   const next = (THEME_CHOICES.indexOf(theme.peek()) + 1) % THEME_CHOICES.length;
   setTheme(THEME_CHOICES[next]);
 }
-
-// ---- the theme row of the ☰ menu ----
-// Three segments, Auto, Light and Dark; the one in use is pressed. A key press (T) can change the choice while the menu
-// is shut, so the segments follow the choice.
-const themeSegments = [...document.querySelectorAll<HTMLButtonElement>("[data-theme-choice]")];
-for (const segment of themeSegments) {
-  segment.addEventListener("click", () => {
-    const choice = segment.dataset.themeChoice;
-    if (isThemeChoice(choice)) setTheme(choice);
-  });
-}
-effect(() => {
-  for (const segment of themeSegments) {
-    segment.setAttribute("aria-pressed", String(segment.dataset.themeChoice === theme.value));
-  }
-});
