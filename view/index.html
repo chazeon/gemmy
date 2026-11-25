@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="../style.f37e7ecf81.css">
+<link rel="stylesheet" href="../style.34c3e407d3.css">
 </head>
 <body>
 
@@ -38,6 +38,27 @@
       aria-controls="info" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div id="info-body" aria-live="polite"></div>
   </section>
+
+  <!-- the readout's and the tab strip's templates (web/src/ui/readout.ts, tab-bar.ts): cloned and filled as text; the
+       data-slot names are what the code fills, and data-row marks a row the code may remove -->
+  <template id="nothing-selected"><h2>Nothing selected</h2><p class="hint">Click an atom or a polyhedron to see its distances.</p></template>
+  <template id="atom-readout"><h2><span data-slot="element"></span> atom</h2><dl>
+      <dt data-row="ref">Ref</dt><dd data-row="ref"><span data-slot="ref"></span> <button type="button" class="copy" data-slot="copy">Copy</button></dd>
+      <dt data-row="fractional">Fractional</dt><dd data-row="fractional"><span data-slot="fractional"></span></dd>
+      <dt>Cartesian</dt><dd><span data-slot="cartesian"></span> Å</dd>
+      <dt data-row="neighbours"><span data-slot="host"></span> nbrs</dt><dd data-row="neighbours"><span data-slot="neighbours"></span> Å</dd>
+      <dt>View</dt><dd data-slot="view"></dd></dl>
+      <p class="hint">Fractional coordinates are in the supercell.</p></template>
+  <template id="polyhedron-readout"><h2 data-slot="name"></h2><dl>
+      <dt>Centre</dt><dd data-slot="centre"></dd>
+      <dt>Bonds</dt><dd><span data-slot="bonds"></span> Å</dd>
+      <dt>Mean</dt><dd><span data-slot="mean"></span> Å</dd>
+      <dt>Δ</dt><dd><span data-slot="delta"></span> × 10⁻⁴</dd>
+      <dt>View</dt><dd data-slot="view"></dd></dl>
+      <p class="hint">Δ is the bond-length distortion, the mean of ((d − d̄)/d̄)².
+        Fractional coordinates are in the supercell.</p></template>
+  <template id="center-button"><button type="button" class="copy" data-center title="Center and fit this object" aria-label="Center and fit this object"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg> Center</button></template>
+  <template id="close-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></template>
   <!-- the loader's empty state (web/src/ui/loader.ts): shown when the page has no scene yet -->
   <section id="empty" aria-labelledby="empty-title" hidden>
     <button type="button" class="tool" id="empty-close" title="Close (Esc)" aria-label="Close" hidden><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -61,7 +82,7 @@
   <!-- top left: the menu button, then the tabs (or the name) -->
   <div class="island" id="menu-island">
     <button class="tool" id="menu-button" title="Menu: show or hide atoms, outlines, cell box; the theme" aria-label="Menu"
-      aria-haspopup="true" aria-expanded="false" aria-controls="main-menu">
+      aria-haspopup="true" aria-expanded="false" aria-controls="main-menu" popovertarget="main-menu">
       <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     
@@ -119,7 +140,7 @@
     </div>
   </div>
 
-  <button id="export-button" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Export</button>
+  <button id="export-button" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu" popovertarget="export-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Export</button>
 
   <!-- under the top row: the live-mode banner and the Blender progress pill -->
   <div id="msgs">
@@ -152,13 +173,14 @@
   </div>
 
   <button class="tool" id="help-button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
-    aria-haspopup="dialog" aria-expanded="false" aria-controls="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+    aria-haspopup="dialog" aria-expanded="false" aria-controls="help" popovertarget="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
   <button class="tool" id="info-button" title="Selection details (i)" aria-label="Selection details"
     aria-controls="info" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
 </div>
 
-<!-- The popovers below open next to their buttons; their placement is in web/src/ui/menus.ts. -->
-<div id="main-menu" class="popover" role="group" aria-label="View options" hidden>
+<!-- The popovers below are native (popover="auto"): their buttons open them, and the browser closes them on Esc or an
+     outside press. Their placement under the button is in web/src/ui/menus.ts. -->
+<div id="main-menu" class="popover" popover="auto" role="group" aria-label="View options">
   <p class="mhead">Show</p>
   <button type="button" class="mcheck" id="toggle-atoms" aria-pressed="true">Atoms</button>
   <button type="button" class="mcheck" id="toggle-outline" aria-pressed="true">Outlines</button>
@@ -181,7 +203,7 @@
   </div>
 </div>
 
-<section id="help" class="popover" role="dialog" aria-label="Keyboard shortcuts" hidden>
+<section id="help" class="popover" popover="auto" role="dialog" aria-label="Keyboard shortcuts">
   <h2>Keyboard shortcuts</h2>
   <dl>
     <dt>Drag · right-drag · scroll</dt><dd>rotate · move · zoom</dd>
@@ -200,7 +222,7 @@
   <p class="project"><a href="https://github.com/chazeon/gemmy" target="_blank" rel="noopener">gemmy on GitHub</a></p>
 </section>
 
-<div id="export-menu" class="popover" role="menu" aria-label="Export" hidden>
+<div id="export-menu" class="popover" popover="auto" role="menu" aria-label="Export">
   <div class="mrow" role="none">
     <button type="button" role="menuitem" data-export="png">PNG</button>
     <span class="lbl note">2× the window</span>
@@ -237,6 +259,6 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }}
 </script>
-<script type="module" src="../viewer.71b4e13d2f.js"></script>
+<script type="module" src="../viewer.ad0b8dc7ed.js"></script>
 </body>
 </html>
