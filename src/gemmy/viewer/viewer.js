@@ -1390,6 +1390,7 @@ renderer.domElement.addEventListener("pointerup", (e) => {
 
 // src/camera/pivot.ts
 function beginRotation() {
+  if (!cameraInsideStructure()) return;
   const r = renderer.domElement.getBoundingClientRect();
   const hit = pickPointAt(r.left + r.width / 2, r.top + r.height / 2);
   if (!hit) return;
@@ -1403,6 +1404,9 @@ function beginRotation() {
   if (!pivot) return;
   controls.target.fromArray(pivot);
   requestRender();
+}
+function cameraInsideStructure() {
+  return camera.position.length() < extent / 2;
 }
 var press = null;
 window.addEventListener("pointerdown", (e) => {

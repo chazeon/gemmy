@@ -1,16 +1,18 @@
-// The pivot: what a rotation turns about. Rotation swings the camera round controls.target, which starts a view distance
-// ahead, so a small tilt would swing the camera across that whole distance. A rotation pivots instead on what the screen
-// centre looks at, when that is nearer than the target: the hit lies on the view ray, so the view does not change and
-// nothing jumps. The keys and toolbar buttons call beginRotation (ui/ui.ts) at the start of a turn; a trackball drag
-// starts it by itself, below.
+// The pivot: what a rotation turns about. From outside the structure a tilt orbits controls.target, the structure's
+// centre unless the user moved it (double-click, pan), as it always has. Once the camera has flown INSIDE the structure,
+// the target is a view distance ahead and a small tilt would swing the camera across that whole distance, so a rotation
+// pivots instead on what the screen centre looks at, when that is nearer than the target: the hit lies on the view ray,
+// so the view does not change and nothing jumps. The keys and toolbar buttons call beginRotation (ui/ui.ts) at the
+// start of a turn; a trackball drag starts it by itself, below.
 import { controls, renderer } from "../render/draw";
-import { camera, requestRender } from "../state";
+import { camera, extent, requestRender } from "../state";
 import { pickPointAt } from "../ui/picking";
 import { pivotTarget } from "./framing";
 import { POINTER_SLOP_PX } from "../config";
 
 // Pivots the target onto the view ray through the screen centre, if the object there is nearer than the target.
 export function beginRotation(): void {
+  if (!cameraInsideStructure()) return;
   const r = renderer.domElement.getBoundingClientRect();
   const hit = pickPointAt(r.left + r.width / 2, r.top + r.height / 2);
   if (!hit) return;
@@ -21,6 +23,11 @@ export function beginRotation(): void {
   if (!pivot) return;
   controls.target.fromArray(pivot);
   requestRender();
+}
+
+// The structure is centred on the origin (scene/load.ts) and lies within half its bounding-box diagonal of it.
+function cameraInsideStructure(): boolean {
+  return camera.position.length() < extent / 2;
 }
 
 // A trackball drag pivots once the pointer has moved, not on the press: a click is not a rotation and leaves the pivot
