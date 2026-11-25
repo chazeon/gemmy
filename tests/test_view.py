@@ -73,7 +73,8 @@ def test_template_pins_three_and_uses_no_other_host() -> None:
     page = render_viewer(SCENE, "t")
     hosts = set(re.findall(r"https://([^/\"']+)", page))
     # api.github.com is the gist loader (web/src/scene/fetch.ts): it is called only for ?gist=, never on its own.
-    assert hosts == {"cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com", "api.github.com"}
+    # github.com is the project link in the help panel: a new-tab link the page never fetches.
+    assert hosts == {"cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com", "api.github.com", "github.com"}
     assert all("three@0.160.0" in u for u in re.findall(r"https://cdn\.jsdelivr\.net/\S+", page) if "three" in u)
 
 
