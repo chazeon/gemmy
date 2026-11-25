@@ -3891,10 +3891,19 @@ function pathSegments(url) {
     }
   });
 }
-function sourceName(url) {
-  return pathSegments(url).at(-1) ?? url;
+function sourcesToOpen(search, base, defaults) {
+  const sources = parseSources(search, base);
+  if (sources.length > 0) return sources.map((source) => ({ source, byDefault: false }));
+  return defaults.map((scene2) => ({ source: { kind: "url", url: resolveWebUrl(scene2, base) }, byDefault: true }));
 }
-function tabLabel(source) {
+function linkFor(source, byDefault, pageHref) {
+  const link = new URL(pageHref);
+  link.hash = "";
+  const query = byDefault ? {} : source.kind === "gist" ? { gist: source.id, ...source.file === null ? {} : { file: source.file } } : { scene: source.url };
+  link.search = new URLSearchParams(query).toString();
+  return link.href;
+}
+function sceneName(source) {
   if (source.kind === "gist") return source.file ?? `gist ${source.id}`;
   const segments = pathSegments(source.url);
   const stem = (segments.at(-1) ?? source.url).replace(SCENE_FILE, "");
@@ -3970,19 +3979,13 @@ function fail(text) {
 function labelOf(source) {
   return source.kind === "gist" ? `gist ${source.id}` : source.url;
 }
-function linkMaking(source, byDefault) {
-  const link = new URL(location.href);
-  link.hash = "";
-  const query = byDefault ? {} : source.kind === "gist" ? { gist: source.id, ...source.file === null ? {} : { file: source.file } } : { scene: source.url };
-  link.search = new URLSearchParams(query).toString();
-  return link.href;
-}
 async function loadSource(source, byDefault) {
+  const link = linkFor(source, byDefault, location.href);
   if (source.kind === "gist") {
     const { name, doc } = await fetchGist(source.id, source.file);
-    return { doc, name, from: labelOf(source), link: linkMaking(source, byDefault) };
+    return { doc, name, from: labelOf(source), link };
   }
-  return { doc: await fetchScene(source.url), name: sourceName(source.url), from: source.url, link: linkMaking(source, byDefault) };
+  return { doc: await fetchScene(source.url), name: sceneName(source), from: source.url, link };
 }
 async function present(label, loading, show2) {
   busy(`Loading ${label}\u2026`);
@@ -3997,39 +4000,35 @@ async function present(label, loading, show2) {
 function fromFile(file, show2) {
   return present(file.name, async () => ({ doc: await sceneFromFile(file), name: file.name, from: "local file", link: null }), show2);
 }
-function sourcesToOpen() {
-  const sources = parseSources(location.search, location.href);
-  const defaultScene = document.querySelector('meta[name="gemmy-default-scene"]')?.content ?? "";
-  if (sources.length > 0 || defaultScene === "") return { sources, byDefault: false };
-  return { sources: [{ kind: "url", url: resolveWebUrl(defaultScene, location.href) }], byDefault: true };
+function defaultScenes() {
+  return [...document.querySelectorAll('meta[name="gemmy-default-scene"]')].map((meta) => meta.content).filter((scene2) => scene2 !== "");
 }
 function startLoader(show2) {
-  let opening;
+  let openings;
   try {
-    opening = sourcesToOpen();
+    openings = sourcesToOpen(location.search, location.href, defaultScenes());
   } catch (error) {
     fail(messageOf2(error));
     return;
   }
-  const { sources, byDefault } = opening;
-  if (sources.length === 0) {
+  if (openings.length === 0) {
     showCard();
-  } else if (sources.length === 1) {
-    const [only] = sources;
-    void present(labelOf(only), () => loadSource(only, byDefault), show2);
+  } else if (openings.length === 1) {
+    const [only] = openings;
+    void present(labelOf(only.source), () => loadSource(only.source, only.byDefault), show2);
   } else {
-    openTabs(sources, show2);
+    openTabs(openings, show2);
   }
 }
-function openTabs(sources, show2) {
+function openTabs(openings, show2) {
   const bar = document.createElement("nav");
   bar.className = "tabs";
   bar.setAttribute("aria-label", "Scenes");
   const loaded = /* @__PURE__ */ new Map();
-  const buttons = sources.map((source, k) => {
+  const buttons = openings.map(({ source }, k) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = tabLabel(source);
+    button.textContent = sceneName(source);
     button.addEventListener("click", () => choose(k));
     bar.appendChild(button);
     return button;
@@ -4039,8 +4038,9 @@ function openTabs(sources, show2) {
       if (j === k) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    void present(labelOf(sources[k]), async () => {
-      const shown2 = loaded.get(k) ?? await loadSource(sources[k], false);
+    const { source, byDefault } = openings[k];
+    void present(labelOf(source), async () => {
+      const shown2 = loaded.get(k) ?? await loadSource(source, byDefault);
       loaded.set(k, shown2);
       return shown2;
     }, show2);

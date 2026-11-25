@@ -8,7 +8,7 @@
 <title>gemmy preview (stishovite)</title>
 <meta name="gemmy-scene-file" content="stishovite.json">
 <meta name="gemmy-mode" content="load">
-<meta name="gemmy-default-scene" content="scene.json.gz"><!-- the loader opens this when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
+<meta name="gemmy-default-scene" content="scene.json.gz"><!-- the loader opens these, one per gemmy-default-scene meta in order (tabs when several), when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
 <script>
   // The theme, set before the first paint so a dark page never flashes light. It reads the key that web/src/ui/theme.ts
   // writes (gemmy.theme) and sets data-theme only for Light or Dark; Auto leaves it off, so the system's scheme applies.
@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="../style.a0ebb955e2.css">
+<link rel="stylesheet" href="../style.d2d9c0657b.css">
 </head>
 <body>
 
@@ -197,6 +197,7 @@
     <dt><kbd>t</kbd></dt><dd>theme: auto, light, dark</dd>
     <dt><kbd>?</kbd> · <kbd>Esc</kbd></dt><dd>this list · close a menu</dd>
   </dl>
+  <p class="project"><a href="https://github.com/chazeon/gemmy" target="_blank" rel="noopener">gemmy on GitHub</a></p>
 </section>
 
 <div id="export-menu" class="popover" role="menu" aria-label="Export" hidden>
@@ -236,6 +237,6 @@
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }}
 </script>
-<script type="module" src="../viewer.59480647ef.js"></script>
+<script type="module" src="../viewer.1445741fb7.js"></script>
 </body>
 </html>
