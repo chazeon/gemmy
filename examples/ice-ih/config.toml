@@ -48,7 +48,7 @@ radius = 0.07
 material = "covalent"
 complete = "ends"
 
-# Hydrogen bond, same O-H pair at a longer distance; only drawn when both ends are in the box.
+# Hydrogen bond, same O-H pair at a longer distance. `none` adds no atom for it: drawn only between atoms already shown.
 [[bonds]]
 a = "O"
 b = "H"

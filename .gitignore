@@ -21,3 +21,6 @@ examples/private/
 
 # Static site built by scripts/build_site.sh
 site/
+
+# Viewer dev tools (npm ci --prefix web); the built viewer is committed under src/gemmy/viewer
+web/node_modules/

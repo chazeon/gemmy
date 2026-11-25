@@ -241,16 +241,19 @@ key.
 ### Which atoms are shown
 
 This is the tricky part of drawing a periodic crystal. Compile always applies these steps in the same order:
-wrap → display box → limits/selection → bonds → bond-end completion → polyhedra → visibility.
+wrap → display box → limits/selection → bonds → bond-end completion → polyhedra → bond closing → visibility.
 
 - **Wrap.** Fractional coordinates within `cells.eps` (default `1e-4`) of an integer snap to it, then wrap
   into [0, 1). `0.99999` and `0.0` are the same site.
 - **Display box.** `cells.box` gives fractions of the supercell per axis, default `[0, 1]` on each, e.g.
   `{ x = [0, 1], z = [0, 0.5] }`. It is inclusive, so an atom on a face is shown on both faces (2 copies),
   on an edge 4 times and on a corner 8 times.
-- **Bond ends.** `bonds[].complete`: `ends` (default) also shows an end that falls outside the box, one hop
-  only. `none` draws only bonds with both ends inside. `polyhedra` is `ends` plus one more hop for atoms
-  pulled in as polyhedron ligands.
+- **Bond ends.** `bonds[].complete` decides which atoms a bond adds: `ends` (default) also shows an end that
+  falls outside the box, one hop only. `none` adds no atom for the bond. `polyhedra` is `ends` plus one more hop
+  for atoms pulled in as polyhedron ligands.
+- **Bond closing.** Once every atom is shown (polyhedra and displacement corners included), each bond whose rule
+  matches and whose two ends are both shown is drawn, whatever its `complete` mode. This adds bonds only. It
+  draws the bonds inside a polyhedron cage that lies outside the box, which no earlier step reaches.
 - **Polyhedra** always get their full ligand shell. `image_centers = true` also builds them around boundary
   copies of the centre.
 - **Hidden elements** still count for bonds and polyhedra. They only lose their sphere (and, unless
@@ -301,9 +304,19 @@ Later sources override earlier ones: the POSCAR species line (VASP5 labels such 
 ## Development
 
 ```bash
-scripts/check.sh            # ruff format --check, ruff check, pytest
+scripts/check.sh            # ruff format --check, ruff check, pytest; with node, also the viewer's tsc and build check
 scripts/check.sh --blender  # also the real-Blender suite (bpy 5.2.3 in .venv-blender)
 ```
+
+The viewer page is TypeScript in `web/` (dev only, not in the wheel). With node installed:
+
+```bash
+npm --prefix web ci         # once: esbuild, typescript and @types/three, exact versions
+npm --prefix web run build  # after any change under web/: writes src/gemmy/viewer/ (commit those files too)
+npm --prefix web run check  # tsc, strict
+```
+
+Never edit the built files in `src/gemmy/viewer/`.
 
 - **`src/gemmy/`** has these parts:
   - plain dataclasses and math, importable inside Blender: `scene.py` (the scene contract),
@@ -311,7 +324,7 @@ scripts/check.sh --blender  # also the real-Blender suite (bpy 5.2.3 in .venv-bl
   - `config.py`, the compile config with pydantic validation;
   - `compile/`, structure → scene;
   - `render/`, which contains `runner.py`, `looks.py`, the bundled axis font in `fonts/`, and the `blender/` backend;
-  - `view.py`, `view_template.html` and `serve.py`, the web viewer, static site and live preview;
+  - `view.py`, `viewer/` (the built page, its style and script; the source is in `web/`) and `serve.py`, the web viewer, static site and live preview;
   - `cli.py`.
 
   [CLAUDE.md](CLAUDE.md) has the full module map and the rules that keep the compile and render sides apart.

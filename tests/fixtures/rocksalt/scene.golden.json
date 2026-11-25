@@ -3000,6 +3000,726 @@
     "material_id": "bond",
     "radius": 0.07,
     "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p27",
+    "b_element": "Mg",
+    "b_point_id": "p74",
+    "id": "bond_108_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p27",
+    "b_element": "Mg",
+    "b_point_id": "p66",
+    "id": "bond_109_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p28",
+    "b_element": "Mg",
+    "b_point_id": "p73",
+    "id": "bond_110_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p28",
+    "b_element": "Mg",
+    "b_point_id": "p58",
+    "id": "bond_111_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p29",
+    "b_element": "Mg",
+    "b_point_id": "p65",
+    "id": "bond_112_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p29",
+    "b_element": "Mg",
+    "b_point_id": "p57",
+    "id": "bond_113_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p30",
+    "b_element": "Mg",
+    "b_point_id": "p74",
+    "id": "bond_114_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p30",
+    "b_element": "Mg",
+    "b_point_id": "p68",
+    "id": "bond_115_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p31",
+    "b_element": "Mg",
+    "b_point_id": "p73",
+    "id": "bond_116_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p31",
+    "b_element": "Mg",
+    "b_point_id": "p60",
+    "id": "bond_117_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p32",
+    "b_element": "Mg",
+    "b_point_id": "p67",
+    "id": "bond_118_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p32",
+    "b_element": "Mg",
+    "b_point_id": "p59",
+    "id": "bond_119_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p33",
+    "b_element": "Mg",
+    "b_point_id": "p76",
+    "id": "bond_120_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p33",
+    "b_element": "Mg",
+    "b_point_id": "p66",
+    "id": "bond_121_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p34",
+    "b_element": "Mg",
+    "b_point_id": "p75",
+    "id": "bond_122_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p34",
+    "b_element": "Mg",
+    "b_point_id": "p62",
+    "id": "bond_123_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p35",
+    "b_element": "Mg",
+    "b_point_id": "p65",
+    "id": "bond_124_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p35",
+    "b_element": "Mg",
+    "b_point_id": "p61",
+    "id": "bond_125_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p36",
+    "b_element": "Mg",
+    "b_point_id": "p76",
+    "id": "bond_126_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p36",
+    "b_element": "Mg",
+    "b_point_id": "p68",
+    "id": "bond_127_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p37",
+    "b_element": "Mg",
+    "b_point_id": "p75",
+    "id": "bond_128_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p37",
+    "b_element": "Mg",
+    "b_point_id": "p64",
+    "id": "bond_129_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p38",
+    "b_element": "Mg",
+    "b_point_id": "p67",
+    "id": "bond_130_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p38",
+    "b_element": "Mg",
+    "b_point_id": "p63",
+    "id": "bond_131_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p39",
+    "b_element": "Mg",
+    "b_point_id": "p78",
+    "id": "bond_132_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p39",
+    "b_element": "Mg",
+    "b_point_id": "p70",
+    "id": "bond_133_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p40",
+    "b_element": "Mg",
+    "b_point_id": "p77",
+    "id": "bond_134_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p40",
+    "b_element": "Mg",
+    "b_point_id": "p58",
+    "id": "bond_135_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p41",
+    "b_element": "Mg",
+    "b_point_id": "p69",
+    "id": "bond_136_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p41",
+    "b_element": "Mg",
+    "b_point_id": "p57",
+    "id": "bond_137_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p42",
+    "b_element": "Mg",
+    "b_point_id": "p78",
+    "id": "bond_138_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p42",
+    "b_element": "Mg",
+    "b_point_id": "p72",
+    "id": "bond_139_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p43",
+    "b_element": "Mg",
+    "b_point_id": "p77",
+    "id": "bond_140_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p43",
+    "b_element": "Mg",
+    "b_point_id": "p60",
+    "id": "bond_141_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p44",
+    "b_element": "Mg",
+    "b_point_id": "p71",
+    "id": "bond_142_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p44",
+    "b_element": "Mg",
+    "b_point_id": "p59",
+    "id": "bond_143_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p45",
+    "b_element": "Mg",
+    "b_point_id": "p80",
+    "id": "bond_144_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p45",
+    "b_element": "Mg",
+    "b_point_id": "p70",
+    "id": "bond_145_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p46",
+    "b_element": "Mg",
+    "b_point_id": "p79",
+    "id": "bond_146_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p46",
+    "b_element": "Mg",
+    "b_point_id": "p62",
+    "id": "bond_147_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p47",
+    "b_element": "Mg",
+    "b_point_id": "p69",
+    "id": "bond_148_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p47",
+    "b_element": "Mg",
+    "b_point_id": "p61",
+    "id": "bond_149_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p48",
+    "b_element": "Mg",
+    "b_point_id": "p80",
+    "id": "bond_150_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p48",
+    "b_element": "Mg",
+    "b_point_id": "p72",
+    "id": "bond_151_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p49",
+    "b_element": "Mg",
+    "b_point_id": "p79",
+    "id": "bond_152_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p49",
+    "b_element": "Mg",
+    "b_point_id": "p64",
+    "id": "bond_153_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p50",
+    "b_element": "Mg",
+    "b_point_id": "p71",
+    "id": "bond_154_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p50",
+    "b_element": "Mg",
+    "b_point_id": "p63",
+    "id": "bond_155_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p51",
+    "b_element": "Mg",
+    "b_point_id": "p74",
+    "id": "bond_156_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p51",
+    "b_element": "Mg",
+    "b_point_id": "p76",
+    "id": "bond_157_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p51",
+    "b_element": "Mg",
+    "b_point_id": "p66",
+    "id": "bond_158_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p51",
+    "b_element": "Mg",
+    "b_point_id": "p68",
+    "id": "bond_159_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p52",
+    "b_element": "Mg",
+    "b_point_id": "p78",
+    "id": "bond_160_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p52",
+    "b_element": "Mg",
+    "b_point_id": "p80",
+    "id": "bond_161_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p52",
+    "b_element": "Mg",
+    "b_point_id": "p70",
+    "id": "bond_162_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p52",
+    "b_element": "Mg",
+    "b_point_id": "p72",
+    "id": "bond_163_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p53",
+    "b_element": "Mg",
+    "b_point_id": "p73",
+    "id": "bond_164_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p53",
+    "b_element": "Mg",
+    "b_point_id": "p77",
+    "id": "bond_165_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p53",
+    "b_element": "Mg",
+    "b_point_id": "p58",
+    "id": "bond_166_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p53",
+    "b_element": "Mg",
+    "b_point_id": "p60",
+    "id": "bond_167_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p54",
+    "b_element": "Mg",
+    "b_point_id": "p75",
+    "id": "bond_168_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p54",
+    "b_element": "Mg",
+    "b_point_id": "p79",
+    "id": "bond_169_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p54",
+    "b_element": "Mg",
+    "b_point_id": "p62",
+    "id": "bond_170_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p54",
+    "b_element": "Mg",
+    "b_point_id": "p64",
+    "id": "bond_171_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p55",
+    "b_element": "Mg",
+    "b_point_id": "p65",
+    "id": "bond_172_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p55",
+    "b_element": "Mg",
+    "b_point_id": "p69",
+    "id": "bond_173_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p55",
+    "b_element": "Mg",
+    "b_point_id": "p57",
+    "id": "bond_174_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p55",
+    "b_element": "Mg",
+    "b_point_id": "p61",
+    "id": "bond_175_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p56",
+    "b_element": "Mg",
+    "b_point_id": "p67",
+    "id": "bond_176_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p56",
+    "b_element": "Mg",
+    "b_point_id": "p71",
+    "id": "bond_177_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p56",
+    "b_element": "Mg",
+    "b_point_id": "p59",
+    "id": "bond_178_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
+   },
+   {
+    "a_element": "O",
+    "a_point_id": "p56",
+    "b_element": "Mg",
+    "b_point_id": "p63",
+    "id": "bond_179_Mg_O",
+    "material_id": "bond",
+    "radius": 0.07,
+    "style": "solid"
    }
   ],
   "displacements": [

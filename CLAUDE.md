@@ -5,7 +5,7 @@ then renders that scene inside Blender. Minimum Blender: 4.2 LTS (Python 3.11).
 
 ## Check command (run before every commit)
 
-    scripts/check.sh      # ruff format --check, ruff check, pytest -q; all must pass
+    scripts/check.sh      # ruff format --check, ruff check, pytest -q; with node also tsc and a fresh viewer build; all must pass
 
 ## Module map (src/gemmy/)
 
@@ -24,6 +24,8 @@ Outer process (may use numpy/scipy/ASE/pydantic):
 
 Render side (stdlib + bpy only; bpy imported lazily inside Blender code):
 - `render/`: `runner` (`render_plan`, `build_scene_with_backend`, the backend Protocols `Geometry`/`Stage`) · `looks` (look presets, named views, framing) · `materials` (scene material -> `ShaderSpec`) · `launch` (find and spawn Blender).
+- `view.py` (`gemmy view`, stdlib only): writes the viewer page from `viewer/` (built files, see `web/` below); `serve.py` is the live preview.
+- `web/` (dev only, not in the wheel): the viewer's TypeScript source, ES modules under `web/src` with the scene JSON typed in `types.ts` and shared state in `state.ts`, plus `page.html` and `style.css`. `npm --prefix web run build` (esbuild) writes the built `viewer.js`, `page.html` and `style.css` into `src/gemmy/viewer/`; never edit those built files. `npm --prefix web run check` is tsc. `web/test/entry.ts` is the pure part the node tests bundle (`tests/viewer_bundle.py`).
 - `render/blender/`: one mixin per concern: `atoms` (linked duplicates + Geometry Nodes instancing), `primitives`, `materials`, `world` (lights, backdrop, camera), `renderer` (device and engine choice, output), `overlay` (axes triad).
 - `scripts/blender_build_scene.py`: sys.path shim only.
 

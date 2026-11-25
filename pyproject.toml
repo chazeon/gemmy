@@ -27,7 +27,7 @@ gemmy = "gemmy.cli:main"
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-gemmy = ["view_template.html", "render/fonts/*.ttf", "render/fonts/OFL.txt"]
+gemmy = ["viewer/*", "render/fonts/*.ttf", "render/fonts/OFL.txt"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -47,6 +47,8 @@ dev = ["pytest>=8", "ruff>=0.6"]
 line-length = 120
 target-version = "py311"
 src = ["src", "tests"]
+# .claude/ holds agent worktrees (whole copies of the repo); never lint or format them from here.
+extend-exclude = [".claude"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

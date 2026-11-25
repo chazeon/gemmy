@@ -1,8 +1,10 @@
 """`gemmy view`: write a scene as one self-contained HTML page (three.js from a pinned CDN, no Blender), or several
 scenes as a static site of such pages.
 
-Stdlib only. The page template is `view_template.html`; it reads the embedded scene JSON with the same
-meaning the Blender backend gives it (bond styles, arrow proportions, see-through polyhedra).
+Stdlib only. The page is `viewer/page.html`; its stylesheet and script are the other built files in `viewer/`
+(`viewer.js` is the TypeScript viewer in `web/`, built by `npm --prefix web run build`; never edit the built files). It
+reads the embedded scene JSON with the same meaning the Blender backend gives it (bond styles, arrow proportions,
+see-through polyhedra).
 """
 
 from __future__ import annotations
@@ -17,25 +19,17 @@ from typing import Any
 from urllib.parse import quote
 
 from .render import looks
-from .render.runner import scene_bounds
 from .scene import SceneDocument, check_references, from_dict
 from .settings import Axes
 
-TEMPLATE = Path(__file__).with_name("view_template.html")
-_PLACEHOLDER = re.compile(r"__(TITLE|SUBTITLE|SCENE_JSON|BOUNDS_JSON|SCENE_FILE|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__")
+VIEWER = Path(__file__).with_name("viewer")
+_PLACEHOLDER = re.compile(r"__(TITLE|SUBTITLE|SCENE_JSON|SCENE_FILE|CONSTANTS_JSON|AXIS_FONTS_JSON|TABS)__")
 
 
 def scene_json_for_html(data: Mapping[str, Any]) -> str:
     """JSON text that is safe inside a <script> element: `</script>` and `<!--` cannot occur in it."""
     text = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
     return text.replace("<", "\\u003c").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
-
-
-def bounds_dict(scene: Mapping[str, Any]) -> dict[str, Any]:
-    """Centre and size the Blender render frames the scene with (`scene_bounds`); the page uses the same numbers,
-    so a zoom and target exported from the page mean the same thing in a render."""
-    centre, extent = scene_bounds(from_dict(SceneDocument, scene))
-    return {"centre": list(centre), "extent": extent}
 
 
 def render_constants() -> dict[str, Any]:
@@ -84,11 +78,19 @@ def _tabs(tabs: Sequence[tuple[str, str]], current: int) -> str:
     return f'<nav class="tabs" aria-label="Structures">{links}</nav>'
 
 
+def _template() -> str:
+    """The built page with its stylesheet and script inserted. This runs before the placeholders are filled, so
+    scene text that contains a placeholder name is never mistaken for a marker."""
+    page = (VIEWER / "page.html").read_text(encoding="utf-8")
+    style = (VIEWER / "style.css").read_text(encoding="utf-8")
+    script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
+    return page.replace("/*__STYLE__*/", style).replace("//__SCRIPT__", script)
+
+
 def _page(
     scene_text: str,
     title: str,
     subtitle: str,
-    bounds_text: str = "",
     scene_file: str = "scene.json",
     tabs: Sequence[tuple[str, str]] = (),
     tab: int = 0,
@@ -97,14 +99,13 @@ def _page(
         "TITLE": html.escape(title),
         "SUBTITLE": html.escape(subtitle),
         "SCENE_JSON": scene_text,
-        "BOUNDS_JSON": bounds_text,
         "SCENE_FILE": html.escape(scene_file),
         "CONSTANTS_JSON": json.dumps(render_constants()),
         "AXIS_FONTS_JSON": json.dumps(_axis_fonts()),
         "TABS": _tabs(tabs, tab),
     }
     # One pass, so text inside the scene or the title is never mistaken for a placeholder.
-    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], TEMPLATE.read_text(encoding="utf-8"))
+    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], _template())
 
 
 def validate_scene_dict(scene: Mapping[str, Any]) -> None:
@@ -124,16 +125,15 @@ def render_viewer(
 
     `scene_file` is how the copied `gemmy render` command names the scene; `tabs` link to sibling pages."""
     validate_scene_dict(scene)
-    bounds = json.dumps(bounds_dict(scene))
-    return _page(scene_json_for_html(scene), title, subtitle, bounds, scene_file, tabs, tab)
+    return _page(scene_json_for_html(scene), title, subtitle, scene_file, tabs, tab)
 
 
 def render_live_page(
     title: str, subtitle: str = "", scene_file: str = "scene.json", tabs: Sequence[tuple[str, str]] = (), tab: int = 0
 ) -> str:
-    """A page with no scene embedded: it fetches scene.json (bounds in the X-Gemmy-Bounds header) and follows
-    events, relative to its own URL (see `gemmy.serve`). With several `tabs` it links to the others."""
-    return _page("", title, subtitle, "", scene_file, tabs, tab)
+    """A page with no scene embedded: it fetches scene.json and follows events, relative to its own URL (see
+    `gemmy.serve`). With several `tabs` it links to the others."""
+    return _page("", title, subtitle, scene_file, tabs, tab)
 
 
 def write_viewer(

@@ -1,6 +1,7 @@
-"""The viewer's export math (a pure block of JS in the page) must describe the same view Blender renders.
+"""The viewer's export math (pure TypeScript in web/src, bundled by tests/viewer_bundle.py) must describe the same view
+Blender renders.
 
-The block between the `==== Export math` markers is run in node: a camera orientation, zoom and target go in,
+The module is run in node: a camera orientation, zoom and target go in,
 the settings the page would save come out, and those go through `RenderSettings` -> plan -> `look_at` (what the
 Blender backend uses) and are compared with the page's own camera.
 """
@@ -11,7 +12,6 @@ import json
 import math
 import re
 import shlex
-import shutil
 import subprocess
 import tomllib
 import xml.etree.ElementTree as ET
@@ -20,14 +20,16 @@ from pathlib import Path
 import pytest
 
 from gemmy.cli_args import parse
+from gemmy.compile.pipeline import compile_to_json
 from gemmy.config import validate_settings
 from gemmy.geom import look_at
 from gemmy.render.looks import camera_distance, ortho_scale
 from gemmy.render.runner import _local_camera, scene_bounds
 from gemmy.scene import SceneDocument, from_dict
-from gemmy.view import render_viewer
+from viewer_bundle import available, header
 
-pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+pytestmark = pytest.mark.skipif(not available(), reason="node or web/node_modules is missing (cd web && npm ci)")
+REPO = Path(__file__).resolve().parents[1]
 
 SCENE = {
     "source_comment": "export fixture",
@@ -48,18 +50,10 @@ Quaternion = tuple[float, float, float, float]  # x, y, z, w, three.js order
 IDENTITY = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
 
-def _block() -> str:
-    page = render_viewer(SCENE, "t")
-    # the constants (LOOK, DASH, ...), the export math and the SVG builder: all pure, no THREE and no DOM
-    match = re.search(r"// Same as gemmy's 3to2d look.*?// ==== end of SVG export ====", page, re.S)
-    assert match
-    return match.group(0)
-
-
 def _run_js(cases: list[dict], tmp_path: Path) -> list[dict]:
     script = tmp_path / "export.mjs"
     script.write_text(
-        _block()
+        header()
         + """
 const cases = JSON.parse(process.argv[2]);
 console.log(JSON.stringify(cases.map((c) => {
@@ -141,6 +135,20 @@ def test_exported_settings_give_the_pages_camera_in_the_render(name: str, tmp_pa
     assert abs(x * want[0] + y * want[1] + z * want[2] + w * want[3]) == pytest.approx(1.0, abs=1e-4)
 
 
+def test_flown_perspective_view_exports_its_target_and_zoom(tmp_path: Path) -> None:
+    # W/S fly the target away from the centre in perspective; zoom stays baseDistance / distance, so it still exports.
+    case = _case("spun", zoom=1.3, target=(-30.0, -20.0, -20.0), projection="persp", lens=35)
+    out = _run_js([case], tmp_path)[0]
+    assert out["view"]["projection"] == "persp" and out["view"]["lens"] == 35
+    settings = validate_settings(tomllib.loads(out["toml"]))
+    camera = settings.resolve("scene.json").shots[0].camera
+    centre, _ = scene_bounds(from_dict(SceneDocument, SCENE))
+    local = _local_camera(camera, centre)
+    assert camera.projection == "persp"
+    assert local.target == pytest.approx(case["target"], abs=1e-4)
+    assert camera.zoom == pytest.approx(case["zoom"], abs=1e-3)
+
+
 @pytest.mark.parametrize(("width", "height"), [(1000, 600), (600, 1000), (800, 800), (1280, 543)])
 def test_page_frame_is_blenders_ortho_scale(width: int, height: int, tmp_path: Path) -> None:
     centre, extent = scene_bounds(from_dict(SceneDocument, SCENE))
@@ -190,7 +198,7 @@ def _svg(scene_path: Path, tmp_path: Path, **overrides) -> str:
     }  # fmt: skip
     args.update(overrides)
     script = tmp_path / "svg.mjs"
-    script.write_text(_block() + "\nconsole.log(buildSvg(JSON.parse(process.argv[2])));\n", encoding="utf-8")
+    script.write_text(header() + "\nconsole.log(buildSvg(JSON.parse(process.argv[2])));\n", encoding="utf-8")
     result = subprocess.run(["node", str(script), json.dumps(args)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result.stdout
@@ -210,13 +218,33 @@ def test_svg_is_well_formed_vector_output(name: str, tmp_path: Path) -> None:
     texts = [t.text for t in root.iterfind(".//s:text", ns)]
     assert sorted(texts) == ["a", "b", "c"]
     visible_atoms = len(scene["primitives"]["atoms"])
-    assert len(root.findall("s:circle", ns)) >= visible_atoms  # a lit disc per atom (and outlines on top)
+    # zoomed out, every atom is on the canvas (the triad's hub is inside its group, not a direct child): exactly one
+    # disc per atom
+    zoomed = ET.fromstring(_svg(scene_path, tmp_path, zoom=0.5))
+    discs = len(zoomed.findall("s:circle", ns)) + len(zoomed.findall("s:ellipse", ns))
+    assert discs == visible_atoms, (discs, visible_atoms)
     assert len(root.findall(".//s:path", ns)) >= visible_atoms  # the dark band of each atom
     assert len(root.findall(".//s:line", ns)) > 12  # the cell box in pieces
     if scene["primitives"]["polyhedra"]:
         assert root.findall("s:g", ns) and root.findall(".//s:polygon", ns)
     for colour in re.findall(r'(?:fill|stroke)="([^"]+)"', ET.tostring(root, encoding="unicode")):
         assert colour in ("none",) or re.fullmatch(r"#[0-9a-f]{6}", colour), colour
+
+
+@pytest.mark.parametrize("name", ["nacl", "stishovite"])
+def test_outlines_are_stroked_outside_in_the_linear_outline_colour(name: str, tmp_path: Path) -> None:
+    """Outlined shapes are painted with paint-order="stroke" (the fill covers the stroke's inner half), and the outline
+    colour is LOOK.outline read as linear, which is #27273f in sRGB (the live outline, and Blender's Freestyle line).
+    A stroke with no fill (the polyhedron silhouette) gets no paint-order: it has no effect there."""
+    from gemmy.compile.pipeline import compile_to_json
+
+    examples = Path(__file__).resolve().parents[1] / "examples" / name
+    scene_path = tmp_path / "scene.json"
+    compile_to_json(examples / "config.toml", scene_path)
+    svg = _svg(scene_path, tmp_path)
+    assert 'paint-order="stroke"' in svg
+    assert 'stroke="#27273f"' in svg
+    assert not re.search(r'<path[^>]*fill="none"[^>]*paint-order', svg)
 
 
 def test_svg_toggles_hide_atoms_and_box(tmp_path: Path) -> None:
@@ -228,6 +256,62 @@ def test_svg_toggles_hide_atoms_and_box(tmp_path: Path) -> None:
     bare = _svg(scene_path, tmp_path, show={"atoms": False, "box": False}, outlines=False)
     assert "<line" in bare  # only the triad's lines
     assert bare.count("<line") <= 3 and "<circle" in bare and bare.count("<circle") == 1  # the triad's centre dot
+
+
+def test_perspective_with_the_eye_inside_the_structure_stays_finite(tmp_path: Path) -> None:
+    """A bond with one end in the eye plane and one behind the eye. The depth is clamped to 1e-3 before the divide (as
+    the page's pixels-per-angstrom is), so the bond stays finite and its screen centre is where that formula puts it."""
+    from gemmy.render.looks import SENSOR_WIDTH
+
+    eye, extent, lens, width, height = 0.5, 10.0, 35.0, 900, 600  # the eye sits 0.5 angstrom from the target
+    points = {"a": [1.0, 0.3, eye], "b": [-1.0, 0.5, 0.8]}  # a: in the eye plane; b: behind the eye
+    scene = {
+        "source_comment": "eye inside",
+        "materials": {"m": {"base_color": [1, 0, 0, 1]}},
+        "points": [{"id": key, "element": "O", "position": pos} for key, pos in points.items()],
+        "topologies": [],
+        "primitives": {
+            "atoms": [],
+            "bonds": [
+                {
+                    "id": "b0",
+                    "a_point_id": "a",
+                    "b_point_id": "b",
+                    "radius": 0.1,
+                    "material_id": "m",
+                    "a_element": "O",
+                    "b_element": "O",
+                    "style": "solid",
+                }
+            ],
+            "polyhedra": [],
+            "displacements": [],
+        },
+    }
+    scene_path = tmp_path / "scene.json"
+    scene_path.write_text(json.dumps(scene), encoding="utf-8")
+    svg = _svg(
+        scene_path, tmp_path, centre=[0, 0, 0], target=[0, 0, 0], quaternion=[0, 0, 0, 1], extent=extent,
+        zoom=camera_distance(extent, 1.0) / eye, projection="persp", lens=lens, width=width, height=height,
+        show={"atoms": False, "box": False}, outlines=False,
+    )  # fmt: skip
+    assert "Infinity" not in svg and "NaN" not in svg
+    ns = {"s": "http://www.w3.org/2000/svg"}
+    bond = [p for p in ET.fromstring(svg).iterfind(".//s:polygon", ns) if p.get("fill") == "#ff0000"]
+    assert len(bond) == 1
+    corners = [tuple(map(float, pt.split(","))) for pt in bond[0].get("points").split()]
+    assert len(corners) == 4
+    # the four corners are a +/- n and b +/- n, so their mean is the midpoint of the two screen ends
+    mean = (sum(x for x, _ in corners) / 4, sum(y for _, y in corners) / 4)
+    focal = lens * max(width, height) / SENSOR_WIDTH
+
+    def screen(x: float, y: float, z: float) -> tuple[float, float]:
+        depth = max(eye - z, 1e-3)
+        return width / 2 + x * focal / depth, height / 2 - y * focal / depth
+
+    (ax, ay), (bx, by) = screen(*points["a"]), screen(*points["b"])
+    assert mean[0] == pytest.approx((ax + bx) / 2, abs=0.02)
+    assert mean[1] == pytest.approx((ay + by) / 2, abs=0.02)
 
 
 @pytest.mark.parametrize(("width", "height"), [(1280, 656), (500, 900), (700, 700), (1920, 400)])
@@ -254,7 +338,7 @@ def test_triad_is_the_size_blender_draws_it(width: int, height: int, tmp_path: P
 
     script = tmp_path / "triad.mjs"
     script.write_text(
-        _block() + "\nconst dirs = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];\n"
+        header() + "\nconst dirs = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];\n"
         "console.log(JSON.stringify(triadLayout(dirs, ...JSON.parse(process.argv[2]))));\n",
         encoding="utf-8",
     )
@@ -337,7 +421,7 @@ def test_lens_choices_include_the_default_lens(tmp_path: Path) -> None:
     from gemmy.settings import CameraSettings
 
     script = tmp_path / "c.mjs"
-    script.write_text(_block() + "\nconsole.log(JSON.stringify(GEMMY));\n", encoding="utf-8")
+    script.write_text(header() + "\nconsole.log(JSON.stringify(GEMMY));\n", encoding="utf-8")
     consts = json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True).stdout)
     assert consts["defaultLens"] == DEFAULT_LENS == CameraSettings().lens
     assert DEFAULT_LENS in consts["lenses"] and {24, 35, 50, 85} <= set(consts["lenses"])
@@ -382,3 +466,119 @@ def test_persp_svg_draws_the_nearer_atom_last_and_larger(tmp_path: Path) -> None
     circles = [c for c in root.findall("s:circle", {"s": "http://www.w3.org/2000/svg"}) if c.get("fill") != "none"]
     radii = [float(c.get("r")) for c in circles]
     assert len(radii) == 2 and radii[0] < radii[1]  # looking down -z from +z: p1 (z=3) is nearer, bigger, drawn last
+
+
+# ---- the page's scene bounds (sceneBounds, web/src/scene/bounds.ts) against gemmy.render.runner.scene_bounds ----
+BOUNDS_CASES = [
+    "nacl",
+    "ice-ih",
+    "stishovite",
+    "rocksalt-tail-arrows",
+    "tail-and-tip-arrows",
+    "no-points",
+    "under-one-angstrom",
+    "duplicate-point-id",
+]
+TAIL_AND_TIP = {
+    "source_comment": "bounds fixture",
+    "materials": {"m": {"base_color": [1, 0, 0, 1]}},
+    "points": [
+        {"id": "p0", "element": "O", "position": [1.0, 2.0, 3.0]},
+        {"id": "p1", "element": "O", "position": [-2.0, 0.5, 4.0]},
+    ],
+    "primitives": {
+        "atoms": [],
+        "bonds": [],
+        "polyhedra": [],
+        "displacements": [
+            {"id": "d0", "start_point_id": "p0", "vector": [0.5, -1.0, 0.25], "anchor": "tail", "material_id": "m"},
+            {"id": "d1", "start_point_id": "p1", "vector": [3.0, 0.0, -2.0], "anchor": "tip", "material_id": "m"},
+        ],
+    },
+}
+
+
+def _bounds_scene(name: str, tmp_path: Path) -> dict:
+    if name in ("nacl", "ice-ih", "stishovite"):
+        out = tmp_path / f"{name}.json"
+        compile_to_json(REPO / "examples" / name / "config.toml", out)  # the page gets the compiled scene.json
+        return json.loads(out.read_text(encoding="utf-8"))
+    if name == "rocksalt-tail-arrows":  # a fixture with displacement arrows (all "tail")
+        return json.loads((Path(__file__).parent / "fixtures/rocksalt/scene.golden.json").read_text(encoding="utf-8"))
+    if name == "tail-and-tip-arrows":
+        return TAIL_AND_TIP
+    if name == "duplicate-point-id":  # the id p0 appears twice: the later position wins, in JS and in Python
+        return {
+            **SCENE,
+            "points": [
+                {"id": "p0", "element": "O", "position": [0.0, 0.0, 0.0]},
+                {"id": "p1", "element": "O", "position": [4.0, 0.0, 0.0]},
+                {"id": "p0", "element": "O", "position": [10.0, 0.0, 0.0]},
+            ],
+            "primitives": {"atoms": [], "bonds": [], "polyhedra": [], "displacements": []},
+        }
+    if name == "under-one-angstrom":  # two points 0.2 apart: the box diagonal is floored at 1 (geom.bounds)
+        return {
+            **SCENE,
+            "points": [
+                {"id": "p0", "element": "O", "position": [0.0, 0.0, 0.0]},
+                {"id": "p1", "element": "O", "position": [0.2, 0.0, 0.0]},
+            ],
+            "primitives": {"atoms": [], "bonds": [], "polyhedra": [], "displacements": []},
+        }
+    return {
+        "source_comment": "no points",
+        "materials": {},
+        "points": [],
+        "primitives": {"atoms": [], "bonds": [], "polyhedra": [], "displacements": []},
+    }
+
+
+@pytest.fixture(scope="module")
+def _bounds_cache(tmp_path_factory: pytest.TempPathFactory) -> dict[str, tuple[dict, dict]]:
+    """Per case: the scene and the page's sceneBounds result (one node run for all cases)."""
+    tmp_path = tmp_path_factory.mktemp("bounds")
+    scenes = {name: _bounds_scene(name, tmp_path) for name in BOUNDS_CASES}
+    script = tmp_path / "bounds.mjs"
+    script.write_text(
+        header()
+        + """
+const scenes = JSON.parse(process.argv[2]);
+console.log(JSON.stringify(scenes.map((scene) => sceneBounds(scene))));
+""",
+        encoding="utf-8",
+    )
+    result = subprocess.run(["node", str(script), json.dumps(list(scenes.values()))], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    js = json.loads(result.stdout)
+    return {name: (scenes[name], got) for name, got in zip(BOUNDS_CASES, js, strict=True)}
+
+
+@pytest.mark.parametrize("name", BOUNDS_CASES)
+def test_page_bounds_match_blender_scene_bounds(name: str, _bounds_cache: dict) -> None:
+    scene, got = _bounds_cache[name]
+    centre, extent = scene_bounds(from_dict(SceneDocument, scene))
+    assert got["centre"] == pytest.approx(list(centre), abs=1e-9)
+    assert got["extent"] == pytest.approx(extent, abs=1e-9)
+
+
+def test_empty_scene_frames_the_origin_at_unit_size(_bounds_cache: dict) -> None:
+    _, got = _bounds_cache["no-points"]
+    assert got == {"centre": [0, 0, 0], "extent": 1}
+    assert scene_bounds(from_dict(SceneDocument, _bounds_cache["no-points"][0])) == ((0.0, 0.0, 0.0), 1.0)
+
+
+def test_a_tiny_scene_is_floored_to_one_angstrom(_bounds_cache: dict) -> None:
+    _, got = _bounds_cache["under-one-angstrom"]
+    assert got["extent"] == pytest.approx(1.0, abs=1e-12)
+    assert got["centre"] == pytest.approx([0.1, 0.0, 0.0], abs=1e-12)
+    centre, extent = scene_bounds(from_dict(SceneDocument, _bounds_cache["under-one-angstrom"][0]))
+    assert extent == pytest.approx(1.0) and centre == pytest.approx((0.1, 0.0, 0.0))
+
+
+def test_tail_and_tip_arrows_both_reach_the_box(_bounds_cache: dict) -> None:
+    # Points span x -2..1, y 0.5..2, z 3..4. The tail arrow runs (1, 2, 3) -> (1.5, 1, 3.25), and the tip arrow ends
+    # at its atom: (-5, 0.5, 6) -> (-2, 0.5, 4). So the box is x -5..1.5, y 0.5..2, z 3..6.
+    _, got = _bounds_cache["tail-and-tip-arrows"]
+    assert got["centre"] == pytest.approx([-1.75, 1.25, 4.5], abs=1e-9)
+    assert got["extent"] == pytest.approx(math.dist((-5, 0.5, 3), (1.5, 2, 6)), abs=1e-9)

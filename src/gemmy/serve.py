@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from .datafile import read_data
-from .view import bounds_dict, render_live_page, validate_scene_dict
+from .view import render_live_page, validate_scene_dict
 
 Stamp = tuple[tuple[str, int | None, int | None], ...]
 
@@ -144,7 +144,6 @@ class Preview:
         self.seq = 0
         self._token = time.time_ns()
         self._scene: bytes | None = None
-        self._bounds = ""
         self._version: str | None = None
         self._error: str | None = None
         self._render_state = {
@@ -160,10 +159,9 @@ class Preview:
         self._stamp: Stamp = ()
 
     # -- reading
-    def scene_bytes(self) -> tuple[bytes, str] | None:
-        """The scene and its framing bounds (JSON text), taken together so they always belong to one version."""
+    def scene_bytes(self) -> bytes | None:
         with self.cond:
-            return None if self._scene is None else (self._scene, self._bounds)
+            return self._scene
 
     def status(self) -> dict[str, Any]:
         with self.cond:
@@ -183,7 +181,6 @@ class Preview:
         try:
             scene = self._build()
             body = json.dumps(scene).encode("utf-8")
-            bounds = json.dumps(bounds_dict(scene))
         except Exception as exc:  # noqa: BLE001  # whatever the user typed must not kill the server
             message = _message(exc)
             print(f"error: {message}", file=sys.stderr, flush=True)
@@ -193,7 +190,6 @@ class Preview:
             return False
         with self.cond:
             self._scene = body
-            self._bounds = bounds
             self._error = None
             self._version = f"{self._token}-{self.seq + 1}"
             self._render_pending = self._render is not None
@@ -313,8 +309,7 @@ class _Handler(BaseHTTPRequestHandler):
             if scene is None:
                 self._send(404, json.dumps({"error": preview.status()["error"]}).encode(), "application/json")
             else:
-                body, bounds = scene
-                self._send(200, body, "application/json", {"X-Gemmy-Bounds": bounds})
+                self._send(200, scene, "application/json")
         elif path == "/status":
             self._send(200, json.dumps(preview.status()).encode(), "application/json")
         elif path == "/events":

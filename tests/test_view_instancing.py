@@ -1,6 +1,7 @@
-"""The viewer draws from instance matrices and merged triangle lists built by pure JS; run that block in node.
+"""The viewer draws from instance matrices and merged triangle lists built by pure TypeScript (web/src/render/
+instancing.ts, bundled by tests/viewer_bundle.py); run that module in node.
 
-The block between the `==== Instancing` markers (with the constants and the SVG helpers it uses) turns a scene into
+The module turns a scene into
 matrix lists per (shape, material) and a triangle soup per polyhedron material; here the matrices are checked to put
 the unit shapes where the bond, dash and arrow geometry says, and the face -> polyhedron map to be exact.
 """
@@ -9,16 +10,14 @@ from __future__ import annotations
 
 import json
 import math
-import re
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from gemmy.view import render_viewer
+from viewer_bundle import available, header
 
-pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
+pytestmark = pytest.mark.skipif(not available(), reason="node or web/node_modules is missing (cd web && npm ci)")
 
 TOPOLOGY = {
     "id": "t",
@@ -64,20 +63,9 @@ SCENE = {
 }
 
 
-MINIMAL = {  # any valid scene gives the page; the block under test is run on SCENE
-    "source_comment": "tiny",
-    "materials": {"m": {"base_color": [1, 0, 0, 1]}},
-    "points": [{"id": "p0", "element": "O", "position": [0, 0, 0]}],
-    "primitives": {"atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O"}]},
-}
-
-
 def _run(body: str, tmp_path: Path) -> dict:
-    page = render_viewer(MINIMAL, "t")
-    block = re.search(r"// Same as gemmy's 3to2d look.*?// ==== end of instancing ====", page, re.S)
-    assert block
     script = tmp_path / "instancing.mjs"
-    script.write_text(block.group(0) + f"\nconst data = {json.dumps(SCENE)};\n" + body, encoding="utf-8")
+    script.write_text(header() + f"\nconst data = {json.dumps(SCENE)};\n" + body, encoding="utf-8")
     result = subprocess.run(["node", str(script)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout)

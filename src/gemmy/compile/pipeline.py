@@ -23,7 +23,15 @@ from ..scene import (
     Vec3,
 )
 from ..structure import Structure, load_structure
-from .bonds import build_neighbor_graph, cell_array, complete_ligand, completion_rules, find_bonds
+from .bonds import (
+    BondSpec,
+    build_neighbor_graph,
+    cell_array,
+    closing_bonds,
+    complete_ligand,
+    completion_rules,
+    find_bonds,
+)
 from .displacements import ArrowSpec, DisplacementFileError, load_displacement_file, make_displacements
 from .labels import apply_labels, load_label_file, run_labeler
 from .lattice import cell_box
@@ -119,6 +127,9 @@ class SceneAssembler:
         )
         self._bond_pairs.add(key)  # type: ignore[arg-type]
 
+    def add_bond_spec(self, bond: BondSpec) -> None:
+        self.add_bond(self.points.id_for(bond.a), self.points.id_for(bond.b), bond.rule, bond.a.element, bond.b.element)
+
     def add_topology(self, point_ids: list[str], faces: list[tuple[int, int, int]]) -> str:
         key = (tuple(point_ids), tuple(faces))
         found = self._topology_ids.get(key)
@@ -206,11 +217,9 @@ def compile_structure(
         add(site)
 
     for bond in find_bonds(shown, by_index, graph, bond_rules, cell, strict=config.select.is_active()):
-        a_point = asm.points.id_for(bond.a)
-        b_point = asm.points.id_for(bond.b)
         add(bond.a)
         add(bond.b)
-        asm.add_bond(a_point, b_point, bond.rule, bond.a.element, bond.b.element)
+        asm.add_bond_spec(bond)
 
     secondary_rules = completion_rules(bond_rules)
     marked_centres = [resolve_centre(ref, shown, by_index, cell) for ref in config.highlight.refs()]
@@ -256,6 +265,11 @@ def compile_structure(
                 inward_from,
             )
         asm.add_arrows(arrows)
+
+    # Last, once every shown point exists (polyhedron ligands and displacement corners): every bond between
+    # two shown points, whatever its `complete` mode. Adds bonds only, never atoms.
+    for bond in closing_bonds(list(drawn.values()), by_index, graph, bond_rules, cell):
+        asm.add_bond_spec(bond)
 
     box_origin, box_vectors = cell_box(cell, config.cell.box)
     return SceneDocument(

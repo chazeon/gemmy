@@ -1,4 +1,5 @@
-"""Bonds: neighbour search, rule matching, bond detection (stage 4) and secondary completion (stage 6)."""
+"""Bonds: neighbour search, rule matching, bond detection (stage 4), secondary completion (stage 6) and
+closing, the last pass over the final shown set."""
 
 from __future__ import annotations
 
@@ -87,7 +88,8 @@ def find_bonds(
 
     Every shown site (including box copies) starts bonds to all its neighbour images, so a bond
     leaving the box shows its far end (one hop). A bond whose far atom is not in `shown` (by index) is
-    skipped. Rules with `complete: none` also skip bonds whose far end is outside the box.
+    skipped. Rules with `complete: none` also skip bonds whose far end is outside the box (closing_bonds draws
+    them later if both ends end up shown).
     `strict` (an active selection) acts as `none` for every rule.
     Each geometric bond is returned once.
     """
@@ -110,6 +112,38 @@ def find_bonds(
                 continue
             seen.add(key)
             out.append(BondSpec(a=a, b=b, rule=rule))
+    return out
+
+
+def closing_bonds(
+    shown: list[Site],
+    by_index: dict[int, Site],
+    graph: NeighborGraph,
+    rules: list[BondRule],
+    cell: np.ndarray,
+) -> list[BondSpec]:
+    """Every bond between two shown points, whatever its rule's `complete` mode.
+
+    Runs once the shown set is final, so a far end is only looked up among `shown` and no atom is added.
+    It finds bonds the earlier stages could not see, such as the bonds inside a polyhedron cage whose
+    atoms all lie outside the box. The far end is checked by key before its image is built.
+    """
+    shown_keys = {point_key(site) for site in shown}
+    seen_pairs: set[frozenset[PointKey]] = set()  # each geometric pair is seen from both ends; keep one
+    out: list[BondSpec] = []
+    for a in shown:
+        for nb in graph.get(a.index, []):
+            far_key = (nb.index, add_shifts(a.shift, nb.shift))
+            if far_key not in shown_keys:
+                continue
+            pair = frozenset((point_key(a), far_key))
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            b = by_index[nb.index].image(far_key[1], cell)
+            rule = best_bond_rule(rules, a, b, nb.distance)
+            if rule is not None:
+                out.append(BondSpec(a=a, b=b, rule=rule))
     return out
 
 

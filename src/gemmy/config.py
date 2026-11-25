@@ -66,9 +66,10 @@ class BondRule(_Colored):
     material: str = "bond"
     visible: bool = True
     style: BondStyle = "solid"  # dashed or dotted, e.g. for hydrogen bonds
-    # none: draw only bonds whose both ends are in the display box.
+    # none: add no atom for this bond. It is still drawn between two atoms that are shown.
     # ends: also show an end that falls outside the box (one hop).
     # polyhedra: ends, plus complete this bond for atoms pulled in as polyhedron ligands (one more hop).
+    # Every mode draws the bond once both ends are shown (the bond-closing stage).
     complete: Literal["none", "ends", "polyhedra"] = "ends"
 
     def matches(self, e1: str, e2: str) -> bool:

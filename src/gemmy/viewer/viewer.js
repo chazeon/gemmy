@@ -1,0 +1,2633 @@
+/* generated from web/ by npm run build; do not edit */
+
+// src/config.ts
+var LOOK = {
+  azimuth: 35,
+  elevation: 28,
+  dark: 0.72,
+  // brightness of the shaded band
+  threshold: 0.25,
+  // N.L above which a surface is lit
+  key: [-0.55, 0.6, 0.6],
+  // key light, screen-relative: right, up, towards the viewer
+  outline: [0.02, 0.02, 0.05],
+  axisColors: ["#cc3833", "#389e47", "#3861cc"]
+};
+var DASH = { length: 6, gap: 4, min: 0.1 };
+var DOT = { radius: 1.6, spacing: 8, spacingMin: 0.12 };
+var ARROW = { radius: 0.05, color: [0.04, 0.04, 0.05], headRadiusRatio: 2.8, headLengthRatio: 0.6 };
+var STEP = { rotate: 15, pan: 0.05, zoom: 1.1 };
+var RATE = { rotate: 90, pan: 0.4, zoom: 1.8 };
+var EPS = 1e-9;
+var POINTER_SLOP_PX = 5;
+var GEMMY = __CONSTANTS_JSON__;
+var AXIS_FONT = { family: "Gemmy Axis Labels", faces: __AXIS_FONTS_JSON__ };
+var axisFontFace = (weights = Object.keys(AXIS_FONT.faces)) => weights.map((w) => `@font-face { font-family: "${AXIS_FONT.family}"; font-style: italic; font-weight: ${w}; src: url(data:font/ttf;base64,${AXIS_FONT.faces[w]}) format("truetype"); }`).join("\n");
+
+// src/geom/vector.ts
+var lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
+var span = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+var vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+var vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+var vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+function vunit(a) {
+  const length = Math.hypot(...a) || 1;
+  return a.map((x) => x / length);
+}
+
+// src/camera/framing.ts
+var baseDistance = (extent2) => Math.max(GEMMY.distanceFactor * extent2, GEMMY.distanceMin);
+var orthoSide = (extent2) => Math.max(GEMMY.orthoFactor * extent2, GEMMY.orthoMin);
+function orthoFrame(extent2, width, height) {
+  const side = orthoSide(extent2);
+  const larger = Math.max(width, height);
+  return { halfWidth: side / 2 * (width / larger), halfHeight: side / 2 * (height / larger) };
+}
+var RAD_TO_DEG = 180 / Math.PI;
+function fitZoomPersp(extent2, lens2, width, height) {
+  const shorterSensor = GEMMY.sensorWidth * Math.min(width, height) / Math.max(width, height);
+  const halfAngle = Math.atan(shorterSensor / 2 / lens2);
+  return baseDistance(extent2) * Math.sin(halfAngle) / (orthoSide(extent2) / 2);
+}
+var fitZoom = (width, height) => Math.min(width, height) / Math.max(width, height);
+var orthoToPerspZoom = (extent2, lens2, zoom2) => baseDistance(extent2) * GEMMY.sensorWidth * zoom2 / (orthoSide(extent2) * lens2);
+var perspToOrthoZoom = (extent2, lens2, zoom2) => zoom2 * orthoSide(extent2) * lens2 / (baseDistance(extent2) * GEMMY.sensorWidth);
+var EXPORT_LONG_SIDE = 1600;
+function exportView(view) {
+  const { quaternion, zoom: zoom2, target, centre: centre2, box: box2, width, height } = view;
+  return {
+    projection: view.projection ?? "ortho",
+    lens: view.projection === "persp" ? view.lens : void 0,
+    direction: applyQuaternion(quaternion, [0, 0, 1]).map((x) => roundTo(x, 4)),
+    up: applyQuaternion(quaternion, [0, 1, 0]).map((x) => roundTo(x, 4)),
+    zoom: roundTo(zoom2, 3),
+    target: target.map((t, i) => roundTo(t + centre2[i], 4)),
+    cellBox: Boolean(box2),
+    resolution: resolutionFor(width, height)
+  };
+}
+function settingsObject(view) {
+  return {
+    look: { preset: "3to2d" },
+    camera: {
+      projection: view.projection,
+      ...view.lens === void 0 ? {} : { lens: view.lens },
+      direction: view.direction,
+      up: view.up,
+      zoom: view.zoom,
+      target: view.target
+    },
+    cell_box: { show: view.cellBox },
+    quality: { resolution: view.resolution }
+  };
+}
+var settingsJson = (view) => `${JSON.stringify(settingsObject(view), null, 2)}
+`;
+function settingsToml(view) {
+  return Object.entries(settingsObject(view)).map(([table, keys]) => `[${table}]
+${Object.entries(keys).map(([k, v]) => `${k} = ${tomlValue(v)}`).join("\n")}
+`).join("\n");
+}
+function renderCommand(view, sceneFile) {
+  const [w, h] = view.resolution;
+  return [
+    "gemmy render",
+    "--scene",
+    shellWord(sceneFile),
+    "--look.preset 3to2d",
+    `--camera.projection ${view.projection}`,
+    ...view.lens === void 0 ? [] : [`--camera.lens ${view.lens}`],
+    `--camera.direction ${view.direction.join(" ")}`,
+    `--camera.up ${view.up.join(" ")}`,
+    `--camera.zoom ${view.zoom}`,
+    `--camera.target ${view.target.join(" ")}`,
+    `--cell-box.show ${view.cellBox ? "True" : "False"}`,
+    `--quality.resolution ${w} ${h}`,
+    "--out view.png"
+  ].join(" ");
+}
+function triadLayout(dirs, width, height) {
+  const T = GEMMY.triad;
+  const length = T.size * Math.min(width, height);
+  const origin = [T.margin * width, height - T.margin * height];
+  const items = dirs.map((d, index) => triadItem(d, index, origin, length)).sort((p, q) => p.depth - q.depth);
+  return {
+    origin,
+    items,
+    lineWidth: 2 * T.arrowRadius * length,
+    fontSize: T.labelSize * length,
+    dotRadius: DOT_RADIUS * length,
+    length
+  };
+}
+var LABEL_FLAT_MIN = 0.15;
+var HEAD_FLAT_MIN = 0.08;
+var DIAGONAL = Math.SQRT1_2;
+var DOT_RADIUS = 0.0875;
+function triadItem(d, index, origin, length) {
+  const T = GEMMY.triad;
+  const flat = Math.hypot(d[0], d[1]);
+  const onScreen = flat > LABEL_FLAT_MIN;
+  const [ux, uy] = labelDirection(d, flat, onScreen);
+  const labelRadius = length * (1 + T.labelReach * T.arrowRadius);
+  const reach = onScreen ? labelRadius * flat : 0;
+  const pad = T.labelPad * length;
+  const label = { x: origin[0] + (reach + pad) * ux, y: origin[1] - (reach + pad) * uy };
+  return flat > HEAD_FLAT_MIN ? { index, depth: d[2], label, ...triadArrow(d, flat, origin, length) } : { index, depth: d[2], label };
+}
+function labelDirection(d, flat, onScreen) {
+  return onScreen ? [d[0] / flat, d[1] / flat] : [DIAGONAL, DIAGONAL];
+}
+var SHAFT_INTO_HEAD = 0.5;
+function triadArrow(d, flat, [ox, oy], length) {
+  const T = GEMMY.triad;
+  const tip2 = [ox + d[0] * length, oy - d[1] * length];
+  const tx = d[0] / flat;
+  const ty = -d[1] / flat;
+  const headLength = T.headLengthRatio * length;
+  const headHalf = T.headRadiusRatio * T.arrowRadius * length;
+  const base = [tip2[0] - tx * headLength, tip2[1] - ty * headLength];
+  return {
+    shaftEnd: [tip2[0] - tx * headLength * SHAFT_INTO_HEAD, tip2[1] - ty * headLength * SHAFT_INTO_HEAD],
+    head: [
+      tip2,
+      [base[0] - ty * headHalf, base[1] + tx * headHalf],
+      [base[0] + ty * headHalf, base[1] - tx * headHalf]
+    ]
+  };
+}
+var CAMERA_FORWARD = [0, 0, -1];
+var viewForward = (quaternion) => applyQuaternion(quaternion, CAMERA_FORWARD);
+var flyShift = (quaternion, distance2) => viewForward(quaternion).map((x) => x * distance2);
+var centreDistance = (position) => Math.hypot(position[0], position[1], position[2]);
+var pointAlong = (from, direction, distance2) => from.map((x, i) => x + direction[i] * distance2);
+function pivotTarget(position, quaternion, currentTarget, hitDistance, minDistance) {
+  const pivotDistance = Math.max(hitDistance, minDistance);
+  const targetDistance = span(position, currentTarget);
+  if (pivotDistance >= targetDistance) return null;
+  return pointAlong(position, viewForward(quaternion), pivotDistance);
+}
+function distancesFromCentre(target, towards, wanted) {
+  const alongTarget = vdot(target, towards);
+  const discriminant = alongTarget * alongTarget - (vdot(target, target) - wanted * wanted);
+  if (discriminant < 0) return [-alongTarget];
+  const root2 = Math.sqrt(discriminant);
+  return [-alongTarget - root2, -alongTarget + root2];
+}
+var clampTo = (x, low, high) => Math.min(Math.max(x, low), high);
+function dollyPosition(position, target, wanted, minDistance, maxDistance) {
+  const current4 = span(position, target);
+  if (current4 === 0) return null;
+  const towards = vunit(vsub(position, target));
+  const ahead = distancesFromCentre(target, towards, wanted).filter((s) => s > 0);
+  if (!ahead.length) return null;
+  const nearest = ahead.reduce((best, s) => Math.abs(s - current4) < Math.abs(best - current4) ? s : best);
+  const along = clampTo(nearest, minDistance, maxDistance);
+  return target.map((x, i) => x + towards[i] * along);
+}
+var CLIP_MARGIN_IN_FRONT = 1;
+var CLIP_MARGIN_BEHIND = 2;
+var NEAREST_CLIP = 0.01;
+var depthOfCentre = (position, quaternion) => -vdot(position, viewForward(quaternion));
+function clipPlanesAround(depth, structureExtent) {
+  const radius = structureExtent / 2;
+  return {
+    near: Math.max(depth - radius - CLIP_MARGIN_IN_FRONT * structureExtent, NEAREST_CLIP),
+    far: depth + radius + CLIP_MARGIN_BEHIND * structureExtent
+  };
+}
+function resolutionFor(width, height) {
+  const scale = EXPORT_LONG_SIDE / Math.max(width, height);
+  return [Math.round(width * scale), Math.round(height * scale)];
+}
+var roundTo = (x, digits) => {
+  const scale = 10 ** digits;
+  return Math.round(x * scale) / scale || 0;
+};
+function applyQuaternion(q, v) {
+  const [x, y, z, w] = q;
+  const [vx, vy, vz] = v;
+  const tx = 2 * (y * vz - z * vy);
+  const ty = 2 * (z * vx - x * vz);
+  const tz = 2 * (x * vy - y * vx);
+  return [vx + w * tx + (y * tz - z * ty), vy + w * ty + (z * tx - x * tz), vz + w * tz + (x * ty - y * tx)];
+}
+var tomlValue = (v) => Array.isArray(v) ? `[${v.map(tomlValue).join(", ")}]` : JSON.stringify(v);
+var shellWord = (text) => /^[\w@%+=:,./-]+$/.test(text) ? text : `'${text.replace(/'/g, "'\\''")}'`;
+
+// src/scene/bounds.ts
+var MIN_EXTENT = 1;
+function sceneBounds(scene2) {
+  const positions = new Map(scene2.points.map((p) => [p.id, p.position]));
+  const corners = [...positions.values(), ...arrowEnds(scene2, positions)];
+  if (corners.length === 0) return { centre: [0, 0, 0], extent: MIN_EXTENT };
+  const { lo, hi } = boundingBox(corners);
+  const size = hi.map((x, i) => x - lo[i]);
+  return {
+    centre: lo.map((x, i) => (x + hi[i]) * 0.5),
+    extent: Math.max(Math.hypot(...size), MIN_EXTENT)
+  };
+}
+function arrowEnds(scene2, positions) {
+  const ends = [];
+  for (const d of scene2.primitives.displacements) {
+    const atom = positions.get(d.start_point_id);
+    if (atom === void 0) continue;
+    const far = atom.map((x, i) => x + d.vector[i]);
+    const near = atom.map((x, i) => x - d.vector[i]);
+    ends.push(...d.anchor === "tip" ? [near, atom] : [atom, far]);
+  }
+  return ends;
+}
+function boundingBox(points2) {
+  const lo = [Infinity, Infinity, Infinity];
+  const hi = [-Infinity, -Infinity, -Infinity];
+  for (const p of points2) {
+    for (let i = 0; i < 3; i++) {
+      lo[i] = Math.min(lo[i], p[i]);
+      hi[i] = Math.max(hi[i], p[i]);
+    }
+  }
+  return { lo, hi };
+}
+
+// src/export/export.ts
+import { MathUtils as MathUtils2, Vector2 as Vector27, Vector3 as Vector35 } from "three";
+
+// src/export/markup.ts
+import { Color, LinearSRGBColorSpace, SRGBColorSpace } from "three";
+var SVG_PRECISION = 100;
+var escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+var escapeAttr = (s) => escapeText(s).replace(/"/g, "&quot;");
+var fmt = (x) => Number.isFinite(x) ? String(Math.round(x * SVG_PRECISION) / SVG_PRECISION || 0) : "0";
+var xy = (p) => `${fmt(p.x)} ${fmt(p.y)}`;
+var pointList = (list) => list.map((p) => `${fmt(p.x)},${fmt(p.y)}`).join(" ");
+var segment = (a, b) => `M${xy(a)}L${xy(b)}`;
+function attrText(attrs) {
+  return Object.entries(attrs).filter((entry) => entry[1] !== void 0 && entry[1] !== false).map(([name, value]) => ` ${name}="${typeof value === "number" ? fmt(value) : escapeAttr(value)}"`).join("");
+}
+function el(tag, attrs, body) {
+  const list = attrText(attrs);
+  return body === void 0 ? `<${tag}${list}/>` : `<${tag}${list}>${body}</${tag}>`;
+}
+function textEl(tag, attrs, text) {
+  return `<${tag}${attrText(attrs)}>${escapeText(text)}</${tag}>`;
+}
+function srgbHex(rgb) {
+  return `#${new Color().setRGB(rgb[0], rgb[1], rgb[2], SRGBColorSpace).getHexString()}`;
+}
+function linearHex(rgb) {
+  return `#${new Color().setRGB(rgb[0], rgb[1], rgb[2], LinearSRGBColorSpace).getHexString()}`;
+}
+function shadedBand(base, darkening) {
+  return `#${new Color().setRGB(base[0], base[1], base[2], SRGBColorSpace).multiplyScalar(darkening).getHexString()}`;
+}
+
+// src/export/view.ts
+import { Quaternion, Vector2 as Vector22, Vector3 } from "three";
+var MIN_DEPTH = 1e-3;
+var HORIZON_MARGIN = 1e-3;
+var vec3 = (p) => new Vector3(p[0], p[1], p[2]);
+function makeView(o) {
+  const { width: W, height: H, zoom: zoom2 } = o;
+  const orientation = new Quaternion().fromArray(o.quaternion);
+  const right = new Vector3(1, 0, 0).applyQuaternion(orientation);
+  const up = new Vector3(0, 1, 0).applyQuaternion(orientation);
+  const back = new Vector3(0, 0, 1).applyQuaternion(orientation);
+  const offset = vec3(o.centre).add(vec3(o.target));
+  const inverse = orientation.clone().invert();
+  const persp = o.projection === "persp";
+  const lens2 = o.lens ?? GEMMY.defaultLens;
+  const eyeZ = baseDistance(o.extent) / zoom2;
+  const eye = new Vector3(0, 0, eyeZ);
+  const focal = lens2 * (Math.max(W, H) / GEMMY.sensorWidth);
+  const scale = W / (2 * orthoFrame(o.extent, W, H).halfWidth) * zoom2;
+  const pinhole = { eyeZ, focal, W, H };
+  const toCam = (p) => p.clone().sub(offset).applyQuaternion(inverse);
+  const pxPerUnit = (c) => persp ? focal / Math.max(eyeZ - c.z, MIN_DEPTH) : scale;
+  const toScreen = (c) => {
+    const k = pxPerUnit(c);
+    return new Vector22(W / 2 + c.x * k, H / 2 - c.y * k);
+  };
+  const depth = (c) => persp ? -Math.hypot(c.x, c.y, eyeZ - c.z) : c.z;
+  const facing = (normal, point) => persp ? normal.dot(eye.clone().sub(point)) > 0 : normal.z > 0;
+  const sphereImage = (c, r) => {
+    if (!persp) {
+      const s = toScreen(c);
+      return { cx: s.x, cy: s.y, rx: r * scale, ry: r * scale, phi: 0 };
+    }
+    return perspectiveSphereImage(c, r, pinhole);
+  };
+  return { right, up, back, toCam, toScreen, depth, pxPerUnit, facing, sphereImage };
+}
+function perspectiveSphereImage(c, r, pinhole) {
+  const { eyeZ, focal, W, H } = pinhole;
+  const t = eyeZ - c.z;
+  const rho = Math.hypot(c.x, c.y);
+  const dist2 = Math.hypot(rho, t);
+  const theta = Math.atan2(rho, t);
+  const alpha = Math.asin(Math.min(r / dist2, 1));
+  if (dist2 <= r || theta + alpha >= Math.PI / 2 - HORIZON_MARGIN) return null;
+  const nearEdgePx = focal * Math.tan(theta - alpha);
+  const farEdgePx = focal * Math.tan(theta + alpha);
+  const centreOffsetPx = (nearEdgePx + farEdgePx) / 2;
+  const across = (centreOffsetPx * Math.sin(theta) + focal * Math.cos(theta)) / Math.cos(alpha);
+  const dx = rho > EPS ? c.x / rho : 1;
+  const dy = rho > EPS ? -c.y / rho : 0;
+  return {
+    cx: W / 2 + dx * centreOffsetPx,
+    cy: H / 2 + dy * centreOffsetPx,
+    rx: (farEdgePx - nearEdgePx) / 2,
+    ry: Math.sqrt(Math.max(across * across - centreOffsetPx * centreOffsetPx - focal * focal, 0)),
+    phi: Math.atan2(dy, dx)
+  };
+}
+
+// src/export/hull.ts
+import { Vector2 as Vector23, Vector3 as Vector32 } from "three";
+var LIT_STEPS = 120;
+function hull2d(points2) {
+  const sorted = [...points2].sort((a, b) => a.x - b.x || a.y - b.y);
+  const build = (list) => {
+    const out = [];
+    for (const q of list) {
+      while (out.length >= 2 && turn(out[out.length - 2], out[out.length - 1], q) <= 0) out.pop();
+      out.push(q);
+    }
+    out.pop();
+    return out;
+  };
+  return sorted.length < 3 ? sorted : [...build(sorted), ...build([...sorted].reverse())];
+}
+var turn = (o, a, b) => new Vector23().subVectors(a, o).cross(new Vector23().subVectors(b, o));
+function litRegion(light, threshold) {
+  const c0 = light.clone().multiplyScalar(threshold);
+  const rho = Math.sqrt(1 - threshold * threshold);
+  const u = new Vector32().crossVectors(light, new Vector32(0, 0, 1)).normalize();
+  const v = new Vector32().crossVectors(light, u);
+  const at = (phi) => c0.clone().addScaledVector(u, rho * Math.cos(phi)).addScaledVector(v, rho * Math.sin(phi));
+  const samples = [];
+  for (let i = 0; i < LIT_STEPS; i++) {
+    const n = at(i / LIT_STEPS * 2 * Math.PI);
+    if (n.z >= 0) samples.push(n);
+  }
+  const A = rho * u.z;
+  const B = rho * v.z;
+  const R = Math.hypot(A, B);
+  if (R > EPS && Math.abs(c0.z) <= R) {
+    const base = Math.atan2(B, A);
+    const off = Math.acos(-c0.z / R);
+    samples.push(at(base + off), at(base - off));
+  }
+  for (let i = 0; i < LIT_STEPS; i++) {
+    const a = i / LIT_STEPS * 2 * Math.PI;
+    const n = new Vector32(Math.cos(a), Math.sin(a), 0);
+    if (n.dot(light) >= threshold) samples.push(n);
+  }
+  return hull2d(samples.map((n) => new Vector23(n.x, n.y)));
+}
+
+// src/export/shape.ts
+var DEPTH_NUDGE = 1e-6;
+function outlineStroke(ctx, on) {
+  return on && ctx.o.outlines ? { stroke: ctx.outlineHex, "stroke-width": ctx.outlineWidth, "stroke-linejoin": "round" } : {};
+}
+function outlineAttrs(ctx, on) {
+  return on && ctx.o.outlines ? { ...outlineStroke(ctx, on), "paint-order": "stroke" } : {};
+}
+function colorOf(o, id) {
+  return o.data.materials[id].base_color.slice(0, 3);
+}
+function arrowColor() {
+  return ARROW.color.slice(0, 3);
+}
+function pointOf(ctx, id) {
+  const p = ctx.points.get(id);
+  if (!p) throw new Error(`export: no point ${id}`);
+  return p;
+}
+
+// src/export/bonds.ts
+import { Vector2 as Vector24 } from "three";
+
+// src/geom/bonds.ts
+function trimDistance(R, r) {
+  return R === null ? 0 : Math.sqrt(Math.max(R * R - r * r, 0));
+}
+function trimToSpheres(a, b, r, Ra, Rb) {
+  const length = span(a, b);
+  if (length <= EPS) return null;
+  const fromA = trimDistance(Ra, r);
+  const fromB = trimDistance(Rb, r);
+  if (fromA + fromB >= length) return null;
+  return [lerp(a, b, fromA / length), lerp(a, b, 1 - fromB / length)];
+}
+function clipToSegment(p, q, s, e) {
+  const axis = vsub(e, s);
+  const axisSq = vdot(axis, axis);
+  if (axisSq <= EPS) return null;
+  const along = (x) => vdot(vsub(x, s), axis) / axisSq;
+  const startFraction = along(p);
+  const endFraction = along(q);
+  const visibleFrom = Math.max(startFraction, 0);
+  const visibleTo = Math.min(endFraction, 1);
+  if (visibleTo <= visibleFrom) return null;
+  return {
+    p: lerp(p, q, (visibleFrom - startFraction) / (endFraction - startFraction)),
+    q: lerp(p, q, (visibleTo - startFraction) / (endFraction - startFraction)),
+    cutStart: startFraction < 0,
+    cutEnd: endFraction > 1
+  };
+}
+function insideSphere(p, c, rad, R) {
+  return R !== null && span(p, c) + rad <= R;
+}
+
+// src/geom/dashes.ts
+function dashSegments(a, b, dash, gap) {
+  const len = span(a, b);
+  if (len <= EPS) return [];
+  const count = Math.max(1, Math.round((len + gap) / (dash + gap)));
+  const stretch = len / (count * dash + (count - 1) * gap);
+  const dashFraction = dash * stretch / len;
+  const periodFraction = (dash + gap) * stretch / len;
+  return Array.from({ length: count }, (_, i) => [
+    lerp(a, b, i * periodFraction),
+    lerp(a, b, i * periodFraction + dashFraction)
+  ]);
+}
+function dotCentres(a, b, spacing) {
+  const len = span(a, b);
+  if (len <= EPS) return [];
+  const count = Math.max(1, Math.round(len / spacing));
+  return Array.from({ length: count }, (_, i) => lerp(a, b, (i + 0.5) / count));
+}
+
+// src/export/bonds.ts
+var MIDPOINT = 0.5;
+function bondShapes(ctx, drawn) {
+  const shapes = [];
+  for (const bond of ctx.o.data.primitives.bonds ?? []) {
+    const a = pointOf(ctx, bond.a_point_id);
+    const b = pointOf(ctx, bond.b_point_id);
+    const ends = { a: drawn.get(bond.a_point_id) ?? null, b: drawn.get(bond.b_point_id) ?? null };
+    const r = bond.radius;
+    const rgb = colorOf(ctx.o, bond.material_id);
+    const style = bond.style ?? "solid";
+    if (style === "dashed") shapes.push(...dashShapes(ctx, a, b, r, rgb, ends));
+    else if (style === "dotted") shapes.push(...dotShapes(ctx, a, b, r, rgb, ends));
+    else shapes.push(...solidTubeShapes(ctx, a, b, r, rgb, ends));
+  }
+  return shapes;
+}
+var sphereRadius = (atom) => atom ? atom.radius : null;
+function solidTubeShapes(ctx, a, b, r, rgb, ends) {
+  const cut = trimToSpheres(a.toArray(), b.toArray(), r, sphereRadius(ends.a), sphereRadius(ends.b));
+  if (!cut) return [];
+  const [p, q] = cut;
+  if (!ends.a || !ends.b) return [tube(ctx, { from: p, to: q, radius: r, rgb, outlined: true, fromAtom: ends.a, toAtom: ends.b })];
+  const mid = lerp(p, q, MIDPOINT);
+  return [
+    tube(ctx, { from: p, to: mid, radius: r, rgb, outlined: true, fromAtom: ends.a, toAtom: null }),
+    tube(ctx, { from: mid, to: q, radius: r, rgb, outlined: true, fromAtom: null, toAtom: ends.b })
+  ];
+}
+function dashShapes(ctx, a, b, r, rgb, ends) {
+  const cut = trimToSpheres(a.toArray(), b.toArray(), r, sphereRadius(ends.a), sphereRadius(ends.b));
+  if (!cut) return [];
+  const dash = Math.max(DASH.length * r, DASH.min);
+  const shapes = [];
+  for (const [p, q] of dashSegments(a.toArray(), b.toArray(), dash, dash * DASH.gap / DASH.length)) {
+    const piece = clipToSegment(p, q, cut[0], cut[1]);
+    if (!piece) continue;
+    shapes.push(tube(ctx, {
+      from: piece.p,
+      to: piece.q,
+      radius: r,
+      rgb,
+      outlined: false,
+      fromAtom: piece.cutStart ? ends.a : null,
+      toAtom: piece.cutEnd ? ends.b : null
+    }));
+  }
+  return shapes;
+}
+function dotShapes(ctx, a, b, r, rgb, ends) {
+  const dotRadius = DOT.radius * r;
+  const from = a.toArray();
+  const to = b.toArray();
+  const hidden = (p) => insideSphere(p, from, dotRadius, sphereRadius(ends.a)) || insideSphere(p, to, dotRadius, sphereRadius(ends.b));
+  const centres = dotCentres(from, to, Math.max(DOT.spacing * r, DOT.spacingMin));
+  return centres.filter((p) => !hidden(p)).map((p) => dotShape(ctx, vec3(p), r, rgb));
+}
+function dotShape(ctx, p, r, rgb) {
+  const { view } = ctx;
+  const c = view.toCam(p);
+  const s = view.toScreen(c);
+  return { z: view.depth(c), svg: el("circle", { cx: s.x, cy: s.y, r: DOT.radius * r * view.pxPerUnit(c), fill: srgbHex(rgb) }) };
+}
+function tube(ctx, spec) {
+  const { view } = ctx;
+  const cp = view.toCam(vec3(spec.from));
+  const cq = view.toCam(vec3(spec.to));
+  const quad = trapezoid(view.toScreen(cp), view.toScreen(cq), spec.radius * view.pxPerUnit(cp), spec.radius * view.pxPerUnit(cq));
+  const sides = spec.outlined && ctx.o.outlines ? el("path", { d: segment(quad[0], quad[1]) + segment(quad[3], quad[2]), fill: "none", ...outlineAttrs(ctx, true), "stroke-linecap": "butt" }) : "";
+  const fill = el("polygon", { points: pointList(quad), fill: srgbHex(spec.rgb) });
+  return { z: Math.max(endDepth(ctx, cp, spec.fromAtom), endDepth(ctx, cq, spec.toAtom)), svg: sides + fill };
+}
+function endDepth(ctx, junction, atom) {
+  const { view } = ctx;
+  if (!atom) return view.depth(junction);
+  const outward = junction.clone().sub(view.toCam(atom.centre));
+  const towardViewer = outward.lengthSq() > EPS && view.facing(outward.normalize(), junction);
+  return towardViewer ? atom.z + DEPTH_NUDGE : Math.min(view.depth(junction), atom.z - DEPTH_NUDGE);
+}
+function trapezoid(a, b, ha, hb) {
+  const along = b.clone().sub(a);
+  const length = along.length() || 1;
+  const side = new Vector24(-along.y, along.x).divideScalar(length);
+  return [
+    a.clone().addScaledVector(side, ha),
+    b.clone().addScaledVector(side, hb),
+    b.clone().addScaledVector(side, -hb),
+    a.clone().addScaledVector(side, -ha)
+  ];
+}
+
+// src/export/polyhedra.ts
+import { MathUtils, Vector3 as Vector34 } from "three";
+var FACE_SEAM_WIDTH = 0.6;
+var EDGE_WIDTH = 1;
+var HARD_EDGE_COS = Math.cos(MathUtils.degToRad(1));
+function polyhedronShapes(ctx) {
+  const { o, view } = ctx;
+  const shapes = [];
+  const touch = { after: /* @__PURE__ */ new Map(), before: /* @__PURE__ */ new Map() };
+  const topologies = new Map(o.data.topologies.map((t) => [t.id, t]));
+  const maxRadius = Math.max(0, ...o.data.primitives.atoms.map((a) => a.radius));
+  for (const poly of o.data.primitives.polyhedra) {
+    const topo = topologies.get(poly.topology_id);
+    const material = o.data.materials[poly.material_id];
+    const alpha = material.alpha ?? 1;
+    const ghost = alpha < 1;
+    const rgb = material.base_color.slice(0, 3);
+    const verts = topo.point_ids.map((id) => view.toCam(pointOf(ctx, id)));
+    const mid = verts.reduce((sum, x) => sum.add(x), new Vector34()).divideScalar(verts.length);
+    const faces = topo.faces.map((f) => faceOf(f, verts, mid, view));
+    const screen = verts.map((c) => view.toScreen(c));
+    const key2 = Math.max(...verts.map((c) => view.depth(c))) + (ghost ? maxRadius : 0);
+    if (!ghost) recordTouch(touch, topo.point_ids, faces, key2);
+    const { edges, silhouette } = edgePaths(faces, screen, ghost);
+    let body = silhouette && o.outlines && !ghost ? el("path", { d: silhouette, fill: "none", ...outlineStroke(ctx, true), "stroke-linecap": "round" }) : "";
+    body += faceMarkup(ctx, faces, screen, rgb, alpha, ghost);
+    if (edges) {
+      body += el("path", { d: edges, fill: "none", stroke: ctx.edgeHex, "stroke-width": EDGE_WIDTH, "stroke-linecap": "round" });
+    }
+    shapes.push({ z: key2, svg: el("g", {}, body) });
+  }
+  return { shapes, touch };
+}
+function faceMarkup(ctx, faces, screen, rgb, alpha, ghost) {
+  let markup = "";
+  for (const f of faces) {
+    if (!f.front) continue;
+    const fill = f.n.dot(ctx.light) >= LOOK.threshold ? srgbHex(rgb) : shadedBand(rgb, LOOK.dark);
+    const style = ghost ? { "fill-opacity": alpha } : { stroke: fill, "stroke-width": FACE_SEAM_WIDTH, "stroke-linejoin": "round" };
+    markup += el("polygon", { points: pointList(f.idx.map((i) => screen[i])), fill, ...style });
+  }
+  return markup;
+}
+function edgePaths(faces, screen, ghost) {
+  let edges = "";
+  let silhouette = "";
+  for (const e of edgesOf(faces)) {
+    const hard = e.faces.length === 1 || e.faces[0].n.dot(e.faces[1].n) < HARD_EDGE_COS;
+    const seg = segment(screen[e.i], screen[e.j]);
+    const anyFront = e.faces.some((f) => f.front);
+    const anyBack = e.faces.some((f) => !f.front);
+    if (hard && (ghost || anyFront)) edges += seg;
+    if (anyFront && anyBack) silhouette += seg;
+  }
+  return { edges, silhouette };
+}
+function faceOf(f, verts, mid, view) {
+  let [i, j, k] = f;
+  let n = new Vector34().subVectors(verts[j], verts[i]).cross(new Vector34().subVectors(verts[k], verts[i])).normalize();
+  const centre2 = verts[i].clone().add(verts[j]).add(verts[k]).divideScalar(3);
+  if (n.dot(centre2.clone().sub(mid)) < 0) {
+    [j, k] = [k, j];
+    n = n.negate();
+  }
+  return { idx: [i, j, k], n, front: view.facing(n, centre2) };
+}
+function edgesOf(faces) {
+  const edges = /* @__PURE__ */ new Map();
+  for (const f of faces) {
+    for (let e = 0; e < 3; e++) {
+      const i = f.idx[e];
+      const j = f.idx[(e + 1) % 3];
+      const key2 = i < j ? `${i}-${j}` : `${j}-${i}`;
+      if (!edges.has(key2)) edges.set(key2, { i, j, faces: [] });
+      edges.get(key2).faces.push(f);
+    }
+  }
+  return [...edges.values()];
+}
+function recordTouch(touch, ids, faces, key2) {
+  const touched = new Set(faces.filter((f) => f.front).flatMap((f) => f.idx));
+  ids.forEach((id, i) => {
+    if (touched.has(i)) touch.after.set(id, Math.max(touch.after.get(id) ?? -Infinity, key2));
+    else touch.before.set(id, Math.min(touch.before.get(id) ?? Infinity, key2));
+  });
+}
+
+// src/export/triad.ts
+import { Vector2 as Vector26 } from "three";
+function triadSvg(ctx) {
+  const { o, view } = ctx;
+  const dirs = o.lattice.map((vec) => {
+    const v = vec3(vec);
+    return [v.dot(view.right), v.dot(view.up), v.dot(view.back)];
+  });
+  const tri = triadLayout(dirs, o.width, o.height);
+  const items = [];
+  for (const it of tri.items) {
+    const color = LOOK.axisColors[it.index];
+    if (it.head) {
+      items.push(el("line", { x1: tri.origin[0], y1: tri.origin[1], x2: it.shaftEnd[0], y2: it.shaftEnd[1], stroke: color, "stroke-width": tri.lineWidth }));
+      items.push(el("polygon", { points: pointList(it.head.map(([x, y]) => new Vector26(x, y))), fill: color }));
+    }
+    items.push(textEl("text", {
+      x: it.label.x,
+      y: it.label.y,
+      fill: color,
+      "text-anchor": "middle",
+      "dominant-baseline": "central",
+      "font-family": `'${AXIS_FONT.family}', sans-serif`,
+      "font-style": "italic",
+      "font-weight": 700,
+      "font-size": tri.fontSize
+    }, "abc"[it.index]));
+  }
+  items.push(el("circle", { cx: tri.origin[0], cy: tri.origin[1], r: tri.dotRadius, fill: o.boxColor }));
+  return el("g", { id: "triad", "stroke-linecap": "round" }, items.join(""));
+}
+
+// src/export/export.ts
+var OUTLINE_FRACTION = 35e-4;
+var LINE_RADIUS_RATIO = 0.7;
+var ARROW_HEAD_MIN_RADII = 3;
+var ARROW_HEAD_MAX_FRACTION = 0.8;
+var ARROW_SHAFT_MIN_FRACTION = 0.2;
+var PARALLEL_LIMIT = 0.9;
+var RING_STEPS = 24;
+var ROUND_TOLERANCE = 0.01;
+var CELL_PIECES = 40;
+var CELL_PIECE_MIN = 0.2;
+var BOX_LINE_WIDTH = 1;
+var LARGE_ARC = 1;
+var SWEEP = 0;
+function buildSvg(o) {
+  const ctx = makeContext(o);
+  const polyhedra2 = polyhedronShapes(ctx);
+  const atoms = o.show.atoms ? atomShapes(ctx, polyhedra2.touch) : { shapes: [], drawn: /* @__PURE__ */ new Map() };
+  const shapes = [...bondShapes(ctx, atoms.drawn), ...arrowShapes(ctx, atoms.drawn), ...polyhedra2.shapes, ...atoms.shapes];
+  if (o.show.box && o.data.cell) shapes.push(...cellBoxShapes(ctx, o.data.cell));
+  shapes.sort((p, q) => p.z - q.z);
+  return svgDocument(ctx, [...shapes.map((s) => s.svg), triadSvg(ctx)].join("\n"));
+}
+function makeContext(o) {
+  return {
+    o,
+    view: makeView(o),
+    points: new Map(o.data.points.map((p) => [p.id, vec3(p.position)])),
+    light: new Vector35(...LOOK.key).normalize(),
+    outlineHex: linearHex(LOOK.outline),
+    edgeHex: srgbHex(LOOK.outline),
+    outlineWidth: OUTLINE_FRACTION * o.height
+  };
+}
+function arrowShapes(ctx, drawn) {
+  const { view } = ctx;
+  const shapes = [];
+  for (const d of ctx.o.data.primitives.displacements ?? []) {
+    const p = pointOf(ctx, d.start_point_id);
+    const v = vec3(d.vector);
+    const [a, b] = d.anchor === "tip" ? [p.clone().sub(v), p] : [p, p.clone().add(v)];
+    const radius = ARROW.radius;
+    const rgb = arrowColor();
+    if ((d.mode ?? "arrow").toLowerCase() !== "arrow") {
+      const atom = drawn.get(d.start_point_id) ?? null;
+      const ends = d.anchor === "tip" ? { a: null, b: atom } : { a: atom, b: null };
+      shapes.push(...solidTubeShapes(ctx, a, b, radius * LINE_RADIUS_RATIO, rgb, ends));
+      continue;
+    }
+    const length = a.distanceTo(b);
+    if (length <= EPS) continue;
+    const dir = b.clone().sub(a).divideScalar(length);
+    const headLength = Math.min(Math.max(length * ARROW.headLengthRatio, radius * ARROW_HEAD_MIN_RADII), length * ARROW_HEAD_MAX_FRACTION);
+    const shaftLength = Math.max(length - headLength, length * ARROW_SHAFT_MIN_FRACTION);
+    const end = a.clone().addScaledVector(dir, shaftLength);
+    shapes.push(cylinder(ctx, a, end, radius, rgb));
+    const helper = Math.abs(dir.z) < PARALLEL_LIMIT ? new Vector35(0, 0, 1) : new Vector35(1, 0, 0);
+    const s1 = new Vector35().crossVectors(dir, helper).normalize();
+    const s2 = new Vector35().crossVectors(dir, s1);
+    const headRadius = radius * ARROW.headRadiusRatio;
+    const ring = Array.from({ length: RING_STEPS }, (_, i) => {
+      const t = i / RING_STEPS * 2 * Math.PI;
+      return end.clone().addScaledVector(s1, headRadius * Math.cos(t)).addScaledVector(s2, headRadius * Math.sin(t));
+    });
+    const camPoints = [b, ...ring].map((x) => view.toCam(x));
+    const outline = hull2d(camPoints.map((c) => view.toScreen(c)));
+    shapes.push({
+      z: Math.max(...camPoints.map((c) => view.depth(c))),
+      svg: el("polygon", { points: pointList(outline), fill: srgbHex(rgb), ...outlineAttrs(ctx, true) })
+    });
+  }
+  return shapes;
+}
+function cylinder(ctx, a, b, radius, rgb) {
+  const { view } = ctx;
+  const ca = view.toCam(a);
+  const cb = view.toCam(b);
+  const quad = trapezoid(view.toScreen(ca), view.toScreen(cb), radius * view.pxPerUnit(ca), radius * view.pxPerUnit(cb));
+  return {
+    z: Math.max(view.depth(ca), view.depth(cb)),
+    svg: el("polygon", { points: pointList(quad), fill: srgbHex(rgb), ...outlineAttrs(ctx, true) })
+  };
+}
+function atomShapes(ctx, touch) {
+  const lit = litRegion(ctx.light, LOOK.threshold);
+  const shapes = [];
+  const drawn = /* @__PURE__ */ new Map();
+  for (const atom of ctx.o.data.primitives.atoms) {
+    const shape = atomShape(ctx, lit, atom, touch);
+    if (!shape) continue;
+    shapes.push(shape);
+    drawn.set(atom.point_id, { centre: pointOf(ctx, atom.point_id), radius: atom.radius, z: shape.z });
+  }
+  return { shapes, drawn };
+}
+function atomShape(ctx, lit, atom, touch) {
+  const { o, view } = ctx;
+  const c = view.toCam(pointOf(ctx, atom.point_id));
+  const e = view.sphereImage(c, atom.radius);
+  if (!e) return null;
+  const reach = Math.max(e.rx, e.ry);
+  if (e.cx + reach < 0 || e.cx - reach > o.width || e.cy + reach < 0 || e.cy - reach > o.height) return null;
+  const rgb = colorOf(o, atom.material_id);
+  const center = new Vector27(e.cx, e.cy);
+  const radial = new Vector27(Math.cos(e.phi), Math.sin(e.phi));
+  const across = new Vector27(-radial.y, radial.x);
+  const warp = (p) => {
+    const s = new Vector27(p.x, -p.y);
+    return center.clone().addScaledVector(radial, s.dot(radial) * e.rx).addScaledVector(across, s.dot(across) * e.ry);
+  };
+  const tip2 = center.clone().addScaledVector(radial, e.rx);
+  const tail = center.clone().addScaledVector(radial, -e.rx);
+  const arc = `A${fmt(e.rx)} ${fmt(e.ry)} ${fmt(e.phi * MathUtils2.RAD2DEG)} ${LARGE_ARC} ${SWEEP}`;
+  const disc = `M${xy(tip2)}${arc} ${xy(tail)}${arc} ${xy(tip2)}z`;
+  const band = `${disc}M${lit.map((p) => xy(warp(p))).join("L")}z`;
+  const z = atomDepth(view.depth(c) + atom.radius, atom.point_id, touch);
+  const svg = ellipseEl(e, { fill: srgbHex(rgb), ...outlineAttrs(ctx, true) }) + el("path", { d: band, fill: shadedBand(rgb, LOOK.dark), "fill-rule": "evenodd" });
+  return { z, svg };
+}
+function atomDepth(natural, id, touch) {
+  if (touch.after.has(id)) return Math.max(natural, touch.after.get(id) + DEPTH_NUDGE);
+  if (touch.before.has(id)) return Math.min(natural, touch.before.get(id) - DEPTH_NUDGE);
+  return natural;
+}
+function ellipseEl(e, attrs) {
+  if (Math.abs(e.rx - e.ry) < ROUND_TOLERANCE * e.rx) return el("circle", { cx: e.cx, cy: e.cy, r: e.rx, ...attrs });
+  const deg = e.phi * MathUtils2.RAD2DEG;
+  return el("ellipse", {
+    cx: e.cx,
+    cy: e.cy,
+    rx: e.rx,
+    ry: e.ry,
+    transform: `rotate(${fmt(deg)} ${fmt(e.cx)} ${fmt(e.cy)})`,
+    ...attrs
+  });
+}
+function cellBoxShapes(ctx, cell) {
+  const { o, view } = ctx;
+  const origin = vec3(cell.origin);
+  const [a, b, c] = cell.vectors.map(vec3);
+  const corner = (i, j, k) => origin.clone().addScaledVector(a, i).addScaledVector(b, j).addScaledVector(c, k);
+  const piece = Math.max(o.extent / CELL_PIECES, CELL_PIECE_MIN);
+  const shapes = [];
+  for (let n = 0; n < 8; n++) {
+    for (let axis = 0; axis < 3; axis++) {
+      if (n & 1 << axis) continue;
+      const bits = [n & 1, n >> 1 & 1, n >> 2 & 1];
+      const start = corner(...bits);
+      bits[axis] = 1;
+      const end = corner(...bits);
+      const count = Math.max(1, Math.ceil(start.distanceTo(end) / piece));
+      for (let s = 0; s < count; s++) {
+        const p = view.toCam(start.clone().lerp(end, s / count));
+        const q = view.toCam(start.clone().lerp(end, (s + 1) / count));
+        const from = view.toScreen(p);
+        const to = view.toScreen(q);
+        shapes.push({
+          z: Math.max(view.depth(p), view.depth(q)),
+          svg: el("line", { x1: from.x, y1: from.y, x2: to.x, y2: to.y, stroke: o.boxColor, "stroke-width": BOX_LINE_WIDTH })
+        });
+      }
+    }
+  }
+  return shapes;
+}
+function svgDocument(ctx, body) {
+  const { width: W, height: H } = ctx.o;
+  const style = textEl("style", {}, axisFontFace(["700"]));
+  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: W, height: H, viewBox: `0 0 ${W} ${H}` }, `
+${style}
+${body}
+`);
+  return `${svg}
+`;
+}
+
+// src/render/draw.ts
+import * as THREE2 from "three";
+import { TrackballControls } from "three/addons/controls/TrackballControls.js";
+
+// src/state.ts
+import * as THREE from "three";
+var data = void 0;
+var points = /* @__PURE__ */ new Map();
+var polyhedra = [];
+var centre = [0, 0, 0];
+var extent = 1;
+var lattice = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
+var atomGroup = new THREE.Group();
+var polyGroup = new THREE.Group();
+var outlineGroup = new THREE.Group();
+var box = null;
+var polyTargets = [];
+var show = { atoms: true, box: true };
+var outlines = true;
+var camera = void 0;
+var lens = GEMMY.defaultLens;
+var fitValue = 1;
+var dirty = true;
+function requestRender() {
+  dirty = true;
+}
+function takeDirty() {
+  const was = dirty;
+  dirty = false;
+  return was;
+}
+function setData(value) {
+  data = value;
+}
+function setPoints(value) {
+  points = value;
+}
+function setPolyhedra(value) {
+  polyhedra = value;
+}
+function setCentre(value) {
+  centre = value;
+}
+function setExtent(value) {
+  extent = value;
+}
+function setLattice(value) {
+  lattice = value;
+}
+function setAtomGroup(value) {
+  atomGroup = value;
+}
+function setPolyGroup(value) {
+  polyGroup = value;
+}
+function setOutlineGroup(value) {
+  outlineGroup = value;
+}
+function setBox(value) {
+  box = value;
+}
+function setPolyTargets(value) {
+  polyTargets = value;
+}
+function setOutlines(value) {
+  outlines = value;
+}
+function setCamera(value) {
+  camera = value;
+}
+function setLens(value) {
+  lens = value;
+}
+function setFitValue(value) {
+  fitValue = value;
+}
+
+// src/render/draw.ts
+var MAX_PIXEL_RATIO = 2;
+var CLIP_NEAR = 0.1;
+var CLIP_FAR = 100;
+var PLACEHOLDER_FOV_DEG = 30;
+var TOON_STEPS = 16;
+var NUMBERS_PER_MATRIX = 16;
+var OUTLINE_THICKNESS = 35e-4;
+var OUTLINE_SIZE_FRACTION = 0.12;
+var FACE_OFFSET_FACTOR = 1;
+var FACE_OFFSET_UNITS = 1;
+var ATOM_SEGMENTS = { width: 48, height: 24 };
+var DOT_SEGMENTS = { width: 12, height: 8 };
+var TUBE_SEGMENTS = 24;
+var stage = document.getElementById("stage");
+var renderer = new THREE2.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
+renderer.setClearColor(0, 0);
+stage.appendChild(renderer.domElement);
+var scene = new THREE2.Scene();
+var root = new THREE2.Group();
+scene.add(root);
+var orthoCamera = new THREE2.OrthographicCamera(-1, 1, 1, -1, CLIP_NEAR, CLIP_FAR);
+var perspCamera = new THREE2.PerspectiveCamera(PLACEHOLDER_FOV_DEG, 1, CLIP_NEAR, CLIP_FAR);
+perspCamera.filmGauge = GEMMY.sensorWidth;
+scene.add(orthoCamera, perspCamera);
+setCamera(orthoCamera);
+scene.add(new THREE2.AmbientLight(16777215, LOOK.dark * Math.PI));
+var key = new THREE2.DirectionalLight(16777215, (1 - LOOK.dark) * Math.PI);
+key.position.set(...LOOK.key);
+camera.add(key, key.target);
+var controls = new TrackballControls(camera, renderer.domElement);
+var edgeMaterial = new THREE2.LineBasicMaterial({ color: srgbColor(LOOK.outline) });
+var boxMaterial = new THREE2.LineBasicMaterial();
+var OUTLINE_VERTEX_SHADER = `
+    uniform float outlineThickness;
+    uniform float outlineScale; // the user's width (ui/outline-scale.ts): 1 is the automatic width
+    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)} // a float literal: GLSL reads a bare integer as int
+
+    // The outline's width, in NDC (the image spans 2 units). The shell is pushed out by this much and then multiplied
+    // by w, so the clip-space offset is the same as the constant width was when the cap does not apply.
+    //   Constant width: outlineThickness, a fixed share of the image height.
+    //   Cap: OUTLINE_SIZE_FRACTION times the shape's on-screen radius. A sphere of radius r at depth d projects to
+    //   r * P11 / w on the screen in NDC (P11 = projectionMatrix[1][1]; w = d in perspective, w = 1 in orthographic,
+    //   so there r * P11 is the radius as it is). Dividing by w by hand gives the cap in NDC; with w = 1 it is r * P11.
+    //   The shell is the smaller of the two, so the outline never exceeds today's width, and it thins only where the
+    //   shape is small on the screen. A plain mesh (radius 1e9) has no cap.
+    float outlineWidth(float clipW, float radius) {
+      float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
+      return min(outlineThickness, capWidth);
+    }
+
+    void main() {
+      vec4 local = vec4(position, 1.0);
+      vec3 normalLocal = normal;
+      // The instance's cross-section radius: the shorter of its X and Z columns (a cylinder's axis is local Y, and
+      // a sphere has equal columns). A plain mesh has no instance, so it gets no cap.
+      float radius = 1e9;
+      #ifdef USE_INSTANCING
+        mat3 instanceRotation = mat3(instanceMatrix);
+        // dividing each column by its squared length gives the inverse transpose for a scaled instance
+        normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
+        local = instanceMatrix * local;
+        radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
+      #endif
+      normalLocal = normalize(normalLocal);
+      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
+      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
+      // pushed along the screen-space direction of the normal
+      float width = outlineWidth(clipPos.w, radius) * outlineScale;
+      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
+    }`;
+var OUTLINE_FRAGMENT_SHADER = `
+    uniform vec3 outlineColor;
+    void main() {
+      gl_FragColor = vec4(outlineColor, 1.0);
+      #include <colorspace_fragment>
+    }`;
+var outlineMaterial = new THREE2.ShaderMaterial({
+  side: THREE2.BackSide,
+  uniforms: {
+    outlineThickness: { value: OUTLINE_THICKNESS },
+    outlineScale: { value: 1 },
+    // These numbers are read as linear colour (Color.fromArray) and colorspace_fragment then encodes them to sRGB, so
+    // the outline shows lighter than the edges (edgeMaterial reads LOOK.outline as sRGB). Blender's Freestyle line
+    // colour, set from the same numbers in renderer.py, is linear too; the render match depends on this.
+    outlineColor: { value: new THREE2.Color().fromArray(LOOK.outline) }
+  },
+  vertexShader: OUTLINE_VERTEX_SHADER,
+  fragmentShader: OUTLINE_FRAGMENT_SHADER
+});
+var toonGradient = makeToonGradient();
+var toonMaterials = /* @__PURE__ */ new Map();
+function toon(id, { faces = false, ghost = false } = {}) {
+  const cacheKey = `${id}|${faces}|${ghost}`;
+  if (!toonMaterials.has(cacheKey)) toonMaterials.set(cacheKey, makeToon(id, faces, ghost));
+  return toonMaterials.get(cacheKey);
+}
+var SHAPES = {
+  sphere: () => new THREE2.SphereGeometry(1, ATOM_SEGMENTS.width, ATOM_SEGMENTS.height),
+  dot: () => new THREE2.SphereGeometry(1, DOT_SEGMENTS.width, DOT_SEGMENTS.height),
+  cylinder: () => new THREE2.CylinderGeometry(1, 1, 1, TUBE_SEGMENTS, 1),
+  cone: () => new THREE2.ConeGeometry(1, 1, TUBE_SEGMENTS, 1)
+};
+function instanced(geometry, material, matrices) {
+  const mesh = new THREE2.InstancedMesh(geometry, material, matrices.length / NUMBERS_PER_MATRIX);
+  mesh.instanceMatrix.array.set(matrices);
+  mesh.frustumCulled = false;
+  return mesh;
+}
+function setOutlineScale(scale) {
+  outlineMaterial.uniforms.outlineScale.value = scale;
+}
+function outlineOf(mesh) {
+  if (mesh instanceof THREE2.InstancedMesh) {
+    const outline2 = new THREE2.InstancedMesh(mesh.geometry, outlineMaterial, mesh.count);
+    outline2.instanceMatrix = mesh.instanceMatrix;
+    outline2.frustumCulled = false;
+    return outline2;
+  }
+  const outline = new THREE2.Mesh(mesh.geometry, outlineMaterial);
+  outline.frustumCulled = false;
+  return outline;
+}
+function disposeScene() {
+  root.traverse((object) => {
+    object.geometry?.dispose();
+    if (object instanceof THREE2.InstancedMesh) object.dispose();
+  });
+  for (const material of toonMaterials.values()) material.dispose();
+  toonMaterials = /* @__PURE__ */ new Map();
+  root.clear();
+}
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name);
+}
+function srgbColor(rgb) {
+  return new THREE2.Color().setRGB(rgb[0], rgb[1], rgb[2], THREE2.SRGBColorSpace);
+}
+function baseColorOf(id) {
+  return id === null ? ARROW.color : data.materials[id].base_color;
+}
+function alphaOf(id) {
+  return id === null ? 1 : data.materials[id].alpha ?? 1;
+}
+function makeToon(id, faces, ghost) {
+  const material = new THREE2.MeshToonMaterial({
+    color: srgbColor(baseColorOf(id)),
+    gradientMap: toonGradient,
+    polygonOffset: faces,
+    polygonOffsetFactor: FACE_OFFSET_FACTOR,
+    polygonOffsetUnits: FACE_OFFSET_UNITS
+  });
+  if (ghost) {
+    material.transparent = true;
+    material.opacity = alphaOf(id);
+    material.depthWrite = false;
+  }
+  return material;
+}
+function makeToonGradient() {
+  const firstLit = Math.ceil((LOOK.threshold + 1) / 2 * TOON_STEPS);
+  const texels = Array.from({ length: TOON_STEPS }, (_, i) => i >= firstLit ? 255 : 0);
+  const texture = new THREE2.DataTexture(new Uint8Array(texels), TOON_STEPS, 1, THREE2.RedFormat);
+  texture.minFilter = THREE2.NearestFilter;
+  texture.magFilter = THREE2.NearestFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// src/ui/ui.ts
+import * as THREE7 from "three";
+
+// src/ui/picking.ts
+import * as THREE5 from "three";
+
+// src/ui/readout.ts
+import * as THREE3 from "three";
+
+// src/ui/dom.ts
+function byId(id) {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`gemmy viewer: the page has no #${id}`);
+  return element;
+}
+function closestOf(target, selector) {
+  return target instanceof Element ? target.closest(selector) : null;
+}
+function clamp(value, low, high) {
+  return Math.max(low, Math.min(value, high));
+}
+
+// src/ui/readout.ts
+var info = byId("info-body");
+var ANGSTROM_DIGITS = 3;
+var FRACTIONAL_DIGITS = 4;
+var DELTA_SCALE = 1e4;
+var COPY_FEEDBACK_MS = 1500;
+var SUBSCRIPT_DIGITS = "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089";
+var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+function dist(a, b) {
+  return new THREE3.Vector3(...a).distanceTo(new THREE3.Vector3(...b));
+}
+function pointOf2(id) {
+  const point = points.get(id);
+  if (!point) throw new Error(`gemmy viewer: the scene has no point ${id}`);
+  return point;
+}
+function fmt2(x, digits = ANGSTROM_DIGITS) {
+  return x.toFixed(digits);
+}
+function average(xs) {
+  return xs.reduce((sum, x) => sum + x, 0) / xs.length;
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+}
+function subscripts(s) {
+  return s.replace(/\d+/g, (m) => [...m].map((c) => SUBSCRIPT_DIGITS[Number(c)]).join(""));
+}
+function grouped(values) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const x of values) counts.set(fmt2(x), (counts.get(fmt2(x)) || 0) + 1);
+  return [...counts].sort((p, q) => Number(p[0]) - Number(q[0])).map(([x, n]) => n > 1 ? `${n} \xD7 ${x}` : x).join(", ");
+}
+function nothingSelectedHtml() {
+  return `<h2>Nothing selected</h2><p class="hint">Click an atom or a polyhedron to see its distances.</p>`;
+}
+function polyhedronHtml(p) {
+  const centre2 = pointOf2(p.center_point_id);
+  const bonds = p.ligand_point_ids.map((id) => dist(centre2.position, pointOf2(id).position));
+  const mean = average(bonds);
+  const distortion = average(bonds.map((x) => ((x - mean) / mean) ** 2));
+  const centreText = centre2.fractional ? `${centre2.element} at (${centre2.fractional.map((x) => fmt2(x, FRACTIONAL_DIGITS)).join(", ")})` : centre2.element;
+  return `<h2>${escapeHtml(subscripts(p.name ?? "Polyhedron"))}</h2><dl>
+      <dt>Centre</dt><dd>${escapeHtml(centreText)}</dd>
+      <dt>Bonds</dt><dd>${grouped(bonds)} \xC5</dd>
+      <dt>Mean</dt><dd>${fmt2(mean)} \xC5</dd>
+      <dt>\u0394</dt><dd>${(distortion * DELTA_SCALE).toFixed(2)} \xD7 10\u207B\u2074</dd></dl>
+      <p class="hint">\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\xB2. Fractional coordinates are in the supercell.</p>`;
+}
+function atomHtml(a) {
+  const point = pointOf2(a.point_id);
+  const hosts = polyhedra.filter((p) => p.ligand_point_ids.includes(a.point_id));
+  const neighbours = hosts.map((p) => dist(point.position, pointOf2(p.center_point_id).position));
+  const hostElement = hosts.length ? pointOf2(hosts[0].center_point_id).element : "";
+  const ref = point.ref ? `<dt>Ref</dt><dd>${escapeHtml(point.ref)} <button type="button" class="copy" data-copy="${escapeHtml(point.ref)}">Copy</button></dd>` : "";
+  const fractional = point.fractional ? `<dt>Fractional</dt><dd>${point.fractional.map((x) => fmt2(x, FRACTIONAL_DIGITS)).join(", ")}</dd>` : "";
+  const nbrs = neighbours.length ? `<dt>${escapeHtml(hostElement)} nbrs</dt><dd>${grouped(neighbours)} \xC5</dd>` : "";
+  return `<h2>${escapeHtml(point.element)} atom</h2><dl>
+      ${ref}
+      ${fractional}
+      <dt>Cartesian</dt><dd>${point.position.map((x) => fmt2(x)).join(", ")} \xC5</dd>
+      ${nbrs}</dl>
+      <p class="hint">Fractional coordinates are in the supercell.</p>`;
+}
+function describe(target) {
+  if (!target) info.innerHTML = nothingSelectedHtml();
+  else if (target.kind === "polyhedron") info.innerHTML = polyhedronHtml(target.poly);
+  else info.innerHTML = atomHtml(target.atom);
+}
+function copyRef(button) {
+  const done = (text) => {
+    button.textContent = text;
+    setTimeout(() => {
+      button.textContent = "Copy";
+    }, COPY_FEEDBACK_MS);
+  };
+  try {
+    navigator.clipboard.writeText(button.dataset.copy ?? "").then(() => done("Copied"), () => done("Failed"));
+  } catch {
+    done("Failed");
+  }
+}
+info.addEventListener("click", (e) => {
+  const button = closestOf(e.target, "button[data-copy]");
+  if (button) copyRef(button);
+});
+
+// src/ui/panels.ts
+var PHONE_MAX_WIDTH = 640;
+var narrowScreen = matchMedia(`(max-width: ${PHONE_MAX_WIDTH}px)`);
+function readChoice(key2) {
+  try {
+    const value = localStorage.getItem(key2);
+    return value === null ? null : value === "1";
+  } catch {
+    return null;
+  }
+}
+function saveChoice(key2, value) {
+  try {
+    localStorage.setItem(key2, value ? "1" : "0");
+  } catch {
+  }
+}
+var INFO_KEY = "gemmy.info-open";
+var infoPanel = byId("info");
+var infoButton = byId("info-button");
+var infoClose = byId("info-close");
+var infoChoice = readChoice(INFO_KEY);
+function showInfo(open) {
+  if (open && narrowScreen.matches) showViewControls(false);
+  infoPanel.hidden = !open;
+  infoButton.hidden = open;
+  infoButton.setAttribute("aria-expanded", String(open));
+}
+function toggleInfo() {
+  const open = infoPanel.hidden;
+  showInfo(open);
+  infoChoice = open;
+  saveChoice(INFO_KEY, open);
+  (open ? infoClose : infoButton).focus({ preventScroll: true });
+}
+infoButton.addEventListener("click", toggleInfo);
+infoClose.addEventListener("click", toggleInfo);
+var VIEW_KEY = "gemmy.view-controls-open";
+var viewBar = byId("bottom");
+var viewToggle = byId("view-toggle");
+var viewOpen = readChoice(VIEW_KEY) ?? !narrowScreen.matches;
+function showViewControls(open) {
+  viewBar.classList.toggle("folded", !open);
+  viewToggle.setAttribute("aria-expanded", String(open));
+}
+showViewControls(viewOpen);
+viewToggle.addEventListener("click", () => {
+  viewOpen = !viewOpen;
+  if (viewOpen && narrowScreen.matches && !infoPanel.hidden) showInfo(false);
+  showViewControls(viewOpen);
+  saveChoice(VIEW_KEY, viewOpen);
+});
+
+// src/camera/glide.ts
+import * as THREE4 from "three";
+var GLIDE_MS = 300;
+var current = 0;
+function glideTo(point) {
+  const id = ++current;
+  const offset = point.clone().sub(controls.target);
+  const started = performance.now();
+  let shareMoved = 0;
+  const step = () => {
+    if (id !== current) return;
+    const progress = (performance.now() - started) / GLIDE_MS;
+    const share = THREE4.MathUtils.smoothstep(progress, 0, 1);
+    shiftView(offset.clone().multiplyScalar(share - shareMoved));
+    shareMoved = share;
+    requestRender();
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function cancelGlide() {
+  current++;
+}
+function shiftView(delta) {
+  camera.position.add(delta);
+  controls.target.add(delta);
+}
+
+// src/ui/picking.ts
+var HIGHLIGHT_GLOW = 0.55;
+var PULL_FORWARD = -1;
+var GHOST_RENDER_ORDER = 2;
+var FLOATS_PER_TRIANGLE = 3 * 3;
+var highlight = null;
+function clearHighlight() {
+  if (!highlight) return;
+  highlight.removeFromParent();
+  highlight.material.dispose();
+  if (highlight.userData.own) highlight.geometry.dispose();
+  highlight = null;
+}
+function highlightMaterial(base) {
+  const material = base.clone();
+  material.emissive = base.color.clone().multiplyScalar(HIGHLIGHT_GLOW);
+  Object.assign(material, { polygonOffset: true, polygonOffsetFactor: PULL_FORWARD, polygonOffsetUnits: PULL_FORWARD });
+  return material;
+}
+function highlightAtom(target) {
+  const mesh = new THREE5.Mesh(target.mesh.geometry, highlightMaterial(target.mesh.material));
+  target.mesh.getMatrixAt(target.index, mesh.matrix);
+  mesh.matrixAutoUpdate = false;
+  atomGroup.add(mesh);
+  return mesh;
+}
+function highlightPolyhedron(target) {
+  const from = target.first * FLOATS_PER_TRIANGLE, to = (target.first + target.count) * FLOATS_PER_TRIANGLE;
+  const geometry = new THREE5.BufferGeometry();
+  for (const name of ["position", "normal"]) {
+    const values = target.mesh.geometry.getAttribute(name).array.slice(from, to);
+    geometry.setAttribute(name, new THREE5.Float32BufferAttribute(values, 3));
+  }
+  const mesh = new THREE5.Mesh(geometry, highlightMaterial(target.mesh.material));
+  mesh.userData.own = true;
+  mesh.renderOrder = target.ghost ? GHOST_RENDER_ORDER : 0;
+  polyGroup.add(mesh);
+  return mesh;
+}
+function select(target) {
+  clearHighlight();
+  if (target) highlight = target.kind === "atom" ? highlightAtom(target) : highlightPolyhedron(target);
+  describe(target);
+  requestRender();
+}
+function targetOf(hit) {
+  const mesh = hit.object;
+  if (mesh.userData.atoms) {
+    const index = hit.instanceId;
+    return { kind: "atom", atom: mesh.userData.atoms[index], mesh, index };
+  }
+  const face = hit.faceIndex;
+  return polyTargets[mesh.userData.owner[face]];
+}
+function pickableObjects() {
+  const atoms = atomGroup.visible ? atomGroup.children.filter((o) => o.userData.atoms) : [];
+  const polys = polyGroup.children.filter((o) => o.isMesh && o.userData.owner);
+  return [...atoms, ...polys];
+}
+var ray = new THREE5.Raycaster();
+function hitAt(clientX, clientY) {
+  const r = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE5.Vector2((clientX - r.left) / r.width * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(pickableObjects(), false);
+  return hits.find((h) => !isGhostHit(h)) ?? hits[0] ?? null;
+}
+function isGhostHit(hit) {
+  const target = targetOf(hit);
+  return target.kind === "polyhedron" && target.ghost;
+}
+function pickPointAt(clientX, clientY) {
+  const hit = hitAt(clientX, clientY);
+  return hit ? hit.point.clone() : null;
+}
+var DOUBLE_CLICK_MS = 350;
+var DOUBLE_CLICK_SLOP_PX = 10;
+var pressedAt = null;
+var lastClick = null;
+function completesDoubleClick(e) {
+  const previous = lastClick;
+  lastClick = { at: e.timeStamp, x: e.clientX, y: e.clientY };
+  if (!previous) return false;
+  const quick = e.timeStamp - previous.at <= DOUBLE_CLICK_MS;
+  const near = Math.hypot(e.clientX - previous.x, e.clientY - previous.y) <= DOUBLE_CLICK_SLOP_PX;
+  if (!quick || !near) return false;
+  lastClick = null;
+  return true;
+}
+renderer.domElement.addEventListener("pointerdown", (e) => {
+  pressedAt = [e.clientX, e.clientY];
+});
+renderer.domElement.addEventListener("pointerup", (e) => {
+  if (!pressedAt) return;
+  if (Math.hypot(e.clientX - pressedAt[0], e.clientY - pressedAt[1]) > POINTER_SLOP_PX) return;
+  const double = completesDoubleClick(e);
+  const hit = hitAt(e.clientX, e.clientY);
+  select(hit ? targetOf(hit) : null);
+  if (hit) showInfo(true);
+  if (double && hit) glideTo(hit.point);
+});
+
+// src/camera/pivot.ts
+function beginRotation() {
+  const r = renderer.domElement.getBoundingClientRect();
+  const hit = pickPointAt(r.left + r.width / 2, r.top + r.height / 2);
+  if (!hit) return;
+  const pivot = pivotTarget(
+    camera.position.toArray(),
+    camera.quaternion.toArray(),
+    controls.target.toArray(),
+    hit.distanceTo(camera.position),
+    controls.minDistance
+  );
+  if (!pivot) return;
+  controls.target.fromArray(pivot);
+  requestRender();
+}
+var press = null;
+window.addEventListener("pointerdown", (e) => {
+  press = e.button === 0 && e.target === renderer.domElement ? { x: e.clientX, y: e.clientY, armed: false } : null;
+}, { capture: true });
+controls.addEventListener("start", () => {
+  if (press) press.armed = true;
+});
+window.addEventListener("pointermove", (e) => {
+  if (!press?.armed) return;
+  if (Math.hypot(e.clientX - press.x, e.clientY - press.y) <= POINTER_SLOP_PX) return;
+  press.armed = false;
+  beginRotation();
+}, { capture: true });
+for (const ending of ["pointerup", "pointercancel"]) {
+  window.addEventListener(ending, () => {
+    press = null;
+  }, { capture: true });
+}
+
+// src/camera/view.ts
+import * as THREE6 from "three";
+var ZOOM_MIN = 0.05;
+var ZOOM_MAX = 40;
+var ORTHO_FAR_EXTENTS = 40;
+var ORTHO_VIEW_DISTANCE = 8;
+var CLIP_CHANGE_TOLERANCE = 1e-6;
+var isPersp = () => camera === perspCamera;
+var currentZoom = () => isPersp() ? baseDistance(extent) / distance() : camera.zoom;
+var shownZoom = () => isPersp() ? baseDistance(extent) / centreDistance(camera.position.toArray()) : camera.zoom;
+var fitFor = (width, height) => isPersp() ? fitZoomPersp(extent, lens, width, height) : fitZoom(width, height);
+function setZoom(requested) {
+  const zoomLevel2 = THREE6.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
+  if (isPersp()) {
+    const towardsCamera = camera.position.clone().sub(controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(towardsCamera, baseDistance(extent) / zoomLevel2);
+  } else {
+    camera.zoom = zoomLevel2;
+    camera.updateProjectionMatrix();
+  }
+  requestRender();
+}
+function syncClip() {
+  if (!isPersp()) return;
+  const depth = depthOfCentre(camera.position.toArray(), camera.quaternion.toArray());
+  const { near, far } = clipPlanesAround(depth, extent);
+  if (Math.abs(camera.near - near) > CLIP_CHANGE_TOLERANCE || Math.abs(camera.far - far) > CLIP_CHANGE_TOLERANCE) {
+    Object.assign(camera, { near, far });
+    camera.updateProjectionMatrix();
+  }
+}
+function viewFrom(dir, up) {
+  cancelGlide();
+  controls.target.set(0, 0, 0);
+  const target = controls.target;
+  const sizeAway = isPersp() ? baseDistance(extent) : extent * ORTHO_VIEW_DISTANCE;
+  camera.position.copy(target).addScaledVector(dir.clone().normalize(), sizeAway);
+  camera.up.copy(up).normalize();
+  camera.lookAt(target);
+  requestRender();
+}
+var SCREEN_AXES = {
+  x: new THREE6.Vector3(1, 0, 0),
+  y: new THREE6.Vector3(0, 1, 0),
+  z: new THREE6.Vector3(0, 0, 1)
+};
+function isScreenAxis(name) {
+  return name !== void 0 && Object.hasOwn(SCREEN_AXES, name);
+}
+function rotate(axis, degrees) {
+  const world = SCREEN_AXES[axis].clone().applyQuaternion(camera.quaternion);
+  const turn2 = new THREE6.Quaternion().setFromAxisAngle(world, THREE6.MathUtils.degToRad(degrees));
+  const offset = camera.position.clone().sub(controls.target).applyQuaternion(turn2);
+  camera.position.copy(controls.target).add(offset);
+  camera.up.applyQuaternion(turn2);
+  camera.lookAt(controls.target);
+  requestRender();
+}
+function pan(dx, dy, fraction) {
+  const distanceAway = visibleHeightAtTarget(camera) * fraction;
+  const shift = new THREE6.Vector3(-dx, -dy, 0).multiplyScalar(distanceAway).applyQuaternion(camera.quaternion);
+  camera.position.add(shift);
+  controls.target.add(shift);
+  requestRender();
+}
+function flyForward(fraction) {
+  const shift = new THREE6.Vector3(...flyShift(camera.quaternion.toArray(), visibleHeightAtTarget(camera) * fraction));
+  camera.position.add(shift);
+  controls.target.add(shift);
+  requestRender();
+}
+function setShownZoom(requested) {
+  const wanted = THREE6.MathUtils.clamp(requested, ZOOM_MIN, ZOOM_MAX);
+  if (!isPersp()) {
+    setZoom(wanted);
+    return;
+  }
+  const next = dollyPosition(
+    camera.position.toArray(),
+    controls.target.toArray(),
+    baseDistance(extent) / wanted,
+    controls.minDistance,
+    controls.maxDistance
+  );
+  if (next) camera.position.fromArray(next);
+  requestRender();
+}
+var zoom = (factor) => setShownZoom(shownZoom() * factor);
+function fit() {
+  cancelGlide();
+  const offset = camera.position.clone().sub(controls.target);
+  controls.target.set(0, 0, 0);
+  camera.position.copy(offset);
+  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
+  setZoom(fitValue);
+}
+function distance() {
+  return camera.position.distanceTo(controls.target) || baseDistance(extent);
+}
+function visibleHeightAtTarget(view) {
+  if (view instanceof THREE6.PerspectiveCamera) {
+    const halfAngle = THREE6.MathUtils.degToRad(view.fov) / 2;
+    return 2 * distance() * Math.tan(halfAngle);
+  }
+  return (view.top - view.bottom) / view.zoom;
+}
+
+// src/camera/fly.ts
+function fly(now) {
+  if (!flying.size) {
+    flyLast = 0;
+    return;
+  }
+  const seconds = flyLast ? Math.min((now - flyLast) / MS_PER_SECOND, MAX_STEP_SECONDS) : FIRST_STEP_SECONDS;
+  flyLast = now;
+  for (const code of flying) {
+    const move = moveFor(code);
+    if (move[0] === "fly") advance(move[1], seconds);
+    else pan(move[1], move[2], RATE.pan * seconds);
+  }
+}
+function advance(direction, seconds) {
+  if (isPersp()) flyForward(direction * FLY_RATE * seconds);
+  else zoom(RATE.zoom ** (direction * seconds));
+}
+var FLY = {
+  KeyW: ["fly", 1],
+  KeyS: ["fly", -1],
+  KeyA: ["pan", 1, 0],
+  KeyD: ["pan", -1, 0],
+  KeyE: ["pan", 0, -1],
+  KeyQ: ["pan", 0, 1]
+};
+var FLY_SHIFT = { KeyW: ["pan", 0, -1], KeyS: ["pan", 0, 1] };
+function moveFor(code) {
+  return shiftHeld && FLY_SHIFT[code] || FLY[code];
+}
+var flying = /* @__PURE__ */ new Set();
+var flyLast = 0;
+var shiftHeld = false;
+function setShiftHeld(held) {
+  shiftHeld = held;
+}
+var MS_PER_SECOND = 1e3;
+var MAX_STEP_SECONDS = 0.05;
+var FIRST_STEP_SECONDS = 1 / 60;
+var FLY_RATE = RATE.pan;
+window.addEventListener("keyup", (e) => {
+  flying.delete(e.code);
+  shiftHeld = e.shiftKey;
+});
+window.addEventListener("blur", () => {
+  flying.clear();
+  shiftHeld = false;
+});
+
+// src/render/triad.ts
+var FONT_LOAD_PX = 16;
+var AXIS_FONT_STYLE = "italic 700";
+var AXIS_LETTERS = "abc";
+var FULL_TURN = 2 * Math.PI;
+var triadCanvas = document.getElementById("triad");
+var triadContext = triadCanvas.getContext("2d");
+document.head.appendChild(Object.assign(document.createElement("style"), { textContent: axisFontFace() }));
+var axisFontReady = false;
+document.fonts.load(`${AXIS_FONT_STYLE} ${FONT_LOAD_PX}px "${AXIS_FONT.family}"`).finally(() => {
+  axisFontReady = true;
+  requestRender();
+});
+function drawTriad(canvas = triadCanvas, ctx = triadContext, dpr = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO)) {
+  const width = stage.clientWidth;
+  const height = stage.clientHeight;
+  sizeCanvas(canvas, width, height, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  if (!axisFontReady) return void 0;
+  const triad = triadLayout(latticeInView(), width, height);
+  ctx.lineCap = "round";
+  ctx.lineWidth = triad.lineWidth;
+  for (const item of triad.items) drawAxis(ctx, item, triad.origin, triad.fontSize);
+  drawOrigin(ctx, triad.origin, triad.dotRadius);
+  return triad;
+}
+function latticeInView() {
+  const inverse = camera.quaternion.clone().invert();
+  return lattice.map((vector) => vector.clone().applyQuaternion(inverse).toArray());
+}
+function drawAxis(ctx, item, origin, fontSize) {
+  const color = LOOK.axisColors[item.index];
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  if (item.head && item.shaftEnd) {
+    drawShaft(ctx, origin, item.shaftEnd);
+    drawHead(ctx, item.head);
+  }
+  ctx.font = `${AXIS_FONT_STYLE} ${fontSize}px ${cssVar("--label")}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(AXIS_LETTERS[item.index], item.label.x, item.label.y);
+}
+function drawShaft(ctx, from, to) {
+  ctx.beginPath();
+  ctx.moveTo(from[0], from[1]);
+  ctx.lineTo(to[0], to[1]);
+  ctx.stroke();
+}
+function drawHead(ctx, [tip2, left, right]) {
+  ctx.beginPath();
+  ctx.moveTo(tip2[0], tip2[1]);
+  ctx.lineTo(left[0], left[1]);
+  ctx.lineTo(right[0], right[1]);
+  ctx.closePath();
+  ctx.fill();
+}
+function drawOrigin(ctx, [x, y], radius) {
+  ctx.fillStyle = cssVar("--box");
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, FULL_TURN);
+  ctx.fill();
+}
+function sizeCanvas(canvas, width, height, dpr) {
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+}
+
+// src/render/loop.ts
+var FIT_PERCENT = 100;
+var zoomLevel = document.getElementById("zoom-level");
+function resize() {
+  const width = stage.clientWidth;
+  const height = stage.clientHeight;
+  const atFit = Math.abs(shownZoom() - fitValue) < EPS;
+  setFitValue(fitFor(width, height));
+  fitOrthoFrustum(width, height);
+  perspCamera.aspect = width / height;
+  perspCamera.setFocalLength(lens);
+  if (atFit) setShownZoom(fitValue);
+  renderer.setSize(width, height);
+  controls.handleResize();
+  requestRender();
+}
+function fitOrthoFrustum(width, height) {
+  const { halfWidth, halfHeight } = orthoFrame(extent, width, height);
+  Object.assign(orthoCamera, { left: -halfWidth, right: halfWidth, top: halfHeight, bottom: -halfHeight });
+  orthoCamera.updateProjectionMatrix();
+}
+function applyTheme() {
+  boxMaterial.color.set(cssVar("--box").trim());
+  requestRender();
+}
+function frame(now = 0) {
+  requestAnimationFrame(frame);
+  fly(now);
+  controls.update();
+  if (takeDirty()) drawView();
+}
+function drawView() {
+  syncClip();
+  renderer.render(scene, camera);
+  drawTriad();
+  showZoomPercent();
+}
+function showZoomPercent() {
+  const percent = Math.round(shownZoom() / fitValue * FIT_PERCENT);
+  const text = Number.isFinite(percent) ? `${percent}%` : "";
+  if (zoomLevel.textContent !== text) zoomLevel.textContent = text;
+}
+controls.addEventListener("change", requestRender);
+window.addEventListener("resize", resize);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+document.fonts?.ready.then(requestRender);
+applyTheme();
+frame();
+
+// src/ui/theme.ts
+var THEME_KEY = "gemmy.theme";
+var THEME_CHOICES = ["auto", "light", "dark"];
+var AUTO = "auto";
+var THEME_ATTRIBUTE = "data-theme";
+function isThemeChoice(value) {
+  return THEME_CHOICES.some((choice) => choice === value);
+}
+var listeners = [];
+function onThemeChange(listener) {
+  listeners.push(listener);
+}
+function readStoredChoice() {
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    return isThemeChoice(value) ? value : AUTO;
+  } catch {
+    return AUTO;
+  }
+}
+function storeTheme(choice) {
+  try {
+    localStorage.setItem(THEME_KEY, choice);
+  } catch {
+  }
+}
+function applyToPage(choice) {
+  if (choice === AUTO) document.documentElement.removeAttribute(THEME_ATTRIBUTE);
+  else document.documentElement.setAttribute(THEME_ATTRIBUTE, choice);
+}
+var current2 = readStoredChoice();
+applyToPage(current2);
+function currentTheme() {
+  return current2;
+}
+function setTheme(choice) {
+  current2 = choice;
+  storeTheme(choice);
+  applyToPage(choice);
+  for (const listener of listeners) listener(choice);
+}
+function cycleTheme() {
+  const next = (THEME_CHOICES.indexOf(current2) + 1) % THEME_CHOICES.length;
+  setTheme(THEME_CHOICES[next]);
+}
+
+// src/ui/outline-scale.ts
+var OUTLINE_SCALE_KEY = "gemmy.outline-scale";
+var OUTLINE_SCALE_CHOICES = [0.5, 1, 1.75];
+var DEFAULT_SCALE = 1;
+function isOutlineScale(value) {
+  return OUTLINE_SCALE_CHOICES.some((choice) => choice === value);
+}
+function readStoredScale() {
+  try {
+    const value = Number(localStorage.getItem(OUTLINE_SCALE_KEY));
+    return isOutlineScale(value) ? value : DEFAULT_SCALE;
+  } catch {
+    return DEFAULT_SCALE;
+  }
+}
+function storeScale(scale) {
+  try {
+    localStorage.setItem(OUTLINE_SCALE_KEY, String(scale));
+  } catch {
+  }
+}
+var listeners2 = [];
+function onOutlineScaleChange(listener) {
+  listeners2.push(listener);
+}
+var current3 = readStoredScale();
+setOutlineScale(current3);
+function outlineScale() {
+  return current3;
+}
+function chooseOutlineScale(scale) {
+  current3 = scale;
+  storeScale(scale);
+  setOutlineScale(scale);
+  for (const listener of listeners2) listener(scale);
+}
+
+// src/ui/menus.ts
+var PNG_SCALE = 2;
+var KB = 1024;
+var DOWNLOAD_REVOKE_MS = 1e4;
+var DEFAULT_SCENE_FILE = "scene.json";
+function projectionName() {
+  return isPersp() ? "persp" : "ortho";
+}
+var currentView = () => exportView({
+  quaternion: camera.quaternion.toArray(),
+  zoom: currentZoom(),
+  target: controls.target.toArray(),
+  centre,
+  box: show.box,
+  width: stage.clientWidth,
+  height: stage.clientHeight,
+  projection: projectionName(),
+  lens
+});
+var exportStatus = byId("export-status");
+function say(text, failed = false) {
+  exportStatus.textContent = text;
+  exportStatus.classList.toggle("err", failed);
+}
+function download(name, blob) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), DOWNLOAD_REVOKE_MS);
+}
+function saveFile(name, type, text) {
+  download(name, new Blob([text], { type }));
+  say(`Saved ${name}.`);
+}
+var exportText = byId("export-text");
+function showSelectedText(text, what) {
+  exportText.value = text;
+  exportText.hidden = false;
+  exportText.focus();
+  exportText.select();
+  say(`Could not use the clipboard: ${what} is selected, press Ctrl/Cmd+C.`, true);
+}
+function copyText(text, what) {
+  const fallback = () => showSelectedText(text, what);
+  try {
+    navigator.clipboard.writeText(text).then(() => {
+      exportText.hidden = true;
+      say(`Copied ${what}.`);
+    }, fallback);
+  } catch {
+    fallback();
+  }
+}
+function exportPng(transparent) {
+  const w = stage.clientWidth, h = stage.clientHeight, ratio = renderer.getPixelRatio();
+  renderer.setPixelRatio(PNG_SCALE);
+  renderer.setSize(w, h);
+  renderer.render(scene, camera);
+  const out = document.createElement("canvas");
+  out.width = w * PNG_SCALE;
+  out.height = h * PNG_SCALE;
+  const ctx = out.getContext("2d");
+  if (!transparent) {
+    ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+    ctx.fillRect(0, 0, out.width, out.height);
+  }
+  ctx.drawImage(renderer.domElement, 0, 0);
+  ctx.drawImage(triadAt(PNG_SCALE), 0, 0);
+  renderer.setPixelRatio(ratio);
+  renderer.setSize(w, h);
+  requestRender();
+  out.toBlob((blob) => {
+    if (blob) {
+      download("view.png", blob);
+      say(`Saved view.png (${out.width} \xD7 ${out.height}).`);
+    } else {
+      say("The browser could not make the PNG.", true);
+    }
+  }, "image/png");
+}
+function triadAt(scale) {
+  const canvas = document.createElement("canvas");
+  drawTriad(canvas, canvas.getContext("2d"), scale);
+  return canvas;
+}
+function exportSvg() {
+  const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
+  const text = buildSvg({
+    data,
+    centre,
+    extent,
+    quaternion: camera.quaternion.toArray(),
+    zoom: currentZoom(),
+    target: controls.target.toArray(),
+    projection: projectionName(),
+    lens,
+    width: stage.clientWidth,
+    height: stage.clientHeight,
+    show,
+    outlines,
+    lattice: lattice.map((v) => v.toArray()),
+    boxColor
+  });
+  download("view.svg", new Blob([text], { type: "image/svg+xml" }));
+  say(`Saved view.svg (${Math.round(text.length / KB)} kB).`);
+}
+var EXPORTS = {
+  svg: exportSvg,
+  png: () => exportPng(byId("png-transparent").checked),
+  "save-toml": () => saveFile("render-settings.toml", "application/toml", settingsToml(currentView())),
+  "save-json": () => saveFile("render-settings.json", "application/json", settingsJson(currentView())),
+  "copy-toml": () => copyText(settingsToml(currentView()), "the TOML settings"),
+  "copy-json": () => copyText(settingsJson(currentView()), "the JSON settings"),
+  "copy-command": () => copyText(renderCommand(currentView(), sceneFileName()), "the command")
+};
+function sceneFileName() {
+  const meta = document.querySelector('meta[name="gemmy-scene-file"]');
+  return meta?.content || DEFAULT_SCENE_FILE;
+}
+var POPOVER_GAP_PX = 6;
+var POPOVER_MARGIN_PX = 8;
+var POPOVER_CLEARANCE_PX = 14;
+function placePopover(button, panel) {
+  const r = button.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+  const below = r.top + r.height / 2 < H / 2;
+  panel.style.maxHeight = `${(below ? H - r.bottom : r.top) - POPOVER_CLEARANCE_PX}px`;
+  const w = panel.offsetWidth, h = panel.offsetHeight;
+  const left = r.left + r.width / 2 < W / 2 ? r.left : r.right - w;
+  panel.style.left = `${clamp(left, POPOVER_MARGIN_PX, W - w - POPOVER_MARGIN_PX)}px`;
+  panel.style.top = `${below ? r.bottom + POPOVER_GAP_PX : r.top - POPOVER_GAP_PX - h}px`;
+}
+function focusable(panel) {
+  return [...panel.querySelectorAll("button, input")].filter((el2) => !el2.hidden && !el2.closest("[hidden]"));
+}
+function moveFocus(key2, list) {
+  const i = list.indexOf(document.activeElement);
+  if (key2 === "ArrowDown") list[(i + 1) % list.length]?.focus();
+  else if (key2 === "ArrowUp") list[(i + list.length - 1) % list.length]?.focus();
+  else if (key2 === "Home") list[0]?.focus();
+  else if (key2 === "End") list[list.length - 1]?.focus();
+  else return false;
+  return true;
+}
+var popovers = [];
+function popover(button, panel) {
+  const self = {
+    button,
+    panel,
+    place: () => placePopover(button, panel),
+    open() {
+      for (const other of popovers) if (other !== self) other.close();
+      panel.hidden = false;
+      self.place();
+      button.setAttribute("aria-expanded", "true");
+      focusable(panel)[0]?.focus();
+    },
+    close(refocus = false) {
+      if (panel.hidden) return;
+      panel.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      if (refocus) button.focus();
+    },
+    toggle() {
+      if (panel.hidden) self.open();
+      else self.close();
+    }
+  };
+  button.addEventListener("click", self.toggle);
+  panel.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      self.close();
+      return;
+    }
+    if (moveFocus(e.key, focusable(panel))) e.preventDefault();
+  });
+  popovers.push(self);
+  return self;
+}
+var exportMenu = byId("export-menu");
+var exportPopover = popover(byId("export-button"), exportMenu);
+popover(byId("menu-button"), byId("main-menu"));
+var themeSegments = [...document.querySelectorAll("[data-theme-choice]")];
+function showThemeChoice(choice) {
+  for (const segment2 of themeSegments) segment2.setAttribute("aria-pressed", String(segment2.dataset.themeChoice === choice));
+}
+function chooseFromSegment(segment2) {
+  const choice = segment2.dataset.themeChoice;
+  if (isThemeChoice(choice)) setTheme(choice);
+}
+for (const segment2 of themeSegments) segment2.addEventListener("click", () => chooseFromSegment(segment2));
+onThemeChange(showThemeChoice);
+showThemeChoice(currentTheme());
+var outlineSegments = [...document.querySelectorAll("[data-outline-scale]")];
+function showOutlineScale(scale) {
+  for (const segment2 of outlineSegments) segment2.setAttribute("aria-pressed", String(Number(segment2.dataset.outlineScale) === scale));
+}
+for (const segment2 of outlineSegments) {
+  segment2.addEventListener("click", () => chooseOutlineScale(Number(segment2.dataset.outlineScale)));
+}
+onOutlineScaleChange(showOutlineScale);
+showOutlineScale(outlineScale());
+var helpPopover = popover(byId("help-button"), byId("help"));
+exportMenu.addEventListener("click", (e) => {
+  const item = closestOf(e.target, "[data-export]");
+  if (item) EXPORTS[item.dataset.export ?? ""]?.(item);
+});
+window.addEventListener("keydown", (e) => {
+  const open = popovers.find((p) => !p.panel.hidden);
+  if (e.key === "Escape" && open) {
+    open.close(true);
+    e.preventDefault();
+  }
+});
+document.addEventListener("pointerdown", (e) => {
+  for (const p of popovers) {
+    const inside = p.panel.contains(e.target) || p.button.contains(e.target);
+    if (!inside) p.close();
+  }
+});
+window.addEventListener("resize", () => {
+  for (const p of popovers) if (!p.panel.hidden) p.place();
+});
+
+// src/ui/ui.ts
+var DRAG_FEEL = { rotateSpeed: 3, zoomSpeed: 1.2, panSpeed: 0.8, staticMoving: true };
+Object.assign(controls, DRAG_FEEL);
+function viewDirection(azimuthDeg, elevationDeg) {
+  const a = THREE7.MathUtils.degToRad(azimuthDeg), e = THREE7.MathUtils.degToRad(elevationDeg);
+  return new THREE7.Vector3(Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e));
+}
+var VIEWS = {
+  a: () => viewFrom(lattice[0], lattice[2]),
+  b: () => viewFrom(lattice[1], lattice[2]),
+  c: () => viewFrom(lattice[2], lattice[1]),
+  rotated: () => viewFrom(viewDirection(LOOK.azimuth, LOOK.elevation), new THREE7.Vector3(0, 0, 1))
+};
+for (const button of document.querySelectorAll("[data-view]")) {
+  button.addEventListener("click", () => VIEWS[button.dataset.view ?? ""]());
+}
+var ORTHO_LENS = Infinity;
+var ORTHO_TAG = "inf";
+var ORTHO_CAMERA_DISTANCE = 8;
+var FIT_EPSILON = 1e-9;
+var lensGroup = byId("lens-group");
+function isLensOn(button) {
+  const value = button.dataset.lens;
+  return value === ORTHO_TAG ? !isPersp() : isPersp() && Number(value) === lens;
+}
+function syncLensButtons() {
+  for (const button of lensGroup.querySelectorAll("[data-lens]")) {
+    button.setAttribute("aria-pressed", String(isLensOn(button)));
+  }
+}
+function switchProjection(mode, newLens = lens) {
+  if (mode === "persp" === isPersp() && newLens === lens) return;
+  const view = captureView();
+  setLens(newLens);
+  installCamera(mode === "persp" ? perspCamera : orthoCamera, view);
+  syncLensButtons();
+  requestRender();
+}
+function captureView() {
+  const target = controls.target.clone();
+  return {
+    target,
+    direction: camera.position.clone().sub(target).normalize(),
+    orthoZoom: isPersp() ? perspToOrthoZoom(extent, lens, currentZoom()) : camera.zoom,
+    fitted: Math.abs(shownZoom() - fitValue) < FIT_EPSILON
+  };
+}
+function installCamera(next, view) {
+  const persp = next instanceof THREE7.PerspectiveCamera;
+  next.up.copy(camera.up);
+  setCamera(next);
+  camera.add(key, key.target);
+  controls.object = camera;
+  camera.position.copy(view.target).addScaledVector(view.direction, cameraDistance(persp, view.orthoZoom));
+  if (!persp) camera.zoom = view.orthoZoom;
+  camera.lookAt(view.target);
+  resize();
+  if (view.fitted) setZoom(fitFor(stage.clientWidth, stage.clientHeight));
+  setFitValue(fitFor(stage.clientWidth, stage.clientHeight));
+}
+function cameraDistance(persp, orthoZoom) {
+  if (persp) return baseDistance(extent) / orthoToPerspZoom(extent, lens, orthoZoom);
+  return extent * ORTHO_CAMERA_DISTANCE;
+}
+function addLensButton(focalLength) {
+  const ortho = focalLength === ORTHO_LENS;
+  const button = document.createElement("button");
+  Object.assign(button, {
+    type: "button",
+    className: "pill lens",
+    textContent: ortho ? "\u221E" : String(focalLength),
+    title: ortho ? "Orthographic (an infinitely long lens): no perspective, as in the 3to2d renders" : `${focalLength} mm lens on a ${GEMMY.sensorWidth} mm sensor`
+  });
+  button.dataset.lens = ortho ? ORTHO_TAG : String(focalLength);
+  button.setAttribute("aria-label", ortho ? "Orthographic" : `${focalLength} mm`);
+  button.addEventListener("click", () => ortho ? switchProjection("ortho") : switchProjection("persp", focalLength));
+  if (ortho) lensGroup.insertAdjacentHTML("beforeend", '<span class="unit">mm</span>');
+  lensGroup.appendChild(button);
+}
+for (const focalLength of [...GEMMY.lenses, ORTHO_LENS]) addLensButton(focalLength);
+syncLensButtons();
+var MS_PER_SECOND2 = 1e3;
+var MAX_FRAME_SECONDS = 0.05;
+var HOLD_DELAY_MS = 300;
+var CLICK = { held: false };
+function act(button, amount) {
+  const kind = button.dataset.act;
+  const sign = Number(button.dataset.sign);
+  if (kind === "rotate") {
+    const turn2 = amount.held ? RATE.rotate * amount.seconds : STEP.rotate;
+    const axis = button.dataset.axis;
+    if (isScreenAxis(axis)) rotate(axis, sign * turn2);
+  } else if (kind === "pan") {
+    const move = amount.held ? RATE.pan * amount.seconds : STEP.pan;
+    pan(Number(button.dataset.dx), Number(button.dataset.dy), move);
+  } else if (kind === "zoom") {
+    const factor = amount.held ? RATE.zoom ** amount.seconds : STEP.zoom;
+    zoom(factor ** sign);
+  } else if (kind === "fit") {
+    fit();
+  }
+}
+var isRotateButton = (button) => button.dataset.act === "rotate";
+function wirePressButton(button) {
+  let press2 = null;
+  const stop = () => {
+    if (!press2) return;
+    cancelAnimationFrame(press2.frame);
+    window.clearTimeout(press2.timer);
+    press2 = null;
+  };
+  const repeatWhileHeld = () => {
+    if (!press2) return;
+    press2.repeating = true;
+    const tick = (t) => {
+      if (!press2) return;
+      if (press2.last) act(button, { held: true, seconds: Math.min((t - press2.last) / MS_PER_SECOND2, MAX_FRAME_SECONDS) });
+      press2.last = t;
+      press2.frame = requestAnimationFrame(tick);
+    };
+    press2.frame = requestAnimationFrame(tick);
+  };
+  button.addEventListener("pointerdown", (e) => {
+    if (isRotateButton(button)) beginRotation();
+    const touch = e.pointerType === "touch";
+    if (!touch) {
+      e.preventDefault();
+      button.setPointerCapture(e.pointerId);
+      act(button, CLICK);
+    }
+    press2 = { touch, last: 0, repeating: false, timer: 0, frame: 0 };
+    if (button.dataset.act === "fit") return;
+    press2.timer = window.setTimeout(repeatWhileHeld, HOLD_DELAY_MS);
+  });
+  button.addEventListener("pointerup", () => {
+    if (press2?.touch && !press2.repeating) act(button, CLICK);
+    stop();
+  });
+  for (const ev of ["pointercancel", "lostpointercapture"]) button.addEventListener(ev, stop);
+  button.addEventListener("click", (e) => {
+    if (e.detail !== 0) return;
+    if (isRotateButton(button)) beginRotation();
+    act(button, CLICK);
+  });
+}
+for (const button of document.querySelectorAll("[data-act]")) wirePressButton(button);
+var EDGE_SLACK_PX = 2;
+var scrollers = [...document.querySelectorAll(".island, .tabs")];
+function markOverflow(el2) {
+  const { scrollLeft, scrollWidth, clientWidth } = el2;
+  el2.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
+  el2.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
+}
+for (const el2 of scrollers) el2.addEventListener("scroll", () => markOverflow(el2), { passive: true });
+window.addEventListener("resize", () => scrollers.forEach(markOverflow));
+scrollers.forEach(markOverflow);
+document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+var TIP_DELAY_MS = 300;
+var TIP_GAP_PX = 8;
+var tip = Object.assign(document.createElement("div"), { id: "tip", role: "tooltip" });
+document.body.appendChild(tip);
+var tipTimer = 0;
+function hideTip() {
+  window.clearTimeout(tipTimer);
+  tip.classList.remove("on");
+}
+function showTip(el2) {
+  tip.textContent = el2.dataset.tip ?? "";
+  placeTip(el2);
+  tip.classList.add("on");
+}
+function placeTip(el2) {
+  const r = el2.getBoundingClientRect(), t = tip.getBoundingClientRect();
+  const [x, y] = el2.closest("#bottom") ? tipBesideLeftColumn(r, t) : tipCentredVertically(r, t);
+  tip.style.left = `${clamp(x, TIP_GAP_PX, innerWidth - t.width - TIP_GAP_PX)}px`;
+  tip.style.top = `${clamp(y, TIP_GAP_PX, innerHeight - t.height - TIP_GAP_PX)}px`;
+}
+function tipBesideLeftColumn(r, t) {
+  return [r.right + TIP_GAP_PX, r.top + r.height / 2 - t.height / 2];
+}
+function tipCentredVertically(r, t) {
+  const x = r.left + r.width / 2 - t.width / 2;
+  const y = r.top < innerHeight / 2 ? r.bottom + TIP_GAP_PX : r.top - TIP_GAP_PX - t.height;
+  return [x, y];
+}
+document.addEventListener("pointerover", (e) => {
+  const el2 = closestOf(e.target, "[title], [data-tip]");
+  if (!el2 || e.pointerType === "touch") return;
+  if (el2.hasAttribute("title")) {
+    el2.dataset.tip = el2.title;
+    el2.removeAttribute("title");
+  }
+  window.clearTimeout(tipTimer);
+  tipTimer = window.setTimeout(() => showTip(el2), TIP_DELAY_MS);
+});
+document.addEventListener("pointerout", (e) => {
+  if (closestOf(e.target, "[data-tip]")) hideTip();
+});
+for (const ev of ["pointerdown", "keydown", "wheel"]) document.addEventListener(ev, hideTip, { passive: true });
+function arrow(dx, dy, shift) {
+  if (shift) pan(dx, dy, STEP.pan);
+  else if (dy) rotate("x", dy * STEP.rotate);
+  else rotate("y", -dx * STEP.rotate);
+}
+var KEY_ACTIONS = {
+  ArrowUp: (shift) => arrow(0, 1, shift),
+  ArrowDown: (shift) => arrow(0, -1, shift),
+  ArrowLeft: (shift) => arrow(-1, 0, shift),
+  ArrowRight: (shift) => arrow(1, 0, shift),
+  "+": () => zoom(STEP.zoom),
+  "=": () => zoom(STEP.zoom),
+  "-": () => zoom(1 / STEP.zoom),
+  "_": () => zoom(1 / STEP.zoom),
+  "0": () => fit(),
+  "[": () => rotate("z", -STEP.rotate),
+  "]": () => rotate("z", STEP.rotate),
+  t: cycleTheme
+  // Auto → Light → Dark
+};
+function isTurnKey(e) {
+  return e.key.startsWith("Arrow") && !e.shiftKey || e.key === "[" || e.key === "]";
+}
+function isTyping(e) {
+  return closestOf(e.target, "input, textarea, .popover") !== null || e.metaKey || e.ctrlKey || e.altKey;
+}
+function runShortcut(e) {
+  if (e.key === "?") {
+    helpPopover.toggle();
+    return true;
+  }
+  if (e.key === "i" && !e.shiftKey) {
+    toggleInfo();
+    return true;
+  }
+  if (FLY[e.code]) {
+    flying.add(e.code);
+    return true;
+  }
+  if (!Object.hasOwn(KEY_ACTIONS, e.key)) return false;
+  KEY_ACTIONS[e.key](e.shiftKey);
+  return true;
+}
+window.addEventListener("keydown", (e) => {
+  setShiftHeld(e.shiftKey);
+  if (isTyping(e)) return;
+  if (isTurnKey(e) && !e.repeat) beginRotation();
+  if (runShortcut(e)) e.preventDefault();
+});
+function wireShowToggle(id, apply) {
+  const button = byId(id);
+  button.addEventListener("click", () => {
+    const on = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(on));
+    apply(on);
+    requestRender();
+  });
+}
+wireShowToggle("toggle-atoms", (on) => {
+  show.atoms = on;
+  atomGroup.visible = on;
+});
+wireShowToggle("toggle-outline", (on) => {
+  setOutlines(on);
+  outlineGroup.visible = on;
+});
+wireShowToggle("toggle-box", (on) => {
+  show.box = on;
+  if (box) box.visible = on;
+});
+
+// src/scene/load.ts
+import * as THREE8 from "three";
+
+// src/render/instancing.ts
+var HEAD_MIN_RADII = 3;
+var HEAD_MAX_SHARE = 0.8;
+var SHAFT_MIN_SHARE = 0.2;
+var HEAD_CENTRE_SHARE = 0.5;
+var LINE_RADIUS_SHARE = 0.7;
+var HARD_EDGE_ANGLE_DEG = 1;
+function instanceGroups(data2) {
+  const pos = pointPositions(data2);
+  const groups = /* @__PURE__ */ new Map();
+  const { atoms, bonds = [], displacements = [] } = data2.primitives;
+  for (const atom of atoms) {
+    addInstance(groups, "sphere", atom.material_id, true, sphereMatrix(pos.get(atom.point_id), atom.radius), atom);
+  }
+  for (const bond of bonds) addBond(groups, bond, pos);
+  for (const d of displacements) addDisplacement(groups, d, pos);
+  return [...groups.values()];
+}
+function polyhedronGroups(data2) {
+  const pos = pointPositions(data2);
+  const topologies = new Map(data2.topologies.map((t) => [t.id, t]));
+  const groups = /* @__PURE__ */ new Map();
+  data2.primitives.polyhedra.forEach((poly, index) => {
+    const topo = topologies.get(poly.topology_id);
+    const v = topo.point_ids.map((id) => pos.get(id));
+    const group = polyhedronGroupFor(groups, poly.material_id);
+    const first = group.owner.length;
+    const faces = outwardFaces(v, topo.faces);
+    addFaces(group, faces, v, index);
+    addHardEdges(group, faces, v);
+    group.ranges.push([index, first, faces.length]);
+  });
+  return [...groups.values()];
+}
+function addBond(groups, bond, pos) {
+  const a = pos.get(bond.a_point_id);
+  const b = pos.get(bond.b_point_id);
+  const style = bond.style ?? "solid";
+  if (style === "dashed") addDashes(groups, a, b, bond.radius, bond.material_id);
+  else if (style === "dotted") addDots(groups, a, b, bond.radius, bond.material_id);
+  else addCylinder(groups, a, b, bond.radius, bond.material_id, true);
+}
+function addDashes(groups, a, b, radius, material) {
+  const dash = Math.max(DASH.length * radius, DASH.min);
+  const gap = dash * DASH.gap / DASH.length;
+  for (const [start, end] of dashSegments(a, b, dash, gap)) addCylinder(groups, start, end, radius, material, false);
+}
+function addDots(groups, a, b, radius, material) {
+  const spacing = Math.max(DOT.spacing * radius, DOT.spacingMin);
+  for (const centre2 of dotCentres(a, b, spacing)) {
+    addInstance(groups, "dot", material, false, sphereMatrix(centre2, DOT.radius * radius));
+  }
+}
+function addDisplacement(groups, d, pos) {
+  const start = pos.get(d.start_point_id);
+  const vector = d.vector;
+  const atomIsTip = d.anchor === "tip";
+  const tail = atomIsTip ? vsub(start, vector) : start;
+  const tip2 = atomIsTip ? start : start.map((x, i) => x + vector[i]);
+  const drawnAsArrow = (d.mode ?? "arrow").toLowerCase() === "arrow";
+  const radius = ARROW.radius;
+  if (drawnAsArrow) addArrow(groups, tail, tip2, radius);
+  else addCylinder(groups, tail, tip2, radius * LINE_RADIUS_SHARE, null, true);
+}
+function addArrow(groups, a, b, radius) {
+  const len = span(a, b);
+  if (len <= EPS) return;
+  const dir = vunit(vsub(b, a));
+  const headLen = Math.min(Math.max(len * ARROW.headLengthRatio, radius * HEAD_MIN_RADII), len * HEAD_MAX_SHARE);
+  const shaftLen = Math.max(len - headLen, len * SHAFT_MIN_SHARE);
+  const shaftEnd = a.map((x, i) => x + dir[i] * shaftLen);
+  addCylinder(groups, a, shaftEnd, radius, null, true);
+  const headCentre = shaftEnd.map((x, i) => x + dir[i] * headLen * HEAD_CENTRE_SHARE);
+  addInstance(groups, "cone", null, true, alongMatrix(headCentre, dir, radius * ARROW.headRadiusRatio, headLen));
+}
+function addCylinder(groups, a, b, radius, material, outlined) {
+  const len = span(a, b);
+  if (len <= EPS) return;
+  const dir = vunit(vsub(b, a));
+  const midpoint = lerp(a, b, 0.5);
+  addInstance(groups, "cylinder", material, outlined, alongMatrix(midpoint, dir, radius, len));
+}
+function addInstance(groups, shape, material, outlined, matrix, ref = null) {
+  const key2 = `${shape}|${material}|${outlined}`;
+  let group = groups.get(key2);
+  if (!group) {
+    group = { shape, material, outlined, matrices: [], refs: [] };
+    groups.set(key2, group);
+  }
+  group.matrices.push(...matrix);
+  group.refs.push(ref);
+}
+function polyhedronGroupFor(groups, material) {
+  let group = groups.get(material);
+  if (!group) {
+    group = { material, positions: [], edges: [], owner: [], ranges: [] };
+    groups.set(material, group);
+  }
+  return group;
+}
+function outwardFaces(v, triangles) {
+  const mid = centroid(v);
+  return triangles.map(([i, j, k]) => {
+    const n = vunit(vcross(vsub(v[j], v[i]), vsub(v[k], v[i])));
+    const faceCentre = centroid([v[i], v[j], v[k]]);
+    const outward = vdot(n, vsub(faceCentre, mid)) >= 0;
+    return outward ? { idx: [i, j, k], n } : { idx: [i, k, j], n: n.map((x) => -x) };
+  });
+}
+function centroid(v) {
+  return v.reduce((sum, p) => sum.map((c, i) => c + p[i] / v.length), [0, 0, 0]);
+}
+function addFaces(group, faces, v, index) {
+  for (const f of faces) {
+    group.positions.push(...v[f.idx[0]], ...v[f.idx[1]], ...v[f.idx[2]]);
+    group.owner.push(index);
+  }
+}
+function addHardEdges(group, faces, v) {
+  const sides = /* @__PURE__ */ new Map();
+  for (const f of faces) {
+    for (let e = 0; e < 3; e++) {
+      const i = f.idx[e];
+      const j = f.idx[(e + 1) % 3];
+      const key2 = i < j ? `${i}-${j}` : `${j}-${i}`;
+      if (!sides.has(key2)) sides.set(key2, { i, j, faces: [] });
+      sides.get(key2).faces.push(f);
+    }
+  }
+  const sharpAngle = Math.cos(HARD_EDGE_ANGLE_DEG * Math.PI / 180);
+  for (const side of sides.values()) {
+    const boundary = side.faces.length === 1;
+    const sharp = !boundary && vdot(side.faces[0].n, side.faces[1].n) < sharpAngle;
+    if (boundary || sharp) group.edges.push(...v[side.i], ...v[side.j]);
+  }
+}
+function pointPositions(data2) {
+  return new Map(data2.points.map((p) => [p.id, p.position]));
+}
+function sphereMatrix(c, r) {
+  return [r, 0, 0, 0, 0, r, 0, 0, 0, 0, r, 0, c[0], c[1], c[2], 1];
+}
+function alongMatrix(centre2, d, radius, length) {
+  const { x, z } = rotationFromY(d);
+  return [
+    x[0] * radius,
+    x[1] * radius,
+    x[2] * radius,
+    0,
+    d[0] * length,
+    d[1] * length,
+    d[2] * length,
+    0,
+    z[0] * radius,
+    z[1] * radius,
+    z[2] * radius,
+    0,
+    centre2[0],
+    centre2[1],
+    centre2[2],
+    1
+  ];
+}
+function rotationFromY(d) {
+  const axisX = d[2];
+  const axisZ = -d[0];
+  const cosAngle = d[1];
+  if (cosAngle <= -1 + EPS) return { x: [1, 0, 0], z: [0, 0, -1] };
+  const k = 1 / (1 + cosAngle);
+  return {
+    x: [1 - k * axisZ * axisZ, -d[0], k * axisX * axisZ],
+    z: [k * axisX * axisZ, -d[2], 1 - k * axisX * axisX]
+  };
+}
+
+// src/scene/load.ts
+function load(doc, bounds) {
+  disposeScene();
+  select(null);
+  setData(doc);
+  setPoints(new Map(doc.points.map((p) => [p.id, p])));
+  setPolyhedra(doc.primitives.polyhedra);
+  frame2(bounds, doc.cell);
+  addAtomsBondsAndArrows();
+  addPolyhedra();
+  addCellBox(doc.cell);
+  resize();
+}
+function frame2(bounds, cell) {
+  setCentre(bounds.centre);
+  setExtent(bounds.extent);
+  if (cell) setLattice(cell.vectors.map((vec) => new THREE8.Vector3(...vec).normalize()));
+  root.position.set(-centre[0], -centre[1], -centre[2]);
+  orthoCamera.far = extent * ORTHO_FAR_EXTENTS;
+  controls.minDistance = baseDistance(extent) / ZOOM_MAX;
+  controls.maxDistance = baseDistance(extent) / ZOOM_MIN;
+}
+function addAtomsBondsAndArrows() {
+  setAtomGroup(new THREE8.Group());
+  const bondGroup = new THREE8.Group();
+  setOutlineGroup(new THREE8.Group());
+  outlineGroup.visible = outlines;
+  const shapes = /* @__PURE__ */ new Map();
+  for (const g of instanceGroups(data)) {
+    const shapeName = g.shape;
+    let shape = shapes.get(shapeName);
+    if (!shape) {
+      shape = SHAPES[shapeName]();
+      shapes.set(shapeName, shape);
+    }
+    const mesh = instanced(shape, toon(g.material), g.matrices);
+    const isAtom = g.shape === "sphere";
+    (isAtom ? atomGroup : bondGroup).add(mesh);
+    if (isAtom) mesh.userData = { atoms: g.refs };
+    if (g.outlined) outlineGroup.add(outlineOf(mesh));
+  }
+  atomGroup.visible = show.atoms;
+  root.add(atomGroup, bondGroup, outlineGroup);
+}
+function addPolyhedra() {
+  setPolyGroup(new THREE8.Group());
+  setPolyTargets(new Array(polyhedra.length));
+  for (const g of polyhedronGroups(data)) {
+    const ghost = (data.materials[g.material].alpha ?? 1) < 1;
+    const geometry = new THREE8.BufferGeometry();
+    geometry.setAttribute("position", new THREE8.Float32BufferAttribute(g.positions, 3));
+    geometry.computeVertexNormals();
+    const mesh = new THREE8.Mesh(geometry, toon(g.material, { faces: true, ghost }));
+    mesh.userData = { owner: g.owner };
+    if (ghost) mesh.renderOrder = 1;
+    for (const [index, first, count] of g.ranges) {
+      polyTargets[index] = { kind: "polyhedron", poly: polyhedra[index], ghost, mesh, first, count };
+    }
+    const edgeGeometry = new THREE8.BufferGeometry();
+    edgeGeometry.setAttribute("position", new THREE8.Float32BufferAttribute(g.edges, 3));
+    polyGroup.add(mesh, new THREE8.LineSegments(edgeGeometry, edgeMaterial));
+    if (!ghost) outlineGroup.add(outlineOf(mesh));
+  }
+  root.add(polyGroup);
+}
+function addCellBox(cell) {
+  setBox(null);
+  if (!cell) return;
+  const positions = [];
+  const corners = Array.from({ length: 8 }, (_, n) => cellCorner(cell, n));
+  for (let n = 0; n < 8; n++) {
+    for (let axis = 0; axis < 3; axis++) {
+      const bit = 1 << axis;
+      if (n & bit) continue;
+      positions.push(...corners[n], ...corners[n | bit]);
+    }
+  }
+  const boxGeometry = new THREE8.BufferGeometry();
+  boxGeometry.setAttribute("position", new THREE8.Float32BufferAttribute(positions, 3));
+  const cellBox = new THREE8.LineSegments(boxGeometry, boxMaterial);
+  setBox(cellBox);
+  cellBox.visible = show.box;
+  root.add(cellBox);
+}
+function cellCorner(cell, n) {
+  const [a, b, c] = cell.vectors;
+  return [0, 1, 2].map(
+    (d) => cell.origin[d] + (n & 1) * a[d] + (n >> 1 & 1) * b[d] + (n >> 2 & 1) * c[d]
+  );
+}
+
+// src/main.ts
+function openScene(doc) {
+  load(doc, sceneBounds(doc));
+  VIEWS.rotated();
+  const middle = [...polyTargets].sort((p, q) => dist(points.get(p.poly.center_point_id).position, centre) - dist(points.get(q.poly.center_point_id).position, centre))[0];
+  select(middle ?? null);
+  showInfo(infoChoice ?? (Boolean(middle) && !narrowScreen.matches));
+}
+var embedded = document.getElementById("scene-data").textContent.trim();
+if (embedded) {
+  openScene(JSON.parse(embedded));
+} else {
+  describe(null);
+  resize();
+  const banner = document.getElementById("banner");
+  const errorLine = banner.querySelector(".err"), toast = document.getElementById("toast");
+  let seen = null, opened = false, renderedAt, toastTimer;
+  const showToast = (text, stay) => {
+    clearTimeout(toastTimer);
+    toast.textContent = text;
+    toast.hidden = false;
+    toast.classList.remove("fade");
+    if (!stay) toastTimer = setTimeout(() => {
+      toast.classList.add("fade");
+      toastTimer = setTimeout(() => {
+        toast.hidden = true;
+      }, 400);
+    }, 3e3);
+  };
+  const renderViewItem = exportMenu.querySelector('[data-export="render-view"]');
+  EXPORTS["render-view"] = async () => {
+    exportPopover.close(true);
+    try {
+      const response = await fetch("render-view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: settingsJson(currentView())
+      });
+      const reply = await response.json();
+      if (response.ok) showToast("Render queued with this view");
+      else showToast(`Could not use this view: ${reply.error}`, true);
+    } catch (error) {
+      showToast(`Could not use this view: ${error}`, true);
+    }
+  };
+  const showStatus = (s) => {
+    const r = s.render;
+    renderViewItem.hidden = !r?.enabled;
+    errorLine.textContent = [s.error, r?.error ? `Blender error: ${r.error}` : ""].filter(Boolean).join("\n\n");
+    errorLine.hidden = !errorLine.textContent;
+    banner.hidden = errorLine.hidden;
+    if (r?.state === "rendering") showToast(`Rendering ${r.output}\u2026`, true);
+    else if (r?.time && r.time !== renderedAt && renderedAt !== void 0) showToast(`${r.output} updated`);
+    else if (toast.textContent.startsWith("Rendering")) toast.hidden = true;
+    renderedAt = r?.time ?? null;
+  };
+  const refresh = async () => {
+    try {
+      const response = await fetch("scene.json", { cache: "no-store" });
+      if (!response.ok) return;
+      const doc = await response.json();
+      if (opened) {
+        load(doc, sceneBounds(doc));
+        requestRender();
+      } else {
+        openScene(doc);
+        opened = true;
+      }
+    } catch (error) {
+      errorLine.textContent = String(error);
+      errorLine.hidden = banner.hidden = false;
+    }
+  };
+  const events = new EventSource("events");
+  events.addEventListener("status", (e) => {
+    const s = JSON.parse(e.data);
+    showStatus(s);
+    if (s.version && s.version !== seen) {
+      seen = s.version;
+      refresh();
+    }
+  });
+}
