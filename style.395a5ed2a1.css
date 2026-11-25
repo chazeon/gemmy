@@ -1935,6 +1935,9 @@
   :root {
     --bg: #f6f7fa;
     --bar: #ffffff;
+    /* a gallery card: its background (the picture is transparent on it), and the shade it moves to on hover or focus */
+    --thumb: rgb(246 247 250);
+    --thumb-hover: rgb(240 241 245);
     --panel: rgba(255, 255, 255, 0.9);
     --fg: #1b1e2b;
     --muted: #5d6276;
@@ -1968,13 +1971,15 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #12141b; --bar: #1a1d27; --panel: rgba(26, 29, 39, 0.92); --fg: #e8eaf2; --muted: #9da3b8;
+      --bg: #12141b; --bar: #1a1d27; --thumb: #1a1d27; --thumb-hover: #21242e;
+      --panel: rgba(26, 29, 39, 0.92); --fg: #e8eaf2; --muted: #9da3b8;
       --rule: #2d3142; --hover: #252a38; --accent: #7aa7ff; --on-accent: #0f1420; --accent-soft: #26324f;
       --err: #ff8a80; --box: #c4c8d6; --shadow: 0 0 0 1px #2d3142, 0 6px 14px rgba(0, 0, 0, 0.35); color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #12141b; --bar: #1a1d27; --panel: rgba(26, 29, 39, 0.92); --fg: #e8eaf2; --muted: #9da3b8;
+    --bg: #12141b; --bar: #1a1d27; --thumb: #1a1d27; --thumb-hover: #21242e;
+    --panel: rgba(26, 29, 39, 0.92); --fg: #e8eaf2; --muted: #9da3b8;
     --rule: #2d3142; --hover: #252a38; --accent: #7aa7ff; --on-accent: #0f1420; --accent-soft: #26324f;
     --err: #ff8a80; --box: #c4c8d6; --shadow: 0 0 0 1px #2d3142, 0 6px 14px rgba(0, 0, 0, 0.35); color-scheme: dark;
   }
@@ -2063,6 +2068,10 @@
      and spans the whole grid, so it covers the window, with the islands drawn over it. It scrolls. The first screen (the
      window's height) holds the Open card, centred; the gallery starts --peek above the first screen's bottom edge, so its
      top shows there, and the fade (.home-fade) at that edge follows the scroll. ---- */
+  /* The start screen is a layer of its own (z 0) under the bar's islands (z 1): its cards are positioned and masked, so
+     without the layers they would paint over the islands, which are not positioned, as the gallery scrolls under them. */
+  #home { position: relative; z-index: 0; }
+  #menu-island, #tools, #export-area, #corner-buttons { position: relative; z-index: 1; }
   #home {
     --gutter: 24px;
     --peek: 96px;
@@ -2092,32 +2101,59 @@
   }
   @media (min-width: 768px) { .examples { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (min-width: 1024px) { .examples { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  /* a card: the picture fills it (3:2, so a row's cards are equal); the title sits on a frosted label sized to its text, and
-     the description on a label above it, shown on hover or focus (always on a touch screen) */
+  /* a card: the picture fills it (3:2, so a row's cards are equal). The picture is transparent, so the card's own
+     background (--thumb, per theme) shows through. The title sits at the bottom left in a soft halo of that background,
+     and never moves: on hover or focus a cover in --thumb-hover comes up under it, the halo goes, and the description and
+     the open icon (Lucide's square-arrow-up-right-exit, its arrow sliding out) show beside it. A touch screen shows the
+     title alone. */
   .example {
     position: relative; display: block; width: 100%; aspect-ratio: 3 / 2; padding: 0; overflow: hidden; font: inherit;
-    text-align: left; color: var(--fg); background: var(--rule); border: 1px solid var(--rule);
-    border-radius: var(--card-radius); cursor: pointer;
+    text-align: left; color: var(--fg); background: var(--thumb); border: 1px solid var(--rule);
+    border-radius: var(--card-radius); cursor: pointer; transition: border-color 160ms ease-out;
   }
-  .example:hover, .example:focus-visible { border-color: var(--accent); outline: none; }
+  .example:hover, .example:focus-visible { border-color: var(--muted); outline: none; }
   .example .thumb { position: absolute; inset: 0; display: block; }
-  .example .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* the structure fades out towards the card's edges, the box's own edges soft, so it sits in the card rather than being cut by it */
+  .example .thumb img {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent),
+      linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent),
+      linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+  }
+  .example .cover {
+    position: absolute; inset: 0; background: color-mix(in srgb, var(--thumb-hover) 94%, transparent);
+    opacity: 0; transition: opacity 160ms ease-out;
+  }
   .example .caption {
-    position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; flex-direction: column-reverse;
-    align-items: flex-start; gap: 4px; pointer-events: none;
+    position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; flex-direction: column; gap: 4px;
+    pointer-events: none;
   }
-  .example .label {
-    display: inline-block; max-width: 100%; box-sizing: border-box; padding: 3px 8px; border-radius: var(--radius-small);
-    background: color-mix(in srgb, var(--panel) 70%, transparent);
-    -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;
+  .example .title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .example .title {
+    /* the padding is room for the halo inside the box that clips a long title to "…"; the margin takes it back */
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 24px; margin: -24px;
+    font-size: 17px; font-weight: 600; line-height: 1.3; color: var(--fg); /* the halo is the card's own background, so the theme's text reads on it */
+    text-shadow: 0 0 2px var(--thumb), 0 0 3px var(--thumb), 0 0 5px var(--thumb), 0 0 6px var(--thumb),
+      0 0 10px var(--thumb), 0 0 12px var(--thumb), 0 0 16px var(--thumb), 0 0 20px var(--thumb), 0 0 24px var(--thumb),
+      0 0 24px var(--thumb);
+    transition: color 160ms ease-out, text-shadow 160ms ease-out;
   }
-  .example strong.label { font-weight: 600; font-size: 13px; }
-  .example .description { display: none; color: var(--muted); font-size: 12px; white-space: normal; }
-  .example:hover .description, .example:focus-visible .description { display: inline-block; animation: card-reveal 150ms ease-out; }
-  @keyframes card-reveal { from { opacity: 0; transform: translateY(4px); } }
-  @media (hover: none) { .example .description { display: inline-block; } }
-  @media (prefers-reduced-motion: reduce) { .example .description { animation: none !important; } }
+  .example .description {
+    font-size: 14px; line-height: 1.35; color: var(--muted);
+    opacity: 0; transform: translateY(3px); transition: opacity 160ms ease-out, transform 160ms ease-out;
+  }
+  .example .go { flex: none; color: var(--fg); opacity: 0; overflow: visible; transition: opacity 160ms ease-out; }
+  .example .go path:not(:first-child) { transform: translate(-2px, 2px); transition: transform 180ms ease-out; }
+  .example:is(:hover, :focus-visible) .cover, .example:is(:hover, :focus-visible) .go { opacity: 1; }
+  .example:is(:hover, :focus-visible) .title { color: var(--fg); text-shadow: none; }
+  .example:is(:hover, :focus-visible) .description { opacity: 1; transform: none; }
+  .example:is(:hover, :focus-visible) .go path { transform: none; }
+  @media (hover: none) { .example .description { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .example, .example *, .example .go path { transition: none !important; }
+  }
   /* With no scene (the start screen) the scene's controls go; the Export button hides itself (a utility class, as its
      own display is a utility that would win over this layer), and the theme button stays. */
   body.no-scene #tools, body.no-scene #lens-column, body.no-scene #corner-buttons {
