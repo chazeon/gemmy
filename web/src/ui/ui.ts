@@ -13,6 +13,7 @@ import { helpPopover } from "./menus";
 import { toggleInfo } from "./panels";
 import { select } from "./picking";
 import { closeUrlForm } from "./loader";
+import { watchOverflow } from "./overflow";
 import { cycleTheme } from "./theme";
 import { byId, clamp, closestOf } from "./dom";
 
@@ -211,18 +212,7 @@ for (const button of document.querySelectorAll<HTMLElement>("[data-act]")) wireP
 
 // ---- toolbars that scroll ----
 // A toolbar (or the tab strip) that does not fit scrolls sideways; a faded edge says that more buttons are that way.
-// A scroll position this close to an end counts as the end (sub-pixel rounding).
-const EDGE_SLACK_PX = 2;
-const scrollers = [...document.querySelectorAll<HTMLElement>(".island, .tabs")];
-
-function markOverflow(el: HTMLElement) {
-  const { scrollLeft, scrollWidth, clientWidth } = el;
-  el.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
-  el.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
-}
-for (const el of scrollers) el.addEventListener("scroll", () => markOverflow(el), { passive: true });
-window.addEventListener("resize", () => scrollers.forEach(markOverflow));
-scrollers.forEach(markOverflow);
+for (const el of document.querySelectorAll<HTMLElement>(".island, .tabs")) watchOverflow(el);
 // The current tab is brought into view when the page opens.
 document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
 

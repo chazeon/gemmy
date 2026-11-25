@@ -10,7 +10,7 @@ import { describe, dist } from "./ui/readout";
 import { resize } from "./render/loop";
 import { EXPORTS, currentView, exportMenu, exportPopover } from "./ui/menus";
 import { load } from "./scene/load";
-import { attachOpeners, startLoader, type Shown } from "./ui/loader";
+import { attachOpeners, startLoader, type OwnScene, type Shown } from "./ui/loader";
 import { applyPose, setSceneLink, takePendingPose, watchView } from "./ui/share";
 import type { ViewPose } from "./camera/viewhash";
 import { centre, polyTargets, points, requestRender } from "./state";
@@ -40,18 +40,34 @@ function showLoaded(shown: Shown) {
 }
 const embedded = document.getElementById("scene-data")!.textContent!.trim();
 const mode = document.querySelector<HTMLMetaElement>('meta[name="gemmy-mode"]')?.content;
-// On a live page, a scene dropped or opened replaces the followed one: the page stops following the server until reload.
+// The page's own scene is the first tab once a file is added. Its name and line are read before anything changes them.
+const pageName = (document.querySelector(".name h1") as HTMLElement).textContent!;
+const pageFrom = (document.querySelector(".name .sub") as HTMLElement).textContent!;
+// A live page follows the server while its own scene is the one shown. A local file's tab stops the following, until
+// the page's own tab is chosen again.
 let following = mode === "live";
-function showDropped(shown: Shown) {
-  following = false;
+// Shows a scene from any tab. On a live page, a scene other than the page's own says how to follow the server again.
+function showTab(shown: Shown) {
   showLoaded(shown);
+  if (mode !== "live") return;
+  following = shown.live === true;
   const note = document.getElementById("follow-note") as HTMLElement;
-  note.textContent = `Showing ${shown.name} — reload to follow the server again`;
-  note.hidden = false;
-  (document.getElementById("banner") as HTMLElement).hidden = false;
+  const banner = document.getElementById("banner") as HTMLElement;
+  note.textContent = `Showing ${shown.name} — choose ${pageName} to follow the server again`;
+  note.hidden = following;
+  banner.hidden = note.hidden && banner.querySelector<HTMLElement>(".err")!.hidden;
 }
+// The live page's own scene, fetched again when its tab is chosen (the server may have changed while a file was shown).
+async function fetchLive(): Promise<Scene> {
+  const response = await fetch("scene.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`The server answered ${response.status} for scene.json.`);
+  return response.json();
+}
+let own: OwnScene | null = null;
 if (embedded) {
-  openScene(JSON.parse(embedded) as Scene, takePendingPose());
+  const doc = JSON.parse(embedded) as Scene;
+  openScene(doc, takePendingPose());
+  own = { label: pageName, load: async () => ({ doc, name: pageName, from: pageFrom, link: null }) };
 } else if (mode === "live") {
   // Live mode (gemmy serve): the server pushes a status on every change; a new version means fetch the scene.
   describe(null);
@@ -112,7 +128,8 @@ if (embedded) {
     showStatus(s);
     if (following && s.version && s.version !== seen) { seen = s.version; refresh(); }
   });
+  own = { label: pageName, load: async () => ({ doc: await fetchLive(), name: pageName, from: pageFrom, link: null, live: true }) };
 } else {
-  startLoader(showLoaded);
+  startLoader(showTab);
 }
-attachOpeners((shown) => (mode === "live" ? showDropped(shown) : showLoaded(shown)));
+attachOpeners(showTab, own);
