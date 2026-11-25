@@ -719,10 +719,14 @@ camera.add(key, key.target);
 var controls = new TrackballControls(camera, renderer.domElement);
 var edgeMaterial = new THREE2.LineBasicMaterial({ color: srgbColor(LOOK.outline) });
 var boxMaterial = new THREE2.LineBasicMaterial();
+var MIN_OUTLINE_W = CLIP_NEAR;
+var MIN_OUTLINE_DIRECTION = 1e-6;
 var OUTLINE_VERTEX_SHADER = `
     uniform float outlineThickness;
     uniform float outlineScale; // the user's width (ui/outline-scale.ts): 1 is the automatic width
     #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)} // a float literal: GLSL reads a bare integer as int
+    #define MIN_OUTLINE_W ${MIN_OUTLINE_W.toFixed(3)}
+    #define MIN_OUTLINE_DIRECTION ${MIN_OUTLINE_DIRECTION.toFixed(9)}
 
     // The outline's width, in NDC (the image spans 2 units). The shell is pushed out by this much and then multiplied
     // by w, so the clip-space offset is the same as the constant width was when the cap does not apply.
@@ -735,6 +739,21 @@ var OUTLINE_VERTEX_SHADER = `
     float outlineWidth(float clipW, float radius) {
       float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
       return min(outlineThickness, capWidth);
+    }
+
+    // The shell's clip position for one vertex: the vertex moved on the screen along its outward normal by the outline
+    // width. clipNormal is projectionMatrix * modelViewMatrix applied to the normal as a direction (w = 0). Moving the
+    // point by t along the normal moves its clip position by t * clipNormal, so the screen position moves in the
+    // direction of (clipNormal.xy * w - clipNormal.w * clip.xy), exactly, with no offset point to pick. That direction is
+    // normalised in 2D, so the outline is the full width in every direction. A vertex at or behind the near plane has
+    // no usable screen position, so it stays where it is.
+    vec4 outlinePosition(vec4 clipPos, vec4 clipNormal, float radius) {
+      if (clipPos.w <= MIN_OUTLINE_W) return clipPos;
+      vec2 screenDirection = clipPos.w * clipNormal.xy - clipNormal.w * clipPos.xy;
+      float length2D = length(screenDirection);
+      if (!(length2D > MIN_OUTLINE_DIRECTION)) return clipPos; // also false for NaN
+      float width = outlineWidth(clipPos.w, radius) * outlineScale;
+      return vec4(clipPos.xy + screenDirection / length2D * width * clipPos.w, clipPos.zw);
     }
 
     void main() {
@@ -751,11 +770,8 @@ var OUTLINE_VERTEX_SHADER = `
         radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
       #endif
       normalLocal = normalize(normalLocal);
-      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
-      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
-      // pushed along the screen-space direction of the normal
-      float width = outlineWidth(clipPos.w, radius) * outlineScale;
-      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
+      mat4 clipFromLocal = projectionMatrix * modelViewMatrix;
+      gl_Position = outlinePosition(clipFromLocal * local, clipFromLocal * vec4(normalLocal, 0.0), radius);
     }`;
 var OUTLINE_FRAGMENT_SHADER = `
     uniform vec3 outlineColor;
@@ -3037,31 +3053,6 @@ var CHANNEL_ON = 128;
 function unpack24(bytes, offset) {
   return bytes[offset] + 256 * bytes[offset + 1] + 65536 * bytes[offset + 2];
 }
-var UNCAPPED_RADIUS = 1e9;
-var SHELL_VERTEX = `
-    uniform float outlineThickness;
-    uniform float outlineScale;
-    #define OUTLINE_SIZE_FRACTION ${OUTLINE_SIZE_FRACTION.toFixed(3)}
-    float outlineWidth(float clipW, float radius) {
-      float capWidth = OUTLINE_SIZE_FRACTION * radius * projectionMatrix[1][1] / clipW;
-      return min(outlineThickness, capWidth);
-    }
-    void main() {
-      vec4 local = vec4(position, 1.0);
-      vec3 normalLocal = normal;
-      float radius = ${UNCAPPED_RADIUS.toFixed(1)};
-      #ifdef USE_INSTANCING
-        mat3 instanceRotation = mat3(instanceMatrix);
-        normalLocal = instanceRotation * (normal / vec3(dot(instanceRotation[0], instanceRotation[0]), dot(instanceRotation[1], instanceRotation[1]), dot(instanceRotation[2], instanceRotation[2])));
-        local = instanceMatrix * local;
-        radius = min(length(instanceRotation[0]), length(instanceRotation[2]));
-      #endif
-      normalLocal = normalize(normalLocal);
-      vec4 clipPos = projectionMatrix * modelViewMatrix * local;
-      vec4 clipPosInward = projectionMatrix * modelViewMatrix * vec4(local.xyz - normalLocal, 1.0);
-      float width = outlineWidth(clipPos.w, radius) * outlineScale;
-      gl_Position = clipPos + normalize(clipPos - clipPosInward) * width * clipPos.w;
-    }`;
 var SHELL_FRAGMENT = `
     void main() {
       gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -3071,7 +3062,7 @@ var ZERO_FRAGMENT = `
       gl_FragColor = vec4(0.0);
     }`;
 var shellMaterial = (outlineScale2) => new THREE11.ShaderMaterial({
-  vertexShader: SHELL_VERTEX,
+  vertexShader: OUTLINE_VERTEX_SHADER,
   fragmentShader: SHELL_FRAGMENT,
   side: THREE11.BackSide,
   uniforms: { outlineThickness: { value: OUTLINE_THICKNESS }, outlineScale: { value: outlineScale2 } }
@@ -3601,7 +3592,7 @@ function cellBoxMarkup(f, layers) {
 function makeCurveLookup(options, view, prepared) {
   const screen = screenOf(view);
   const { built, points: points2 } = prepared;
-  const own = memo((id) => {
+  const own2 = memo((id) => {
     const obj = built.objects[id - 1];
     if (obj.kind === "polyhedron") return edgeCurves(hardEdges(topologyOf(options, prepared, obj.poly), points2), screen);
     if (obj.kind === "sphere" || obj.kind === "dot") return sphereCurves(view, vec3(obj.centre), obj.matrix[0]);
@@ -3624,11 +3615,11 @@ function makeCurveLookup(options, view, prepared) {
     return [];
   };
   const candidatesFor = (id, st) => {
-    if (st.label <= 0) return own(id);
+    if (st.label <= 0) return own2(id);
     const mid = st.pts[Math.floor(st.pts.length / 2)];
-    return [...own(id), ...own(st.label), ...crossing(id, st.label, mid)];
+    return [...own2(id), ...own2(st.label), ...crossing(id, st.label, mid)];
   };
-  return { own, candidatesFor };
+  return { own: own2, candidatesFor };
 }
 function sectionCurves(other, face, screen) {
   if (other.kind === "sphere" || other.kind === "dot") {
@@ -3940,6 +3931,46 @@ async function fetchGist(id, file) {
   return { name: picked.filename, doc: await fetchScene(raw) };
 }
 
+// src/ui/overflow.ts
+var EDGE_SLACK_PX = 2;
+var watched = /* @__PURE__ */ new Set();
+function markOverflow(el2) {
+  const { scrollLeft, scrollWidth, clientWidth } = el2;
+  el2.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
+  el2.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
+}
+function watchOverflow(el2) {
+  if (!watched.has(el2)) {
+    watched.add(el2);
+    el2.addEventListener("scroll", () => markOverflow(el2), { passive: true });
+  }
+  markOverflow(el2);
+}
+window.addEventListener("resize", () => watched.forEach(markOverflow));
+
+// src/ui/tab-model.ts
+function tabsOf(tabs2, current4 = 0) {
+  return { tabs: tabs2, current: current4 };
+}
+function addTab(list, tab) {
+  return { tabs: [...list.tabs, tab], current: list.tabs.length };
+}
+function chooseTab(list, k) {
+  return k >= 0 && k < list.tabs.length ? { tabs: list.tabs, current: k } : list;
+}
+function closeTab(list, k) {
+  if (list.tabs.length < 2 || k < 0 || k >= list.tabs.length) return list;
+  const tabs2 = list.tabs.filter((_, j) => j !== k);
+  if (k === list.current) return { tabs: tabs2, current: Math.max(0, k - 1) };
+  return { tabs: tabs2, current: k < list.current ? list.current - 1 : list.current };
+}
+function uniqueLabel(label, taken) {
+  if (!taken.includes(label)) return label;
+  let n = 2;
+  while (taken.includes(`${label} (${n})`)) n += 1;
+  return `${label} (${n})`;
+}
+
 // src/ui/loader.ts
 var empty = byId("empty");
 var emptyStatus = byId("empty-status");
@@ -3950,6 +3981,11 @@ var fileInput = byId("scene-file");
 var closeButton = byId("empty-close");
 var messageOf2 = (error) => error instanceof Error ? error.message : String(error);
 var sceneOpen = false;
+var showScene = () => {
+};
+var tabs = tabsOf([]);
+var bar = null;
+var ownLink = null;
 function showCard() {
   empty.hidden = false;
   closeButton.hidden = !sceneOpen;
@@ -3983,23 +4019,113 @@ async function loadSource(source, byDefault) {
   }
   return { doc: await fetchScene(source.url), name: sceneName(source), from: source.url, link };
 }
-async function present(label, loading, show2) {
-  busy(`Loading ${label}\u2026`);
+async function readFile(file) {
+  return { doc: await sceneFromFile(file), name: file.name, from: "local file", link: null };
+}
+async function present(what, loading, show2) {
+  busy(`Loading ${what}\u2026`);
   try {
     show2(await loading());
     sceneOpen = true;
     hideCard();
   } catch (error) {
-    fail(`Could not load ${label}: ${messageOf2(error)}`);
+    fail(`Could not load ${what}: ${messageOf2(error)}`);
   }
 }
-function fromFile(file, show2) {
-  return present(file.name, async () => ({ doc: await sceneFromFile(file), name: file.name, from: "local file", link: null }), show2);
+function tabFor(label, what, local2, load2) {
+  return { label, what, local: local2, load: load2, loaded: null };
+}
+function loadOnce(tab) {
+  tab.loaded ??= tab.load().catch((error) => {
+    tab.loaded = null;
+    throw error;
+  });
+  return tab.loaded;
+}
+function showCurrent() {
+  const tab = tabs.tabs[tabs.current];
+  return present(tab.what, () => loadOnce(tab), showScene);
+}
+function choose(k) {
+  tabs = chooseTab(tabs, k);
+  renderBar();
+  return showCurrent();
+}
+function closeAt(k) {
+  const wasCurrent = k === tabs.current;
+  tabs = closeTab(tabs, k);
+  renderBar();
+  return wasCurrent ? showCurrent() : Promise.resolve();
+}
+function renderBar() {
+  const strip = bar;
+  if (strip === null) return;
+  strip.querySelectorAll(".local-tab").forEach((element) => element.remove());
+  tabs.tabs.forEach((tab, k) => {
+    if (k !== 0 || ownLink === null) strip.appendChild(tabElement(tab, k));
+  });
+  if (ownLink !== null) {
+    if (tabs.current === 0) ownLink.setAttribute("aria-current", "page");
+    else ownLink.removeAttribute("aria-current");
+  }
+  watchOverflow(strip);
+  strip.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+function tabElement(tab, k) {
+  const wrap = document.createElement("span");
+  wrap.className = "local-tab";
+  const choice = document.createElement("button");
+  choice.type = "button";
+  choice.textContent = tab.label;
+  if (k === tabs.current) choice.setAttribute("aria-current", "page");
+  choice.addEventListener("click", () => void choose(k));
+  wrap.appendChild(choice);
+  if (tab.local && tabs.tabs.length > 1) wrap.appendChild(tabCloseButton(tab, k));
+  return wrap;
+}
+var CLOSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+function tabCloseButton(tab, k) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "tab-close";
+  button.title = `Close ${tab.label}`;
+  button.setAttribute("aria-label", `Close ${tab.label}`);
+  button.innerHTML = CLOSE_ICON;
+  button.addEventListener("click", () => void closeAt(k));
+  return button;
+}
+function ensureBar() {
+  if (bar !== null) return;
+  const built = document.querySelector(".tabs");
+  if (built) {
+    bar = built;
+    ownLink = built.querySelector('a[aria-current="page"]');
+    ownLink?.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (tabs.current !== 0) void choose(0);
+    });
+    return;
+  }
+  const nav = document.createElement("nav");
+  nav.className = "tabs";
+  nav.setAttribute("aria-label", "Scenes");
+  byId("menu-island").insertBefore(nav, document.querySelector(".name"));
+  bar = nav;
+}
+function addFiles(files) {
+  if (files.length === 0) return;
+  ensureBar();
+  for (const file of files) {
+    const label = uniqueLabel(file.name, tabs.tabs.map((tab) => tab.label));
+    tabs = addTab(tabs, tabFor(label, file.name, true, () => readFile(file)));
+  }
+  void choose(tabs.tabs.length - 1);
 }
 function defaultScenes() {
   return [...document.querySelectorAll('meta[name="gemmy-default-scene"]')].map((meta) => meta.content).filter((scene2) => scene2 !== "");
 }
-function startLoader(show2) {
+function startLoader(open) {
+  showScene = open;
   let openings;
   try {
     openings = sourcesToOpen(location.search, location.href, defaultScenes());
@@ -4009,40 +4135,11 @@ function startLoader(show2) {
   }
   if (openings.length === 0) {
     showCard();
-  } else if (openings.length === 1) {
-    const [only] = openings;
-    void present(labelOf(only.source), () => loadSource(only.source, only.byDefault), show2);
-  } else {
-    openTabs(openings, show2);
+    return;
   }
-}
-function openTabs(openings, show2) {
-  const bar = document.createElement("nav");
-  bar.className = "tabs";
-  bar.setAttribute("aria-label", "Scenes");
-  const loaded = /* @__PURE__ */ new Map();
-  const buttons = openings.map(({ source }, k) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = sceneName(source);
-    button.addEventListener("click", () => choose(k));
-    bar.appendChild(button);
-    return button;
-  });
-  const choose = (k) => {
-    buttons.forEach((button, j) => {
-      if (j === k) button.setAttribute("aria-current", "page");
-      else button.removeAttribute("aria-current");
-    });
-    const { source, byDefault } = openings[k];
-    void present(labelOf(source), async () => {
-      const shown2 = loaded.get(k) ?? await loadSource(source, byDefault);
-      loaded.set(k, shown2);
-      return shown2;
-    }, show2);
-  };
-  byId("menu-island").insertBefore(bar, document.querySelector(".name"));
-  choose(0);
+  tabs = tabsOf(openings.map(({ source, byDefault }) => tabFor(sceneName(source), labelOf(source), false, () => loadSource(source, byDefault))));
+  if (tabs.tabs.length > 1) ensureBar();
+  void choose(0);
 }
 function showUrlForm() {
   showCard();
@@ -4053,7 +4150,9 @@ function closeUrlForm() {
   hideCard();
   return true;
 }
-function attachOpeners(show2) {
+function attachOpeners(open, own2) {
+  showScene = open;
+  if (own2) tabs = tabsOf([tabFor(own2.label, own2.label, false, own2.load)]);
   closeButton.addEventListener("click", () => closeUrlForm());
   window.addEventListener("dragover", (event) => {
     event.preventDefault();
@@ -4065,13 +4164,12 @@ function attachOpeners(show2) {
   window.addEventListener("drop", (event) => {
     event.preventDefault();
     document.body.classList.remove("dragging");
-    const file = event.dataTransfer?.files[0];
-    if (file) void fromFile(file, show2);
+    addFiles(Array.from(event.dataTransfer?.files ?? []));
   });
   fileInput.addEventListener("change", () => {
-    const file = fileInput.files?.[0];
+    const files = Array.from(fileInput.files ?? []);
     fileInput.value = "";
-    if (file) void fromFile(file, show2);
+    addFiles(files);
   });
   byId("open-scene").addEventListener("click", () => fileInput.click());
   byId("empty-open").addEventListener("click", () => fileInput.click());
@@ -4474,16 +4572,7 @@ function wirePressButton(button) {
   });
 }
 for (const button of document.querySelectorAll("[data-act]")) wirePressButton(button);
-var EDGE_SLACK_PX = 2;
-var scrollers = [...document.querySelectorAll(".island, .tabs")];
-function markOverflow(el2) {
-  const { scrollLeft, scrollWidth, clientWidth } = el2;
-  el2.classList.toggle("more-left", scrollLeft > EDGE_SLACK_PX);
-  el2.classList.toggle("more-right", scrollLeft + clientWidth < scrollWidth - EDGE_SLACK_PX);
-}
-for (const el2 of scrollers) el2.addEventListener("scroll", () => markOverflow(el2), { passive: true });
-window.addEventListener("resize", () => scrollers.forEach(markOverflow));
-scrollers.forEach(markOverflow);
+for (const el2 of document.querySelectorAll(".island, .tabs")) watchOverflow(el2);
 document.querySelector(".tabs [aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
 var TIP_DELAY_MS = 300;
 var TIP_GAP_PX = 8;
@@ -4860,17 +4949,29 @@ function showLoaded(shown2) {
 }
 var embedded = document.getElementById("scene-data").textContent.trim();
 var mode = document.querySelector('meta[name="gemmy-mode"]')?.content;
+var pageName = document.querySelector(".name h1").textContent;
+var pageFrom = document.querySelector(".name .sub").textContent;
 var following = mode === "live";
-function showDropped(shown2) {
-  following = false;
+function showTab(shown2) {
   showLoaded(shown2);
+  if (mode !== "live") return;
+  following = shown2.live === true;
   const note2 = document.getElementById("follow-note");
-  note2.textContent = `Showing ${shown2.name} \u2014 reload to follow the server again`;
-  note2.hidden = false;
-  document.getElementById("banner").hidden = false;
+  const banner = document.getElementById("banner");
+  note2.textContent = `Showing ${shown2.name} \u2014 choose ${pageName} to follow the server again`;
+  note2.hidden = following;
+  banner.hidden = note2.hidden && banner.querySelector(".err").hidden;
 }
+async function fetchLive() {
+  const response = await fetch("scene.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`The server answered ${response.status} for scene.json.`);
+  return response.json();
+}
+var own = null;
 if (embedded) {
-  openScene(JSON.parse(embedded), takePendingPose());
+  const doc = JSON.parse(embedded);
+  openScene(doc, takePendingPose());
+  own = { label: pageName, load: async () => ({ doc, name: pageName, from: pageFrom, link: null }) };
 } else if (mode === "live") {
   describe(null);
   resize();
@@ -4946,7 +5047,8 @@ if (embedded) {
       refresh();
     }
   });
+  own = { label: pageName, load: async () => ({ doc: await fetchLive(), name: pageName, from: pageFrom, link: null, live: true }) };
 } else {
-  startLoader(showLoaded);
+  startLoader(showTab);
 }
-attachOpeners((shown2) => mode === "live" ? showDropped(shown2) : showLoaded(shown2));
+attachOpeners(showTab, own);
