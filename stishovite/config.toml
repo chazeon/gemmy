@@ -1,0 +1,30 @@
+# Stishovite (rutile-type SiO2): SiO6 octahedra only, Si hidden, saturated red O, no bonds.
+# Same content as config.json (tests/test_examples.py checks they agree).
+structure = "POSCAR"  # relative to this file
+bonds = []
+
+[elements.Si]
+visible = false  # the octahedra still form around hidden Si
+radius = 0.6
+color = [0.15, 0.45, 0.95]
+material = "matte"
+
+[elements.O]
+radius = 0.42
+color = [0.85, 0.02, 0.02]
+material = "matte"
+
+[cells]
+supercell = [2, 2, 3]
+periodic = [true, true, true]
+
+[[polyhedra]]
+name = "SiO6"
+center = "Si"
+ligands = ["O"]
+min = 1.6  # Si-O is 4 x 1.758 + 2 x 1.810 A
+max = 2.0
+min_coordination = 6
+max_coordination = 6
+color = [0.15, 0.45, 0.95, 1.0]
+image_centers = true  # also around boundary copies of Si, so the cell faces have no stray O

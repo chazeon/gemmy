@@ -4,10 +4,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>gemmy preview (gemmy)</title>
+<title>gemmy: crystal structure viewer for POSCAR, CIF, extxyz and LAMMPS</title>
+<meta name="description" content="View VASP POSCAR, CIF, extxyz and LAMMPS files in the browser: bonds, coordination polyhedra and rings in VESTA or Jmol colours, exported as figures for papers.">
+<link rel="canonical" href="https://chazeon.github.io/gemmy/">
+<meta property="og:url" content="https://chazeon.github.io/gemmy/">
+<meta property="og:title" content="gemmy: crystal structure viewer for POSCAR, CIF, extxyz and LAMMPS">
+<meta property="og:description" content="View VASP POSCAR, CIF, extxyz and LAMMPS files in the browser: bonds, coordination polyhedra and rings in VESTA or Jmol colours, exported as figures for papers.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://chazeon.github.io/gemmy/nacl/thumbnail.png">
+<meta property="og:image:width" content="400">
+<meta property="og:image:height" content="267">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="gemmy-scene-file" content="scene.json">
 <meta name="gemmy-mode" content="load">
-<meta name="gemmy-default-scene" content="nacl/scene.json.gz"><meta name="gemmy-default-scene" content="methane-clathrate-si/scene.json.gz"><meta name="gemmy-default-scene" content="ice-ih/scene.json.gz"><meta name="gemmy-default-scene" content="stishovite/scene.json.gz"><meta name="gemmy-default-scene" content="dry-ice/scene.json.gz"><meta name="gemmy-default-scene" content="uio-66/scene.json.gz"><meta name="gemmy-default-scene" content="c60/scene.json.gz"><meta name="gemmy-default-scene" content="c60-cage/scene.json.gz"><meta name="gemmy-default-scene" content="dna-1bna/scene.json.gz"><meta name="gemmy-default-scene" content="glut1-4pyp/scene.json.gz"><meta name="gemmy-default-scene" content="nav17-6j8i/scene.json.gz"><meta name="gemmy-default-scene" content="nucleosome-1kx5/scene.json.gz"><meta name="gemmy-default-scene" content="apoferritin/scene.json.gz"><!-- the loader opens these, one per gemmy-default-scene meta in order (tabs when several), when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
+<!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) --><!-- compiler: the meta names the compiler's script (scene/compiler.ts), or nothing; a single-file page has none -->
+<meta name="gemmy-compiler" content="compile.4df872f9ec.js">
+<meta name="gemmy-open" content="1">
 <script>
   // The theme, set before the first paint so a dark page never flashes light. It reads the key that web/src/ui/theme.ts
   // writes (gemmy.theme) and sets data-theme only for Light or Dark; Auto leaves it off, so the system's scheme applies.
@@ -34,31 +46,23 @@
 body.booting > main, body.booting > #ui { opacity: 0; animation: unboot 0s 3s forwards; }
 @keyframes unboot { to { opacity: 1; } }
 </style>
-<link rel="stylesheet" href="style.0b0f1f9124.css">
+<link rel="stylesheet" href="style.5eb45d60a1.css">
 </head>
 <body class="booting">
 <!-- The 3D stage fills the window. The controls float above it in #ui (the React overlay draws them). -->
 <main>
   <div id="stage" aria-label="gemmy crystal structure. Drag to rotate, scroll to zoom, right-drag to move."></div>
   <canvas id="triad" aria-hidden="true"></canvas>
-  <input type="file" id="scene-file" accept=".json,.gz,application/json,application/gzip" hidden>
+  <input type="file" id="scene-file" multiple hidden>
 </main>
 
 <!-- The floating controls, laid out by the grid and the fixed boxes in style.css: the React overlay (see below) draws the top
-     bar, Export, the theme button, the lens and zoom column, the selection card and the corner buttons. The messages are here. -->
+     bar, Export, the theme button, the lens and zoom column, the inspector dock and the corner buttons. The messages are here. -->
 <div id="ui">
   <!-- the React overlay (src/react): its islands are the grid items of #ui, so it takes no box of its own.
-       The title is read by the overlay (ui/dom.ts); the server's tab strip, if it has one, is read and removed (ui/tab-bar.ts) -->
+       The title is read by the overlay (ui/dom.ts); the server's links to other pages, if it has any, is read and removed (ui/tab-bar.ts) -->
   <div id="overlay" data-title="gemmy" data-subtitle=""></div>
 
-  <!-- under the top row: the live-mode banner and the Blender progress pill -->
-  <div id="msgs">
-    <section id="banner" hidden>
-      <p class="err" role="alert" hidden></p>
-      <p id="follow-note" role="status" hidden></p>
-    </section>
-    <p id="toast" role="status" hidden></p>
-  </div>
 </div>
 
 <script type="application/json" id="scene-data"></script>
@@ -68,6 +72,6 @@ body.booting > main, body.booting > #ui { opacity: 0; animation: unboot 0s 3s fo
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }}
 </script>
-<script type="module" src="viewer.07a7dc351d.js"></script>
+<script type="module" src="viewer.8065469155.js"></script>
 </body>
 </html>

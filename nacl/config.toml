@@ -1,0 +1,21 @@
+# NaCl rock salt: plain spheres, Na larger than Cl, no bonds or polyhedra.
+# Same content as config.json (tests/test_examples.py checks they agree).
+structure = "POSCAR"  # relative to this file
+bonds = []
+polyhedra = []
+
+[elements.Na]
+radius = 0.95
+color = [0.55, 0.3, 0.8, 1.0]  # purple
+material = "matte"
+
+[elements.Cl]
+radius = 0.75
+color = [0.2, 0.75, 0.3, 1.0]  # green
+material = "matte"
+
+[cells]
+supercell = [1, 1, 1]
+periodic = [true, true, true]
+# Inclusive display box: atoms on faces, edges and corners show on every boundary (27-atom cube).
+box = { x = [0, 1], y = [0, 1], z = [0, 1] }
