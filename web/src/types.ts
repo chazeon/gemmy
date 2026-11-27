@@ -18,6 +18,7 @@ export interface Material {
 export interface Point {
   id: string;
   element: string;
+  label: string;
   position: Vec3;
   fractional: Vec3 | null;
   ref: string | null;
@@ -32,6 +33,7 @@ export interface Topology {
 export interface AtomPrimitive {
   id: string;
   element: string;
+  label: string;
   point_id: string;
   radius: number;
   material_id: string;
@@ -45,6 +47,8 @@ export interface BondPrimitive {
   material_id: string;
   a_element: string;
   b_element: string;
+  a_label: string;
+  b_label: string;
   style: BondStyle;
 }
 

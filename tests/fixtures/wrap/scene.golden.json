@@ -73,12 +73,12 @@
    "type": "principled"
   },
   "polyhedron": {
-   "alpha": 0.25,
+   "alpha": 1.0,
    "base_color": [
     0.2,
     0.6,
     1.0,
-    0.25
+    1.0
    ],
    "metallic": 0.0,
    "roughness": 0.2,
@@ -94,6 +94,7 @@
     0.0
    ],
    "id": "p0",
+   "label": "Mg",
    "position": [
     0.0,
     0.0,
@@ -109,6 +110,7 @@
     1.0
    ],
    "id": "p1",
+   "label": "Mg",
    "position": [
     0.0,
     0.0,
@@ -124,6 +126,7 @@
     0.0
    ],
    "id": "p2",
+   "label": "Mg",
    "position": [
     0.0,
     4.2,
@@ -139,6 +142,7 @@
     1.0
    ],
    "id": "p3",
+   "label": "Mg",
    "position": [
     0.0,
     4.2,
@@ -154,6 +158,7 @@
     0.0
    ],
    "id": "p4",
+   "label": "Mg",
    "position": [
     4.2,
     0.0,
@@ -169,6 +174,7 @@
     1.0
    ],
    "id": "p5",
+   "label": "Mg",
    "position": [
     4.2,
     0.0,
@@ -184,6 +190,7 @@
     0.0
    ],
    "id": "p6",
+   "label": "Mg",
    "position": [
     4.2,
     4.2,
@@ -199,6 +206,7 @@
     1.0
    ],
    "id": "p7",
+   "label": "Mg",
    "position": [
     4.2,
     4.2,
@@ -214,6 +222,7 @@
     0.0
    ],
    "id": "p8",
+   "label": "O",
    "position": [
     2.1,
     0.0,
@@ -229,6 +238,7 @@
     1.0
    ],
    "id": "p9",
+   "label": "O",
    "position": [
     2.1,
     0.0,
@@ -244,6 +254,7 @@
     0.0
    ],
    "id": "p10",
+   "label": "O",
    "position": [
     2.1,
     4.2,
@@ -259,6 +270,7 @@
     1.0
    ],
    "id": "p11",
+   "label": "O",
    "position": [
     2.1,
     4.2,
@@ -274,6 +286,7 @@
     0.0
    ],
    "id": "p12",
+   "label": "O",
    "position": [
     -2.1,
     0.0,
@@ -289,6 +302,7 @@
     1.0
    ],
    "id": "p13",
+   "label": "O",
    "position": [
     -2.1,
     0.0,
@@ -304,6 +318,7 @@
     0.0
    ],
    "id": "p14",
+   "label": "O",
    "position": [
     -2.1,
     4.2,
@@ -319,6 +334,7 @@
     1.0
    ],
    "id": "p15",
+   "label": "O",
    "position": [
     -2.1,
     4.2,
@@ -334,6 +350,7 @@
     0.0
    ],
    "id": "p16",
+   "label": "O",
    "position": [
     6.3,
     0.0,
@@ -349,6 +366,7 @@
     1.0
    ],
    "id": "p17",
+   "label": "O",
    "position": [
     6.3,
     0.0,
@@ -364,6 +382,7 @@
     0.0
    ],
    "id": "p18",
+   "label": "O",
    "position": [
     6.3,
     4.2,
@@ -379,6 +398,7 @@
     1.0
    ],
    "id": "p19",
+   "label": "O",
    "position": [
     6.3,
     4.2,
@@ -392,6 +412,7 @@
    {
     "element": "Mg",
     "id": "atom_0_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p0",
     "radius": 0.4
@@ -399,6 +420,7 @@
    {
     "element": "Mg",
     "id": "atom_1_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p1",
     "radius": 0.4
@@ -406,6 +428,7 @@
    {
     "element": "Mg",
     "id": "atom_2_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p2",
     "radius": 0.4
@@ -413,6 +436,7 @@
    {
     "element": "Mg",
     "id": "atom_3_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p3",
     "radius": 0.4
@@ -420,6 +444,7 @@
    {
     "element": "Mg",
     "id": "atom_4_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p4",
     "radius": 0.4
@@ -427,6 +452,7 @@
    {
     "element": "Mg",
     "id": "atom_5_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p5",
     "radius": 0.4
@@ -434,6 +460,7 @@
    {
     "element": "Mg",
     "id": "atom_6_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p6",
     "radius": 0.4
@@ -441,6 +468,7 @@
    {
     "element": "Mg",
     "id": "atom_7_Mg",
+    "label": "Mg",
     "material_id": "matte",
     "point_id": "p7",
     "radius": 0.4
@@ -448,6 +476,7 @@
    {
     "element": "O",
     "id": "atom_8_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p8",
     "radius": 0.3
@@ -455,6 +484,7 @@
    {
     "element": "O",
     "id": "atom_9_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p9",
     "radius": 0.3
@@ -462,6 +492,7 @@
    {
     "element": "O",
     "id": "atom_10_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p10",
     "radius": 0.3
@@ -469,6 +500,7 @@
    {
     "element": "O",
     "id": "atom_11_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p11",
     "radius": 0.3
@@ -476,6 +508,7 @@
    {
     "element": "O",
     "id": "atom_12_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p12",
     "radius": 0.3
@@ -483,6 +516,7 @@
    {
     "element": "O",
     "id": "atom_13_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p13",
     "radius": 0.3
@@ -490,6 +524,7 @@
    {
     "element": "O",
     "id": "atom_14_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p14",
     "radius": 0.3
@@ -497,6 +532,7 @@
    {
     "element": "O",
     "id": "atom_15_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p15",
     "radius": 0.3
@@ -504,6 +540,7 @@
    {
     "element": "O",
     "id": "atom_16_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p16",
     "radius": 0.3
@@ -511,6 +548,7 @@
    {
     "element": "O",
     "id": "atom_17_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p17",
     "radius": 0.3
@@ -518,6 +556,7 @@
    {
     "element": "O",
     "id": "atom_18_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p18",
     "radius": 0.3
@@ -525,6 +564,7 @@
    {
     "element": "O",
     "id": "atom_19_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p19",
     "radius": 0.3
@@ -533,8 +573,10 @@
   "bonds": [
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p12",
     "id": "bond_0_Mg_O",
     "material_id": "bond",
@@ -543,8 +585,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p8",
     "id": "bond_1_Mg_O",
     "material_id": "bond",
@@ -553,8 +597,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p13",
     "id": "bond_2_Mg_O",
     "material_id": "bond",
@@ -563,8 +609,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p9",
     "id": "bond_3_Mg_O",
     "material_id": "bond",
@@ -573,8 +621,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_4_Mg_O",
     "material_id": "bond",
@@ -583,8 +633,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p10",
     "id": "bond_5_Mg_O",
     "material_id": "bond",
@@ -593,8 +645,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p15",
     "id": "bond_6_Mg_O",
     "material_id": "bond",
@@ -603,8 +657,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p11",
     "id": "bond_7_Mg_O",
     "material_id": "bond",
@@ -613,8 +669,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p8",
     "id": "bond_8_Mg_O",
     "material_id": "bond",
@@ -623,8 +681,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p16",
     "id": "bond_9_Mg_O",
     "material_id": "bond",
@@ -633,8 +693,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p9",
     "id": "bond_10_Mg_O",
     "material_id": "bond",
@@ -643,8 +705,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p17",
     "id": "bond_11_Mg_O",
     "material_id": "bond",
@@ -653,8 +717,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p10",
     "id": "bond_12_Mg_O",
     "material_id": "bond",
@@ -663,8 +729,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p18",
     "id": "bond_13_Mg_O",
     "material_id": "bond",
@@ -673,8 +741,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p11",
     "id": "bond_14_Mg_O",
     "material_id": "bond",
@@ -683,8 +753,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p19",
     "id": "bond_15_Mg_O",
     "material_id": "bond",
@@ -695,7 +767,7 @@
   "displacements": [],
   "polyhedra": []
  },
- "schema_version": 2,
+ "schema_version": 3,
  "source_comment": "POSCAR",
  "topologies": []
 }

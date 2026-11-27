@@ -9,7 +9,7 @@ from gemmy.compile.pipeline import compile_scene
 from gemmy.compile.selection import resolve_centre
 from gemmy.compile.sites import base_box, build_sites, repeat_structure, snap_sites, wrap_sites
 from gemmy.config import load_scene_config
-from gemmy.structure import load_structure
+from gemmy.readers import load_structure
 from golden import FIXTURES
 
 

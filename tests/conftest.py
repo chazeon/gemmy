@@ -14,3 +14,13 @@ def pytest_collection_modifyitems(config, items) -> None:
     for item in items:
         if "blender" in item.keywords:
             item.add_marker(skip)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_reader_choice():
+    """The reader backend is chosen once per process; each test chooses again, so its environment is the one read."""
+    from gemmy.readers.selection import reset_reader_choice
+
+    reset_reader_choice()
+    yield
+    reset_reader_choice()

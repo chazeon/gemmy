@@ -1,11 +1,9 @@
 // The geometry readout: the text for the selected atom, bond or polyhedron (distances, the distortion, the fractional and
-// Cartesian positions), as data the React info card draws (src/react/info-card.tsx). The Center button frames the shown
-// object as Fit frames the structure.
+// Cartesian positions), as data the React info card draws (src/react/info-card.tsx). The Center buttons are in
+// readout-centre.ts: they draw the camera, and this file stays free of the page so the node tests can run it.
 import { signal } from "@preact/signals-core";
 import * as THREE from "three";
 import { loaded, type Target } from "../state";
-import { centreOn } from "../camera/view";
-import { lookAlongAt } from "./views";
 import type { AtomPrimitive, BondPrimitive, Point, PolyhedronPrimitive, Vec3 } from "../types";
 
 const ANGSTROM_DIGITS = 3;
@@ -13,9 +11,10 @@ const FRACTIONAL_DIGITS = 4;
 const DELTA_SCALE = 1e4; // the distortion is shown in units of 10^-4
 const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
 
-// One end of a bond: its element, and its reference (null when the point has none).
+// One end of a bond: its species label (the name the config and the panel use), and its reference (null when the point
+// has none).
 export interface BondEnd {
-  element: string;
+  label: string;
   ref: string | null;
 }
 
@@ -23,7 +22,7 @@ export type Readout =
   | { kind: "none" }
   | {
       kind: "bond";
-      name: string; // the title, the two elements with an en dash: "Si–O bond"
+      name: string; // the title, the two labels with an en dash: "Si–O bond"
       length: string;
       ends: [BondEnd, BondEnd];
     }
@@ -37,23 +36,40 @@ export type Readout =
     }
   | {
       kind: "atom";
-      element: string;
+      label: string;
       ref: string | null;
       fractional: string | null;
       cartesian: string;
-      host: string | null; // the element of the polyhedron centre this atom is a corner of
+      host: string | null; // the label of the polyhedron centre this atom is a corner of
       neighbours: string | null;
     };
 
 // What the card shows now; the card re-renders when it changes (src/react/use-signal.ts).
 export const readout = signal<Readout>({ kind: "none" });
 
+// The heading of a readout: the bond's or polyhedron's name, or the atom's label.
+export function readoutTitle(data: Readout): string {
+  if (data.kind === "none") return "Nothing selected";
+  if (data.kind === "polyhedron" || data.kind === "bond") return data.name;
+  return `${data.label} atom`;
+}
+
+// The notes the readout shows under its rows (the details card).
+export const SUPERCELL_NOTE = "Fractional coordinates are in the supercell.";
+export const DISTORTION_NOTE = `Δ is the bond-length distortion, the mean of ((d − d̄)/d̄)². ${SUPERCELL_NOTE}`;
+
+// The object the readout shows, for the Center buttons (readout-centre.ts).
+let shown: Target | null = null;
+export function shownTarget(): Target | null {
+  return shown;
+}
+
 // The distance between two points, in the scene's units (angstroms).
 export function dist(a: Vec3, b: Vec3): number {
   return new THREE.Vector3(...a).distanceTo(new THREE.Vector3(...b));
 }
 
-function pointOf(id: string): Point {
+export function pointOf(id: string): Point {
   const point = loaded.value.points.get(id);
   if (!point) throw new Error(`gemmy viewer: the scene has no point ${id}`);
   return point;
@@ -79,40 +95,42 @@ function grouped(values: number[]): string {
     .join(", ");
 }
 
-// The object the readout shows, for its Center button.
-let shown: Target | null = null;
+// The ids of the points that some atom primitive draws.
+function atomPointIds(): Set<string> {
+  return new Set(loaded.value.data?.primitives.atoms.map((atom) => atom.point_id) ?? []);
+}
+// A computed centre, such as a cluster's centroid: a point with no reference that no atom draws. It is not an atom, so
+// it is no bond and no host.
+function isComputed(point: Point, atomIds: Set<string>): boolean {
+  return point.ref === null && !atomIds.has(point.id);
+}
 
-// The Center button's framing: the object's centre and size in scene units (the origin is the structure's middle). An
-// atom's size is its diameter; a bond's is its length plus a radius at each end; a polyhedron's is the diagonal of the
-// box round its corners, and its centre the box's.
-function objectBounds(target: Target): { centre: THREE.Vector3; size: number } {
-  const offset = new THREE.Vector3(...loaded.value.centre);
-  if (target.kind === "atom") {
-    const position = new THREE.Vector3(...pointOf(target.atom.point_id).position).sub(offset);
-    return { centre: position, size: 2 * target.atom.radius };
-  }
-  if (target.kind === "bond") {
-    const a = new THREE.Vector3(...pointOf(target.bond.a_point_id).position);
-    const b = new THREE.Vector3(...pointOf(target.bond.b_point_id).position);
-    return { centre: a.clone().lerp(b, 0.5).sub(offset), size: a.distanceTo(b) + 2 * target.bond.radius };
-  }
-  const corners = target.poly.ligand_point_ids.map((id) => new THREE.Vector3(...pointOf(id).position));
-  const box = new THREE.Box3().setFromPoints(corners);
-  return { centre: box.getCenter(new THREE.Vector3()).sub(offset), size: box.min.distanceTo(box.max) };
+// The polyhedra this atom is a corner of, by their real centres (a cluster's centroid is not a host).
+function hostsOf(a: AtomPrimitive, atomIds: Set<string>): PolyhedronPrimitive[] {
+  const corners = loaded.value.polyhedra.filter((p) => p.ligand_point_ids.includes(a.point_id));
+  return corners.filter((p) => !isComputed(pointOf(p.center_point_id), atomIds));
+}
+
+// The centre's row: its label with its fractional position, or "centroid" for a cluster's computed centre (the
+// polyhedron's name is the title).
+function centreText(centre: Point, atomIds: Set<string>): string {
+  const label = isComputed(centre, atomIds) ? "centroid" : centre.label;
+  if (!centre.fractional) return label;
+  return `${label} at (${centre.fractional.map((x) => formatDigits(x, FRACTIONAL_DIGITS)).join(", ")})`;
 }
 
 function polyhedronReadout(p: PolyhedronPrimitive): Readout {
+  const atomIds = atomPointIds();
   const centre = pointOf(p.center_point_id);
-  const bonds = p.ligand_point_ids.map((id) => dist(centre.position, pointOf(id).position));
+  // The measurements are the real members': a cluster's centroid is one of its ligands, and no bond.
+  const members = p.ligand_point_ids.map((id) => pointOf(id)).filter((point) => !isComputed(point, atomIds));
+  const bonds = members.map((member) => dist(centre.position, member.position));
   const mean = average(bonds);
   const distortion = average(bonds.map((x) => ((x - mean) / mean) ** 2));
-  const centreText = centre.fractional
-    ? `${centre.element} at (${centre.fractional.map((x) => formatDigits(x, FRACTIONAL_DIGITS)).join(", ")})`
-    : centre.element;
   return {
     kind: "polyhedron",
     name: subscripts(p.name ?? "Polyhedron"),
-    centre: centreText,
+    centre: centreText(centre, atomIds),
     bonds: grouped(bonds),
     mean: formatDigits(mean),
     delta: (distortion * DELTA_SCALE).toFixed(2),
@@ -124,26 +142,27 @@ function bondReadout(b: BondPrimitive): Readout {
   const c = pointOf(b.b_point_id);
   return {
     kind: "bond",
-    name: `${b.a_element}–${b.b_element} bond`,
+    name: `${b.a_label}–${b.b_label} bond`,
     length: formatDigits(dist(a.position, c.position)),
     ends: [
-      { element: b.a_element, ref: a.ref ?? null },
-      { element: b.b_element, ref: c.ref ?? null },
+      { label: b.a_label, ref: a.ref ?? null },
+      { label: b.b_label, ref: c.ref ?? null },
     ],
   };
 }
 
 function atomReadout(a: AtomPrimitive): Readout {
   const point = pointOf(a.point_id);
-  const hosts = loaded.value.polyhedra.filter((p) => p.ligand_point_ids.includes(a.point_id));
+  const atomIds = atomPointIds();
+  const hosts = hostsOf(a, atomIds);
   const neighbours = hosts.map((p) => dist(point.position, pointOf(p.center_point_id).position));
   return {
     kind: "atom",
-    element: point.element,
+    label: point.label,
     ref: point.ref ?? null,
     fractional: point.fractional ? point.fractional.map((x) => formatDigits(x, FRACTIONAL_DIGITS)).join(", ") : null,
     cartesian: point.position.map((x) => formatDigits(x)).join(", "),
-    host: hosts.length ? pointOf(hosts[0].center_point_id).element : null,
+    host: hosts.length ? pointOf(hosts[0].center_point_id).label : null,
     neighbours: hosts.length ? grouped(neighbours) : null,
   };
 }
@@ -155,18 +174,4 @@ export function describe(target: Target | null): void {
   else if (target.kind === "polyhedron") readout.value = polyhedronReadout(target.poly);
   else if (target.kind === "bond") readout.value = bondReadout(target.bond);
   else readout.value = atomReadout(target.atom);
-}
-
-// The Center button: frames the shown object.
-export function centreShown(): void {
-  if (!shown) return;
-  const { centre, size } = objectBounds(shown);
-  centreOn(centre, size);
-}
-
-// The same, looking along a cell axis (the card's a, b and c).
-export function centreShownAlong(axis: "a" | "b" | "c"): void {
-  if (!shown) return;
-  const { centre, size } = objectBounds(shown);
-  lookAlongAt(axis, centre, size);
 }

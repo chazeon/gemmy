@@ -8,7 +8,7 @@ from pathlib import Path
 from gemmy.compile.displacements import DisplacementFileError, load_displacement_file
 from gemmy.compile.pipeline import compile_scene
 from gemmy.config import DisplacementConfig, ElementStyle, PolyhedronRule, SceneConfig
-from gemmy.structure import AtomRecord, Structure
+from gemmy.readers.record import AtomRecord, Structure
 
 
 def _structure() -> Structure:

@@ -1,0 +1,1967 @@
+{
+ "steps": [
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 1,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "home",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 1,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "open-card",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 2,
+   "info": "CentreSi at (0.5000, 0.5000, 0.5000)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-poscar",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 3,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-poscar-config",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (3)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 4,
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-lammps-form",
+   "plus": true,
+   "theme": null,
+   "title": "two-types.dump",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 4,
+   "form": false,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "type-form-apply",
+   "plus": true,
+   "theme": null,
+   "title": "two-types.dump",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 5,
+   "focus": "type-input-1",
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-lammps-preset",
+   "plus": true,
+   "presetButtons": [
+    "Use two-types.dump",
+    "Rename two-types.dump",
+    "Delete two-types.dump"
+   ],
+   "prompt": "Name the LAMMPS types",
+   "theme": null,
+   "title": "second-types.dump",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 5,
+   "info": null,
+   "labels": [
+    "Na",
+    "Cl"
+   ],
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "preset-use",
+   "plus": true,
+   "theme": null,
+   "title": "second-types.dump",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 5,
+   "form": false,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "preset-apply",
+   "plus": true,
+   "theme": null,
+   "title": "second-types.dump",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 6,
+   "focus": "type-input-1",
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-masses-form",
+   "plus": true,
+   "presetButtons": [
+    "Use two-types.dump",
+    "Rename two-types.dump",
+    "Delete two-types.dump",
+    "Use second-types.dump",
+    "Rename second-types.dump",
+    "Delete second-types.dump"
+   ],
+   "prompt": "Name the LAMMPS types",
+   "theme": null,
+   "title": "masses-types.data",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 6,
+   "form": false,
+   "info": "CentreMg at (0.5000, 0.5000, 1.0000)Bonds6 \u00d7 2.100 \u00c5Mean2.100 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "masses-apply",
+   "plus": true,
+   "theme": null,
+   "title": "masses-types.data",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 7,
+   "form": false,
+   "info": "CentreMg at (0.5000, 0.5000, 1.0000)Bonds6 \u00d7 2.100 \u00c5Mean2.100 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-masses-auto",
+   "plus": true,
+   "theme": null,
+   "title": "masses-auto.data",
+   "toast": {
+    "actions": [
+     "Undo"
+    ],
+    "shown": true,
+    "text": "Used the saved type map \"masses-types.data\" for masses-auto.data.Undo"
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 7,
+   "focus": "type-input-1",
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "undo-pointer",
+   "plus": true,
+   "presetButtons": [
+    "Use two-types.dump",
+    "Rename two-types.dump",
+    "Delete two-types.dump",
+    "Use second-types.dump",
+    "Rename second-types.dump",
+    "Delete second-types.dump",
+    "Use masses-types.data",
+    "Rename masses-types.data",
+    "Delete masses-types.data"
+   ],
+   "prompt": "Name the LAMMPS types",
+   "theme": null,
+   "title": "masses-auto.data",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 8,
+   "form": false,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "switch-to-start",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 7,
+   "focus": "radix-_r_0_",
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "switch-back-asks",
+   "plus": true,
+   "presetButtons": [
+    "Use two-types.dump",
+    "Rename two-types.dump",
+    "Delete two-types.dump",
+    "Use second-types.dump",
+    "Rename second-types.dump",
+    "Delete second-types.dump",
+    "Use masses-types.data",
+    "Rename masses-types.data",
+    "Delete masses-types.data"
+   ],
+   "prompt": "Name the LAMMPS types",
+   "theme": null,
+   "title": "masses-auto.data",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 8,
+   "info": "CentreMg at (0.5000, 0.5000, 1.0000)Bonds6 \u00d7 2.100 \u00c5Mean2.100 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-masses-third",
+   "plus": true,
+   "theme": null,
+   "title": "masses-third.data",
+   "toast": {
+    "actions": [
+     "Undo"
+    ],
+    "shown": true,
+    "text": "Used the saved type map \"masses-types.data\" for masses-third.data.Undo"
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 8,
+   "focus": "type-input-1",
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "undo-keyboard",
+   "plus": true,
+   "presetButtons": [
+    "Use two-types.dump",
+    "Rename two-types.dump",
+    "Delete two-types.dump",
+    "Use second-types.dump",
+    "Rename second-types.dump",
+    "Delete second-types.dump",
+    "Use masses-types.data",
+    "Rename masses-types.data",
+    "Delete masses-types.data"
+   ],
+   "prompt": "Name the LAMMPS types",
+   "theme": null,
+   "title": "masses-third.data",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 9,
+   "info": "CentreMg at (0.5000, 0.5000, 1.0000)Bonds6 \u00d7 2.100 \u00c5Mean2.100 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-masses-fourth",
+   "plus": true,
+   "theme": null,
+   "title": "masses-fourth.data",
+   "toast": {
+    "actions": [
+     "Undo"
+    ],
+    "shown": true,
+    "text": "Used the saved type map \"masses-types.data\" for masses-fourth.data.Undo"
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 10,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "switch-expires-toast",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 9,
+   "info": "CentreMg at (0.5000, 0.5000, 1.0000)Bonds6 \u00d7 2.100 \u00c5Mean2.100 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "switch-back-once",
+   "plus": true,
+   "theme": null,
+   "title": "masses-fourth.data",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 4,
+    "draw": 42
+   },
+   "files": 11,
+   "info": "CentreMg at (0.5000, 0.5000, 1.0000)Bonds6 \u00d7 2.100 \u00c5Mean2.100 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "second-note",
+   "plus": true,
+   "theme": null,
+   "title": "masses-sixth.data",
+   "toast": {
+    "actions": [
+     "Undo"
+    ],
+    "shown": true,
+    "text": "Used the saved type map \"masses-types.data\" for masses-sixth.data.Undo"
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 12,
+   "focus": "type-input-1",
+   "form": true,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-two-types-again",
+   "plus": true,
+   "presetButtons": [
+    "Use two-types.dump",
+    "Rename two-types.dump",
+    "Delete two-types.dump",
+    "Use second-types.dump",
+    "Rename second-types.dump",
+    "Delete second-types.dump",
+    "Use masses-types.data",
+    "Rename masses-types.data",
+    "Delete masses-types.data"
+   ],
+   "presetCount": 3,
+   "prompt": "Name the LAMMPS types",
+   "theme": null,
+   "title": "two-types.dump (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": "The file is not a gemmy type presets file (it has no \"gemmy-type-presets\" format).",
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 12,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "import-bad",
+   "plus": true,
+   "presetCount": 3,
+   "theme": null,
+   "title": "two-types.dump (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "applyDisabled": true,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "fieldError": "Qq does not name an element, such as Fe or Fe1.",
+   "files": 12,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "label-qq",
+   "plus": true,
+   "presetCount": 3,
+   "theme": null,
+   "title": "two-types.dump (2)",
+   "values": [
+    "Qq",
+    "Cl"
+   ],
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 12,
+   "form": false,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "label-good-apply",
+   "plus": true,
+   "theme": null,
+   "title": "two-types.dump (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 13,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-poscar-pair",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (4)",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": "Could not load POSCAR: scene.json is a scene file: open it on its own, not with POSCAR.",
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 14,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-scene-sidecar",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (5)",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": "bad-config.toml: no_such_key: Extra inputs are not permitted",
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 15,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-bad-config",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (6)",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 17,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "switch-while-loading",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "toast": {
+    "actions": [],
+    "shown": false,
+    "text": ""
+   },
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 18,
+   "form": false,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "switch-clears-form",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "alert": null,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 18,
+   "info": "CentreSi at (0.5000, 0.5000, 0.5000)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-poscar-last",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (8)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 18,
+   "info": "CentreSi at (0.5000, 0.5000, 0.5000)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "new-tab-before",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (8)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "checked": 0,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 19,
+   "focusInStart": true,
+   "info": null,
+   "items": [
+    "POSCAR",
+    "POSCAR (2)",
+    "POSCAR (3)",
+    "two-types.dump",
+    "second-types.dump",
+    "masses-types.data",
+    "masses-auto.data",
+    "masses-third.data",
+    "masses-fourth.data",
+    "masses-fifth.data",
+    "masses-sixth.data",
+    "two-types.dump (2)",
+    "POSCAR (4)",
+    "POSCAR (5)",
+    "POSCAR (6)",
+    "POSCAR (7)",
+    "two-types.dump (3)",
+    "POSCAR (8)"
+   ],
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "new-tab-open",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 19,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "new-tab-pressed-again",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "checked": 1,
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 18,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "items": [
+    "POSCAR",
+    "POSCAR (2)",
+    "POSCAR (3)",
+    "two-types.dump",
+    "second-types.dump",
+    "masses-types.data",
+    "masses-auto.data",
+    "masses-third.data",
+    "masses-fourth.data",
+    "masses-fifth.data",
+    "masses-sixth.data",
+    "two-types.dump (2)",
+    "POSCAR (4)",
+    "POSCAR (5)",
+    "POSCAR (6)",
+    "POSCAR (7)",
+    "two-types.dump (3)",
+    "POSCAR (8)"
+   ],
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "new-tab-switched",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 19,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "new-tab-plus",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 18,
+   "focusCurrent": "file-trigger",
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "new-tab-closed",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "exportMenu": false,
+   "fileMenu": true,
+   "files": 18,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "popup-one-at-a-time",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 18,
+   "fits": true,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "items": 18,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "file-menu-long",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 18,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "back-to-file",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  }
+ ]
+}

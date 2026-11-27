@@ -15,8 +15,8 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "gemmy"
 
-HEAVY = frozenset({"ase", "numpy", "scipy", "pydantic", "tyro"})
-COMPILE_MODULES = frozenset({"compile", "structure", "config"})
+HEAVY = frozenset({"ase", "numpy", "scipy", "pydantic", "tyro", "fastatoms"})
+COMPILE_MODULES = frozenset({"compile", "readers", "config"})
 
 
 @dataclass(frozen=True)
@@ -44,9 +44,25 @@ RULES = (
         forbidden_toplevel=COMPILE_MODULES,
     ),
     # Compile config and validation: pydantic is fine, the numeric stack is not.
-    Rule(("config.py",), forbidden_toplevel=frozenset({"ase", "numpy", "scipy"})),
+    Rule(("config.py", "elements.py"), forbidden_toplevel=frozenset({"ase", "numpy", "scipy"})),
     # The tyro grammar may import tyro, never the heavy numeric stack or compile code at import time.
     Rule(("cli_args.py",), forbidden_toplevel=frozenset({"ase", "numpy", "scipy", "pydantic"}) | COMPILE_MODULES),
+    # Reader backends import ASE and fastatoms inside their functions, so the readers package loads without either
+    # (fastatoms is in HEAVY: a binding, not a module the reader package may import when it loads).
+    Rule(("readers/*.py",), forbidden_toplevel=HEAVY | frozenset({"compile", "config", "cli"})),
+    # The text readers (format detection, POSCAR and extended XYZ species, LAMMPS data and dump text, records) decide
+    # from the file's text alone: they import no heavy package at any scope.
+    Rule(
+        (
+            "readers/formats.py",
+            "readers/species_text.py",
+            "readers/lammps_data.py",
+            "readers/lammps_dump.py",
+            "readers/record.py",
+        ),
+        forbidden_anywhere=HEAVY,
+        forbidden_toplevel=COMPILE_MODULES,
+    ),
     # Entry points may reach compile code lazily, never at import time.
     Rule(("cli.py", "__init__.py"), forbidden_toplevel=HEAVY | COMPILE_MODULES),
 )

@@ -373,6 +373,14 @@ wheels = [
 ]
 
 [[package]]
+name = "fastatoms"
+version = "0.3.0"
+source = { git = "https://github.com/chazeon/fastatoms?rev=5e9a9088eacc32d03872432c06827e8928b67d91#5e9a9088eacc32d03872432c06827e8928b67d91" }
+dependencies = [
+    { name = "numpy" },
+]
+
+[[package]]
 name = "fonttools"
 version = "4.62.1"
 source = { registry = "https://pypi.org/simple" }
@@ -433,12 +441,6 @@ dependencies = [
     { name = "tyro" },
 ]
 
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
 [package.dev-dependencies]
 blender = [
     { name = "bpy", marker = "python_full_version == '3.13.*'" },
@@ -447,18 +449,18 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+fastatoms = [
+    { name = "fastatoms" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = ">=3.23" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
     { name = "scipy", specifier = ">=1.12" },
     { name = "tyro", specifier = ">=1.0.17" },
 ]
-provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 blender = [{ name = "bpy", marker = "python_full_version == '3.13.*'", specifier = "==5.2.3" }]
@@ -466,6 +468,7 @@ dev = [
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.6" },
 ]
+fastatoms = [{ name = "fastatoms", git = "https://github.com/chazeon/fastatoms?rev=5e9a9088eacc32d03872432c06827e8928b67d91" }]
 
 [[package]]
 name = "idna"

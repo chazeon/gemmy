@@ -1,5 +1,5 @@
 # Nucleosome core particle (PDB 1KX5): 2 DNA strands (warm, labelled *_dna through labels.json) and 8 histone chains (cool).
-# Bonds match by element, so the *_dna labels still form covalent bonds.
+# Bonds match species labels exactly, so each pair of labels has its own rule (C and C_dna are different labels).
 structure = "1kx5.extxyz"
 labels = { file = "labels.json" }
 
@@ -62,7 +62,52 @@ complete = "none"
 
 [[bonds]]
 a = "C"
+b = "C_dna"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C_dna"
+b = "C_dna"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C"
 b = "N"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C"
+b = "N_dna"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C_dna"
+b = "N"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C_dna"
+b = "N_dna"
 min = 0.9
 max = 1.9
 radius = 0.04
@@ -79,8 +124,44 @@ material = "covalent"
 complete = "none"
 
 [[bonds]]
+a = "C"
+b = "O_dna"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C_dna"
+b = "O"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "C_dna"
+b = "O_dna"
+min = 0.9
+max = 1.9
+radius = 0.04
+material = "covalent"
+complete = "none"
+
+[[bonds]]
 a = "O"
-b = "P"
+b = "P_dna"
+min = 1.4
+max = 1.7
+radius = 0.05
+material = "covalent"
+complete = "none"
+
+[[bonds]]
+a = "O_dna"
+b = "P_dna"
 min = 1.4
 max = 1.7
 radius = 0.05

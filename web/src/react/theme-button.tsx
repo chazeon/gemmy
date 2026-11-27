@@ -28,7 +28,6 @@ export function ThemeButton() {
       shortcut={SHORTCUT.theme}
       onClick={cycleTheme}
       style={spin(1)}
-      className="size-11 rounded-[var(--radius)] bg-[var(--bar)] text-[var(--fg)] shadow-[var(--shadow)]"
     >
       <Icon {...ICON} />
     </TipButton>

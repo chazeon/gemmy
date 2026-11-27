@@ -3,7 +3,7 @@
 import { setView, viewNow } from "../camera/view";
 import { VIEW_KEY, type ViewPose, decodeView, encodeView, poseOf, viewFromPose } from "../camera/viewhash";
 import { lens, loaded } from "../state";
-import { note } from "./toast";
+import { note } from "./message";
 import { showRotated } from "./views";
 
 const SETTLE_MS = 200; // the address is written once the camera has been still for a read this long
@@ -78,9 +78,10 @@ export function copyLink(): void {
       ? "Copied the view only: an embedded or local scene cannot go in a link, " +
         "so the link opens this page at this view."
       : "Copied the link: this scene, at this view.";
-  const refused = () => note("Could not copy the link: the browser refused the clipboard.", NOTE_MS);
+  const refused = () =>
+    note("Could not copy the link: the browser refused the clipboard.", { ms: NOTE_MS, kind: "warning" });
   try {
-    navigator.clipboard.writeText(url.href).then(() => note(said, NOTE_MS), refused);
+    navigator.clipboard.writeText(url.href).then(() => note(said, { ms: NOTE_MS }), refused);
   } catch {
     refused();
   }

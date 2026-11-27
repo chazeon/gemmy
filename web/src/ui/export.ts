@@ -1,7 +1,8 @@
-// The Export menu's actions: the PNG and SVG pictures, and the render settings (saved as TOML or JSON, or copied with
-// the render command). The menu (src/react/export-menu.tsx) runs one by its name; each action says what happened in the
-// page's toast (ui/toast.ts). Two signals hold what the menu shows: the text the clipboard refused (a dialog to copy it
-// by hand), and the serve page's Render item (set by ui/live.ts).
+// The Export menu's actions: the PNG and SVG pictures, the render settings (saved as TOML or JSON, or copied with the
+// render command), and a structure's config (saved as TOML or JSON, the file `gemmy compile` reads). The menu
+// (src/react/export-menu.tsx) runs one by its name; each action says what happened on the message line (ui/message.ts).
+// Two signals hold what the menu shows: the text the clipboard refused (a dialog to copy it by hand), and the serve
+// page's Render item (set by ui/live.ts).
 import { signal } from "@preact/signals-core";
 import { renderer, scene, stage } from "../render/draw";
 import { buildTracedSvg } from "../trace/traced";
@@ -9,9 +10,14 @@ import { exportView, renderCommand, settingsJson, settingsToml } from "../export
 import { drawTriad } from "../render/triad";
 import { renderTriad } from "../render/triad3d";
 import { pageCamera } from "../camera/view";
+import type { SceneConfig } from "../compile/config";
+import { ConfigError } from "../compile/config-errors";
+import { configToJson, configToToml } from "../compile/config-export";
+import { configNameFor } from "../compile/files";
 import { camera, loaded, outlines, requestRender, showAtoms, showBox } from "../state";
 import { outlineScale } from "./outline-scale";
-import { note } from "./toast";
+import { activeModel, type StructureModel } from "./structure-model";
+import { note } from "./message";
 
 const PNG_SCALE = 2; // the PNG is twice the window in each direction, whatever the screen's own pixel ratio
 const KB = 1024;
@@ -50,7 +56,7 @@ function saveFile(name: string, type: string, text: string) {
 function copyText(text: string, what: string) {
   const refused = () => {
     copyFallback.value = { text, what };
-    note(`Could not use the clipboard: ${what} is shown, press Ctrl/Cmd+C to copy it.`);
+    note(`Could not use the clipboard: ${what} is shown, press Ctrl/Cmd+C to copy it.`, { kind: "warning" });
   };
   try {
     navigator.clipboard.writeText(text).then(() => note(`Copied ${what}.`), refused);
@@ -62,7 +68,7 @@ function copyText(text: string, what: string) {
 // ---- the image and vector exports ----
 // The PNG is drawn by the renderer at PNG_SCALE, with the 3D triad in its corner, then the letters on top; the page
 // background fills it unless transparent.
-function exportPng(transparent: boolean) {
+export function makePng(transparent: boolean): Promise<Blob | null> {
   const w = stage.clientWidth,
     h = stage.clientHeight,
     ratio = renderer.getPixelRatio();
@@ -83,14 +89,16 @@ function exportPng(transparent: boolean) {
   renderer.setPixelRatio(ratio);
   renderer.setSize(w, h);
   requestRender();
-  out.toBlob((blob) => {
-    if (blob) {
-      download("view.png", blob);
-      note(`Saved view.png (${out.width} × ${out.height}).`);
-    } else {
-      note("The browser could not make the PNG.");
-    }
-  }, "image/png");
+  return new Promise((done) => out.toBlob(done, "image/png"));
+}
+async function exportPng(transparent: boolean) {
+  const blob = await makePng(transparent);
+  if (blob) {
+    download("view.png", blob);
+    note(`Saved view.png (${PNG_SCALE * stage.clientWidth} × ${PNG_SCALE * stage.clientHeight}).`);
+  } else {
+    note("The browser could not make the PNG.", { kind: "error" });
+  }
 }
 function triadAt(scale: number, transparent: boolean): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
@@ -98,17 +106,25 @@ function triadAt(scale: number, transparent: boolean): HTMLCanvasElement {
   return canvas;
 }
 
-// The SVG export (trace/traced.ts): the same view, drawn from the GPU's object ids.
-function exportSvg() {
+// A page colour as sRGB hex, whatever CSS writes it as (the page's tokens are oklch, which SVG tools do not read). The browser
+// paints one pixel with it and the pixel is read back.
+function srgbHex(cssColour: string): string {
+  const pixel = document.createElement("canvas");
+  pixel.width = pixel.height = 1;
+  const ctx = pixel.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
+  ctx.fillStyle = cssColour;
+  ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
+// The SVG export (trace/traced.ts): the same view, drawn from the GPU's object ids. Its one page colour is the cell box's.
+export function makeSvg(): ReturnType<typeof buildTracedSvg> {
   const { data } = loaded.value;
-  if (!data) {
-    note("Load a scene first: there is no scene on show to export.");
-    return;
-  }
-  const boxColor = getComputedStyle(document.documentElement).getPropertyValue("--box").trim();
-  let result: ReturnType<typeof buildTracedSvg>;
+  if (!data) throw new Error("Load a scene first: there is no scene on show to export.");
+  const boxColor = srgbHex(getComputedStyle(document.documentElement).getPropertyValue("--box").trim());
   try {
-    result = buildTracedSvg({
+    return buildTracedSvg({
       data,
       centre: loaded.value.centre,
       extent: loaded.value.extent,
@@ -119,15 +135,25 @@ function exportSvg() {
       lattice: loaded.value.lattice.map((v) => v.toArray()),
       boxColor,
     });
-  } catch (error) {
-    note(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`);
-    return;
   } finally {
     requestRender(); // the passes drew into the GPU's buffers: the live view is redrawn either way
   }
+}
+function exportSvg() {
+  if (!loaded.value.data) {
+    note("Load a scene first: there is no scene on show to export.", { kind: "warning" });
+    return;
+  }
+  let result: ReturnType<typeof buildTracedSvg>;
+  try {
+    result = makeSvg();
+  } catch (error) {
+    note(`The SVG export failed: ${error instanceof Error ? error.message : String(error)}`, { kind: "error" });
+    return;
+  }
   download("view.svg", new Blob([result.text], { type: "image/svg+xml" }));
   if (result.paths === 0) {
-    note("Saved view.svg, but nothing in this view is visible: the file has no shapes.");
+    note("Saved view.svg, but nothing in this view is visible: the file has no shapes.", { kind: "warning" });
     return;
   }
   note(
@@ -140,6 +166,32 @@ function sceneFileName(): string {
   return meta?.content || DEFAULT_SCENE_FILE;
 }
 
+// The config the file holds: the model's config, named for its structure, with the page's type map in its `types` (the map
+// the page read the file with, which `gemmy compile` reads strictly, so every type the file uses must be named). The
+// page's map wins over a `types` the config had.
+function exportedConfig(model: StructureModel): SceneConfig {
+  const config = model.config.peek();
+  return { ...config, structure: model.fileName, types: { ...config.types, ...model.types } };
+}
+
+// The shown structure's config, saved under the name `gemmy compile` matches it to the structure by. Its `structure` is
+// the file's name. JSON cannot hold inf or nan: the export says so, and TOML, which keeps them, is the export for that.
+function saveConfig(format: "toml" | "json") {
+  const model = activeModel.peek();
+  if (model === null) {
+    note("Open a structure first: its config is what the style panel edits.", { kind: "warning" });
+    return;
+  }
+  const config = exportedConfig(model);
+  try {
+    if (format === "toml") saveFile(configNameFor(model.fileName, "toml"), "application/toml", configToToml(config));
+    else saveFile(configNameFor(model.fileName, "json"), "application/json", configToJson(config));
+  } catch (error) {
+    if (!(error instanceof ConfigError)) throw error;
+    note(error.message, { kind: "error" });
+  }
+}
+
 // ---- the menu's actions ----
 export type ExportAction =
   | "png"
@@ -149,13 +201,15 @@ export type ExportAction =
   | "copy-toml"
   | "copy-json"
   | "copy-command"
+  | "save-config-toml"
+  | "save-config-json"
   | "render-view";
 
 // Runs one action of the menu. The PNG takes whether its background is transparent.
 export function runExport(action: ExportAction, options: { transparent?: boolean } = {}): void {
   switch (action) {
     case "png":
-      exportPng(options.transparent ?? true);
+      void exportPng(options.transparent ?? true);
       return;
     case "svg":
       exportSvg();
@@ -174,6 +228,12 @@ export function runExport(action: ExportAction, options: { transparent?: boolean
       return;
     case "copy-command":
       copyText(renderCommand(currentView(), sceneFileName()), "the command");
+      return;
+    case "save-config-toml":
+      saveConfig("toml");
+      return;
+    case "save-config-json":
+      saveConfig("json");
       return;
     case "render-view":
       renderView.peek()?.();

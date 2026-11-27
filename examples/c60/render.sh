@@ -8,4 +8,4 @@ GEMMY="${GEMMY:-gemmy}"
 mkdir -p "$out"
 
 $GEMMY compile "$here/config.toml" --out "$out/scene.json"
-$GEMMY render --scene "$out/scene.json" --out "$out/c60.png" --camera.zoom 0.8 --quality.resolution ${RES:-800 800} --quality.samples ${SAMPLES:-64}
+$GEMMY render --scene "$out/scene.json" --out "$out/c60.png" --polyhedron.opacity 1 --camera.zoom 0.8 --quality.resolution ${RES:-800 800} --quality.samples ${SAMPLES:-64}

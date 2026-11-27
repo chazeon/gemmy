@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from gemmy.config import BondRule, CellConfig, DisplacementConfig, ElementStyle, PolyhedronRule, SceneConfig
-from gemmy.structure import AtomRecord, Structure
+from gemmy.readers.record import AtomRecord, Structure
 
 SCENE_DEPS_AVAILABLE = importlib.util.find_spec("ase") is not None and importlib.util.find_spec("scipy") is not None
 if SCENE_DEPS_AVAILABLE:
@@ -80,7 +80,7 @@ class TestSceneCompilation(unittest.TestCase):
             ],
         )
         scene = compile_scene(structure, config)
-        self.assertEqual(scene.schema_version, 2)
+        self.assertEqual(scene.schema_version, 3)
         self._assert_reference_integrity(scene)
         self.assertEqual(len(scene.primitives.atoms), 7)
         self.assertEqual(len(scene.primitives.bonds), 6)

@@ -1,4 +1,4 @@
-"""Site labels: where they come from (sidecar file, labeler hook) and applying them to sites (stage 0)."""
+"""Site labels: where they come from (sidecar file, labeler hook) and applying them to sites."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from ..datafile import DataFileError, read_data
-from ..structure import Structure
+from ..readers.record import Structure
 from .sites import Site
 
 
@@ -29,7 +29,10 @@ def _expand(spec: Any, source: str) -> list[int]:
 
 
 def load_label_file(path: str | Path) -> dict[int, str]:
-    """Read a JSON or TOML sidecar: `{"3": "H1"}` (index -> label) and/or `{"H1": [3, "5-7"]}` (label -> indices)."""
+    """Read a JSON or TOML sidecar: `{"3": "H1"}` (index -> label) and/or `{"H1": [3, "5-7"]}` (label -> indices).
+
+    An atom given two different labels is an error. The same label twice is fine.
+    """
     p = Path(path)
     try:
         data = read_data(p)
@@ -38,18 +41,31 @@ def load_label_file(path: str | Path) -> dict[int, str]:
     table = data.get("labels", data) if isinstance(data, dict) else None
     if not isinstance(table, dict):
         raise LabelError(f"label file {p} must contain an object (optionally under 'labels')")
-    out: dict[int, str] = {}
+    labels_given: dict[int, set[str]] = {}
     for key, value in table.items():
         if isinstance(value, str):
             if not key.isdigit():
                 raise LabelError(f"label file {p}: key {key!r} must be an atom index when its value is a label")
-            out[int(key)] = value
+            labels_given.setdefault(int(key), set()).add(value)
         elif isinstance(value, list):
             for item in value:
                 for idx in _expand(item, str(p)):
-                    out[idx] = key
+                    labels_given.setdefault(idx, set()).add(key)
         else:
             raise LabelError(f"label file {p}: entry {key!r} must be a label or a list of indices")
+    return _single_labels(p, labels_given)
+
+
+def _single_labels(source: Path, labels_given: dict[int, set[str]]) -> dict[int, str]:
+    """One label per atom. An atom given two different labels is an error; the message names the lowest such atom
+    and its two labels in sorted order."""
+    out: dict[int, str] = {}
+    for idx in sorted(labels_given):
+        names = sorted(labels_given[idx])
+        if len(names) > 1:
+            first, second = names[:2]
+            raise LabelError(f"label file {source}: atom {idx} is given two labels, {first!r} and {second!r}")
+        out[idx] = names[0]
     return out
 
 

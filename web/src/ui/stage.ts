@@ -9,10 +9,11 @@ import { load } from "../scene/load";
 import type { ViewPose } from "../camera/viewhash";
 import { loaded, outlines, showAtoms, showBox } from "../state";
 import type { Scene } from "../types";
+import { captureMode } from "./capture";
 import { applyPose, watchView } from "./share";
 import { select } from "./picking";
 import { dist } from "./readout";
-import { infoChoice, narrowScreen, showInfo } from "./panels";
+import { detailsChoice, inspectorChoice, narrowScreen, showDetails, showInspector } from "./panels";
 import { showRotated } from "./views";
 
 // ---- how the controls feel ----
@@ -33,6 +34,7 @@ export function openScene(doc: Scene, view: ViewPose | null): void {
   place(doc);
   if (view) applyPose(view);
   else showRotated();
+  if (captureMode) return; // the stage alone: no selection highlight, no cards, no address writes
   const { centre, points, polyTargets } = loaded.value;
   const middle = [...polyTargets].sort(
     (p, q) =>
@@ -40,7 +42,9 @@ export function openScene(doc: Scene, view: ViewPose | null): void {
       dist(points.get(q.poly.center_point_id)!.position, centre),
   )[0];
   select(middle ?? null);
-  showInfo(infoChoice() ?? (Boolean(middle) && !narrowScreen.matches)); // a phone opens with it folded
+  // The card opens at the picked polyhedron and the dock on a wide screen; a phone opens with both folded.
+  showDetails(detailsChoice() ?? (Boolean(middle) && !narrowScreen.matches));
+  showInspector(inspectorChoice() ?? !narrowScreen.matches);
   watchView();
 }
 
@@ -49,7 +53,7 @@ export function updateScene(doc: Scene): void {
 }
 
 // ---- the Show flags ----
-// The menu's checks set the flags (react/main-menu.tsx); the objects they show follow them here. A new scene's objects
+// The view checks set the flags (react/style-panel/view-section.tsx); the objects they show follow them here. A new scene's objects
 // are hidden or shown by the flags too, since they follow `loaded`.
 export function wireStage(): void {
   Object.assign(controls, DRAG_FEEL);

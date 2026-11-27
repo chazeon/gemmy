@@ -4,24 +4,30 @@
 // (a gist or a scene URL), and New tab's request for the address box. The loader (ui/loader.ts) shows, fills and hides the
 // card through the functions below, and wires the actions the card calls.
 import { signal } from "@preact/signals-core";
-import { type Example, type Gallery, galleryNear, sceneAddressOf } from "../scene/examples";
-import { type SceneSource, gistSourceOf, resolveWebUrl } from "../scene/source";
+import { type Example, type Gallery, galleryNear, structureOf } from "../scene/examples";
+import { type SceneSource, type Source, gistSourceOf, resolveWebUrl } from "../scene/source";
+import { errorText } from "../errors";
+import type { TypePrompt } from "./types-needed";
 
 interface HomeActions {
-  openSource(source: SceneSource): void;
+  openSource(source: Source): void;
   openServed(): void;
   openFile(): void;
 }
 
-// The card: shown over the stage or not, the status of a scene that is loading, its error, and the name of the scene a
-// gemmy serve page serves (null on any other page).
+// The card: shown over the stage or not, the status of a scene that is loading, its error, the name of the scene a
+// gemmy serve page serves (null on any other page), and the type map a structure needs (null when none is asked for).
 export interface CardState {
   shown: boolean;
   status: string;
   error: string | null;
   served: string | null;
+  typePrompt: TypePrompt | null;
 }
-export const card = signal<CardState>({ shown: false, status: "", error: null, served: null });
+export const card = signal<CardState>({ shown: false, status: "", error: null, served: null, typePrompt: null });
+
+// Whether the Open card has its address box: a gemmy serve page has no loader for an address, so it has none (ui/live.ts).
+export const addressShown = signal(true);
 
 // The gallery: undefined until it is read, null when the site has none (no examples.json, or one that does not read).
 export const gallery = signal<Gallery | null | undefined>(undefined);
@@ -30,7 +36,8 @@ let actions: HomeActions;
 let galleryRead = false;
 let focusPending = false;
 
-const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+// What every card state sets to nothing: a status, an error and a type prompt are each one at a time.
+const CLEARED = { status: "", error: null, typePrompt: null } satisfies Partial<CardState>;
 
 // ---- the card: shown over the stage, with the status and the error of the scene being loaded ----
 function show(patch: Partial<CardState>): void {
@@ -38,19 +45,27 @@ function show(patch: Partial<CardState>): void {
   document.body.classList.add("no-scene");
 }
 export function busy(text: string): void {
-  show({ status: text, error: null });
+  show({ ...CLEARED, status: text });
 }
 export function fail(text: string): void {
-  show({ status: "", error: text });
+  show({ ...CLEARED, error: text });
+}
+// The card asks for a structure's type map: the form is drawn in it, with no status or error.
+export function askTypes(prompt: TypePrompt): void {
+  show({ ...CLEARED, typePrompt: prompt });
+}
+// The type prompt goes at once when the selection or its load changes, so it never outlives its load.
+export function clearTypePrompt(): void {
+  card.value = { ...card.value, typePrompt: null };
 }
 export function hideCard(): void {
-  card.value = { ...card.value, shown: false, status: "", error: null };
+  card.value = { ...card.value, ...CLEARED, shown: false };
   document.body.classList.remove("no-scene");
 }
 
 // The start screen itself. `served` is the name of the scene a gemmy serve page serves, or null on any other page.
 export function showHome(served: string | null): void {
-  show({ status: "", error: null, served });
+  show({ ...CLEARED, served });
   if (!galleryRead) {
     galleryRead = true;
     void galleryNear(location.href)
@@ -78,7 +93,7 @@ const HEX_ID = /^[0-9a-f]+$/i;
 function sourceOfAddress(text: string, base: string): SceneSource {
   const value = text.trim();
   if (HEX_ID.test(value) || isGistAddress(value)) return gistSourceOf(value);
-  return { kind: "url", url: resolveWebUrl(value, base), byDefault: false };
+  return { kind: "url", url: resolveWebUrl(value, base) };
 }
 
 function isGistAddress(value: string): boolean {
@@ -94,12 +109,13 @@ export function openAddress(text: string): void {
   try {
     actions.openSource(sourceOfAddress(text, location.href));
   } catch (error) {
-    fail(messageOf(error));
+    fail(errorText(error));
   }
 }
 
+// A card opens its example's structure, compiled in the page: the same tab as the example's own page opens.
 export function openExample(found: Gallery, example: Example): void {
-  actions.openSource({ kind: "url", url: sceneAddressOf(found, example), byDefault: false });
+  actions.openSource(structureOf(found, example));
 }
 
 export function openServed(): void {

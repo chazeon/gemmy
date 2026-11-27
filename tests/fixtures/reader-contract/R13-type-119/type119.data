@@ -1,0 +1,16 @@
+type 119 is past the element table (1 to 118) and its mass (50.0) is within 0.1 u of no element: dummy X, keyed 119
+
+1 atoms
+119 atom types
+
+0.0 4.0 xlo xhi
+0.0 4.0 ylo yhi
+0.0 4.0 zlo zhi
+
+Masses
+
+119 50.0
+
+Atoms # atomic
+
+1 119 1.0 1.0 1.0

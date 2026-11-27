@@ -1,0 +1,10 @@
+VASP 5 species line, and a count line that carries a comment
+1.0
+4.0 0.0 0.0
+0.0 4.0 0.0
+0.0 0.0 4.0
+Fe_pv O
+1 1 ! one of each
+Direct
+0.0 0.0 0.0
+0.5 0.5 0.5

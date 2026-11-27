@@ -213,6 +213,14 @@ export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name);
 }
 
+// How far the live stage is moved left by the open dock, in CSS px (style.css: half the dock's width, on a wide screen with a
+// scene), which the triad's corner is moved right by to stay in view. 0 when the dock is shut, and in every export.
+export function dockInset(): number {
+  const open = document.documentElement.dataset.dock === "open";
+  if (!open || document.body.classList.contains("no-scene") || !matchMedia("(min-width: 641px)").matches) return 0;
+  return Number.parseFloat(cssVar("--dock-width")) / 2;
+}
+
 // A page colour from its sRGB components (the scene's colours are sRGB, as colour pickers show them).
 function srgbColor(rgb: readonly number[]): THREE.Color {
   return new THREE.Color().setRGB(rgb[0], rgb[1], rgb[2], THREE.SRGBColorSpace);
@@ -241,6 +249,13 @@ function makeToon(
     material.transparent = true;
     material.opacity = alphaOf(id, materials);
     material.depthWrite = false;
+    // Test hook: tests/browser/driver.mjs keeps window.__gl, and each see-through material's opacity is listed there, so
+    // the panel scenario reads what a polyhedron is drawn at.
+    const gl = (window as { __gl?: { opacities?: number[] } }).__gl;
+    if (gl !== undefined) {
+      gl.opacities ??= [];
+      gl.opacities.push(material.opacity);
+    }
   }
   return material;
 }

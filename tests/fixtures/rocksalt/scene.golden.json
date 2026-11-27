@@ -109,12 +109,12 @@
    "type": "principled"
   },
   "polyhedron": {
-   "alpha": 0.25,
+   "alpha": 1.0,
    "base_color": [
     0.2,
     0.6,
     1.0,
-    0.25
+    1.0
    ],
    "metallic": 0.0,
    "roughness": 0.2,
@@ -142,6 +142,7 @@
     0.0
    ],
    "id": "p0",
+   "label": "Mg",
    "position": [
     0.0,
     0.0,
@@ -157,6 +158,7 @@
     1.0
    ],
    "id": "p1",
+   "label": "Mg",
    "position": [
     0.0,
     0.0,
@@ -172,6 +174,7 @@
     0.0
    ],
    "id": "p2",
+   "label": "Mg",
    "position": [
     0.0,
     4.2,
@@ -187,6 +190,7 @@
     1.0
    ],
    "id": "p3",
+   "label": "Mg",
    "position": [
     0.0,
     4.2,
@@ -202,6 +206,7 @@
     0.0
    ],
    "id": "p4",
+   "label": "Mg",
    "position": [
     4.2,
     0.0,
@@ -217,6 +222,7 @@
     1.0
    ],
    "id": "p5",
+   "label": "Mg",
    "position": [
     4.2,
     0.0,
@@ -232,6 +238,7 @@
     0.0
    ],
    "id": "p6",
+   "label": "Mg",
    "position": [
     4.2,
     4.2,
@@ -247,6 +254,7 @@
     1.0
    ],
    "id": "p7",
+   "label": "Mg",
    "position": [
     4.2,
     4.2,
@@ -262,6 +270,7 @@
     0.5
    ],
    "id": "p8",
+   "label": "Mg",
    "position": [
     0.0,
     2.1,
@@ -277,6 +286,7 @@
     0.5
    ],
    "id": "p9",
+   "label": "Mg",
    "position": [
     4.2,
     2.1,
@@ -292,6 +302,7 @@
     0.5
    ],
    "id": "p10",
+   "label": "Mg",
    "position": [
     2.1,
     0.0,
@@ -307,6 +318,7 @@
     0.5
    ],
    "id": "p11",
+   "label": "Mg",
    "position": [
     2.1,
     4.2,
@@ -322,6 +334,7 @@
     0.0
    ],
    "id": "p12",
+   "label": "Mg",
    "position": [
     2.1,
     2.1,
@@ -337,6 +350,7 @@
     1.0
    ],
    "id": "p13",
+   "label": "Mg",
    "position": [
     2.1,
     2.1,
@@ -352,6 +366,7 @@
     0.5
    ],
    "id": "p14",
+   "label": "O",
    "position": [
     2.1,
     2.1,
@@ -367,6 +382,7 @@
     0.0
    ],
    "id": "p15",
+   "label": "O",
    "position": [
     2.1,
     0.0,
@@ -382,6 +398,7 @@
     1.0
    ],
    "id": "p16",
+   "label": "O",
    "position": [
     2.1,
     0.0,
@@ -397,6 +414,7 @@
     0.0
    ],
    "id": "p17",
+   "label": "O",
    "position": [
     2.1,
     4.2,
@@ -412,6 +430,7 @@
     1.0
    ],
    "id": "p18",
+   "label": "O",
    "position": [
     2.1,
     4.2,
@@ -427,6 +446,7 @@
     0.0
    ],
    "id": "p19",
+   "label": "O",
    "position": [
     0.0,
     2.1,
@@ -442,6 +462,7 @@
     1.0
    ],
    "id": "p20",
+   "label": "O",
    "position": [
     0.0,
     2.1,
@@ -457,6 +478,7 @@
     0.0
    ],
    "id": "p21",
+   "label": "O",
    "position": [
     4.2,
     2.1,
@@ -472,6 +494,7 @@
     1.0
    ],
    "id": "p22",
+   "label": "O",
    "position": [
     4.2,
     2.1,
@@ -487,6 +510,7 @@
     0.5
    ],
    "id": "p23",
+   "label": "O",
    "position": [
     0.0,
     0.0,
@@ -502,6 +526,7 @@
     0.5
    ],
    "id": "p24",
+   "label": "O",
    "position": [
     0.0,
     4.2,
@@ -517,6 +542,7 @@
     0.5
    ],
    "id": "p25",
+   "label": "O",
    "position": [
     4.2,
     0.0,
@@ -532,6 +558,7 @@
     0.5
    ],
    "id": "p26",
+   "label": "O",
    "position": [
     4.2,
     4.2,
@@ -547,6 +574,7 @@
     0.0
    ],
    "id": "p27",
+   "label": "O",
    "position": [
     -2.1,
     0.0,
@@ -562,6 +590,7 @@
     0.0
    ],
    "id": "p28",
+   "label": "O",
    "position": [
     0.0,
     -2.1,
@@ -577,6 +606,7 @@
     -0.5
    ],
    "id": "p29",
+   "label": "O",
    "position": [
     0.0,
     0.0,
@@ -592,6 +622,7 @@
     1.0
    ],
    "id": "p30",
+   "label": "O",
    "position": [
     -2.1,
     0.0,
@@ -607,6 +638,7 @@
     1.0
    ],
    "id": "p31",
+   "label": "O",
    "position": [
     0.0,
     -2.1,
@@ -622,6 +654,7 @@
     1.5
    ],
    "id": "p32",
+   "label": "O",
    "position": [
     0.0,
     0.0,
@@ -637,6 +670,7 @@
     0.0
    ],
    "id": "p33",
+   "label": "O",
    "position": [
     -2.1,
     4.2,
@@ -652,6 +686,7 @@
     0.0
    ],
    "id": "p34",
+   "label": "O",
    "position": [
     0.0,
     6.3,
@@ -667,6 +702,7 @@
     -0.5
    ],
    "id": "p35",
+   "label": "O",
    "position": [
     0.0,
     4.2,
@@ -682,6 +718,7 @@
     1.0
    ],
    "id": "p36",
+   "label": "O",
    "position": [
     -2.1,
     4.2,
@@ -697,6 +734,7 @@
     1.0
    ],
    "id": "p37",
+   "label": "O",
    "position": [
     0.0,
     6.3,
@@ -712,6 +750,7 @@
     1.5
    ],
    "id": "p38",
+   "label": "O",
    "position": [
     0.0,
     4.2,
@@ -727,6 +766,7 @@
     0.0
    ],
    "id": "p39",
+   "label": "O",
    "position": [
     6.3,
     0.0,
@@ -742,6 +782,7 @@
     0.0
    ],
    "id": "p40",
+   "label": "O",
    "position": [
     4.2,
     -2.1,
@@ -757,6 +798,7 @@
     -0.5
    ],
    "id": "p41",
+   "label": "O",
    "position": [
     4.2,
     0.0,
@@ -772,6 +814,7 @@
     1.0
    ],
    "id": "p42",
+   "label": "O",
    "position": [
     6.3,
     0.0,
@@ -787,6 +830,7 @@
     1.0
    ],
    "id": "p43",
+   "label": "O",
    "position": [
     4.2,
     -2.1,
@@ -802,6 +846,7 @@
     1.5
    ],
    "id": "p44",
+   "label": "O",
    "position": [
     4.2,
     0.0,
@@ -817,6 +862,7 @@
     0.0
    ],
    "id": "p45",
+   "label": "O",
    "position": [
     6.3,
     4.2,
@@ -832,6 +878,7 @@
     0.0
    ],
    "id": "p46",
+   "label": "O",
    "position": [
     4.2,
     6.3,
@@ -847,6 +894,7 @@
     -0.5
    ],
    "id": "p47",
+   "label": "O",
    "position": [
     4.2,
     4.2,
@@ -862,6 +910,7 @@
     1.0
    ],
    "id": "p48",
+   "label": "O",
    "position": [
     6.3,
     4.2,
@@ -877,6 +926,7 @@
     1.0
    ],
    "id": "p49",
+   "label": "O",
    "position": [
     4.2,
     6.3,
@@ -892,6 +942,7 @@
     1.5
    ],
    "id": "p50",
+   "label": "O",
    "position": [
     4.2,
     4.2,
@@ -907,6 +958,7 @@
     0.5
    ],
    "id": "p51",
+   "label": "O",
    "position": [
     -2.1,
     2.1,
@@ -922,6 +974,7 @@
     0.5
    ],
    "id": "p52",
+   "label": "O",
    "position": [
     6.3,
     2.1,
@@ -937,6 +990,7 @@
     0.5
    ],
    "id": "p53",
+   "label": "O",
    "position": [
     2.1,
     -2.1,
@@ -952,6 +1006,7 @@
     0.5
    ],
    "id": "p54",
+   "label": "O",
    "position": [
     2.1,
     6.3,
@@ -967,6 +1022,7 @@
     -0.5
    ],
    "id": "p55",
+   "label": "O",
    "position": [
     2.1,
     2.1,
@@ -982,6 +1038,7 @@
     1.5
    ],
    "id": "p56",
+   "label": "O",
    "position": [
     2.1,
     2.1,
@@ -997,6 +1054,7 @@
     -0.5
    ],
    "id": "p57",
+   "label": "Mg",
    "position": [
     2.1,
     0.0,
@@ -1012,6 +1070,7 @@
     0.0
    ],
    "id": "p58",
+   "label": "Mg",
    "position": [
     2.1,
     -2.1,
@@ -1027,6 +1086,7 @@
     1.5
    ],
    "id": "p59",
+   "label": "Mg",
    "position": [
     2.1,
     0.0,
@@ -1042,6 +1102,7 @@
     1.0
    ],
    "id": "p60",
+   "label": "Mg",
    "position": [
     2.1,
     -2.1,
@@ -1057,6 +1118,7 @@
     -0.5
    ],
    "id": "p61",
+   "label": "Mg",
    "position": [
     2.1,
     4.2,
@@ -1072,6 +1134,7 @@
     0.0
    ],
    "id": "p62",
+   "label": "Mg",
    "position": [
     2.1,
     6.3,
@@ -1087,6 +1150,7 @@
     1.5
    ],
    "id": "p63",
+   "label": "Mg",
    "position": [
     2.1,
     4.2,
@@ -1102,6 +1166,7 @@
     1.0
    ],
    "id": "p64",
+   "label": "Mg",
    "position": [
     2.1,
     6.3,
@@ -1117,6 +1182,7 @@
     -0.5
    ],
    "id": "p65",
+   "label": "Mg",
    "position": [
     0.0,
     2.1,
@@ -1132,6 +1198,7 @@
     0.0
    ],
    "id": "p66",
+   "label": "Mg",
    "position": [
     -2.1,
     2.1,
@@ -1147,6 +1214,7 @@
     1.5
    ],
    "id": "p67",
+   "label": "Mg",
    "position": [
     0.0,
     2.1,
@@ -1162,6 +1230,7 @@
     1.0
    ],
    "id": "p68",
+   "label": "Mg",
    "position": [
     -2.1,
     2.1,
@@ -1177,6 +1246,7 @@
     -0.5
    ],
    "id": "p69",
+   "label": "Mg",
    "position": [
     4.2,
     2.1,
@@ -1192,6 +1262,7 @@
     0.0
    ],
    "id": "p70",
+   "label": "Mg",
    "position": [
     6.3,
     2.1,
@@ -1207,6 +1278,7 @@
     1.5
    ],
    "id": "p71",
+   "label": "Mg",
    "position": [
     4.2,
     2.1,
@@ -1222,6 +1294,7 @@
     1.0
    ],
    "id": "p72",
+   "label": "Mg",
    "position": [
     6.3,
     2.1,
@@ -1237,6 +1310,7 @@
     0.5
    ],
    "id": "p73",
+   "label": "Mg",
    "position": [
     0.0,
     -2.1,
@@ -1252,6 +1326,7 @@
     0.5
    ],
    "id": "p74",
+   "label": "Mg",
    "position": [
     -2.1,
     0.0,
@@ -1267,6 +1342,7 @@
     0.5
    ],
    "id": "p75",
+   "label": "Mg",
    "position": [
     0.0,
     6.3,
@@ -1282,6 +1358,7 @@
     0.5
    ],
    "id": "p76",
+   "label": "Mg",
    "position": [
     -2.1,
     4.2,
@@ -1297,6 +1374,7 @@
     0.5
    ],
    "id": "p77",
+   "label": "Mg",
    "position": [
     4.2,
     -2.1,
@@ -1312,6 +1390,7 @@
     0.5
    ],
    "id": "p78",
+   "label": "Mg",
    "position": [
     6.3,
     0.0,
@@ -1327,6 +1406,7 @@
     0.5
    ],
    "id": "p79",
+   "label": "Mg",
    "position": [
     4.2,
     6.3,
@@ -1342,6 +1422,7 @@
     0.5
    ],
    "id": "p80",
+   "label": "Mg",
    "position": [
     6.3,
     4.2,
@@ -1355,6 +1436,7 @@
    {
     "element": "Mg",
     "id": "atom_0_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p0",
     "radius": 0.4
@@ -1362,6 +1444,7 @@
    {
     "element": "Mg",
     "id": "atom_1_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p1",
     "radius": 0.4
@@ -1369,6 +1452,7 @@
    {
     "element": "Mg",
     "id": "atom_2_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p2",
     "radius": 0.4
@@ -1376,6 +1460,7 @@
    {
     "element": "Mg",
     "id": "atom_3_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p3",
     "radius": 0.4
@@ -1383,6 +1468,7 @@
    {
     "element": "Mg",
     "id": "atom_4_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p4",
     "radius": 0.4
@@ -1390,6 +1476,7 @@
    {
     "element": "Mg",
     "id": "atom_5_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p5",
     "radius": 0.4
@@ -1397,6 +1484,7 @@
    {
     "element": "Mg",
     "id": "atom_6_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p6",
     "radius": 0.4
@@ -1404,6 +1492,7 @@
    {
     "element": "Mg",
     "id": "atom_7_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p7",
     "radius": 0.4
@@ -1411,6 +1500,7 @@
    {
     "element": "Mg",
     "id": "atom_8_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p8",
     "radius": 0.4
@@ -1418,6 +1508,7 @@
    {
     "element": "Mg",
     "id": "atom_9_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p9",
     "radius": 0.4
@@ -1425,6 +1516,7 @@
    {
     "element": "Mg",
     "id": "atom_10_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p10",
     "radius": 0.4
@@ -1432,6 +1524,7 @@
    {
     "element": "Mg",
     "id": "atom_11_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p11",
     "radius": 0.4
@@ -1439,6 +1532,7 @@
    {
     "element": "Mg",
     "id": "atom_12_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p12",
     "radius": 0.4
@@ -1446,6 +1540,7 @@
    {
     "element": "Mg",
     "id": "atom_13_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p13",
     "radius": 0.4
@@ -1453,6 +1548,7 @@
    {
     "element": "O",
     "id": "atom_14_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p14",
     "radius": 0.28
@@ -1460,6 +1556,7 @@
    {
     "element": "O",
     "id": "atom_15_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p15",
     "radius": 0.28
@@ -1467,6 +1564,7 @@
    {
     "element": "O",
     "id": "atom_16_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p16",
     "radius": 0.28
@@ -1474,6 +1572,7 @@
    {
     "element": "O",
     "id": "atom_17_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p17",
     "radius": 0.28
@@ -1481,6 +1580,7 @@
    {
     "element": "O",
     "id": "atom_18_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p18",
     "radius": 0.28
@@ -1488,6 +1588,7 @@
    {
     "element": "O",
     "id": "atom_19_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p19",
     "radius": 0.28
@@ -1495,6 +1596,7 @@
    {
     "element": "O",
     "id": "atom_20_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p20",
     "radius": 0.28
@@ -1502,6 +1604,7 @@
    {
     "element": "O",
     "id": "atom_21_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p21",
     "radius": 0.28
@@ -1509,6 +1612,7 @@
    {
     "element": "O",
     "id": "atom_22_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p22",
     "radius": 0.28
@@ -1516,6 +1620,7 @@
    {
     "element": "O",
     "id": "atom_23_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p23",
     "radius": 0.28
@@ -1523,6 +1628,7 @@
    {
     "element": "O",
     "id": "atom_24_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p24",
     "radius": 0.28
@@ -1530,6 +1636,7 @@
    {
     "element": "O",
     "id": "atom_25_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p25",
     "radius": 0.28
@@ -1537,6 +1644,7 @@
    {
     "element": "O",
     "id": "atom_26_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p26",
     "radius": 0.28
@@ -1544,6 +1652,7 @@
    {
     "element": "O",
     "id": "atom_27_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p27",
     "radius": 0.28
@@ -1551,6 +1660,7 @@
    {
     "element": "O",
     "id": "atom_28_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p28",
     "radius": 0.28
@@ -1558,6 +1668,7 @@
    {
     "element": "O",
     "id": "atom_29_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p29",
     "radius": 0.28
@@ -1565,6 +1676,7 @@
    {
     "element": "O",
     "id": "atom_30_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p30",
     "radius": 0.28
@@ -1572,6 +1684,7 @@
    {
     "element": "O",
     "id": "atom_31_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p31",
     "radius": 0.28
@@ -1579,6 +1692,7 @@
    {
     "element": "O",
     "id": "atom_32_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p32",
     "radius": 0.28
@@ -1586,6 +1700,7 @@
    {
     "element": "O",
     "id": "atom_33_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p33",
     "radius": 0.28
@@ -1593,6 +1708,7 @@
    {
     "element": "O",
     "id": "atom_34_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p34",
     "radius": 0.28
@@ -1600,6 +1716,7 @@
    {
     "element": "O",
     "id": "atom_35_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p35",
     "radius": 0.28
@@ -1607,6 +1724,7 @@
    {
     "element": "O",
     "id": "atom_36_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p36",
     "radius": 0.28
@@ -1614,6 +1732,7 @@
    {
     "element": "O",
     "id": "atom_37_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p37",
     "radius": 0.28
@@ -1621,6 +1740,7 @@
    {
     "element": "O",
     "id": "atom_38_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p38",
     "radius": 0.28
@@ -1628,6 +1748,7 @@
    {
     "element": "O",
     "id": "atom_39_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p39",
     "radius": 0.28
@@ -1635,6 +1756,7 @@
    {
     "element": "O",
     "id": "atom_40_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p40",
     "radius": 0.28
@@ -1642,6 +1764,7 @@
    {
     "element": "O",
     "id": "atom_41_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p41",
     "radius": 0.28
@@ -1649,6 +1772,7 @@
    {
     "element": "O",
     "id": "atom_42_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p42",
     "radius": 0.28
@@ -1656,6 +1780,7 @@
    {
     "element": "O",
     "id": "atom_43_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p43",
     "radius": 0.28
@@ -1663,6 +1788,7 @@
    {
     "element": "O",
     "id": "atom_44_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p44",
     "radius": 0.28
@@ -1670,6 +1796,7 @@
    {
     "element": "O",
     "id": "atom_45_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p45",
     "radius": 0.28
@@ -1677,6 +1804,7 @@
    {
     "element": "O",
     "id": "atom_46_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p46",
     "radius": 0.28
@@ -1684,6 +1812,7 @@
    {
     "element": "O",
     "id": "atom_47_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p47",
     "radius": 0.28
@@ -1691,6 +1820,7 @@
    {
     "element": "O",
     "id": "atom_48_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p48",
     "radius": 0.28
@@ -1698,6 +1828,7 @@
    {
     "element": "O",
     "id": "atom_49_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p49",
     "radius": 0.28
@@ -1705,6 +1836,7 @@
    {
     "element": "O",
     "id": "atom_50_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p50",
     "radius": 0.28
@@ -1712,6 +1844,7 @@
    {
     "element": "O",
     "id": "atom_51_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p51",
     "radius": 0.28
@@ -1719,6 +1852,7 @@
    {
     "element": "O",
     "id": "atom_52_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p52",
     "radius": 0.28
@@ -1726,6 +1860,7 @@
    {
     "element": "O",
     "id": "atom_53_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p53",
     "radius": 0.28
@@ -1733,6 +1868,7 @@
    {
     "element": "O",
     "id": "atom_54_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p54",
     "radius": 0.28
@@ -1740,6 +1876,7 @@
    {
     "element": "O",
     "id": "atom_55_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p55",
     "radius": 0.28
@@ -1747,6 +1884,7 @@
    {
     "element": "O",
     "id": "atom_56_O",
+    "label": "O",
     "material_id": "matte_0p9000_0p1000_0p1000_1p0000",
     "point_id": "p56",
     "radius": 0.28
@@ -1754,6 +1892,7 @@
    {
     "element": "Mg",
     "id": "atom_57_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p57",
     "radius": 0.4
@@ -1761,6 +1900,7 @@
    {
     "element": "Mg",
     "id": "atom_58_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p58",
     "radius": 0.4
@@ -1768,6 +1908,7 @@
    {
     "element": "Mg",
     "id": "atom_59_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p59",
     "radius": 0.4
@@ -1775,6 +1916,7 @@
    {
     "element": "Mg",
     "id": "atom_60_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p60",
     "radius": 0.4
@@ -1782,6 +1924,7 @@
    {
     "element": "Mg",
     "id": "atom_61_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p61",
     "radius": 0.4
@@ -1789,6 +1932,7 @@
    {
     "element": "Mg",
     "id": "atom_62_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p62",
     "radius": 0.4
@@ -1796,6 +1940,7 @@
    {
     "element": "Mg",
     "id": "atom_63_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p63",
     "radius": 0.4
@@ -1803,6 +1948,7 @@
    {
     "element": "Mg",
     "id": "atom_64_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p64",
     "radius": 0.4
@@ -1810,6 +1956,7 @@
    {
     "element": "Mg",
     "id": "atom_65_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p65",
     "radius": 0.4
@@ -1817,6 +1964,7 @@
    {
     "element": "Mg",
     "id": "atom_66_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p66",
     "radius": 0.4
@@ -1824,6 +1972,7 @@
    {
     "element": "Mg",
     "id": "atom_67_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p67",
     "radius": 0.4
@@ -1831,6 +1980,7 @@
    {
     "element": "Mg",
     "id": "atom_68_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p68",
     "radius": 0.4
@@ -1838,6 +1988,7 @@
    {
     "element": "Mg",
     "id": "atom_69_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p69",
     "radius": 0.4
@@ -1845,6 +1996,7 @@
    {
     "element": "Mg",
     "id": "atom_70_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p70",
     "radius": 0.4
@@ -1852,6 +2004,7 @@
    {
     "element": "Mg",
     "id": "atom_71_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p71",
     "radius": 0.4
@@ -1859,6 +2012,7 @@
    {
     "element": "Mg",
     "id": "atom_72_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p72",
     "radius": 0.4
@@ -1866,6 +2020,7 @@
    {
     "element": "Mg",
     "id": "atom_73_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p73",
     "radius": 0.4
@@ -1873,6 +2028,7 @@
    {
     "element": "Mg",
     "id": "atom_74_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p74",
     "radius": 0.4
@@ -1880,6 +2036,7 @@
    {
     "element": "Mg",
     "id": "atom_75_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p75",
     "radius": 0.4
@@ -1887,6 +2044,7 @@
    {
     "element": "Mg",
     "id": "atom_76_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p76",
     "radius": 0.4
@@ -1894,6 +2052,7 @@
    {
     "element": "Mg",
     "id": "atom_77_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p77",
     "radius": 0.4
@@ -1901,6 +2060,7 @@
    {
     "element": "Mg",
     "id": "atom_78_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p78",
     "radius": 0.4
@@ -1908,6 +2068,7 @@
    {
     "element": "Mg",
     "id": "atom_79_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p79",
     "radius": 0.4
@@ -1915,6 +2076,7 @@
    {
     "element": "Mg",
     "id": "atom_80_Mg",
+    "label": "Mg",
     "material_id": "matte_0p2000_0p7000_0p3000_1p0000",
     "point_id": "p80",
     "radius": 0.4
@@ -1923,8 +2085,10 @@
   "bonds": [
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p27",
     "id": "bond_0_Mg_O",
     "material_id": "bond",
@@ -1933,8 +2097,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p15",
     "id": "bond_1_Mg_O",
     "material_id": "bond",
@@ -1943,8 +2109,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p28",
     "id": "bond_2_Mg_O",
     "material_id": "bond",
@@ -1953,8 +2121,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p19",
     "id": "bond_3_Mg_O",
     "material_id": "bond",
@@ -1963,8 +2133,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p29",
     "id": "bond_4_Mg_O",
     "material_id": "bond",
@@ -1973,8 +2145,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p0",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p23",
     "id": "bond_5_Mg_O",
     "material_id": "bond",
@@ -1983,8 +2157,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p30",
     "id": "bond_6_Mg_O",
     "material_id": "bond",
@@ -1993,8 +2169,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p16",
     "id": "bond_7_Mg_O",
     "material_id": "bond",
@@ -2003,8 +2181,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p31",
     "id": "bond_8_Mg_O",
     "material_id": "bond",
@@ -2013,8 +2193,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p20",
     "id": "bond_9_Mg_O",
     "material_id": "bond",
@@ -2023,8 +2205,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p23",
     "id": "bond_10_Mg_O",
     "material_id": "bond",
@@ -2033,8 +2217,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p1",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p32",
     "id": "bond_11_Mg_O",
     "material_id": "bond",
@@ -2043,8 +2229,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p33",
     "id": "bond_12_Mg_O",
     "material_id": "bond",
@@ -2053,8 +2241,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p17",
     "id": "bond_13_Mg_O",
     "material_id": "bond",
@@ -2063,8 +2253,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p19",
     "id": "bond_14_Mg_O",
     "material_id": "bond",
@@ -2073,8 +2265,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p34",
     "id": "bond_15_Mg_O",
     "material_id": "bond",
@@ -2083,8 +2277,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p35",
     "id": "bond_16_Mg_O",
     "material_id": "bond",
@@ -2093,8 +2289,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p2",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p24",
     "id": "bond_17_Mg_O",
     "material_id": "bond",
@@ -2103,8 +2301,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p36",
     "id": "bond_18_Mg_O",
     "material_id": "bond",
@@ -2113,8 +2313,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p18",
     "id": "bond_19_Mg_O",
     "material_id": "bond",
@@ -2123,8 +2325,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p20",
     "id": "bond_20_Mg_O",
     "material_id": "bond",
@@ -2133,8 +2337,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p37",
     "id": "bond_21_Mg_O",
     "material_id": "bond",
@@ -2143,8 +2349,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p24",
     "id": "bond_22_Mg_O",
     "material_id": "bond",
@@ -2153,8 +2361,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p3",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p38",
     "id": "bond_23_Mg_O",
     "material_id": "bond",
@@ -2163,8 +2373,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p15",
     "id": "bond_24_Mg_O",
     "material_id": "bond",
@@ -2173,8 +2385,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p39",
     "id": "bond_25_Mg_O",
     "material_id": "bond",
@@ -2183,8 +2397,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p40",
     "id": "bond_26_Mg_O",
     "material_id": "bond",
@@ -2193,8 +2409,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p21",
     "id": "bond_27_Mg_O",
     "material_id": "bond",
@@ -2203,8 +2421,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p41",
     "id": "bond_28_Mg_O",
     "material_id": "bond",
@@ -2213,8 +2433,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p4",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p25",
     "id": "bond_29_Mg_O",
     "material_id": "bond",
@@ -2223,8 +2445,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p16",
     "id": "bond_30_Mg_O",
     "material_id": "bond",
@@ -2233,8 +2457,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p42",
     "id": "bond_31_Mg_O",
     "material_id": "bond",
@@ -2243,8 +2469,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p43",
     "id": "bond_32_Mg_O",
     "material_id": "bond",
@@ -2253,8 +2481,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p22",
     "id": "bond_33_Mg_O",
     "material_id": "bond",
@@ -2263,8 +2493,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p25",
     "id": "bond_34_Mg_O",
     "material_id": "bond",
@@ -2273,8 +2505,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p5",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p44",
     "id": "bond_35_Mg_O",
     "material_id": "bond",
@@ -2283,8 +2517,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p17",
     "id": "bond_36_Mg_O",
     "material_id": "bond",
@@ -2293,8 +2529,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p45",
     "id": "bond_37_Mg_O",
     "material_id": "bond",
@@ -2303,8 +2541,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p21",
     "id": "bond_38_Mg_O",
     "material_id": "bond",
@@ -2313,8 +2553,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p46",
     "id": "bond_39_Mg_O",
     "material_id": "bond",
@@ -2323,8 +2565,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p47",
     "id": "bond_40_Mg_O",
     "material_id": "bond",
@@ -2333,8 +2577,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p6",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p26",
     "id": "bond_41_Mg_O",
     "material_id": "bond",
@@ -2343,8 +2589,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p18",
     "id": "bond_42_Mg_O",
     "material_id": "bond",
@@ -2353,8 +2601,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p48",
     "id": "bond_43_Mg_O",
     "material_id": "bond",
@@ -2363,8 +2613,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p22",
     "id": "bond_44_Mg_O",
     "material_id": "bond",
@@ -2373,8 +2625,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p49",
     "id": "bond_45_Mg_O",
     "material_id": "bond",
@@ -2383,8 +2637,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p26",
     "id": "bond_46_Mg_O",
     "material_id": "bond",
@@ -2393,8 +2649,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p7",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p50",
     "id": "bond_47_Mg_O",
     "material_id": "bond",
@@ -2403,8 +2661,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p8",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p51",
     "id": "bond_48_Mg_O",
     "material_id": "bond",
@@ -2413,8 +2673,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p8",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_49_Mg_O",
     "material_id": "bond",
@@ -2423,8 +2685,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p8",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p19",
     "id": "bond_50_Mg_O",
     "material_id": "bond",
@@ -2433,8 +2697,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p8",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p20",
     "id": "bond_51_Mg_O",
     "material_id": "bond",
@@ -2443,8 +2709,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p8",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p23",
     "id": "bond_52_Mg_O",
     "material_id": "bond",
@@ -2453,8 +2721,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p8",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p24",
     "id": "bond_53_Mg_O",
     "material_id": "bond",
@@ -2463,8 +2733,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p9",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_54_Mg_O",
     "material_id": "bond",
@@ -2473,8 +2745,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p9",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p52",
     "id": "bond_55_Mg_O",
     "material_id": "bond",
@@ -2483,8 +2757,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p9",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p21",
     "id": "bond_56_Mg_O",
     "material_id": "bond",
@@ -2493,8 +2769,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p9",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p22",
     "id": "bond_57_Mg_O",
     "material_id": "bond",
@@ -2503,8 +2781,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p9",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p25",
     "id": "bond_58_Mg_O",
     "material_id": "bond",
@@ -2513,8 +2793,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p9",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p26",
     "id": "bond_59_Mg_O",
     "material_id": "bond",
@@ -2523,8 +2805,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p10",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p53",
     "id": "bond_60_Mg_O",
     "material_id": "bond",
@@ -2533,8 +2817,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p10",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_61_Mg_O",
     "material_id": "bond",
@@ -2543,8 +2829,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p10",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p15",
     "id": "bond_62_Mg_O",
     "material_id": "bond",
@@ -2553,8 +2841,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p10",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p16",
     "id": "bond_63_Mg_O",
     "material_id": "bond",
@@ -2563,8 +2853,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p10",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p23",
     "id": "bond_64_Mg_O",
     "material_id": "bond",
@@ -2573,8 +2865,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p10",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p25",
     "id": "bond_65_Mg_O",
     "material_id": "bond",
@@ -2583,8 +2877,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p11",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_66_Mg_O",
     "material_id": "bond",
@@ -2593,8 +2889,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p11",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p54",
     "id": "bond_67_Mg_O",
     "material_id": "bond",
@@ -2603,8 +2901,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p11",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p17",
     "id": "bond_68_Mg_O",
     "material_id": "bond",
@@ -2613,8 +2913,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p11",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p18",
     "id": "bond_69_Mg_O",
     "material_id": "bond",
@@ -2623,8 +2925,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p11",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p24",
     "id": "bond_70_Mg_O",
     "material_id": "bond",
@@ -2633,8 +2937,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p11",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p26",
     "id": "bond_71_Mg_O",
     "material_id": "bond",
@@ -2643,8 +2949,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p12",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p55",
     "id": "bond_72_Mg_O",
     "material_id": "bond",
@@ -2653,8 +2961,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p12",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_73_Mg_O",
     "material_id": "bond",
@@ -2663,8 +2973,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p12",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p15",
     "id": "bond_74_Mg_O",
     "material_id": "bond",
@@ -2673,8 +2985,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p12",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p17",
     "id": "bond_75_Mg_O",
     "material_id": "bond",
@@ -2683,8 +2997,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p12",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p19",
     "id": "bond_76_Mg_O",
     "material_id": "bond",
@@ -2693,8 +3009,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p12",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p21",
     "id": "bond_77_Mg_O",
     "material_id": "bond",
@@ -2703,8 +3021,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p13",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p14",
     "id": "bond_78_Mg_O",
     "material_id": "bond",
@@ -2713,8 +3033,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p13",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p56",
     "id": "bond_79_Mg_O",
     "material_id": "bond",
@@ -2723,8 +3045,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p13",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p16",
     "id": "bond_80_Mg_O",
     "material_id": "bond",
@@ -2733,8 +3057,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p13",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p18",
     "id": "bond_81_Mg_O",
     "material_id": "bond",
@@ -2743,8 +3069,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p13",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p20",
     "id": "bond_82_Mg_O",
     "material_id": "bond",
@@ -2753,8 +3081,10 @@
    },
    {
     "a_element": "Mg",
+    "a_label": "Mg",
     "a_point_id": "p13",
     "b_element": "O",
+    "b_label": "O",
     "b_point_id": "p22",
     "id": "bond_83_Mg_O",
     "material_id": "bond",
@@ -2763,8 +3093,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p15",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p57",
     "id": "bond_84_Mg_O",
     "material_id": "bond",
@@ -2773,8 +3105,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p15",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p58",
     "id": "bond_85_Mg_O",
     "material_id": "bond",
@@ -2783,8 +3117,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p16",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p59",
     "id": "bond_86_Mg_O",
     "material_id": "bond",
@@ -2793,8 +3129,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p16",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p60",
     "id": "bond_87_Mg_O",
     "material_id": "bond",
@@ -2803,8 +3141,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p17",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p61",
     "id": "bond_88_Mg_O",
     "material_id": "bond",
@@ -2813,8 +3153,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p17",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p62",
     "id": "bond_89_Mg_O",
     "material_id": "bond",
@@ -2823,8 +3165,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p18",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p63",
     "id": "bond_90_Mg_O",
     "material_id": "bond",
@@ -2833,8 +3177,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p18",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p64",
     "id": "bond_91_Mg_O",
     "material_id": "bond",
@@ -2843,8 +3189,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p19",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p65",
     "id": "bond_92_Mg_O",
     "material_id": "bond",
@@ -2853,8 +3201,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p19",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p66",
     "id": "bond_93_Mg_O",
     "material_id": "bond",
@@ -2863,8 +3213,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p20",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p67",
     "id": "bond_94_Mg_O",
     "material_id": "bond",
@@ -2873,8 +3225,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p20",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p68",
     "id": "bond_95_Mg_O",
     "material_id": "bond",
@@ -2883,8 +3237,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p21",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p69",
     "id": "bond_96_Mg_O",
     "material_id": "bond",
@@ -2893,8 +3249,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p21",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p70",
     "id": "bond_97_Mg_O",
     "material_id": "bond",
@@ -2903,8 +3261,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p22",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p71",
     "id": "bond_98_Mg_O",
     "material_id": "bond",
@@ -2913,8 +3273,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p22",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p72",
     "id": "bond_99_Mg_O",
     "material_id": "bond",
@@ -2923,8 +3285,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p23",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p73",
     "id": "bond_100_Mg_O",
     "material_id": "bond",
@@ -2933,8 +3297,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p23",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p74",
     "id": "bond_101_Mg_O",
     "material_id": "bond",
@@ -2943,8 +3309,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p24",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p75",
     "id": "bond_102_Mg_O",
     "material_id": "bond",
@@ -2953,8 +3321,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p24",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p76",
     "id": "bond_103_Mg_O",
     "material_id": "bond",
@@ -2963,8 +3333,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p25",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p77",
     "id": "bond_104_Mg_O",
     "material_id": "bond",
@@ -2973,8 +3345,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p25",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p78",
     "id": "bond_105_Mg_O",
     "material_id": "bond",
@@ -2983,8 +3357,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p26",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p79",
     "id": "bond_106_Mg_O",
     "material_id": "bond",
@@ -2993,8 +3369,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p26",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p80",
     "id": "bond_107_Mg_O",
     "material_id": "bond",
@@ -3003,8 +3381,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p27",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p74",
     "id": "bond_108_Mg_O",
     "material_id": "bond",
@@ -3013,8 +3393,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p27",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p66",
     "id": "bond_109_Mg_O",
     "material_id": "bond",
@@ -3023,8 +3405,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p28",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p73",
     "id": "bond_110_Mg_O",
     "material_id": "bond",
@@ -3033,8 +3417,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p28",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p58",
     "id": "bond_111_Mg_O",
     "material_id": "bond",
@@ -3043,8 +3429,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p29",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p65",
     "id": "bond_112_Mg_O",
     "material_id": "bond",
@@ -3053,8 +3441,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p29",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p57",
     "id": "bond_113_Mg_O",
     "material_id": "bond",
@@ -3063,8 +3453,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p30",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p74",
     "id": "bond_114_Mg_O",
     "material_id": "bond",
@@ -3073,8 +3465,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p30",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p68",
     "id": "bond_115_Mg_O",
     "material_id": "bond",
@@ -3083,8 +3477,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p31",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p73",
     "id": "bond_116_Mg_O",
     "material_id": "bond",
@@ -3093,8 +3489,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p31",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p60",
     "id": "bond_117_Mg_O",
     "material_id": "bond",
@@ -3103,8 +3501,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p32",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p67",
     "id": "bond_118_Mg_O",
     "material_id": "bond",
@@ -3113,8 +3513,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p32",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p59",
     "id": "bond_119_Mg_O",
     "material_id": "bond",
@@ -3123,8 +3525,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p33",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p76",
     "id": "bond_120_Mg_O",
     "material_id": "bond",
@@ -3133,8 +3537,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p33",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p66",
     "id": "bond_121_Mg_O",
     "material_id": "bond",
@@ -3143,8 +3549,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p34",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p75",
     "id": "bond_122_Mg_O",
     "material_id": "bond",
@@ -3153,8 +3561,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p34",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p62",
     "id": "bond_123_Mg_O",
     "material_id": "bond",
@@ -3163,8 +3573,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p35",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p65",
     "id": "bond_124_Mg_O",
     "material_id": "bond",
@@ -3173,8 +3585,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p35",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p61",
     "id": "bond_125_Mg_O",
     "material_id": "bond",
@@ -3183,8 +3597,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p36",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p76",
     "id": "bond_126_Mg_O",
     "material_id": "bond",
@@ -3193,8 +3609,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p36",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p68",
     "id": "bond_127_Mg_O",
     "material_id": "bond",
@@ -3203,8 +3621,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p37",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p75",
     "id": "bond_128_Mg_O",
     "material_id": "bond",
@@ -3213,8 +3633,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p37",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p64",
     "id": "bond_129_Mg_O",
     "material_id": "bond",
@@ -3223,8 +3645,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p38",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p67",
     "id": "bond_130_Mg_O",
     "material_id": "bond",
@@ -3233,8 +3657,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p38",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p63",
     "id": "bond_131_Mg_O",
     "material_id": "bond",
@@ -3243,8 +3669,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p39",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p78",
     "id": "bond_132_Mg_O",
     "material_id": "bond",
@@ -3253,8 +3681,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p39",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p70",
     "id": "bond_133_Mg_O",
     "material_id": "bond",
@@ -3263,8 +3693,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p40",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p77",
     "id": "bond_134_Mg_O",
     "material_id": "bond",
@@ -3273,8 +3705,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p40",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p58",
     "id": "bond_135_Mg_O",
     "material_id": "bond",
@@ -3283,8 +3717,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p41",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p69",
     "id": "bond_136_Mg_O",
     "material_id": "bond",
@@ -3293,8 +3729,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p41",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p57",
     "id": "bond_137_Mg_O",
     "material_id": "bond",
@@ -3303,8 +3741,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p42",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p78",
     "id": "bond_138_Mg_O",
     "material_id": "bond",
@@ -3313,8 +3753,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p42",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p72",
     "id": "bond_139_Mg_O",
     "material_id": "bond",
@@ -3323,8 +3765,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p43",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p77",
     "id": "bond_140_Mg_O",
     "material_id": "bond",
@@ -3333,8 +3777,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p43",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p60",
     "id": "bond_141_Mg_O",
     "material_id": "bond",
@@ -3343,8 +3789,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p44",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p71",
     "id": "bond_142_Mg_O",
     "material_id": "bond",
@@ -3353,8 +3801,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p44",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p59",
     "id": "bond_143_Mg_O",
     "material_id": "bond",
@@ -3363,8 +3813,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p45",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p80",
     "id": "bond_144_Mg_O",
     "material_id": "bond",
@@ -3373,8 +3825,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p45",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p70",
     "id": "bond_145_Mg_O",
     "material_id": "bond",
@@ -3383,8 +3837,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p46",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p79",
     "id": "bond_146_Mg_O",
     "material_id": "bond",
@@ -3393,8 +3849,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p46",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p62",
     "id": "bond_147_Mg_O",
     "material_id": "bond",
@@ -3403,8 +3861,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p47",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p69",
     "id": "bond_148_Mg_O",
     "material_id": "bond",
@@ -3413,8 +3873,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p47",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p61",
     "id": "bond_149_Mg_O",
     "material_id": "bond",
@@ -3423,8 +3885,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p48",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p80",
     "id": "bond_150_Mg_O",
     "material_id": "bond",
@@ -3433,8 +3897,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p48",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p72",
     "id": "bond_151_Mg_O",
     "material_id": "bond",
@@ -3443,8 +3909,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p49",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p79",
     "id": "bond_152_Mg_O",
     "material_id": "bond",
@@ -3453,8 +3921,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p49",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p64",
     "id": "bond_153_Mg_O",
     "material_id": "bond",
@@ -3463,8 +3933,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p50",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p71",
     "id": "bond_154_Mg_O",
     "material_id": "bond",
@@ -3473,8 +3945,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p50",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p63",
     "id": "bond_155_Mg_O",
     "material_id": "bond",
@@ -3483,8 +3957,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p51",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p74",
     "id": "bond_156_Mg_O",
     "material_id": "bond",
@@ -3493,8 +3969,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p51",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p76",
     "id": "bond_157_Mg_O",
     "material_id": "bond",
@@ -3503,8 +3981,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p51",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p66",
     "id": "bond_158_Mg_O",
     "material_id": "bond",
@@ -3513,8 +3993,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p51",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p68",
     "id": "bond_159_Mg_O",
     "material_id": "bond",
@@ -3523,8 +4005,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p52",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p78",
     "id": "bond_160_Mg_O",
     "material_id": "bond",
@@ -3533,8 +4017,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p52",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p80",
     "id": "bond_161_Mg_O",
     "material_id": "bond",
@@ -3543,8 +4029,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p52",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p70",
     "id": "bond_162_Mg_O",
     "material_id": "bond",
@@ -3553,8 +4041,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p52",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p72",
     "id": "bond_163_Mg_O",
     "material_id": "bond",
@@ -3563,8 +4053,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p53",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p73",
     "id": "bond_164_Mg_O",
     "material_id": "bond",
@@ -3573,8 +4065,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p53",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p77",
     "id": "bond_165_Mg_O",
     "material_id": "bond",
@@ -3583,8 +4077,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p53",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p58",
     "id": "bond_166_Mg_O",
     "material_id": "bond",
@@ -3593,8 +4089,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p53",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p60",
     "id": "bond_167_Mg_O",
     "material_id": "bond",
@@ -3603,8 +4101,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p54",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p75",
     "id": "bond_168_Mg_O",
     "material_id": "bond",
@@ -3613,8 +4113,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p54",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p79",
     "id": "bond_169_Mg_O",
     "material_id": "bond",
@@ -3623,8 +4125,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p54",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p62",
     "id": "bond_170_Mg_O",
     "material_id": "bond",
@@ -3633,8 +4137,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p54",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p64",
     "id": "bond_171_Mg_O",
     "material_id": "bond",
@@ -3643,8 +4149,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p55",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p65",
     "id": "bond_172_Mg_O",
     "material_id": "bond",
@@ -3653,8 +4161,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p55",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p69",
     "id": "bond_173_Mg_O",
     "material_id": "bond",
@@ -3663,8 +4173,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p55",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p57",
     "id": "bond_174_Mg_O",
     "material_id": "bond",
@@ -3673,8 +4185,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p55",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p61",
     "id": "bond_175_Mg_O",
     "material_id": "bond",
@@ -3683,8 +4197,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p56",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p67",
     "id": "bond_176_Mg_O",
     "material_id": "bond",
@@ -3693,8 +4209,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p56",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p71",
     "id": "bond_177_Mg_O",
     "material_id": "bond",
@@ -3703,8 +4221,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p56",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p59",
     "id": "bond_178_Mg_O",
     "material_id": "bond",
@@ -3713,8 +4233,10 @@
    },
    {
     "a_element": "O",
+    "a_label": "O",
     "a_point_id": "p56",
     "b_element": "Mg",
+    "b_label": "Mg",
     "b_point_id": "p63",
     "id": "bond_179_Mg_O",
     "material_id": "bond",
@@ -4154,7 +4676,7 @@
    }
   ]
  },
- "schema_version": 2,
+ "schema_version": 3,
  "source_comment": "POSCAR",
  "topologies": [
   {

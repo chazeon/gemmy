@@ -1,0 +1,14 @@
+restricted triclinic data file with its tilt labels in a swapped order: each value is read by its label
+
+2 atoms
+1 atom types
+
+-1.0 3.0 xlo xhi
+2.0 6.0 ylo yhi
+0.5 4.5 zlo zhi
+0.5 -1.0 0.25 xz xy yz
+
+Atoms # atomic
+
+1 1 -0.4375 4.03125 1.0
+2 1 2.0 3.125 2.5

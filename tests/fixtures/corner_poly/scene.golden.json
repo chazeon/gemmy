@@ -73,12 +73,12 @@
    "type": "principled"
   },
   "polyhedron": {
-   "alpha": 0.25,
+   "alpha": 1.0,
    "base_color": [
     0.2,
     0.6,
     1.0,
-    0.25
+    1.0
    ],
    "metallic": 0.0,
    "roughness": 0.2,
@@ -94,6 +94,7 @@
     0.0
    ],
    "id": "p0",
+   "label": "Al",
    "position": [
     0.0,
     0.0,
@@ -109,6 +110,7 @@
     1.0
    ],
    "id": "p1",
+   "label": "Al",
    "position": [
     0.0,
     0.0,
@@ -124,6 +126,7 @@
     0.0
    ],
    "id": "p2",
+   "label": "Al",
    "position": [
     0.0,
     4.0,
@@ -139,6 +142,7 @@
     1.0
    ],
    "id": "p3",
+   "label": "Al",
    "position": [
     0.0,
     4.0,
@@ -154,6 +158,7 @@
     0.0
    ],
    "id": "p4",
+   "label": "Al",
    "position": [
     4.0,
     0.0,
@@ -169,6 +174,7 @@
     1.0
    ],
    "id": "p5",
+   "label": "Al",
    "position": [
     4.0,
     0.0,
@@ -184,6 +190,7 @@
     0.0
    ],
    "id": "p6",
+   "label": "Al",
    "position": [
     4.0,
     4.0,
@@ -199,6 +206,7 @@
     1.0
    ],
    "id": "p7",
+   "label": "Al",
    "position": [
     4.0,
     4.0,
@@ -214,6 +222,7 @@
     0.0
    ],
    "id": "p8",
+   "label": "O",
    "position": [
     2.0,
     0.0,
@@ -229,6 +238,7 @@
     1.0
    ],
    "id": "p9",
+   "label": "O",
    "position": [
     2.0,
     0.0,
@@ -244,6 +254,7 @@
     0.0
    ],
    "id": "p10",
+   "label": "O",
    "position": [
     2.0,
     4.0,
@@ -259,6 +270,7 @@
     1.0
    ],
    "id": "p11",
+   "label": "O",
    "position": [
     2.0,
     4.0,
@@ -274,6 +286,7 @@
     0.0
    ],
    "id": "p12",
+   "label": "O",
    "position": [
     0.0,
     2.0,
@@ -289,6 +302,7 @@
     1.0
    ],
    "id": "p13",
+   "label": "O",
    "position": [
     0.0,
     2.0,
@@ -304,6 +318,7 @@
     0.0
    ],
    "id": "p14",
+   "label": "O",
    "position": [
     4.0,
     2.0,
@@ -319,6 +334,7 @@
     1.0
    ],
    "id": "p15",
+   "label": "O",
    "position": [
     4.0,
     2.0,
@@ -334,6 +350,7 @@
     0.5
    ],
    "id": "p16",
+   "label": "O",
    "position": [
     0.0,
     0.0,
@@ -349,6 +366,7 @@
     0.5
    ],
    "id": "p17",
+   "label": "O",
    "position": [
     0.0,
     4.0,
@@ -364,6 +382,7 @@
     0.5
    ],
    "id": "p18",
+   "label": "O",
    "position": [
     4.0,
     0.0,
@@ -379,6 +398,7 @@
     0.5
    ],
    "id": "p19",
+   "label": "O",
    "position": [
     4.0,
     4.0,
@@ -394,6 +414,7 @@
     0.0
    ],
    "id": "p20",
+   "label": "O",
    "position": [
     -2.0,
     0.0,
@@ -409,6 +430,7 @@
     0.0
    ],
    "id": "p21",
+   "label": "O",
    "position": [
     0.0,
     -2.0,
@@ -424,6 +446,7 @@
     -0.5
    ],
    "id": "p22",
+   "label": "O",
    "position": [
     0.0,
     0.0,
@@ -439,6 +462,7 @@
     1.0
    ],
    "id": "p23",
+   "label": "O",
    "position": [
     -2.0,
     0.0,
@@ -454,6 +478,7 @@
     1.0
    ],
    "id": "p24",
+   "label": "O",
    "position": [
     0.0,
     -2.0,
@@ -469,6 +494,7 @@
     1.5
    ],
    "id": "p25",
+   "label": "O",
    "position": [
     0.0,
     0.0,
@@ -484,6 +510,7 @@
     0.0
    ],
    "id": "p26",
+   "label": "O",
    "position": [
     -2.0,
     4.0,
@@ -499,6 +526,7 @@
     0.0
    ],
    "id": "p27",
+   "label": "O",
    "position": [
     0.0,
     6.0,
@@ -514,6 +542,7 @@
     -0.5
    ],
    "id": "p28",
+   "label": "O",
    "position": [
     0.0,
     4.0,
@@ -529,6 +558,7 @@
     1.0
    ],
    "id": "p29",
+   "label": "O",
    "position": [
     -2.0,
     4.0,
@@ -544,6 +574,7 @@
     1.0
    ],
    "id": "p30",
+   "label": "O",
    "position": [
     0.0,
     6.0,
@@ -559,6 +590,7 @@
     1.5
    ],
    "id": "p31",
+   "label": "O",
    "position": [
     0.0,
     4.0,
@@ -574,6 +606,7 @@
     0.0
    ],
    "id": "p32",
+   "label": "O",
    "position": [
     6.0,
     0.0,
@@ -589,6 +622,7 @@
     0.0
    ],
    "id": "p33",
+   "label": "O",
    "position": [
     4.0,
     -2.0,
@@ -604,6 +638,7 @@
     -0.5
    ],
    "id": "p34",
+   "label": "O",
    "position": [
     4.0,
     0.0,
@@ -619,6 +654,7 @@
     1.0
    ],
    "id": "p35",
+   "label": "O",
    "position": [
     6.0,
     0.0,
@@ -634,6 +670,7 @@
     1.0
    ],
    "id": "p36",
+   "label": "O",
    "position": [
     4.0,
     -2.0,
@@ -649,6 +686,7 @@
     1.5
    ],
    "id": "p37",
+   "label": "O",
    "position": [
     4.0,
     0.0,
@@ -664,6 +702,7 @@
     0.0
    ],
    "id": "p38",
+   "label": "O",
    "position": [
     6.0,
     4.0,
@@ -679,6 +718,7 @@
     0.0
    ],
    "id": "p39",
+   "label": "O",
    "position": [
     4.0,
     6.0,
@@ -694,6 +734,7 @@
     -0.5
    ],
    "id": "p40",
+   "label": "O",
    "position": [
     4.0,
     4.0,
@@ -709,6 +750,7 @@
     1.0
    ],
    "id": "p41",
+   "label": "O",
    "position": [
     6.0,
     4.0,
@@ -724,6 +766,7 @@
     1.0
    ],
    "id": "p42",
+   "label": "O",
    "position": [
     4.0,
     6.0,
@@ -739,6 +782,7 @@
     1.5
    ],
    "id": "p43",
+   "label": "O",
    "position": [
     4.0,
     4.0,
@@ -752,6 +796,7 @@
    {
     "element": "O",
     "id": "atom_0_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p8",
     "radius": 0.3
@@ -759,6 +804,7 @@
    {
     "element": "O",
     "id": "atom_1_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p9",
     "radius": 0.3
@@ -766,6 +812,7 @@
    {
     "element": "O",
     "id": "atom_2_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p10",
     "radius": 0.3
@@ -773,6 +820,7 @@
    {
     "element": "O",
     "id": "atom_3_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p11",
     "radius": 0.3
@@ -780,6 +828,7 @@
    {
     "element": "O",
     "id": "atom_4_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p12",
     "radius": 0.3
@@ -787,6 +836,7 @@
    {
     "element": "O",
     "id": "atom_5_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p13",
     "radius": 0.3
@@ -794,6 +844,7 @@
    {
     "element": "O",
     "id": "atom_6_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p14",
     "radius": 0.3
@@ -801,6 +852,7 @@
    {
     "element": "O",
     "id": "atom_7_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p15",
     "radius": 0.3
@@ -808,6 +860,7 @@
    {
     "element": "O",
     "id": "atom_8_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p16",
     "radius": 0.3
@@ -815,6 +868,7 @@
    {
     "element": "O",
     "id": "atom_9_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p17",
     "radius": 0.3
@@ -822,6 +876,7 @@
    {
     "element": "O",
     "id": "atom_10_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p18",
     "radius": 0.3
@@ -829,6 +884,7 @@
    {
     "element": "O",
     "id": "atom_11_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p19",
     "radius": 0.3
@@ -836,6 +892,7 @@
    {
     "element": "O",
     "id": "atom_12_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p20",
     "radius": 0.3
@@ -843,6 +900,7 @@
    {
     "element": "O",
     "id": "atom_13_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p21",
     "radius": 0.3
@@ -850,6 +908,7 @@
    {
     "element": "O",
     "id": "atom_14_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p22",
     "radius": 0.3
@@ -857,6 +916,7 @@
    {
     "element": "O",
     "id": "atom_15_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p23",
     "radius": 0.3
@@ -864,6 +924,7 @@
    {
     "element": "O",
     "id": "atom_16_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p24",
     "radius": 0.3
@@ -871,6 +932,7 @@
    {
     "element": "O",
     "id": "atom_17_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p25",
     "radius": 0.3
@@ -878,6 +940,7 @@
    {
     "element": "O",
     "id": "atom_18_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p26",
     "radius": 0.3
@@ -885,6 +948,7 @@
    {
     "element": "O",
     "id": "atom_19_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p27",
     "radius": 0.3
@@ -892,6 +956,7 @@
    {
     "element": "O",
     "id": "atom_20_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p28",
     "radius": 0.3
@@ -899,6 +964,7 @@
    {
     "element": "O",
     "id": "atom_21_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p29",
     "radius": 0.3
@@ -906,6 +972,7 @@
    {
     "element": "O",
     "id": "atom_22_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p30",
     "radius": 0.3
@@ -913,6 +980,7 @@
    {
     "element": "O",
     "id": "atom_23_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p31",
     "radius": 0.3
@@ -920,6 +988,7 @@
    {
     "element": "O",
     "id": "atom_24_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p32",
     "radius": 0.3
@@ -927,6 +996,7 @@
    {
     "element": "O",
     "id": "atom_25_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p33",
     "radius": 0.3
@@ -934,6 +1004,7 @@
    {
     "element": "O",
     "id": "atom_26_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p34",
     "radius": 0.3
@@ -941,6 +1012,7 @@
    {
     "element": "O",
     "id": "atom_27_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p35",
     "radius": 0.3
@@ -948,6 +1020,7 @@
    {
     "element": "O",
     "id": "atom_28_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p36",
     "radius": 0.3
@@ -955,6 +1028,7 @@
    {
     "element": "O",
     "id": "atom_29_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p37",
     "radius": 0.3
@@ -962,6 +1036,7 @@
    {
     "element": "O",
     "id": "atom_30_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p38",
     "radius": 0.3
@@ -969,6 +1044,7 @@
    {
     "element": "O",
     "id": "atom_31_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p39",
     "radius": 0.3
@@ -976,6 +1052,7 @@
    {
     "element": "O",
     "id": "atom_32_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p40",
     "radius": 0.3
@@ -983,6 +1060,7 @@
    {
     "element": "O",
     "id": "atom_33_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p41",
     "radius": 0.3
@@ -990,6 +1068,7 @@
    {
     "element": "O",
     "id": "atom_34_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p42",
     "radius": 0.3
@@ -997,6 +1076,7 @@
    {
     "element": "O",
     "id": "atom_35_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p43",
     "radius": 0.3
@@ -1159,7 +1239,7 @@
    }
   ]
  },
- "schema_version": 2,
+ "schema_version": 3,
  "source_comment": "POSCAR",
  "topologies": [
   {

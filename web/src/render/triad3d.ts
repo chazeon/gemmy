@@ -7,6 +7,7 @@
 import * as THREE from "three";
 import { LOOK } from "../config";
 import { outlines, camera, loaded } from "../state";
+import { captureMode } from "../ui/capture";
 import {
   OUTLINE_THICKNESS,
   OUTLINE_VERTEX_SHADER,
@@ -55,15 +56,11 @@ let builtLength = 0;
 // length and theme, then the triad is drawn into its corner with the depth buffer cleared, so the arrows go over the
 // structure but are occluded among themselves. `transparent` is the PNG export without a page background: the faded
 // parts then take their opacity rather than a mix toward the background.
-// Capture hook: scripts/render_thumbnails.mjs sets window.__gemmyNoTriad before the page loads, so the gallery's pictures
-// are the structure alone. Read once, here; nothing else looks at it.
-const NO_TRIAD = (window as { __gemmyNoTriad?: boolean }).__gemmyNoTriad === true;
-
-export function renderTriad(transparent = false): void {
-  if (NO_TRIAD) return;
+export function renderTriad(transparent = false, inset = 0): void {
+  if (captureMode) return; // capture mode draws the structure alone
   const width = stage.clientWidth;
   const height = stage.clientHeight;
-  const layout = triadLayout(latticeInView(loaded.value.lattice, camera.value.quaternion), width, height);
+  const layout = triadLayout(latticeInView(loaded.value.lattice, camera.value.quaternion), width, height, inset);
   const corner = triadCorner(layout, width, height);
   const parts = triadModel(layout.length, loaded.value.lattice);
   ensureGeometry(parts, layout.length);

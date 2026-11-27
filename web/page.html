@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>gemmy preview (__TITLE__)</title>
+__HEAD__
 <meta name="gemmy-scene-file" content="__SCENE_FILE__">
 <meta name="gemmy-mode" content="__MODE__">
-__DEFAULT_SCENES__<!-- the loader opens these, one per gemmy-default-scene meta in order (tabs when several), when the address names no scene --><!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) -->
+<!-- scene: embedded; live: gemmy serve; load: the loader (web/src/main.ts) --><!-- compiler: the meta names the compiler's script (scene/compiler.ts), or nothing; a single-file page has none -->
+__COMPILER__
+__OPEN__
 <script>
   // The theme, set before the first paint so a dark page never flashes light. It reads the key that web/src/ui/theme.ts
   // writes (gemmy.theme) and sets data-theme only for Light or Dark; Auto leaves it off, so the system's scheme applies.
@@ -41,24 +43,16 @@ body.booting > main, body.booting > #ui { opacity: 0; animation: unboot 0s 3s fo
 <main>
   <div id="stage" aria-label="__TITLE__ crystal structure. Drag to rotate, scroll to zoom, right-drag to move."></div>
   <canvas id="triad" aria-hidden="true"></canvas>
-  <input type="file" id="scene-file" accept=".json,.gz,application/json,application/gzip" hidden>
+  <input type="file" id="scene-file" multiple hidden>
 </main>
 
 <!-- The floating controls, laid out by the grid and the fixed boxes in style.css: the React overlay (see below) draws the top
-     bar, Export, the theme button, the lens and zoom column, the selection card and the corner buttons. The messages are here. -->
+     bar, Export, the theme button, the lens and zoom column, the inspector dock and the corner buttons. The messages are here. -->
 <div id="ui">
   <!-- the React overlay (src/react): its islands are the grid items of #ui, so it takes no box of its own.
-       The title is read by the overlay (ui/dom.ts); the server's tab strip, if it has one, is read and removed (ui/tab-bar.ts) -->
+       The title is read by the overlay (ui/dom.ts); the server's links to other pages, if it has any, is read and removed (ui/tab-bar.ts) -->
   <div id="overlay" data-title="__TITLE__" data-subtitle="__SUBTITLE__">__TABS__</div>
 
-  <!-- under the top row: the live-mode banner and the Blender progress pill -->
-  <div id="msgs">
-    <section id="banner" hidden>
-      <p class="err" role="alert" hidden></p>
-      <p id="follow-note" role="status" hidden></p>
-    </section>
-    <p id="toast" role="status" hidden></p>
-  </div>
 </div>
 
 <script type="application/json" id="scene-data">__SCENE_JSON__</script>

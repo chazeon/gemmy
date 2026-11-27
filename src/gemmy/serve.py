@@ -24,9 +24,30 @@ from pathlib import Path
 from typing import Any
 
 from .datafile import DataFileError, read_data
-from .view import read_scene, render_live_page, validate_scene_dict
+from .view import VIEWER, read_scene, render_live_page, validate_scene_dict
 
 Stamp = tuple[tuple[str, int | None, int | None], ...]
+# The structure compiler, served beside the page: a relative href, so the /k/ previews reach it as /k/compile.js.
+COMPILER_FILE = "compile.js"
+
+_file_cache: dict[Path, tuple[int, bytes]] = {}
+
+
+def _cached_bytes(path: Path) -> bytes:
+    """The file's bytes, read again when its mtime changes: a rebuilt compile.js reaches the next page, no restart."""
+    mtime = path.stat().st_mtime_ns  # before the read: a write in between is read again on the next call
+    hit = _file_cache.get(path)
+    if hit is None or hit[0] != mtime:
+        hit = (mtime, path.read_bytes())
+        _file_cache[path] = hit
+    return hit[1]
+
+
+# The static files the server sends, by URL path: the file in the viewer folder and its content type. The page's own
+# routes (/, /scene.json, /status, /events) are answered in do_GET.
+ASSETS: dict[str, tuple[str, str]] = {
+    f"/{COMPILER_FILE}": (COMPILER_FILE, "text/javascript; charset=utf-8"),
+}
 
 
 def _stamp(paths: list[Path]) -> Stamp:
@@ -151,7 +172,7 @@ class Preview:
         """`tabs` is (name, "k") for every preview the server holds (the k-th is served at /k/); this one is `tab`."""
         self._build, self._watch, self._render, self.poll = build, watch, render, poll
         self._apply_view = apply_view
-        self.page = render_live_page(title, subtitle, scene_file, tabs, tab).encode("utf-8")
+        self.page = render_live_page(title, subtitle, scene_file, tabs, tab, compiler=COMPILER_FILE).encode("utf-8")
         self.cond = threading.Condition()
         self.closed = False
         self.seq = 0
@@ -324,6 +345,9 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send(404, json.dumps({"error": preview.status()["error"]}).encode(), "application/json")
             else:
                 self._send(200, scene, "application/json")
+        elif path in ASSETS:
+            name, content_type = ASSETS[path]
+            self._send(200, _cached_bytes(VIEWER / name), content_type)
         elif path == "/status":
             self._send(200, json.dumps(preview.status()).encode(), "application/json")
         elif path == "/events":

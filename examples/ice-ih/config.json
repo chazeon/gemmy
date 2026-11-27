@@ -30,16 +30,6 @@
         1.0
       ],
       "material": "matte"
-    },
-    "H": {
-      "radius": 0.2,
-      "color": [
-        0.95,
-        0.95,
-        0.95,
-        1.0
-      ],
-      "material": "matte"
     }
   },
   "materials": {
@@ -93,7 +83,7 @@
   "bonds": [
     {
       "a": "O",
-      "b": "H",
+      "b": "H1",
       "min": 0.8,
       "max": 1.2,
       "radius": 0.07,
@@ -102,7 +92,32 @@
     },
     {
       "a": "O",
-      "b": "H",
+      "b": "H2",
+      "min": 0.8,
+      "max": 1.2,
+      "radius": 0.07,
+      "material": "covalent",
+      "complete": "ends"
+    },
+    {
+      "a": "O",
+      "b": "H1",
+      "min": 1.5,
+      "max": 2.0,
+      "radius": 0.02,
+      "material": "hbond",
+      "color": [
+        0.3,
+        0.3,
+        0.3,
+        1.0
+      ],
+      "complete": "none",
+      "style": "dashed"
+    },
+    {
+      "a": "O",
+      "b": "H2",
       "min": 1.5,
       "max": 2.0,
       "radius": 0.02,

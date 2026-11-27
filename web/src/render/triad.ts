@@ -4,6 +4,7 @@
 import { Color } from "three";
 import { AXIS_FONT, AXIS_LETTERS, LOOK } from "../config";
 import { camera, loaded, requestRender } from "../state";
+import { captureMode } from "../ui/capture";
 import { MAX_PIXEL_RATIO, cssVar, stage } from "./draw";
 import { type TriadItem, type TriadLayout, latticeInView, triadLayout } from "./triad-layout";
 
@@ -29,8 +30,8 @@ document.fonts.load(`${AXIS_FONT_STYLE} ${FONT_LOAD_PX}px "${AXIS_FONT.family}"`
 });
 
 // The live view's letters: the page's canvas, at the page's pixel ratio.
-export function drawLiveTriad(): void {
-  drawTriad(triadCanvas, triadContext, Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO), false);
+export function drawLiveTriad(inset: number): void {
+  drawTriad(triadCanvas, triadContext, Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO), false, inset);
 }
 
 // Draws the letters into `canvas`, sized to the stage at `dpr` pixels per CSS pixel. A transparent image (the PNG
@@ -40,16 +41,17 @@ export function drawTriad(
   ctx: CanvasRenderingContext2D,
   dpr: number,
   transparent: boolean,
+  inset = 0,
 ): void {
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   sizeCanvas(canvas, width, height, dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
-  if (!axisFontReady) return;
+  if (!axisFontReady || captureMode) return; // capture mode draws the structure alone
   const lattice = latticeInView(loaded.value.lattice, camera.value.quaternion);
   const background = transparent ? null : cssVar("--bg").trim();
-  drawLetters(ctx, triadLayout(lattice, width, height), background);
+  drawLetters(ctx, triadLayout(lattice, width, height, inset), background);
 }
 
 // The letters of a laid-out triad, each at its label. Background null: the full colour, the fade being applied as

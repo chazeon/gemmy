@@ -2,11 +2,11 @@
   "structure": "POSCAR",
   "elements": {
     "C": {
-      "radius": 0.2,
+      "radius": 0.16,
       "color": [
-        0.5,
-        0.5,
-        0.5,
+        0.35,
+        0.35,
+        0.38,
         1.0
       ],
       "material": "matte"
@@ -45,6 +45,24 @@
       "radius": 0.05,
       "material": "covalent",
       "complete": "ends"
+    }
+  ],
+  "clusters": [
+    {
+      "kind": "molecule",
+      "atoms": [
+        "C"
+      ],
+      "min": 1.3,
+      "max": 1.5,
+      "min_size": 60,
+      "max_size": 60,
+      "color": [
+        0.95,
+        0.55,
+        0.15,
+        1.0
+      ]
     }
   ]
 }

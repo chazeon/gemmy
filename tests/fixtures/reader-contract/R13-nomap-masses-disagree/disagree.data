@@ -1,0 +1,18 @@
+the Masses comment says Mg but the mass is O's: the comment wins (step 2 before step 3), and its text is the label
+
+2 atoms
+2 atom types
+
+0.0 4.0 xlo xhi
+0.0 4.0 ylo yhi
+0.0 4.0 zlo zhi
+
+Masses
+
+1 15.999 # Mg1
+2 15.999 # O
+
+Atoms # atomic
+
+1 1 1.0 1.0 1.0
+2 2 3.0 3.0 3.0

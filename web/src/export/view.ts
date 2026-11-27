@@ -84,8 +84,8 @@ export function makeView(o: ViewOptions): View {
   // Pixels per angstrom at camera-space point c. The depth is clamped to MIN_DEPTH before the divide, so a point in the
   // eye plane stays finite (no Infinity) and one behind the eye is not mirrored.
   const pxPerUnit = (c: Vector3) => (persp ? focal / Math.max(eyeZ - c.z, MIN_DEPTH) : scale);
-  // The pinhole in plain form, the same arithmetic as the page's export before THREE was used here: the explicit
-  // formula keeps the numbers exact, where a projection matrix moves some of them across a rounding boundary.
+  // The pinhole in plain form. The explicit formula keeps the numbers exact, where a projection matrix moves some of
+  // them across a rounding boundary.
   const toScreen = (c: Vector3) => {
     const k = pxPerUnit(c);
     return new Vector2(W / 2 + c.x * k, H / 2 - c.y * k);

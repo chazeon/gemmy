@@ -5,7 +5,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from gemmy.compile.lattice import box_shifts, convex_hull_faces, offset, snap, wrap_shift
+from gemmy.compile.lattice import (
+    MAX_BOX_SITES,
+    box_image_count,
+    box_shifts,
+    convex_hull_faces,
+    offset,
+    snap,
+    wrap_shift,
+)
 
 CELL = np.array([[4.0, 0.0, 0.0], [1.0, 5.0, 0.0], [0.5, 0.25, 6.0]])  # triclinic, rows are vectors
 
@@ -61,3 +69,61 @@ def test_convex_hull_of_an_octahedron() -> None:
         normal = np.cross(arr[j] - arr[i], arr[k] - arr[i])
         assert np.dot(normal, arr[[i, j, k]].mean(axis=0)) > 0  # wound outwards
     assert convex_hull_faces([(0.0, 0.0, 0.0)] * 3) == []
+
+
+def test_square_is_two_triangles_wound_along_the_normal() -> None:
+    square = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0), (0.0, 1.0, 0.0)]
+    faces = convex_hull_faces(square)
+    assert len(faces) == 2
+    assert set().union(*map(set, faces)) == {0, 1, 2, 3}
+    for i, j, k in faces:  # counter-clockwise seen from +z: the normal is along +z (largest component positive)
+        assert np.cross(np.subtract(square[j], square[i]), np.subtract(square[k], square[i]))[2] > 0
+
+
+def test_interior_coplanar_point_is_not_a_corner() -> None:
+    points = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0), (0.0, 1.0, 0.0), (0.3, 0.2, 0.0)]
+    faces = convex_hull_faces(points)
+    assert len(faces) == 2
+    assert 4 not in set().union(*map(set, faces))
+
+
+def test_flat_polygon_normal_has_largest_component_positive() -> None:
+    # a plane y = 3 whose normal is -y: the largest component of the normal is the y one, so it must come out +y
+    ring = [(2.0, 3.0, 0.0), (0.0, 3.0, 2.0), (-2.0, 3.0, 0.0), (0.0, 3.0, -2.0)]
+    faces = convex_hull_faces(ring)
+    assert len(faces) == 2
+    for i, j, k in faces:
+        assert np.cross(np.subtract(ring[j], ring[i]), np.subtract(ring[k], ring[i]))[1] > 0
+
+
+def test_collinear_and_coincident_points_give_no_faces() -> None:
+    assert convex_hull_faces([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0)]) == []
+    assert convex_hull_faces([(1.0, 1.0, 1.0)] * 4) == []
+    assert convex_hull_faces([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)]) == []
+
+
+def test_three_points_make_one_triangle() -> None:
+    assert convex_hull_faces([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]) == [(0, 1, 2)]
+
+
+def test_a_box_of_a_thousand_on_each_axis_is_refused_before_any_shift_is_listed() -> None:
+    """Each axis gives 1000 images (within MAX_IMAGES_PER_AXIS), but the three together make 1e9: refused by count."""
+    box = {"x": (0.0, 1000.0), "y": (0.0, 1000.0), "z": (0.0, 1000.0)}
+    assert box_image_count((0.5, 0.5, 0.5), box, (True, True, True), 1e-6) == 1000**3
+    with pytest.raises(ValueError, match="MAX_BOX_SITES"):
+        box_shifts((0.5, 0.5, 0.5), box, (True, True, True), 1e-6)
+
+
+@pytest.mark.parametrize("bound", [1e16, 2.0**53])
+def test_a_range_past_the_safe_integers_is_refused(bound: float) -> None:
+    """Past 2**53 the shift loop stalls (n + 1 == n); the same range is refused on the viewer side."""
+    with pytest.raises(ValueError, match="past"):
+        box_shifts((0.5, 0.5, 0.5), {"x": (bound, bound)}, (True, False, False), 1e-6)
+    with pytest.raises(ValueError, match="past"):
+        box_shifts((0.5, 0.5, 0.5), {"x": (0.0, bound)}, (True, False, False), 1e-6)
+
+
+def test_a_normal_box_still_gives_its_copies() -> None:
+    box = {"x": (0.0, 2.0), "y": (0.0, 1.0), "z": (0.0, 1.0)}
+    assert box_shifts((0.5, 0.5, 0.5), box, (True, True, True), 1e-6) == [(0, 0, 0), (1, 0, 0)]
+    assert MAX_BOX_SITES == 200_000

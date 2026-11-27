@@ -4,7 +4,7 @@ import unittest
 
 from gemmy.compile.pipeline import compile_scene
 from gemmy.config import BondRule, CellConfig, ElementStyle, PolyhedronRule, SceneConfig, SelectConfig
-from gemmy.structure import AtomRecord, Structure
+from gemmy.readers.record import AtomRecord, Structure
 
 
 def _structure() -> Structure:

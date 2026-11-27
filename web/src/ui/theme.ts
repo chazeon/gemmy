@@ -5,7 +5,7 @@
 import { computed, effect, signal } from "@preact/signals-core";
 import { remembered } from "./storage";
 
-type ThemeChoice = "auto" | "light" | "dark";
+export type ThemeChoice = "auto" | "light" | "dark";
 
 const THEME_KEY = "gemmy.theme";
 const THEME_CHOICES: readonly ThemeChoice[] = ["auto", "light", "dark"];
@@ -43,7 +43,7 @@ effect(() => {
 });
 
 // The page's attribute is set before the signal changes, so an effect that reads the colours sees the new ones.
-function setTheme(choice: ThemeChoice): void {
+export function setTheme(choice: ThemeChoice): void {
   applyToPage(choice);
   stored.write(choice);
   theme.value = choice;

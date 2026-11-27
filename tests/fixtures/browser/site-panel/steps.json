@@ -1,0 +1,1004 @@
+{
+ "steps": [
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 1,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "home",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 1,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "open-card",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 2,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-structure",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "instances": 324,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "open-style",
+   "plus": true,
+   "sections": [
+    "View",
+    "Atoms",
+    "Bonds",
+    "Shapes",
+    "Cell"
+   ],
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "colour": "#00ff00ff",
+   "dark": false,
+   "draws": {
+    "clear": 6,
+    "draw": 60
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 324,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "polyhedron-colour",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "bonds": [
+    "O\u2013Si"
+   ],
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 4,
+    "draw": 36
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 964,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "bond-add",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "window": [
+    "1.66",
+    "1.91"
+   ],
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 19
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 660,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "bond-narrow",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "window": [
+    "1.66",
+    "1.78"
+   ],
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 19
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 964,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "bond-widen",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "window": [
+    "1.66",
+    "2.00"
+   ],
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 19
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 736,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "supercell-two",
+   "plus": true,
+   "supercell": [
+    "2",
+    "2",
+    "2"
+   ],
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 6,
+    "draw": 57
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 204,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "supercell-one",
+   "plus": true,
+   "supercell": [
+    "1",
+    "1",
+    "1"
+   ],
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 204,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "supercell-back",
+   "plus": true,
+   "supercell": [
+    "1",
+    "1",
+    "1"
+   ],
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "dock": {
+    "height": 800,
+    "left": 1008,
+    "top": 0,
+    "width": 272
+   },
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "fold-section",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "export-toml",
+   "plus": true,
+   "status": "Saved POSCAR.toml.",
+   "text": "structure = \"POSCAR\"\nclusters = []\n\n[types]\n[elements.Si]\nvisible = false\nrepresentation = \"sphere\"\nradius = 0.6\ncolor = [ 0.15, 0.45, 0.95, 1 ]\nmaterial = \"matte\"\n\n[elements.O]\nvisible = true\nrepresentation = \"sphere\"\nradius = 0.42\ncolor = [ 0.85, 0.02, 0.02, 1 ]\nmaterial = \"matte\"\n\n[materials.matte]\ntype = \"principled\"\nbase_color = [ 0.8, 0.8, 0.8, 1 ]\nroughness = 0.6\nmetallic = 0\nalpha = 1\n\n[materials.bond]\ntype = \"principled\"\nbase_color = [ 0.7, 0.7, 0.7, 1 ]\nroughness = 0.4\nmetallic = 0\nalpha = 1\n\n[materials.polyhedron]\ntype = \"principled\"\nbase_color = [ 0.2, 0.6, 1, 1 ]\nroughness = 0.2\nmetallic = 0\nalpha = 1\n\n[materials.metal]\ntype = \"principled\"\nbase_color = [ 0.8, 0.8, 0.8, 1 ]\nroughness = 0.15\nmetallic = 0.9\nalpha = 1\n\n[materials.glass]\ntype = \"principled\"\nbase_color = [ 0.8, 0.8, 0.8, 1 ]\nroughness = 0.05\nmetallic = 0\nalpha = 0.2\n\n[displacements]\nenabled = false\nstyle = \"arrow\"\nscale = 1\ninclude_hidden = false\ninward = \"outside\"\n\n[labels]\n[select]\nlabels = []\nindices = []\n\n[highlight]\nghost_opacity = 0.35\nghost_saturation = 0.3\nghost_value = 0.95\n\n[cells]\nsupercell = [ 1, 1, 1 ]\nperiodic = [ true, true, true ]\neps = 0.0001\n\n[cells.box]\n[[bonds]]\na = \"O\"\nb = \"Si\"\nmin = 1.6583583771731083\nmax = 2\nradius = 0.08\ncolor = [ 0.7, 0.7, 0.7, 1 ]\nmaterial = \"bond\"\nvisible = true\nstyle = \"solid\"\ncomplete = \"ends\"\n\n[[polyhedra]]\ncenter = \"Si\"\nligands = [ \"O\" ]\nmin = 1.6\nmax = 2\nmin_coordination = 6\nmax_coordination = 6\nvisible = false\ncolor = [ 0, 1, 0, 1 ]\nmaterial = \"polyhedron\"\nname = \"SiO6\"\ntopology_mode = \"topology_locked\"\nimage_centers = true\n",
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "export-json",
+   "plus": true,
+   "text": "{\n  \"structure\": \"POSCAR\",\n  \"types\": {},\n  \"elements\": {\n    \"Si\": {\n      \"visible\": false,\n      \"representation\": \"sphere\",\n      \"radius\": 0.6,\n      \"color\": [\n        0.15,\n        0.45,\n        0.95,\n        1\n      ],\n      \"material\": \"matte\"\n    },\n    \"O\": {\n      \"visible\": true,\n      \"representation\": \"sphere\",\n      \"radius\": 0.42,\n      \"color\": [\n        0.85,\n        0.02,\n        0.02,\n        1\n      ],\n      \"material\": \"matte\"\n    }\n  },\n  \"materials\": {\n    \"matte\": {\n      \"type\": \"principled\",\n      \"base_color\": [\n        0.8,\n        0.8,\n        0.8,\n        1\n      ],\n      \"roughness\": 0.6,\n      \"metallic\": 0,\n      \"alpha\": 1\n    },\n    \"bond\": {\n      \"type\": \"principled\",\n      \"base_color\": [\n        0.7,\n        0.7,\n        0.7,\n        1\n      ],\n      \"roughness\": 0.4,\n      \"metallic\": 0,\n      \"alpha\": 1\n    },\n    \"polyhedron\": {\n      \"type\": \"principled\",\n      \"base_color\": [\n        0.2,\n        0.6,\n        1,\n        1\n      ],\n      \"roughness\": 0.2,\n      \"metallic\": 0,\n      \"alpha\": 1\n    },\n    \"metal\": {\n      \"type\": \"principled\",\n      \"base_color\": [\n        0.8,\n        0.8,\n        0.8,\n        1\n      ],\n      \"roughness\": 0.15,\n      \"metallic\": 0.9,\n      \"alpha\": 1\n    },\n    \"glass\": {\n      \"type\": \"principled\",\n      \"base_color\": [\n        0.8,\n        0.8,\n        0.8,\n        1\n      ],\n      \"roughness\": 0.05,\n      \"metallic\": 0,\n      \"alpha\": 0.2\n    }\n  },\n  \"displacements\": {\n    \"enabled\": false,\n    \"style\": \"arrow\",\n    \"scale\": 1,\n    \"include_hidden\": false,\n    \"inward\": \"outside\"\n  },\n  \"labels\": {},\n  \"select\": {\n    \"labels\": [],\n    \"indices\": []\n  },\n  \"highlight\": {\n    \"ghost_opacity\": 0.35,\n    \"ghost_saturation\": 0.3,\n    \"ghost_value\": 0.95\n  },\n  \"cells\": {\n    \"supercell\": [\n      1,\n      1,\n      1\n    ],\n    \"periodic\": [\n      true,\n      true,\n      true\n    ],\n    \"eps\": 0.0001,\n    \"box\": {}\n  },\n  \"bonds\": [\n    {\n      \"a\": \"O\",\n      \"b\": \"Si\",\n      \"min\": 1.6583583771731083,\n      \"max\": 2,\n      \"radius\": 0.08,\n      \"color\": [\n        0.7,\n        0.7,\n        0.7,\n        1\n      ],\n      \"material\": \"bond\",\n      \"visible\": true,\n      \"style\": \"solid\",\n      \"complete\": \"ends\"\n    }\n  ],\n  \"polyhedra\": [\n    {\n      \"center\": \"Si\",\n      \"ligands\": [\n        \"O\"\n      ],\n      \"min\": 1.6,\n      \"max\": 2,\n      \"min_coordination\": 6,\n      \"max_coordination\": 6,\n      \"visible\": false,\n      \"color\": [\n        0,\n        1,\n        0,\n        1\n      ],\n      \"material\": \"polyhedron\",\n      \"name\": \"SiO6\",\n      \"topology_mode\": \"topology_locked\",\n      \"image_centers\": true\n    }\n  ],\n  \"clusters\": []\n}\n",
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "colour": "#0000ffff",
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 19
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 204,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "polyhedron-colour-hex",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "colour": "#3300ffff",
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 19
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 204,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "polyhedron-colour-drag",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "colour": "#3300ff7f",
+   "configRgba": [
+    0.2,
+    0,
+    1,
+    0.498039
+   ],
+   "dark": false,
+   "draws": {
+    "clear": 4,
+    "draw": 43
+   },
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 204,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "polyhedron-alpha",
+   "opacity": 0.498039,
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (2)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 23
+   },
+   "files": 3,
+   "info": "Centrecentroid at (0.5000, 0.5000, 0.5000)Bonds2 \u00d7 3.508, 3.509, 4 \u00d7 3.510, 9 \u00d7 3.511, 11 \u00d7 3.512, 13 \u00d7 3.513, 4 \u00d7 3.514, 8 \u00d7 3.515, 8 \u00d7 3.516 \u00c5Mean3.513 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "instances": 18900,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "budget-drop-c60",
+   "plus": true,
+   "supercell": [
+    "2",
+    "2",
+    "2"
+   ],
+   "theme": null,
+   "title": "POSCAR (3)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 4,
+    "draw": 44
+   },
+   "files": 3,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "instances": 330900,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "supercell-over-budget",
+   "note": "The change was not applied: POSCAR has 240 atoms, which its cells.supercell [10, 10, 9] makes 216000; the page compiles at most 200000. Use a smaller cells.supercell, or run gemmy compile.",
+   "plus": true,
+   "supercell": [
+    "10",
+    "10",
+    "2"
+   ],
+   "theme": null,
+   "title": "POSCAR (3)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "card": "C\u2086\u2080",
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "dock": false,
+   "draws": {
+    "clear": 8,
+    "draw": 90
+   },
+   "files": 3,
+   "info": "Centrecentroid at (0.6000, 0.5500, 0.7500)Bonds2 \u00d7 3.508, 3.509, 4 \u00d7 3.510, 9 \u00d7 3.511, 11 \u00d7 3.512, 13 \u00d7 3.513, 4 \u00d7 3.514, 8 \u00d7 3.515, 8 \u00d7 3.516 \u00c5Mean3.513 \u00c5\u03940.00 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "phone-tap-atom",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR (3)",
+   "zoom": "1\u00d7"
+  },
+  {
+   "card": false,
+   "chevrons": 1,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 4,
+    "draw": 46
+   },
+   "files": 3,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "phone-customize",
+   "plus": true,
+   "sections": [
+    "View",
+    "Atoms",
+    "Bonds",
+    "Shapes",
+    "Cell"
+   ],
+   "sheet": {
+    "bottom": 772,
+    "left": 16,
+    "right": 377,
+    "top": 303.40625
+   },
+   "theme": null,
+   "title": "POSCAR (3)",
+   "zoom": "1\u00d7"
+  }
+ ]
+}

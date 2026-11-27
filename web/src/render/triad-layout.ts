@@ -31,11 +31,12 @@ export interface TriadLayout {
 
 // `dirs` are the axis directions in camera space (x right, y up, z towards the viewer). The arrows are `triad.size` of
 // the frame's SHORTER side long, the origin sits `triad.margin` of the width from the left and of the height from the
-// bottom, and each label sits just beyond its arrow tip.
-export function triadLayout(dirs: readonly Vec[], width: number, height: number): TriadLayout {
+// bottom, and each label sits just beyond its arrow tip. `inset` moves the origin right, in px: the live page's stage is
+// moved left under the open dock (style.css), and the triad is drawn in the part that stays in view. An export has none.
+export function triadLayout(dirs: readonly Vec[], width: number, height: number, inset = 0): TriadLayout {
   const T = GEMMY.triad;
   const length = T.size * Math.min(width, height);
-  const origin: [number, number] = [T.margin * width, height - T.margin * height];
+  const origin: [number, number] = [T.margin * width + inset, height - T.margin * height];
   // Far axes first, so near ones draw over them.
   const items = dirs.map((d, index) => triadItem(d, index, origin, length)).sort((p, q) => p.depth - q.depth);
   return {

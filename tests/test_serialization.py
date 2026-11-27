@@ -29,10 +29,10 @@ class TestSerialization(unittest.TestCase):
                 "mat_poly": MaterialStyle(alpha=0.25),
             },
             points=[
-                PointRecord(id="p0", element="Si", position=(0.0, 0.0, 0.0)),
-                PointRecord(id="p1", element="O", position=(1.0, 0.0, 0.0)),
-                PointRecord(id="p2", element="O", position=(0.0, 1.0, 0.0)),
-                PointRecord(id="p3", element="O", position=(0.0, 0.0, 1.0)),
+                PointRecord(id="p0", element="Si", label="Si", position=(0.0, 0.0, 0.0)),
+                PointRecord(id="p1", element="O", label="O", position=(1.0, 0.0, 0.0)),
+                PointRecord(id="p2", element="O", label="O", position=(0.0, 1.0, 0.0)),
+                PointRecord(id="p3", element="O", label="O", position=(0.0, 0.0, 1.0)),
             ],
             topologies=[
                 TopologyRecord(
@@ -46,6 +46,7 @@ class TestSerialization(unittest.TestCase):
                     AtomPrimitive(
                         id="atom0",
                         element="Si",
+                        label="Si",
                         point_id="p0",
                         radius=0.35,
                         material_id="mat_atom",
@@ -60,6 +61,8 @@ class TestSerialization(unittest.TestCase):
                         material_id="mat_bond",
                         a_element="Si",
                         b_element="O",
+                        a_label="Si",
+                        b_label="O",
                     )
                 ],
                 polyhedra=[

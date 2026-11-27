@@ -9,34 +9,27 @@ import { wireKeyboard } from "./ui/keyboard";
 import { wirePicking } from "./ui/picking";
 import { releasePivot } from "./ui/pivot";
 import { wireStage } from "./ui/stage";
-import { attachOpeners, startTabs } from "./ui/loader";
+import { openServed, openSources, startTabs } from "./ui/loader";
+import { attachOpeners } from "./ui/openers";
+import { captureMode } from "./ui/capture";
+import { installCaptureApi } from "./ui/capture-api";
 import { startLive } from "./ui/live";
 import { byId, pageName } from "./ui/dom";
-import { type Source, sourcesToOpen } from "./scene/source";
-import { EXAMPLES_FILE, galleryAt } from "./scene/examples";
+import { errorText } from "./errors";
+import { STAY, note } from "./ui/message";
+import { type Source, parseSources } from "./scene/source";
 import type { Scene } from "./types";
 
 const embedded = document.getElementById("scene-data")!.textContent!.trim();
 const mode = document.querySelector<HTMLMetaElement>('meta[name="gemmy-mode"]')?.content;
 const page = pageName.peek();
 
-// The scenes the page opens: its own (embedded in the page, or live from gemmy serve), else what the address asks for,
-// else the page's defaults. The address is read only when the page has no scene of its own. The front page of a hosted
-// site (examples.json beside it) has no defaults: it opens the start screen, where the examples are.
-async function pageSources(): Promise<Source[]> {
+// The scenes the page opens: its own (embedded in the page, or live from gemmy serve), else what the address asks for
+// (?scene= or ?gist=), else none, and the start screen shows (the home tab).
+function pageSources(): Source[] {
   if (embedded) return [{ kind: "embedded", doc: JSON.parse(embedded) as Scene, page }];
   if (mode === "live") return [{ kind: "live", page }];
-  return sourcesToOpen(location.search, location.href, await defaultsToOpen());
-}
-async function defaultsToOpen(): Promise<string[]> {
-  const frontPage = (await galleryAt(new URL(EXAMPLES_FILE, location.href).href)) !== null;
-  return frontPage ? [] : defaultScenes();
-}
-// The page's default scenes: one gemmy-default-scene meta per scene, in document order.
-function defaultScenes(): string[] {
-  return [...document.querySelectorAll<HTMLMetaElement>('meta[name="gemmy-default-scene"]')]
-    .map((meta) => meta.content)
-    .filter((scene) => scene !== "");
+  return parseSources(location.search, location.href);
 }
 
 // The page comes in at once, not piece by piece: the stage and the controls stay hidden (body.booting, page.html) until
@@ -47,15 +40,35 @@ async function revealWhenReady(firstTab: Promise<void>): Promise<void> {
   const ready = firstTab.then(() => document.fonts.ready);
   await Promise.race([ready, new Promise((done) => setTimeout(done, REVEAL_LATEST_MS))]);
   // after the frame that draws the first tab
-  requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove("booting")));
+  await new Promise((done) =>
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        document.body.classList.remove("booting");
+        done(undefined);
+      }),
+    ),
+  );
 }
 
-mountOverlay(byId("overlay"));
+// Capture mode (ui/capture.ts) is the stage alone: no overlay, and none of the page's inputs.
+if (!captureMode) {
+  mountOverlay(byId("overlay"));
+  wirePicking(releasePivot);
+  wireKeyboard();
+  wireFlyKeys();
+}
 wireStage();
-wirePicking(releasePivot);
-wireKeyboard();
-wireFlyKeys();
 // The live page's own status comes first, so its follow note hears the first tab shown.
 if (mode === "live") startLive(page);
-attachOpeners();
-void revealWhenReady(startTabs(pageSources));
+// The openers ask whether the page can compile. That answer never throws, but a failure while the openers are set up
+// must not stop the page from starting: it is shown, and the page goes on.
+if (!captureMode) {
+  try {
+    attachOpeners({ openSources, openServed });
+  } catch (error) {
+    note(`The page could not set up its file openers: ${errorText(error)}`, { ms: STAY, kind: "error" });
+  }
+}
+const firstTab = startTabs(pageSources);
+const revealed = revealWhenReady(firstTab);
+if (captureMode) installCaptureApi(revealed);

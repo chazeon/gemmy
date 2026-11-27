@@ -11,6 +11,9 @@ from ..datafile import DataFileError, read_data
 from ..scene import Vec3
 from .sites import Site
 
+# A vector this short (in its own units) is no arrow.
+ZERO_VECTOR_NORM = 1e-12
+
 
 class DisplacementFileError(ValueError):
     """Displacement data file is missing or invalid; the message names the path."""
@@ -63,11 +66,11 @@ def make_displacements(
         if vec is None:
             continue
         arr = np.asarray(vec, dtype=float)
-        if float(np.linalg.norm(arr)) <= 1e-12:
+        if float(np.linalg.norm(arr)) <= ZERO_VECTOR_NORM:
             continue
         s = (arr * float(scale)).tolist()
-        anchor = "tail"
-        if inward_from is not None and float(np.dot(arr, np.subtract(site.position, inward_from))) < 0.0:
-            anchor = "tip"  # points into the polyhedron: draw it outside, head on the corner
+        # Points into the polyhedron: draw it outside, head on the corner.
+        points_inward = inward_from is not None and float(np.dot(arr, np.subtract(site.position, inward_from))) < 0.0
+        anchor = "tip" if points_inward else "tail"
         out.append(ArrowSpec(site=site, vector=(float(s[0]), float(s[1]), float(s[2])), mode=mode, anchor=anchor))
     return out

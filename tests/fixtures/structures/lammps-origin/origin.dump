@@ -1,0 +1,12 @@
+# Synthetic: an orthogonal box with origin (1, -2, 0.5), unscaled x y z columns (positions are absolute).
+ITEM: TIMESTEP
+0
+ITEM: NUMBER OF ATOMS
+2
+ITEM: BOX BOUNDS pp pp pp
+1.0 5.0
+-2.0 2.0
+0.5 4.5
+ITEM: ATOMS id type x y z
+1 1 2.0 -1.0 1.0
+2 2 4.0 1.0 3.0

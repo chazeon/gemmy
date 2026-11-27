@@ -4,7 +4,7 @@ import dataclasses
 import json
 import sys
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -121,7 +121,35 @@ def _view_argument_error(args) -> str | None:
         return "--title takes one scene; with several, each page is named after its file."
     if (args.gallery is not None or args.thumbnails is not None) and not args.hosted:
         return "--gallery and --thumbnails need --hosted."
+    if args.structure and not args.hosted:
+        return "--structure needs --hosted."
+    if args.site_url is not None and not args.hosted:
+        return "--site-url needs --hosted."
+    if args.hosted and args.title is not None:
+        return "the hosted site has one page, named gemmy: --title does not apply."
+    if args.hosted and args.subtitle:
+        return "the hosted site has no subtitle: its one page has the start screen, and a scene has no line under it."
     return None
+
+
+def _hosted_structures(pairs: Sequence[str]) -> dict[str, list[Path]]:
+    """`--structure NAME=CONFIG` as the hosted site takes it: per scene, the structure file the config names, then the
+    files the config names, then the config itself (the names are relative to the config's folder)."""
+    from .config import referenced_files
+    from .datafile import read_data
+
+    structures: dict[str, list[Path]] = {}
+    for pair in pairs:
+        name, _, config = pair.partition("=")
+        if not name or not config:
+            raise ValueError(f"--structure takes NAME=CONFIG, got {pair!r}")
+        path = Path(config)
+        raw = read_data(path)
+        if not isinstance(raw, dict) or not isinstance(raw.get("structure"), str):
+            raise ValueError(f"{path} names no structure file")
+        folder = path.parent
+        structures[name] = [folder / ref for ref in referenced_files(raw)] + [path]
+    return structures
 
 
 def run_view(args) -> int:
@@ -134,7 +162,14 @@ def run_view(args) -> int:
         return 2
     try:
         if args.hosted:
-            out = write_hosted_site(args.scenes, args.out, args.subtitle, args.gallery, args.thumbnails)
+            out = write_hosted_site(
+                args.scenes,
+                args.out,
+                gallery=args.gallery,
+                thumbnails=args.thumbnails,
+                structures=_hosted_structures(args.structure),
+                site_url=args.site_url,
+            )
         elif len(args.scenes) == 1:
             out = write_viewer(args.scenes[0], args.out, args.title, args.subtitle)
         else:

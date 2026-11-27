@@ -25,3 +25,7 @@ export function vunit(a: Vec): number[] {
   const length = Math.hypot(...a) || 1;
   return a.map((x) => x / length);
 }
+// The centroid of a list of points: each component summed in order, then divided by the count (numpy's mean).
+export function meanOf(points: readonly Vec[]): number[] {
+  return [0, 1, 2].map((k) => points.reduce((sum, p) => sum + p[k], 0) / points.length);
+}

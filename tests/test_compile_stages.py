@@ -11,8 +11,8 @@ from gemmy.compile.pipeline import PointTable, SceneAssembler
 from gemmy.compile.polyhedra import find_polyhedra
 from gemmy.compile.sites import Site, build_sites, repeat_structure, select_sites
 from gemmy.config import BondRule, ElementStyle, PolyhedronRule, SceneConfig
+from gemmy.readers.record import AtomRecord, Structure
 from gemmy.scene import MaterialStyle
-from gemmy.structure import AtomRecord, Structure
 
 
 def _site(index: int, element: str, pos: tuple[float, float, float], key: str | None = None) -> Site:
@@ -68,6 +68,8 @@ class TestStages(unittest.TestCase):
         )
         self.assertEqual(style_for(cfg, _site(0, "H", (0, 0, 0), "H1")).radius, 1.0)
         self.assertEqual(style_for(cfg, _site(0, "H", (0, 0, 0))).radius, 2.0)
+        # labels only: an H2 atom does not take the H1 style, nor does an H1 atom take the H style
+        self.assertEqual(style_for(cfg, _site(0, "H", (0, 0, 0), "H2")).radius, 3.0)
         self.assertEqual(style_for(cfg, _site(0, "C", (0, 0, 0))).radius, 3.0)
 
     def test_material_variants(self) -> None:
@@ -85,14 +87,16 @@ class TestStages(unittest.TestCase):
         cell = cell_array(atoms)
         rules = [BondRule(a="O", b="H", min_distance=0.8, max_distance=1.2, complete="polyhedra")]
         graph = build_neighbor_graph(atoms, 1.2)
+        # The rule names the label "H" only: the H1 atom (sites[1]) is not bonded by it.
         bonds = find_bonds(sites, by_index, graph, rules, cell)
-        self.assertEqual(len(bonds), 2)
+        self.assertEqual([b.b.index for b in bonds], [2])
         sec = completion_rules(rules)
         self.assertEqual(len(sec), 1)  # complete=polyhedra
         done = complete_ligand(sites[0], by_index, graph, sec, cell)
-        self.assertEqual([d.partner.element for d in done], ["H"])
-        # ligand H also matches the O-H rule: it completes to its O (generalised, no element hardcoding)
-        self.assertEqual([d.partner.element for d in complete_ligand(sites[1], by_index, graph, sec, cell)], ["O"])
+        self.assertEqual([(d.partner.element, d.partner.label) for d in done], [("H", "H")])
+        # the H ligand completes to its O; the H1 ligand matches no rule, so it completes to nothing
+        self.assertEqual([d.partner.element for d in complete_ligand(sites[2], by_index, graph, sec, cell)], ["O"])
+        self.assertEqual(complete_ligand(sites[1], by_index, graph, sec, cell), [])
         self.assertEqual(
             completion_rules([BondRule(a="O", b="H", min_distance=0.8, max_distance=1.2, complete="ends")]), []
         )

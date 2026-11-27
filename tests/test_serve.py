@@ -22,8 +22,10 @@ POLL = 0.02
 SCENE = {
     "source_comment": "v1",
     "materials": {"m": {"base_color": [1, 0, 0, 1]}},
-    "points": [{"id": "p0", "element": "O", "position": [0, 0, 0]}],
-    "primitives": {"atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O"}]},
+    "points": [{"id": "p0", "element": "O", "label": "O", "position": [0, 0, 0]}],
+    "primitives": {
+        "atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O", "label": "O"}]
+    },
 }
 
 
@@ -305,3 +307,22 @@ def test_render_view_needs_render(scene_path: Path) -> None:
         code, reply = post(run, "/render-view", VIEW)
         assert code == 409 and "--render" in reply["error"]
         assert post(run, "/elsewhere", {})[0] == 404
+
+
+def test_the_page_names_the_compiler_and_serves_it_beside_the_page(scene_path: Path) -> None:
+    with Running(preview_for(scene_path)) as run:
+        assert b'<meta name="gemmy-compiler" content="compile.js">' in run.get("/")[1]
+        with urllib.request.urlopen(run.base + "/compile.js", timeout=5) as response:
+            assert response.headers["Content-Type"] == "text/javascript; charset=utf-8"
+            assert len(response.read()) > 100_000
+
+
+def test_a_rebuilt_compiler_is_served_without_a_restart(scene_path: Path, tmp_path: Path, monkeypatch) -> None:
+    compiler = tmp_path / "compile.js"
+    compiler.write_text("// first build\n", encoding="utf-8")
+    monkeypatch.setattr("gemmy.serve.VIEWER", tmp_path)
+    with Running(preview_for(scene_path)) as run:
+        assert run.get("/compile.js")[1] == b"// first build\n"
+        compiler.write_text("// second build\n", encoding="utf-8")
+        bump_mtime(compiler)
+        assert run.get("/compile.js")[1] == b"// second build\n"

@@ -18,11 +18,15 @@ trap cleanup EXIT
 
 examples=($(<"$root/scripts/examples.txt"))  # the committed examples in gallery order, never examples/private/
 scenes=()
+structures=()
 for example in "${examples[@]}"; do
   $gemmy compile "$root/examples/$example/config.toml" --out "$scratch/$example.json" >/dev/null
   scenes+=("$scratch/$example.json")
+  structures+=("$example=$root/examples/$example/config.toml")
 done
-$gemmy view --hosted "${scenes[@]}" --out "$scratch/site" >/dev/null
+# the site as scripts/build_site.sh builds it (its thumbnails are the old ones, only there for the gallery to list): the
+# capture opens each example from the gallery
+$gemmy view --hosted "${scenes[@]}" --structure "${structures[@]}" --gallery "$root/examples" --thumbnails "$out" --out "$scratch/site" >/dev/null
 
 port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
 python3 -m http.server "$port" --bind 127.0.0.1 --directory "$scratch/site" >/dev/null 2>&1 &
@@ -30,7 +34,14 @@ server_pid=$!
 for _ in $(seq 50); do curl -fs -o /dev/null "http://127.0.0.1:$port/" && break; sleep 0.1; done
 
 mkdir -p "$scratch/raw" "$out"
-node "$root/scripts/render_thumbnails.mjs" "http://127.0.0.1:$port/" "$scratch/raw" "${examples[@]}"
+# The capture's exit status is checked by hand: a failed capture stops the script with status 1, whatever wraps it.
+if ! node "$root/scripts/render_thumbnails.mjs" "http://127.0.0.1:$port/" "$scratch/raw" "${examples[@]}"; then
+  echo "render_thumbnails.sh: the Chrome capture failed; no thumbnail was written" >&2
+  exit 1
+fi
+for example in "${examples[@]}"; do
+  [[ -s "$scratch/raw/$example.png" ]] || { echo "render_thumbnails.sh: no capture for $example" >&2; exit 1; }
+done
 
 for example in "${examples[@]}"; do
   # the capture's background is transparent, so -trim cuts the transparent border and the structure sets the box

@@ -18,7 +18,7 @@ from typing import Any, Literal
 
 Vec3 = tuple[float, float, float]
 Color = tuple[float, float, float, float]
-SCENE_SCHEMA_VERSION = 2
+SCENE_SCHEMA_VERSION = 3
 TopologyMode = Literal["topology_locked", "topology_adaptive"]
 DisplacementMode = Literal["arrow", "line"]
 ArrowAnchor = Literal["tail", "tip"]
@@ -45,6 +45,7 @@ class MaterialStyle(Strict):
 class PointRecord(Strict):
     id: str
     element: str
+    label: str  # the species label as written in the structure file ("C_dna"); the element for computed points
     position: Vec3
     fractional: Vec3 | None = None
     ref: str | None = None  # atom reference as typed in configs: "5" or "5+1_0_0" (compile.selection.parse_site_ref)
@@ -61,6 +62,7 @@ class TopologyRecord(Strict):
 class AtomPrimitive(Strict):
     id: str
     element: str
+    label: str
     point_id: str
     radius: float
     material_id: str
@@ -75,6 +77,8 @@ class BondPrimitive(Strict):
     material_id: str
     a_element: str
     b_element: str
+    a_label: str
+    b_label: str
     style: BondStyle = "solid"  # dashed / dotted: e.g. hydrogen bonds
 
 
@@ -128,10 +132,17 @@ class SceneDocument(Strict):
     schema_version: int = SCENE_SCHEMA_VERSION
 
 
+def check_version(version: object) -> None:
+    """Raise ValueError unless `version` is this gemmy's scene version. Run before the scene is parsed."""
+    if version != SCENE_SCHEMA_VERSION:
+        raise ValueError(
+            f"This scene has schema_version {version}; this gemmy reads version {SCENE_SCHEMA_VERSION}. "
+            "Recompile the scene from its config."
+        )
+
+
 def check_references(scene: SceneDocument) -> None:
-    """Raise ValueError for a wrong version, empty or duplicate ids, dangling references or bad face indices."""
-    if scene.schema_version != SCENE_SCHEMA_VERSION:
-        raise ValueError(f"Unsupported schema_version {scene.schema_version}; expected {SCENE_SCHEMA_VERSION}.")
+    """Raise ValueError for empty or duplicate ids, dangling references or bad face indices."""
     prim = scene.primitives
     points = _unique_ids(scene.points, "points")
     topologies = _unique_ids(scene.topologies, "topologies")

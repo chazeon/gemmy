@@ -1,0 +1,317 @@
+{
+ "cell": {
+  "origin": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "vectors": [
+   [
+    10.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    10.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    10.0
+   ]
+  ]
+ },
+ "materials": {
+  "bond": {
+   "alpha": 1.0,
+   "base_color": [
+    0.7,
+    0.7,
+    0.7,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.4,
+   "type": "principled"
+  },
+  "glass": {
+   "alpha": 0.2,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.05,
+   "type": "principled"
+  },
+  "matte": {
+   "alpha": 1.0,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.6,
+   "type": "principled"
+  },
+  "metal": {
+   "alpha": 1.0,
+   "base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "metallic": 0.9,
+   "roughness": 0.15,
+   "type": "principled"
+  },
+  "polyhedron": {
+   "alpha": 1.0,
+   "base_color": [
+    0.2,
+    0.6,
+    1.0,
+    1.0
+   ],
+   "metallic": 0.0,
+   "roughness": 0.2,
+   "type": "principled"
+  }
+ },
+ "points": [
+  {
+   "element": "C",
+   "fractional": [
+    0.625,
+    0.5,
+    0.525
+   ],
+   "id": "p0",
+   "label": "C",
+   "position": [
+    6.25,
+    5.0,
+    5.25
+   ],
+   "ref": "0"
+  },
+  {
+   "element": "C",
+   "fractional": [
+    0.5625,
+    0.608253,
+    0.475
+   ],
+   "id": "p1",
+   "label": "C",
+   "position": [
+    5.625,
+    6.082532,
+    4.75
+   ],
+   "ref": "1"
+  },
+  {
+   "element": "C",
+   "fractional": [
+    0.4375,
+    0.608253,
+    0.525
+   ],
+   "id": "p2",
+   "label": "C",
+   "position": [
+    4.375,
+    6.082532,
+    5.25
+   ],
+   "ref": "2"
+  },
+  {
+   "element": "C",
+   "fractional": [
+    0.375,
+    0.5,
+    0.475
+   ],
+   "id": "p3",
+   "label": "C",
+   "position": [
+    3.75,
+    5.0,
+    4.75
+   ],
+   "ref": "3"
+  },
+  {
+   "element": "C",
+   "fractional": [
+    0.4375,
+    0.391747,
+    0.525
+   ],
+   "id": "p4",
+   "label": "C",
+   "position": [
+    4.375,
+    3.917468,
+    5.25
+   ],
+   "ref": "4"
+  },
+  {
+   "element": "C",
+   "fractional": [
+    0.5625,
+    0.391747,
+    0.475
+   ],
+   "id": "p5",
+   "label": "C",
+   "position": [
+    5.625,
+    3.917468,
+    4.75
+   ],
+   "ref": "5"
+  }
+ ],
+ "primitives": {
+  "atoms": [
+   {
+    "element": "C",
+    "id": "atom_0_C",
+    "label": "C",
+    "material_id": "matte",
+    "point_id": "p0",
+    "radius": 0.16
+   },
+   {
+    "element": "C",
+    "id": "atom_1_C",
+    "label": "C",
+    "material_id": "matte",
+    "point_id": "p1",
+    "radius": 0.16
+   },
+   {
+    "element": "C",
+    "id": "atom_2_C",
+    "label": "C",
+    "material_id": "matte",
+    "point_id": "p2",
+    "radius": 0.16
+   },
+   {
+    "element": "C",
+    "id": "atom_3_C",
+    "label": "C",
+    "material_id": "matte",
+    "point_id": "p3",
+    "radius": 0.16
+   },
+   {
+    "element": "C",
+    "id": "atom_4_C",
+    "label": "C",
+    "material_id": "matte",
+    "point_id": "p4",
+    "radius": 0.16
+   },
+   {
+    "element": "C",
+    "id": "atom_5_C",
+    "label": "C",
+    "material_id": "matte",
+    "point_id": "p5",
+    "radius": 0.16
+   }
+  ],
+  "bonds": [
+   {
+    "a_element": "C",
+    "a_label": "C",
+    "a_point_id": "p0",
+    "b_element": "C",
+    "b_label": "C",
+    "b_point_id": "p1",
+    "id": "bond_0_C_C",
+    "material_id": "bond",
+    "radius": 0.08,
+    "style": "solid"
+   },
+   {
+    "a_element": "C",
+    "a_label": "C",
+    "a_point_id": "p0",
+    "b_element": "C",
+    "b_label": "C",
+    "b_point_id": "p5",
+    "id": "bond_1_C_C",
+    "material_id": "bond",
+    "radius": 0.08,
+    "style": "solid"
+   },
+   {
+    "a_element": "C",
+    "a_label": "C",
+    "a_point_id": "p1",
+    "b_element": "C",
+    "b_label": "C",
+    "b_point_id": "p2",
+    "id": "bond_2_C_C",
+    "material_id": "bond",
+    "radius": 0.08,
+    "style": "solid"
+   },
+   {
+    "a_element": "C",
+    "a_label": "C",
+    "a_point_id": "p2",
+    "b_element": "C",
+    "b_label": "C",
+    "b_point_id": "p3",
+    "id": "bond_3_C_C",
+    "material_id": "bond",
+    "radius": 0.08,
+    "style": "solid"
+   },
+   {
+    "a_element": "C",
+    "a_label": "C",
+    "a_point_id": "p3",
+    "b_element": "C",
+    "b_label": "C",
+    "b_point_id": "p4",
+    "id": "bond_4_C_C",
+    "material_id": "bond",
+    "radius": 0.08,
+    "style": "solid"
+   },
+   {
+    "a_element": "C",
+    "a_label": "C",
+    "a_point_id": "p4",
+    "b_element": "C",
+    "b_label": "C",
+    "b_point_id": "p5",
+    "id": "bond_5_C_C",
+    "material_id": "bond",
+    "radius": 0.08,
+    "style": "solid"
+   }
+  ],
+  "displacements": [],
+  "polyhedra": []
+ },
+ "schema_version": 3,
+ "source_comment": "POSCAR",
+ "topologies": []
+}

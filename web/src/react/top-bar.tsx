@@ -1,37 +1,16 @@
-// The top bar: the menu button with the page's name (or the tab strip, in its place), and the toolbar island (the views,
-// the turn and move pad). Its islands are the grid items of #ui (style.css), placed by their grid areas.
-import { cn } from "@/lib/utils";
-import { pageName } from "../ui/dom";
+// The top bar: the file island (the name of the open file, or its dropdown of the open files: react/file-island.tsx), at
+// the top left, with the toolbar island beside it. Each island is a grid item's child (style.css), so the islands share one centre line.
 import { tabBar } from "../ui/tab-bar";
-import { TabStrip } from "./tab-strip";
-import { MainMenu } from "./main-menu";
+import { FileIsland } from "./file-island";
 import { ToolBar } from "./toolbar";
 import { useSignal } from "./use-signal";
-
-// The page's name and its line under it; the line is hidden when it is empty, and on a phone. The name stays in the page
-// when the tab strip shows in its place (hidden), so the page's title is always there.
-function PageName({ hidden }: { hidden: boolean }) {
-  const page = useSignal(pageName);
-  return (
-    <div className={cn("grid flex-none leading-[1.2] pr-2.5 pl-1", hidden && "hidden")}>
-      <h1 data-testid="page-title" className="m-0 text-[15px] font-semibold whitespace-nowrap">
-        {page.name}
-      </h1>
-      <p className={page.from ? "page-from m-0 text-xs whitespace-nowrap text-muted-foreground" : "m-0 hidden"}>
-        {page.from}
-      </p>
-    </div>
-  );
-}
 
 export function TopBar() {
   const bar = useSignal(tabBar);
   return (
     <>
-      <div id="menu-island" className="island justify-self-start overflow-hidden [grid-area:left]">
-        <MainMenu />
-        {bar.visible && <TabStrip bar={bar} />}
-        <PageName hidden={bar.visible} />
+      <div className="flex min-w-0 max-w-full items-center gap-[var(--gap)] justify-self-start [grid-area:left]">
+        <FileIsland bar={bar} />
       </div>
       <ToolBar />
     </>

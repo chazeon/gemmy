@@ -5,7 +5,7 @@ import unittest
 from gemmy.compile.pipeline import compile_scene, compile_scene_from_files
 from gemmy.compile.selection import SelectionError, parse_site_ref
 from gemmy.config import load_scene_config, scene_config_from_dict
-from gemmy.structure import load_structure
+from gemmy.readers import load_structure
 from golden import FIXTURES
 
 DIR = FIXTURES / "select_shell"

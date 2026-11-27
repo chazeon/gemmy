@@ -19,14 +19,24 @@ from typing import Any
 from urllib.parse import quote
 
 from .render import looks
-from .scene import SCENE_SCHEMA_VERSION, SceneDocument, check_references, from_dict
+from .scene import SCENE_SCHEMA_VERSION, SceneDocument, check_references, check_version, from_dict
 from .settings import Axes
 
 VIEWER = Path(__file__).with_name("viewer")
 # The placeholders of page.html and viewer.js (`__NAME__`), filled by render_page and shared_script. The constants are
 # the ones both fill, so they are listed once and both patterns are built from that list.
 _CONSTANT_PLACEHOLDERS = ("CONSTANTS_JSON", "AXIS_FONTS_JSON")
-_PAGE_PLACEHOLDERS = ("TITLE", "SUBTITLE", "SCENE_JSON", "SCENE_FILE", "MODE", "DEFAULT_SCENES", "TABS")
+_PAGE_PLACEHOLDERS = (
+    "TITLE",
+    "HEAD",
+    "SUBTITLE",
+    "SCENE_JSON",
+    "SCENE_FILE",
+    "MODE",
+    "COMPILER",
+    "OPEN",
+    "TABS",
+)
 
 
 def _placeholder_pattern(names: tuple[str, ...]) -> re.Pattern[str]:
@@ -126,22 +136,30 @@ def render_page(
     tabs: Sequence[tuple[str, str]] = (),
     tab: int = 0,
     mode: str = "scene",
-    default_scenes: Sequence[str] = (),
     assets: tuple[str, str] | None = None,
+    compiler: str | None = None,
+    open_files: bool = False,
+    head: str | None = None,
 ) -> str:
     """The page with its placeholders filled. `mode` tells the viewer what to do when no scene is embedded: "live"
-    (follow gemmy serve) or "load" (the loader), and `default_scenes` are the scenes the loader opens then, in order
-    (URLs relative to the page; several become tabs). An embedded scene is always shown. `assets` (the hrefs of the
-    shared style and viewer) makes the page use the site's shared files instead of carrying its own (see _template)."""
-    metas = "".join(f'<meta name="gemmy-default-scene" content="{html.escape(scene)}">' for scene in default_scenes)
+    (follow gemmy serve) or "load" (the loader). An embedded scene is always shown. `assets` (the hrefs of the
+    shared style and viewer) makes the page use the site's shared files instead of carrying its own (see _template).
+    `compiler` is the href of compile.js, when the page can compile structures (its meta; none otherwise). `open_files`
+    turns on the viewer's open-other-files behaviour by default (web/src/ui/open-files.ts): the hosted site's pages
+    do. `head` is the page's head metadata (its <title>, description and social tags, see gemmy.site);
+    without it the title is "gemmy preview (title)"."""
+    compiler_meta = "" if compiler is None else f'<meta name="gemmy-compiler" content="{html.escape(compiler)}">'
+    open_meta = '<meta name="gemmy-open" content="1">' if open_files else ""
     values = {
         **_constant_values(),
         "TITLE": html.escape(title),
+        "HEAD": head if head is not None else f"<title>gemmy preview ({html.escape(title)})</title>",
         "SUBTITLE": html.escape(subtitle),
         "SCENE_JSON": scene_text,
         "SCENE_FILE": html.escape(scene_file),
         "MODE": mode,
-        "DEFAULT_SCENES": metas,
+        "COMPILER": compiler_meta,
+        "OPEN": open_meta,
         "TABS": _tabs(tabs, tab),
     }
     # One pass, so text inside the scene or the title is never mistaken for a placeholder.
@@ -150,6 +168,7 @@ def render_page(
 
 def validate_scene_dict(scene: Mapping[str, Any]) -> None:
     """Raise ValueError (or TypeError for unknown keys) if `scene` is not a valid scene document."""
+    check_version(scene.get("schema_version", SCENE_SCHEMA_VERSION))
     check_references(from_dict(SceneDocument, scene))
 
 
@@ -169,20 +188,38 @@ def render_viewer(
 
 
 def render_live_page(
-    title: str, subtitle: str = "", scene_file: str = "scene.json", tabs: Sequence[tuple[str, str]] = (), tab: int = 0
+    title: str,
+    subtitle: str = "",
+    scene_file: str = "scene.json",
+    tabs: Sequence[tuple[str, str]] = (),
+    tab: int = 0,
+    compiler: str | None = None,
 ) -> str:
     """A page with no scene embedded: it fetches scene.json and follows events, relative to its own URL (see
-    `gemmy.serve`). With several `tabs` it links to the others."""
-    return render_page("", title, subtitle, scene_file, tabs, tab, "live")
+    `gemmy.serve`). With several `tabs` it links to the others. `compiler` is compile.js's href, if served."""
+    return render_page("", title, subtitle, scene_file, tabs, tab, "live", compiler=compiler)
 
 
 def render_loader_page(
-    title: str = "Scene viewer", assets: tuple[str, str] | None = None, default_scenes: Sequence[str] = ()
+    title: str = "Scene viewer",
+    assets: tuple[str, str] | None = None,
+    compiler: str | None = None,
+    open_files: bool = False,
+    head: str | None = None,
 ) -> str:
-    """A page with no scene: it opens one from the address (?scene=, ?gist=), the default scenes, a URL typed in, or a
-    dropped file (see web/src/ui/loader.ts). With no `assets` it needs no server and no other file than the viewer's
-    own."""
-    return render_page("", title, "", mode="load", default_scenes=default_scenes, assets=assets)
+    """A page with no scene: it opens one from the address (?scene=, ?gist=), a URL typed in, or a dropped file (see
+    web/src/ui/loader.ts). With no `assets` it needs no server and no other file than the viewer's own. With `compiler`
+    (compile.js's href) it also opens a dropped structure file."""
+    return render_page(
+        "",
+        title,
+        "",
+        mode="load",
+        assets=assets,
+        compiler=compiler,
+        open_files=open_files,
+        head=head,
+    )
 
 
 def read_scene(path: str | Path) -> dict[str, Any]:
@@ -247,3 +284,9 @@ def shared_script() -> str:
     script = (VIEWER / "viewer.js").read_text(encoding="utf-8")
     values = _constant_values()
     return _CONSTANT_PLACEHOLDER.sub(lambda m: values[m.group(1)], script)
+
+
+def shared_compiler() -> str:
+    """compile.js: the structure compiler, a script of its own (no placeholders). Only pages with a compiler meta load
+    it."""
+    return (VIEWER / "compile.js").read_text(encoding="utf-8")

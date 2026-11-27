@@ -1,0 +1,25 @@
+type ids and row order permuted; the labels come from Atom Type Labels (ids 2 then 1) and Masses (labels, not numbers)
+
+4 atoms
+2 atom types
+
+0.0 4.0 xlo xhi
+0.0 4.0 ylo yhi
+0.0 4.0 zlo zhi
+
+Masses
+
+O 15.999
+Fe 55.845
+
+Atom Type Labels
+
+2 O
+1 Fe
+
+Atoms # atomic
+
+3 Fe 1.0 1.0 1.0
+1 O 3.0 1.0 1.0
+4 Fe 1.0 3.0 3.0
+2 O 3.0 3.0 1.0

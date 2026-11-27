@@ -12,7 +12,7 @@ import pytest
 
 from gemmy.cli import main
 from gemmy.compile.pipeline import compile_to_json
-from gemmy.view import render_live_page, render_viewer, write_viewer
+from gemmy.view import render_live_page, render_loader_page, render_viewer, write_viewer
 from slow_examples import example_param
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
@@ -21,8 +21,10 @@ NAMES = sorted(p.parent.name for p in EXAMPLES.glob("*/config.toml"))
 SCENE = {
     "source_comment": "tiny",
     "materials": {"m": {"base_color": [1, 0, 0, 1]}},
-    "points": [{"id": "p0", "element": "O", "position": [0, 0, 0]}],
-    "primitives": {"atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O"}]},
+    "points": [{"id": "p0", "element": "O", "label": "O", "position": [0, 0, 0]}],
+    "primitives": {
+        "atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O", "label": "O"}]
+    },
     "cell": {"origin": [0, 0, 0], "vectors": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]},
 }
 
@@ -152,3 +154,19 @@ def test_page_is_a_full_document_with_no_body_margin() -> None:
     page = render_live_page("x")
     assert page.startswith("<!doctype html>") and '<meta charset="utf-8">' in page and page.rstrip().endswith("</html>")
     assert "html, body { height: 100%; margin: 0; }" in page  # toolbar flush with the window edges
+
+
+def test_single_file_page_has_no_compiler_and_no_dynamic_import() -> None:
+    # The single file is one script with no import() and no compiler: a structure dropped on it says so on the card.
+    page = render_viewer(SCENE, "t")
+    # The viewer script names the selector and the compiler's file in its messages; the page references neither.
+    assert '<meta name="gemmy-compiler"' not in page
+    assert 'compile.js"' not in page
+    assert "import(" not in page
+
+
+def test_a_page_with_a_compiler_names_it_in_a_meta_escaped() -> None:
+    page = render_loader_page(compiler="compile.js")
+    assert '<meta name="gemmy-compiler" content="compile.js">' in page
+    assert '<meta name="gemmy-compiler" content="a&quot;b">' in render_live_page("t", compiler='a"b')
+    assert "__COMPILER__" not in page

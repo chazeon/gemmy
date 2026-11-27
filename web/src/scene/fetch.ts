@@ -3,7 +3,7 @@
 import type { Scene } from "../types";
 import { type GistFile, pickGistFile } from "./gist";
 import { SceneError, readCapped, sceneFromBytes } from "./read";
-import { resolveWebUrl } from "./source";
+import { type PageFile, resolveWebUrl } from "./source";
 
 const GIST_API = "https://api.github.com/gists/";
 const GIST_ACCEPT = "application/vnd.github+json";
@@ -23,6 +23,13 @@ async function get(url: string, accept?: string): Promise<Response> {
     throw new SceneError(`The server answered ${status} for ${url}.`);
   }
   return response;
+}
+
+// A file of the page's own folder (a default structure or one of its files), as a File under its name, so it loads as a
+// dropped file does.
+export async function fetchPageFile(file: PageFile): Promise<File> {
+  const response = await get(file.url);
+  return new File([await response.blob()], file.name);
 }
 
 export async function fetchScene(url: string): Promise<Scene> {

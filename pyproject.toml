@@ -17,11 +17,12 @@ dependencies = [
     "tyro>=1.0.17",
 ]
 
-[project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
-
 [project.scripts]
 gemmy = "gemmy.cli:main"
+
+[tool.uv.config-settings-package]
+# The slim build: fastatoms' symmetry module is not needed by the readers.
+fastatoms = { "cmake.define.FASTATOMS_WITH_SYMMETRY" = "OFF" }
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -49,6 +50,9 @@ blender = [
     "bpy==5.2.3 ; python_full_version == '3.13.*'",
 ]
 dev = ["pytest>=8", "ruff>=0.6"]
+# The fastatoms Python reader (GEMMY_READER=fastatoms, `uv sync --group fastatoms`). A group, not an extra, so the wheel's
+# metadata names no git source. Without it the ASE reader is the only one.
+fastatoms = ["fastatoms @ git+https://github.com/chazeon/fastatoms@5e9a9088eacc32d03872432c06827e8928b67d91"]
 
 [tool.ruff]
 line-length = 120

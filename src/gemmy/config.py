@@ -7,13 +7,34 @@ from __future__ import annotations
 import dataclasses
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal, NamedTuple
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, TypeAdapter, field_validator
+from pydantic import (
+    AfterValidator,
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    TypeAdapter,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
+from .config_types import LammpsType, check_type_key, names_an_element
 from .datafile import read_data
-from .scene import BondStyle, Color, MaterialStyle, SceneDocument, check_references
+from .scene import BondStyle, Color, MaterialStyle, SceneDocument, check_references, check_version
 from .settings import RenderSettings, add_alpha, check_settings
+
+# A finite number. pydantic takes inf and nan as floats unless told not to, and an infinite box or limit would make the
+# image loop of lattice.box_shifts run forever. The TypeScript schema (config.ts) gives the same messages.
+Finite = Annotated[float, Field(allow_inf_nan=False)]
+# A distance of a rule: finite and not negative. Bond, polyhedron and cluster windows all check it, and the neighbour
+# search radius (pipeline.bond_cutoff) is the largest of them, so it is finite too.
+Distance = Annotated[float, Field(allow_inf_nan=False, ge=0)]
+# A radius of an element or a bond: not negative (zero draws nothing, and is allowed). config.ts gives the same bound.
+Radius = Annotated[float, Field(ge=0)]
 
 _SCENE = TypeAdapter(SceneDocument)
 _SETTINGS = TypeAdapter(RenderSettings)
@@ -32,10 +53,14 @@ def coerce_color(value: Any) -> Any:
     return value
 
 
+# The colour and material of a polyhedron, and of a cluster (drawn as one). config.ts writes the same values.
+POLYHEDRON_COLOR = (0.2, 0.6, 1.0, 1.0)
+POLYHEDRON_MATERIAL = "polyhedron"
+
 DEFAULT_MATERIALS: dict[str, MaterialStyle] = {
     "matte": MaterialStyle(roughness=0.6),
     "bond": MaterialStyle(base_color=(0.7, 0.7, 0.7, 1.0)),
-    "polyhedron": MaterialStyle(base_color=(0.2, 0.6, 1.0, 0.25), roughness=0.2, alpha=0.25),
+    "polyhedron": MaterialStyle(base_color=POLYHEDRON_COLOR, roughness=0.2, alpha=1.0),
     "metal": MaterialStyle(roughness=0.15, metallic=0.9),
     "glass": MaterialStyle(roughness=0.05, alpha=0.2),
 }
@@ -51,17 +76,31 @@ class _Colored(Frozen):
 class ElementStyle(_Colored):
     visible: bool = True
     representation: str = "sphere"
-    radius: float = 0.35
+    radius: Radius = 0.35
     color: Color = (0.8, 0.8, 0.8, 1.0)
     material: str = "matte"
 
 
-class BondRule(_Colored):
-    a: str
+class _Window(_Colored):
+    """A distance window, inclusive on both ends: the atom-atom distances a rule matches. Finite, not negative, and
+    min <= max. The keys are `min` and `max` (or the field names)."""
+
+    min_distance: Distance = Field(validation_alias=AliasChoices("min", "min_distance"), serialization_alias="min")
+    max_distance: Distance = Field(validation_alias=AliasChoices("max", "max_distance"), serialization_alias="max")
+
+    @field_validator("max_distance")
+    @classmethod
+    def _ordered(cls, value: float, info: ValidationInfo) -> float:
+        low = info.data.get("min_distance")
+        if low is not None and low > value:
+            raise ValueError("min must be <= max.")
+        return value
+
+
+class BondRule(_Window):
+    a: str  # species labels, exact match (C matches C, not C_dna); either orientation
     b: str
-    min_distance: float = Field(validation_alias=AliasChoices("min", "min_distance"), serialization_alias="min")
-    max_distance: float = Field(validation_alias=AliasChoices("max", "max_distance"), serialization_alias="max")
-    radius: float = 0.08
+    radius: Radius = 0.08
     color: Color = (0.7, 0.7, 0.7, 1.0)
     material: str = "bond"
     visible: bool = True
@@ -76,16 +115,14 @@ class BondRule(_Colored):
         return (e1 == self.a and e2 == self.b) or (e1 == self.b and e2 == self.a)
 
 
-class PolyhedronRule(_Colored):
-    center: str
-    ligands: frozenset[str] = Field(min_length=1)
-    min_distance: float = Field(validation_alias=AliasChoices("min", "min_distance"), serialization_alias="min")
-    max_distance: float = Field(validation_alias=AliasChoices("max", "max_distance"), serialization_alias="max")
+class PolyhedronRule(_Window):
+    center: str  # species label, exact match
+    ligands: frozenset[str] = Field(min_length=1)  # species labels, exact match
     min_coordination: int = 4
     max_coordination: int | None = None
     visible: bool = True
-    color: Color = (0.2, 0.6, 1.0, 0.25)
-    material: str = "polyhedron"
+    color: Color = POLYHEDRON_COLOR
+    material: str = POLYHEDRON_MATERIAL
     name: str | None = None
     # Reserved for animation (several frames). locked: faces computed once, only corners move per frame;
     # adaptive: faces recomputed every frame (coordination may change). Scenes are one frame today, so both
@@ -103,30 +140,107 @@ class PolyhedronRule(_Colored):
         return mode
 
 
+# The most members a ring may have. A bigger ring is a macrocycle, better drawn as a molecule: its fan from the centroid
+# stops reading as a polygon, and the shortest-ring search (clusters.py) grows with the bound. 12 covers the rings of
+# molecules and crystal motifs (benzene has 6, 12-crown-4 has 12). The same value as MAX_RING_SIZE in config.ts.
+MAX_RING_SIZE = 12
+
+
+class SizeWindow(NamedTuple):
+    """The member counts of a cluster kind, used when its rule leaves them out. max_size None: no upper limit."""
+
+    min_size: int
+    max_size: int | None
+
+
+# A molecule is any bonded group of 4 or more atoms (a C60 cage is 60); a ring is 5 to 7 members. The same values as
+# CLUSTER_SIZES in config.ts.
+CLUSTER_SIZES: dict[str, SizeWindow] = {
+    "molecule": SizeWindow(min_size=4, max_size=None),
+    "ring": SizeWindow(min_size=5, max_size=7),
+}
+
+
+def _sorted_unique(names: list[str]) -> list[str]:
+    return sorted(set(names))
+
+
+# A set of names (a cluster's atoms): at least one, and stored sorted and unique. The items are checked as strings
+# before the sort, so a non-string is a field error.
+NameList = Annotated[list[str], Field(min_length=1), AfterValidator(_sorted_unique)]
+
+
+class ClusterRule(_Window):
+    """A cluster: `molecule` is the hull of one bonded group of matching atoms (a C60 cage), `ring` is each
+    smallest ring of them, drawn as a fan from its centroid. `atoms` are species labels (exact match). The centroid is
+    a computed point, not an atom."""
+
+    kind: Literal["molecule", "ring"]
+    atoms: NameList
+    min_size: Annotated[int, Field(ge=3)]  # kind default when left out (CLUSTER_SIZES)
+    max_size: Annotated[int, Field(ge=3)] | None  # kind default when left out (CLUSTER_SIZES)
+    # A ring only: keep a ring only when every atom lies within RING_FLAT_TOLERANCE of its plane (compile/clusters.py).
+    flat: StrictBool = False  # strict, as the TypeScript schema (z.boolean()) is: 1 and "yes" are refused
+    visible: bool = True
+    color: Color = POLYHEDRON_COLOR
+    material: str = POLYHEDRON_MATERIAL
+    name: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _kind_sizes(cls, data: Any) -> Any:
+        kind = data.get("kind") if isinstance(data, dict) else None
+        if not isinstance(kind, str) or kind not in CLUSTER_SIZES:
+            return data
+        window = CLUSTER_SIZES[kind]
+        return {"min_size": window.min_size, "max_size": window.max_size, **data}
+
+    @field_validator("max_size")
+    @classmethod
+    def _sizes(cls, value: int | None, info: ValidationInfo) -> int | None:
+        """A ring's max_size is from 3 to MAX_RING_SIZE (null is refused); max_size is at least min_size."""
+        if info.data.get("kind") == "ring" and (value is None or value > MAX_RING_SIZE):
+            raise ValueError(
+                f"a ring's max_size is a number from 3 to {MAX_RING_SIZE}: null (no upper limit) and bigger rings are "
+                "refused, since a macrocycle is better drawn as a molecule."
+            )
+        low = info.data.get("min_size")
+        if value is not None and low is not None and low > value:
+            raise ValueError("min_size must be <= max_size.")
+        return value
+
+    @field_validator("flat")
+    @classmethod
+    def _flat_is_for_rings(cls, value: StrictBool, info: ValidationInfo) -> StrictBool:
+        if value and info.data.get("kind") != "ring":
+            raise ValueError("flat applies to a ring only.")
+        return value
+
+
 class CellConfig(Frozen):
     supercell: tuple[int, int, int] = (1, 1, 1)
     periodic: tuple[bool, bool, bool] = (False, False, False)
-    cartesian_limits: dict[str, tuple[float, float]] | None = Field(
+    cartesian_limits: dict[str, tuple[Finite, Finite]] | None = Field(
         default=None, validation_alias=AliasChoices("limits", "cartesian_limits"), serialization_alias="limits"
     )
 
     @field_validator("cartesian_limits")
     @classmethod
-    def _axes(cls, value: dict[str, tuple[float, float]] | None) -> dict[str, tuple[float, float]] | None:
+    def _axes(cls, value: dict[str, tuple[Finite, Finite]] | None) -> dict[str, tuple[Finite, Finite]] | None:
         bad = sorted(set(value or {}) - {"x", "y", "z"})
         if bad:
             raise ValueError(f"limits axes must be x, y or z; got {bad}.")
         return value
 
     # Tolerance (fractional units) for wrapping (0.99999 -> 0) and for the inclusive display box.
-    eps: float = Field(default=1e-4, ge=0)
+    eps: float = Field(default=1e-4, ge=0, lt=0.5, allow_inf_nan=False)
     # Display box in fractional coordinates of the supercell, per axis; missing axes default to [0, 1].
     # Atoms on a box face, edge or corner are shown on every equivalent boundary (2, 4 or 8 copies).
-    box: dict[str, tuple[float, float]] = Field(default_factory=dict)
+    box: dict[str, tuple[Finite, Finite]] = Field(default_factory=dict)
 
     @field_validator("box")
     @classmethod
-    def _box_axes(cls, value: dict[str, tuple[float, float]]) -> dict[str, tuple[float, float]]:
+    def _box_axes(cls, value: dict[str, tuple[Finite, Finite]]) -> dict[str, tuple[Finite, Finite]]:
         bad = sorted(set(value) - {"x", "y", "z"})
         if bad:
             raise ValueError(f"box axes must be x, y or z; got {bad}.")
@@ -198,17 +312,30 @@ class HighlightConfig(Frozen):
 class SceneConfig(Frozen):
     # The structure file (POSCAR), relative to the config file. `--poscar` overrides it.
     structure: str | None = None
-    elements: dict[str, ElementStyle] = Field(default_factory=dict)
+    # LAMMPS type number -> species label, for LAMMPS data and dump files (structure.load_structure). Each label names
+    # the element, as a POSCAR species label does.
+    types: dict[LammpsType, Annotated[str, AfterValidator(names_an_element)]] = Field(default_factory=dict)
+    elements: dict[str, ElementStyle] = Field(default_factory=dict)  # keyed by species label; "default" is the fallback
     materials: dict[str, MaterialStyle] = Field(default_factory=dict)
     cell: CellConfig = Field(
         default_factory=CellConfig, validation_alias=AliasChoices("cells", "cell"), serialization_alias="cells"
     )
     bonds: list[BondRule] = Field(default_factory=list)
     polyhedra: list[PolyhedronRule] = Field(default_factory=list)
+    clusters: list[ClusterRule] = Field(default_factory=list)
     displacements: DisplacementConfig = Field(default_factory=DisplacementConfig)
     labels: LabelsConfig = Field(default_factory=LabelsConfig)
     select: SelectConfig = Field(default_factory=SelectConfig)
     highlight: HighlightConfig = Field(default_factory=HighlightConfig)
+
+    @field_validator("types", mode="before")
+    @classmethod
+    def _canonical_type_keys(cls, types: Any) -> Any:
+        if isinstance(types, dict):
+            for key in types:
+                if isinstance(key, str):
+                    check_type_key(key)
+        return types
 
     @field_validator("materials", mode="before")
     @classmethod
@@ -255,6 +382,7 @@ def validate_scene(data: dict[str, Any]) -> SceneDocument:
     """Scene JSON -> SceneDocument; ValueError names the offending key or id."""
     if "schema_version" not in data:
         raise ValueError("Missing required field: schema_version.")
+    check_version(data["schema_version"])
     scene = _SCENE.validate_python(data)
     check_references(scene)
     return scene

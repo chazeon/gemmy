@@ -1,4 +1,4 @@
-"""Bonds: neighbour search, rule matching, bond detection (stage 4), secondary completion (stage 6) and
+"""Bonds: neighbour search, rule matching, bond detection, secondary completion and
 closing, the last pass over the final shown set."""
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from ase import Atoms
 from ase.neighborlist import neighbor_list
 
 from ..config import BondRule
-from .sites import PointKey, Site, name_score, point_key
+from .sites import PointKey, Site, name_matches, point_key
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,28 +45,19 @@ def cell_array(atoms: Atoms) -> np.ndarray:
     return np.asarray(atoms.cell.array, dtype=float)
 
 
-def bond_score(rule: BondRule, a: Site, b: Site) -> int | None:
-    """Match score of a bond rule for the pair (best of both orientations), None if no match."""
-    best: int | None = None
-    for x, y in ((a, b), (b, a)):
-        sa = name_score(rule.a, x)
-        sb = name_score(rule.b, y)
-        if sa is not None and sb is not None and (best is None or sa + sb > best):
-            best = sa + sb
-    return best
+def bond_matches(rule: BondRule, a: Site, b: Site) -> bool:
+    """Whether a bond rule names the pair, in either orientation."""
+    return (name_matches(rule.a, a) and name_matches(rule.b, b)) or (
+        name_matches(rule.a, b) and name_matches(rule.b, a)
+    )
 
 
 def best_bond_rule(rules: list[BondRule], a: Site, b: Site, distance: float) -> BondRule | None:
-    """Highest-scoring visible rule whose window contains `distance`; earlier rules win ties."""
-    best: BondRule | None = None
-    best_score = 0
+    """The first visible rule that names the pair and whose window contains `distance`; earlier rules win."""
     for rule in rules:
-        if not rule.visible or not (rule.min_distance <= distance <= rule.max_distance):
-            continue
-        score = bond_score(rule, a, b)
-        if score is not None and score > best_score:
-            best, best_score = rule, score
-    return best
+        if rule.visible and rule.min_distance <= distance <= rule.max_distance and bond_matches(rule, a, b):
+            return rule
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,7 +162,7 @@ def complete_ligand(
         best = None
         for nb in graph.get(ligand.index, []):
             partner = by_index[nb.index]
-            if bond_score(rule, ligand, partner) is None:
+            if not bond_matches(rule, ligand, partner):
                 continue
             if not (rule.min_distance <= nb.distance <= rule.max_distance):
                 continue

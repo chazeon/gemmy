@@ -10,7 +10,9 @@ type Side = "top" | "right" | "bottom" | "left";
 // The tip shows below its trigger on hover and on keyboard focus, unless another side is given. `shortcut` is the key's
 // caps from SHORTCUT (ui/keyboard.ts), one cap per key of the chord. Radix opens a tip on any focus; a focus the page
 // moves after a click (the selection card's close button, when (i) opens the card) is not a keyboard one, so the tip
-// opens only while the pointer is on the trigger or its focus is :focus-visible.
+// opens only while the pointer is on the trigger or its focus is :focus-visible. A tip is text: it shuts when the pointer
+// leaves its trigger and takes no pointer events, so it never covers the control beside it (the edge tab's tip, on the left,
+// lies over the Export island, and a press on Export must reach Export).
 export function Tip({
   text,
   shortcut,
@@ -29,7 +31,7 @@ export function Tip({
     setOpen(next && (hovered.current || (focused instanceof HTMLElement && focused.matches(":focus-visible"))));
   };
   return (
-    <Tooltip open={open} onOpenChange={choose}>
+    <Tooltip open={open} onOpenChange={choose} disableHoverableContent>
       <TooltipTrigger
         asChild
         onPointerEnter={() => {
@@ -41,7 +43,7 @@ export function Tip({
       >
         {children}
       </TooltipTrigger>
-      <TooltipContent side={side}>
+      <TooltipContent side={side} className="pointer-events-none">
         {shortcut ? (
           <span className="inline-flex items-center gap-2">
             {text}

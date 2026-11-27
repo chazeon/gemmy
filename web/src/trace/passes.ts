@@ -223,7 +223,7 @@ export function renderPasses(groups: Groups, options: PassOptions): Passes {
   };
   // The materials are made in this order, and it matters: three.js draws opaque objects in material-id order, so where
   // two surfaces tie in depth the one drawn first wins a pixel. The solid passes come first, then the mask's, then the
-  // line pass's, as the traced output was made before this table.
+  // line pass's, the order the traced output draws them in.
   const idSolid = solid("id");
   const bandSolid = solid("band");
   const depthSolid = solid("depth");

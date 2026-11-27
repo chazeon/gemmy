@@ -6,9 +6,13 @@ from ..config import ElementStyle, SceneConfig
 from ..scene import Color, MaterialStyle
 from .sites import Site
 
+# Two alphas closer than this are the same alpha: a base material keeps its id when only rounding differs.
+ALPHA_MATCH_TOLERANCE = 1e-8
+
 
 def style_for(config: SceneConfig, site: Site) -> ElementStyle:
-    for key in (site.label, site.element, "default"):
+    """The element style of the site's species label, else the "default" style, else the built-in one."""
+    for key in (site.label, "default"):
         if key in config.elements:
             return config.elements[key]
     return ElementStyle()
@@ -19,9 +23,11 @@ def is_hidden(style: ElementStyle) -> bool:
 
 
 def _variant_id(base_material: str, color: Color) -> str:
-    return f"{base_material}_{color[0]:.4f}_{color[1]:.4f}_{color[2]:.4f}_{color[3]:.4f}".replace("-", "m").replace(
-        ".", "p"
-    )
+    # -0.0 is written as 0.0: a JSON -0 reads as the integer 0 here, and the TypeScript side reads it as -0 (both must
+    # give one id; web/src/compile/materials.ts does the same).
+    values = [0.0 if c == 0 else c for c in color]
+    parts = "_".join(f"{value:.4f}" for value in values)
+    return f"{base_material}_{parts}".replace("-", "m").replace(".", "p")
 
 
 def ghost_color(color: Color, opacity: float, saturation: float, value: float) -> Color:
@@ -48,7 +54,7 @@ class MaterialTable:
         if base is None:
             base = MaterialStyle()
             self.materials[base_material] = base
-        if base.base_color == color and abs(base.alpha - color[3]) <= 1e-8:
+        if base.base_color == color and abs(base.alpha - color[3]) <= ALPHA_MATCH_TOLERANCE:
             material_id = base_material
         else:
             candidate = _variant_id(base_material, color)

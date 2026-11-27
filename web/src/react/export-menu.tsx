@@ -1,6 +1,6 @@
 // The Export menu, built as shadcn's DropdownMenu like the menu: the pictures (PNG with its transparency, SVG), the
-// render settings (saved or copied as TOML or JSON, the render command) and, on the serve page, the item that sends the
-// view to Blender. Each item runs its action (ui/export.ts). The area it sits in, top right, also holds the theme button
+// render settings (saved or copied as TOML or JSON, the render command), a structure tab's config (saved as TOML or JSON)
+// and, on the serve page, the item that sends the view to Blender. Each item runs its action (ui/export.ts). The area it sits in, top right, also holds the theme button
 // (src/react/theme-button.tsx), so the two share one centre line.
 import { Clapperboard, Copy, Download, FileCode, FileCog, FileJson, Image, Terminal } from "lucide-react";
 import { useState } from "react";
@@ -14,24 +14,24 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { copyFallback, type ExportAction, renderView, runExport } from "../ui/export";
+import { copyLink } from "../ui/share";
+import { activeModel } from "../ui/structure-model";
 import { ThemeButton } from "./theme-button";
 import { useSignal } from "./use-signal";
 import { GAP } from "./placement";
+import { usePopup } from "./use-popup";
 import { nudge } from "./motion";
-import { MENU_ICON } from "./icons";
 
-const ROW_ICON = { ...MENU_ICON, className: "text-muted-foreground" };
 // A check keeps the menu open, so the background can be set and the picture taken in turn.
 const KEEP_OPEN = { onSelect: (event: Event) => event.preventDefault() };
 
-// The top-right area: the theme button and the Export menu, on one centre line.
+// The top-right island: the theme button and the Export menu, on one centre line.
 export function ExportArea() {
   return (
-    <div id="export-area" className="flex items-center gap-2 justify-self-end [grid-area:right]">
+    <div id="export-area" className="island justify-self-end [grid-area:right]">
       <ThemeButton />
       <ExportMenu />
     </div>
@@ -43,68 +43,83 @@ function run(action: ExportAction, transparent = true) {
 }
 
 function ExportMenu() {
+  const popup = usePopup("export-menu");
   const [transparent, setTransparent] = useState(true);
   const serveItem = useSignal(renderView);
   const fallback = useSignal(copyFallback);
+  const model = useSignal(activeModel);
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={popup.open} onOpenChange={popup.onOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button
-            id="export-button"
-            style={nudge(0, 1)}
-            className="h-11 gap-2 rounded-[var(--radius)] px-4 text-sm font-medium shadow-[var(--shadow)] [body.no-scene_&]:hidden"
-          >
+          <Button id="export-button" style={nudge(0, 1)} className="[body.no-scene_&]:hidden">
             <Download size={18} strokeWidth={2} />
             Export
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={GAP} className="w-60">
-          <DropdownMenuLabel>Picture</DropdownMenuLabel>
+        <DropdownMenuContent id="export-panel" align="end" sideOffset={GAP}>
+          <DropdownMenuItem onSelect={copyLink}>
+            <Copy />
+            Copy link
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onSelect={run("png", transparent)}>
-              <Image {...ROW_ICON} />
+              <Image />
               PNG
-              <DropdownMenuShortcut>2× the window</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuCheckboxItem checked={transparent} onCheckedChange={setTransparent} {...KEEP_OPEN}>
               Transparent background
             </DropdownMenuCheckboxItem>
             <DropdownMenuItem onSelect={run("svg")}>
-              <FileCode {...ROW_ICON} />
+              <FileCode />
               SVG
-              <DropdownMenuShortcut>vector, text editable</DropdownMenuShortcut>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Render settings</DropdownMenuLabel>
           <DropdownMenuGroup>
             <DropdownMenuItem onSelect={run("save-toml")}>
-              <FileCog {...ROW_ICON} />
+              <FileCog />
               Save as TOML
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("copy-toml")}>
-              <Copy {...ROW_ICON} />
+              <Copy />
               Copy as TOML
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("save-json")}>
-              <FileJson {...ROW_ICON} />
+              <FileJson />
               Save as JSON
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("copy-json")}>
-              <Copy {...ROW_ICON} />
+              <Copy />
               Copy as JSON
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={run("copy-command")}>
-              <Terminal {...ROW_ICON} />
+              <Terminal />
               Copy render command
             </DropdownMenuItem>
           </DropdownMenuGroup>
+          {model !== null && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Structure</DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuItem onSelect={run("save-config-toml")}>
+                  <FileCog />
+                  Export config (TOML)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={run("save-config-json")}>
+                  <FileJson />
+                  Export config (JSON)
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </>
+          )}
           {serveItem !== null && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={run("render-view")}>
-                <Clapperboard {...ROW_ICON} />
+                <Clapperboard />
                 Use this view for the Blender render
               </DropdownMenuItem>
             </>

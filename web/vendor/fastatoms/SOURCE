@@ -1,0 +1,5 @@
+repo: https://github.com/chazeon/fastatoms
+commit: ca3d236b0297bd001a036ade9265cf1730848c2f
+build: bash js/scripts/build-wasm.sh --gemmy -DFASTATOMS_WITH_LAMMPS=ON -DFASTATOMS_WASM_SINGLE_FILE=ON
+emscripten: emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 7.0.1 (ac0578743420bcbe9a4f77d0b6599c25f8d43702)
+wasm/fastatoms.mjs: 717295 bytes raw, 298350 bytes gzip -9

@@ -1,6 +1,6 @@
 # Nucleosome core particle (PDB 1KX5)
 
-The nucleosome core particle: eight histone chains (A to H, cool colours) and two DNA strands (I and J, warm colours). The full particle is in the asymmetric unit (13607 atoms, about 1 s to compile). The DNA atoms are labelled `C_dna`, `N_dna`, `O_dna` and `P_dna` through `labels.json`. Bonds match by element, so the DNA atoms still form covalent bonds.
+The nucleosome core particle: eight histone chains (A to H, cool colours) and two DNA strands (I and J, warm colours). The full particle is in the asymmetric unit (13607 atoms, about 1 s to compile). The DNA atoms are labelled `C_dna`, `N_dna`, `O_dna` and `P_dna` through `labels.json`. Bonds match species labels exactly, so `config.toml` has a covalent rule for each pair of labels (`C` and `C_dna` are different labels).
 
 Source: RCSB PDB 1KX5 (https://files.rcsb.org/download/1KX5.cif). Citation: Davey et al. (2002) J. Mol. Biol. 319, 1097, doi:10.1016/S0022-2836(02)00386-8.
 

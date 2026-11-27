@@ -18,11 +18,6 @@ radius = 0.2
 color = [1.0, 0.85, 0.3, 1.0]
 material = "matte"
 
-[elements.H]
-radius = 0.2
-color = [0.95, 0.95, 0.95, 1.0]
-material = "matte"
-
 [materials.covalent]
 type = "principled"
 base_color = [0.85, 0.85, 0.85, 1.0]
@@ -38,20 +33,30 @@ supercell = [1, 1, 1]
 periodic = [true, true, true]
 box = { x = [0, 1], y = [0, 1], z = [0, 1] }
 
-# Covalent O-H. "ends": an H across the box boundary is still drawn with its O.
+# Covalent O-H, one rule per H label (bonds match species labels exactly). "ends": an H across the box boundary is
+# still drawn with its O.
 [[bonds]]
 a = "O"
-b = "H"
+b = "H1"
 min = 0.8
 max = 1.2
 radius = 0.07
 material = "covalent"
 complete = "ends"
 
-# Hydrogen bond, same O-H pair at a longer distance. `none` adds no atom for it: drawn only between atoms already shown.
 [[bonds]]
 a = "O"
-b = "H"
+b = "H2"
+min = 0.8
+max = 1.2
+radius = 0.07
+material = "covalent"
+complete = "ends"
+
+# Hydrogen bond, same O-H pairs at a longer distance. `none` adds no atom for it: drawn only between atoms already shown.
+[[bonds]]
+a = "O"
+b = "H1"
 min = 1.5
 max = 2.0
 radius = 0.02
@@ -59,3 +64,14 @@ material = "hbond"
 color = [0.3, 0.3, 0.3, 1.0]
 complete = "none"
 style = "dashed"  # or "dotted"
+
+[[bonds]]
+a = "O"
+b = "H2"
+min = 1.5
+max = 2.0
+radius = 0.02
+material = "hbond"
+color = [0.3, 0.3, 0.3, 1.0]
+complete = "none"
+style = "dashed"

@@ -20,7 +20,7 @@ import {
 } from "../state";
 import { outlineScale } from "../ui/outline-scale";
 import { systemDark, theme } from "../ui/theme";
-import { boxMaterial, controls, cssVar, orthoCamera, perspCamera, renderer, scene, stage } from "./draw";
+import { boxMaterial, controls, cssVar, dockInset, orthoCamera, perspCamera, renderer, scene, stage } from "./draw";
 import { drawLiveTriad } from "./triad";
 import { renderTriad } from "./triad3d";
 
@@ -80,9 +80,18 @@ function frame(now = 0): void {
 function drawView(): void {
   syncClip();
   renderer.render(scene, camera.value);
-  renderTriad();
-  drawLiveTriad();
+  const inset = dockInset();
+  renderTriad(false, inset);
+  drawLiveTriad(inset);
   showZoom();
+  for (const listener of drawn.splice(0)) listener();
+}
+
+// Resolves after the next frame is drawn: asks for one, so it comes even when nothing else changed.
+const drawn: (() => void)[] = [];
+export function nextFrame(): Promise<void> {
+  requestRender();
+  return new Promise((done) => drawn.push(done));
 }
 
 // The zoom readout: the zoom as a multiple of the fit (1× fits the structure to the window), as the view stands. It is
@@ -103,6 +112,20 @@ export function zoomText(times: number): string {
 // resize() refits the cameras and requests the redraw on every call. The trackball's change is a camera move.
 controls.addEventListener("change", requestRender);
 window.addEventListener("resize", resize);
+// The dock opening or shutting moves the stage by a transform (no resize) and the triad's corner with it: one redraw. The
+// trackball measures the stage's place on the page only when told (handleResize), so it is told when the move starts and
+// again when it ends. A scene appearing or going draws itself.
+let dockSeen = document.documentElement.dataset.dock;
+const moved = new MutationObserver(() => {
+  if (document.documentElement.dataset.dock === dockSeen) return;
+  dockSeen = document.documentElement.dataset.dock;
+  controls.handleResize();
+  if (!document.body.classList.contains("no-scene")) requestRender(); // the start screen has no triad
+});
+moved.observe(document.documentElement, { attributes: true, attributeFilter: ["data-dock"] });
+stage.closest("main")?.addEventListener("transitionend", (event) => {
+  if (event.propertyName === "transform") controls.handleResize();
+});
 // The first frame can run before the page fonts and the triad's axis font are ready; redraw once they are.
 document.fonts?.ready.then(requestRender);
 frame();

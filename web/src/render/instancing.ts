@@ -6,7 +6,8 @@
 import { MathUtils, Matrix4, Quaternion, Vector3 } from "three";
 import { ARROW, DASH, DOT, EPS } from "../config";
 import { dashSegments, dotCentres } from "../geom/dashes";
-import { lerp, span, vcross, vdot, vsub, vunit } from "../geom/vector";
+import { shapeOf } from "../geom/flatness";
+import { lerp, meanOf, span, vcross, vdot, vsub, vunit } from "../geom/vector";
 import type { AtomPrimitive, BondPrimitive, DisplacementPrimitive, Material, Scene, Topology, Vec3 } from "../types";
 
 // ---- constants ----
@@ -191,19 +192,24 @@ function polyhedronGroupFor(groups: Map<string, PolyhedronGroup>, material: stri
   return group;
 }
 
-// Each triangle of a polyhedron, with its winding turned so the normal points away from the polyhedron's centre.
-function outwardFaces(v: Vec3[], triangles: [number, number, number][]): Face[] {
-  const mid = centroid(v);
-  return triangles.map(([i, j, k]) => {
-    const n: number[] = vunit(vcross(vsub(v[j], v[i]), vsub(v[k], v[i])));
-    const faceCentre = centroid([v[i], v[j], v[k]]);
-    const outward = vdot(n, vsub(faceCentre, mid)) >= 0;
-    return outward ? { idx: [i, j, k], n } : { idx: [i, k, j], n: n.map((x) => -x) };
-  });
+// Does every face come with its reverse? compile/polyhedra.py draws a flat polygon from both sides, so a two-sided
+// topology says the compiler found it flat.
+function isTwoSided(triangles: [number, number, number][]): boolean {
+  const keys = new Set(triangles.map((f) => f.join(",")));
+  return triangles.every(([i, j, k]) => keys.has([i, k, j].join(",")));
 }
 
-function centroid(v: Vec3[]): number[] {
-  return v.reduce<number[]>((sum, p) => sum.map((c, i) => c + p[i] / v.length), [0, 0, 0]);
+// Each triangle of a polyhedron, wound so its normal points away from the polyhedron's centre. A flat polygon (see
+// geom/flatness.ts) has no inside, so its compiled winding is kept, as is a two-sided topology's.
+function outwardFaces(v: Vec3[], triangles: [number, number, number][]): Face[] {
+  const isFlat = isTwoSided(triangles) || shapeOf(v).kind !== "space";
+  const mid = meanOf(v);
+  return triangles.map(([i, j, k]): Face => {
+    const n: number[] = vunit(vcross(vsub(v[j], v[i]), vsub(v[k], v[i])));
+    const outwardness = vdot(n, vsub(meanOf([v[i], v[j], v[k]]), mid));
+    const isOutward = outwardness >= 0;
+    return isFlat || isOutward ? { idx: [i, j, k], n } : { idx: [i, k, j], n: n.map((x) => -x) };
+  });
 }
 
 function addFaces(group: PolyhedronGroup, faces: Face[], v: Vec3[], index: number): void {
@@ -213,10 +219,22 @@ function addFaces(group: PolyhedronGroup, faces: Face[], v: Vec3[], index: numbe
   }
 }
 
+// One copy of each reversed pair of faces (the same three corners in either winding), so a two-sided polygon's fan is
+// counted once: its diagonals then have two faces meeting flat, and its outline has one face each.
+function oneCopyPerPair(faces: Face[]): Face[] {
+  const seen = new Set<string>();
+  return faces.filter((f) => {
+    const key = [...f.idx].sort((a, b) => a - b).join(",");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // The hard edges of a polyhedron, each once: an edge with one face (a boundary), or whose two faces meet at a sharp angle.
 export function hardEdges(topo: Topology, points: Map<string, Vec3>): [Vec3, Vec3][] {
   const v = topo.point_ids.map((id) => points.get(id)!);
-  const faces = outwardFaces(v, topo.faces);
+  const faces = oneCopyPerPair(outwardFaces(v, topo.faces));
   const sides = new Map<string, { i: number; j: number; faces: Face[] }>();
   for (const f of faces) {
     for (let e = 0; e < 3; e++) {

@@ -1,8 +1,7 @@
 // Captures the gallery thumbnails: each example's page, opened in headless Chrome at 480 x 320 (captured at 2x),
-// light theme, the stage alone at the default view, with the cell box hidden (its item in the menu, as a reader would turn it
-// off) and the axis triad hidden (a style for this capture only). The picture is transparent: Chrome's default background
-// is alpha 0 for the capture, and the page's backgrounds (body, main, stage) are transparent in the capture's style, so the
-// WebGL canvas (cleared to alpha 0) shows nothing behind the structure. Writes <out>/<name>.png at 2x;
+// light theme, the stage alone at the default view (capture mode, ?capture=1: no controls, no triad), with the cell box hidden
+// through window.gemmy. The picture is transparent: Chrome's default background is alpha 0 for the capture, and the API
+// makes the page's backgrounds transparent, so the WebGL canvas (cleared to alpha 0) shows nothing behind the structure. Writes <out>/<name>.png at 2x;
 // scripts/render_thumbnails.sh trims the picture to the structure (on alpha) and fits it to the frame. Uses tests/browser/cdp.mjs and Node 22 or later.
 //
 // Usage: node render_thumbnails.mjs <base-url> <out-dir> <example-name>...
@@ -16,7 +15,6 @@ const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const WIDTH = 480;
 const HEIGHT = 320;
 const SCALE = 2; // the capture is supersampled; the script resizes it to WIDTH x HEIGHT
-const QUIET_MS = 2000; // the stage's first frame and its settling (the default view draws at once; no glide)
 const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 const [base, outDir, ...names] = process.argv.slice(2);
@@ -38,37 +36,24 @@ async function devtoolsPort(profile, chrome) {
   throw new Error("Chrome did not open its DevTools port");
 }
 
-// The cell box is off in the picture: its toggle in the menu, switched off as a reader would. The trigger is pressed
-// with the mouse, the toggle is clicked once the panel is open, and the trigger shuts it.
-async function hideCellBox(send, evaluate) {
-  const press = async (selector) => {
-    const { x, y } =
-      await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
-    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
-    await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
-    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", buttons: 0, clickCount: 1 });
-    await sleep(300);
-  };
-  const box = `[...document.querySelectorAll('#main-panel [aria-pressed]')].find((el) => el.textContent.trim() === "Cell box")`;
-  await press('[aria-label="Menu"]');
-  if (await evaluate(`${box}?.getAttribute("aria-pressed") === "true"`)) {
-    await evaluate(`(${box}).click(), true`);
-    await sleep(200);
-  }
-  if ((await evaluate(`${box}?.getAttribute("aria-pressed")`)) !== "false")
-    throw new Error("the cell box did not hide");
-  await press('[aria-label="Menu"]');
-}
-
-// One example: its page, the stage alone, a PNG of the stage at the default view.
-async function capture(browser, url) {
+// One example: the site's page in capture mode, the stage alone, a PNG of the stage at the default view.
+async function capture(browser, url, name) {
   const { targetId } = await browser.send("Target.createTarget", { url: "about:blank" });
   try {
     const { sessionId } = await browser.send("Target.attachToTarget", { targetId, flatten: true });
     const send = (method, params = {}) => browser.send(method, params, sessionId);
-    const evaluate = async (expression) =>
-      (await send("Runtime.evaluate", { expression, returnByValue: true })).result.value;
+    const evaluate = async (expression) => {
+      const { result, exceptionDetails } = await send("Runtime.evaluate", {
+        expression,
+        returnByValue: true,
+        awaitPromise: true,
+      });
+      if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
+      return result.value;
+    };
+    const waitFor = async (expression) => {
+      for (let i = 0; i < 600 && !(await evaluate(expression)); i++) await sleep(100);
+    };
     await send("Page.enable");
     await send("Runtime.enable");
     await send("Emulation.setDeviceMetricsOverride", {
@@ -80,25 +65,11 @@ async function capture(browser, url) {
     await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
     // The picture's background is transparent (alpha 0), not the page's own colour.
     await send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
-    // The capture's flags, before the page's own scripts run: no triad in the picture (web/src/render/triad3d.ts).
-    await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.__gemmyNoTriad = true;" });
     await send("Page.navigate", { url });
-    for (let i = 0; i < 600; i++) {
-      const ready = await evaluate(
-        `!!document.querySelector("#stage canvas") && document.getElementById("zoom-level")?.textContent !== "" &&
-          !document.body.classList.contains("booting")`,
-      );
-      if (ready) break;
-      await sleep(100);
-    }
-    await sleep(QUIET_MS);
-    await hideCellBox(send, evaluate);
-    // Only the stage: the viewer's controls, panels and popovers are hidden for the picture, and so are the triad.
-    await evaluate(`(() => { const style = document.createElement("style");
-      style.textContent = "body > :not(main) { display: none !important; } #triad { display: none !important; }" +
-        " body, main, #stage { background: transparent !important; }";
-      document.head.append(style); return true; })()`);
-    await sleep(200);
+    await waitFor("!!window.gemmy");
+    // The capture API (web/src/ui/capture-api.ts): the example opens as its card opens it, then the box off, light, no page background.
+    await evaluate(`gemmy.ready().then(() => gemmy.openExample(${JSON.stringify(name)}))`);
+    await evaluate(`(gemmy.set({ box: false, theme: "light", transparent: true }), gemmy.rendered())`);
     const shot = await send("Page.captureScreenshot", {
       format: "png",
       clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 1 },
@@ -129,7 +100,7 @@ try {
   browser = await connect(await devtoolsPort(profile, chrome));
   await browser.send("Browser.setDownloadBehavior", { behavior: "deny" });
   for (const name of names) {
-    const png = await capture(browser, new URL(`${name}/index.html`, base).href);
+    const png = await capture(browser, new URL("?capture=1", base).href, name);
     writeFileSync(join(outDir, `${name}.png`), png);
     console.log(`${name}: ${png.length} bytes`);
   }

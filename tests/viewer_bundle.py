@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from gemmy.view import _axis_fonts, render_constants
 
@@ -55,3 +56,25 @@ def module_url() -> str:
 def header() -> str:
     """Script text that makes every export of the bundle a global, so a test script can call them by name."""
     return f"const viewer = await import({json.dumps(module_url())});\nObject.assign(globalThis, viewer);\n"
+
+
+# Read by a node_json script: its arguments, parsed from the JSON text node was given on the command line.
+ARGS_LINE = "const args = process.argv.slice(2).map((text) => JSON.parse(text));\n"
+# Appended to a node_json script: the value it left in `result`, printed as one line of JSON.
+RESULT_LINE = "\nconsole.log(JSON.stringify(result));\n"
+
+
+def node_json(script: str, *args: Any) -> Any:
+    """Runs `script` in node, after header(), and returns the JSON value its `result` holds.
+
+    The arguments travel as JSON text on the command line, so the script reads them as args[0], args[1], ... and no test
+    escapes JSON into its source. The script declares `result`.
+    """
+    with tempfile.TemporaryDirectory(prefix="gemmy-viewer-test-") as scratch:
+        script_path = Path(scratch) / "script.mjs"
+        script_path.write_text(header() + ARGS_LINE + script + RESULT_LINE, encoding="utf-8")
+        run = subprocess.run(
+            ["node", str(script_path), *(json.dumps(arg) for arg in args)], capture_output=True, text=True
+        )
+    assert run.returncode == 0, run.stderr
+    return json.loads(run.stdout)

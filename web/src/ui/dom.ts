@@ -14,8 +14,8 @@ export function closestOf(target: EventTarget | null, selector: string): HTMLEle
   return target instanceof Element ? target.closest<HTMLElement>(selector) : null;
 }
 
-// The page's name and its line under it: the top bar's title, or the tab strip's place (ui/tab-bar.ts). The page's own
-// name is in the overlay's data attributes (web/page.html); the loader sets the name as each scene opens.
+// The page's name and its line under it: the file island's name when the island shows no menu (react/file-island.tsx).
+// The page's own name is in the overlay's data attributes (web/page.html); the loader sets the name as each scene opens.
 export const pageName = signal<PageNames>({
   name: byId("overlay").dataset.title ?? "",
   from: byId("overlay").dataset.subtitle ?? "",

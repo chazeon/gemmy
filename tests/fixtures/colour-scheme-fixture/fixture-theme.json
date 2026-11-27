@@ -1,0 +1,9 @@
+{
+  "id": "fixture",
+  "name": "Fixture theme",
+  "source": "Synthetic test theme (tests/fixtures/colour-scheme-fixture): not a shipped scheme.",
+  "colours": {
+    "Si": "#ff0000",
+    "O": "#00ff00"
+  }
+}

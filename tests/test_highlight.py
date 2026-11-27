@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from gemmy.compile.pipeline import compile_scene
 from gemmy.config import load_scene_config, scene_config_from_dict
-from gemmy.structure import load_structure
+from gemmy.readers import load_structure
 from golden import FIXTURES
 
 DIR = FIXTURES / "rocksalt"

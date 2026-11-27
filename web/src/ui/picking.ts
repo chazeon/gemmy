@@ -1,11 +1,11 @@
 // Picking: a click selects the atom, bond or polyhedron under it, shows its readout and highlights it in the scene. A pick
-// also opens the details panel (panels.ts), and the readout's text comes from readout.ts.
+// also opens the details card (panels.ts), and the readout's text comes from readout.ts.
 import * as THREE from "three";
 import type { BondPrimitive } from "../types";
 import { renderer } from "../render/draw";
 import { camera, loaded, requestRender, type Target, type PolyTarget } from "../state";
 import { describe } from "./readout";
-import { showInfo } from "./panels";
+import { showDetails } from "./panels";
 import { glideTarget } from "../camera/view";
 import { POINTER_SLOP_PX } from "../config";
 
@@ -182,7 +182,9 @@ export function wirePicking(releaseRotation: () => void): void {
     const double = completesDoubleClick(e);
     const hit = hitAt(e.clientX, e.clientY);
     select(hit ? targetOf(hit) : null);
-    if (hit) showInfo(true); // a pick opens the details; clearing it leaves them as they are
+    // A pick that hits something opens the details card (ui/panels.ts). Only a user pick does this: a programmatic selection
+    // does not. With the dock open, the style reveal in inspector.tsx then shows the folder that styles the object, if any.
+    if (hit) showDetails(true);
     // The pivot follows the selection. Only a double-click sets it (the glide makes the hit the target); a single click
     // on another object leaves it where it is, and clearing the selection (a click on empty space, or Esc) lets it go.
     if (double && hit) glideTarget(hit.point);

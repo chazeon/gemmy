@@ -5,7 +5,6 @@ stishovite
 dry-ice
 uio-66
 c60
-c60-cage
 dna-1bna
 glut1-4pyp
 nav17-6j8i

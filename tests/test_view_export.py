@@ -33,13 +33,13 @@ SCENE = {
     "source_comment": "export fixture",
     "materials": {"m": {"base_color": [1, 0, 0, 1]}},
     "points": [
-        {"id": "p0", "element": "O", "position": [0.0, 0.0, 0.0]},
-        {"id": "p1", "element": "O", "position": [4.0, 1.5, -2.0]},
+        {"id": "p0", "element": "O", "label": "O", "position": [0.0, 0.0, 0.0]},
+        {"id": "p1", "element": "O", "label": "O", "position": [4.0, 1.5, -2.0]},
     ],
     "primitives": {
         "atoms": [
-            {"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O"},
-            {"id": "a1", "point_id": "p1", "radius": 1.0, "material_id": "m", "element": "O"},
+            {"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O", "label": "O"},
+            {"id": "a1", "point_id": "p1", "radius": 1.0, "material_id": "m", "element": "O", "label": "O"},
         ]
     },
 }
@@ -318,8 +318,8 @@ TAIL_AND_TIP = {
     "source_comment": "bounds fixture",
     "materials": {"m": {"base_color": [1, 0, 0, 1]}},
     "points": [
-        {"id": "p0", "element": "O", "position": [1.0, 2.0, 3.0]},
-        {"id": "p1", "element": "O", "position": [-2.0, 0.5, 4.0]},
+        {"id": "p0", "element": "O", "label": "O", "position": [1.0, 2.0, 3.0]},
+        {"id": "p1", "element": "O", "label": "O", "position": [-2.0, 0.5, 4.0]},
     ],
     "primitives": {
         "atoms": [],
@@ -346,9 +346,9 @@ def _bounds_scene(name: str, tmp_path: Path) -> dict:
         return {
             **SCENE,
             "points": [
-                {"id": "p0", "element": "O", "position": [0.0, 0.0, 0.0]},
-                {"id": "p1", "element": "O", "position": [4.0, 0.0, 0.0]},
-                {"id": "p0", "element": "O", "position": [10.0, 0.0, 0.0]},
+                {"id": "p0", "element": "O", "label": "O", "position": [0.0, 0.0, 0.0]},
+                {"id": "p1", "element": "O", "label": "O", "position": [4.0, 0.0, 0.0]},
+                {"id": "p0", "element": "O", "label": "O", "position": [10.0, 0.0, 0.0]},
             ],
             "primitives": {"atoms": [], "bonds": [], "polyhedra": [], "displacements": []},
         }
@@ -356,8 +356,8 @@ def _bounds_scene(name: str, tmp_path: Path) -> dict:
         return {
             **SCENE,
             "points": [
-                {"id": "p0", "element": "O", "position": [0.0, 0.0, 0.0]},
-                {"id": "p1", "element": "O", "position": [0.2, 0.0, 0.0]},
+                {"id": "p0", "element": "O", "label": "O", "position": [0.0, 0.0, 0.0]},
+                {"id": "p1", "element": "O", "label": "O", "position": [0.2, 0.0, 0.0]},
             ],
             "primitives": {"atoms": [], "bonds": [], "polyhedra": [], "displacements": []},
         }

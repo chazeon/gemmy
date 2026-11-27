@@ -73,12 +73,12 @@
    "type": "principled"
   },
   "polyhedron": {
-   "alpha": 0.25,
+   "alpha": 1.0,
    "base_color": [
     0.2,
     0.6,
     1.0,
-    0.25
+    1.0
    ],
    "metallic": 0.0,
    "roughness": 0.2,
@@ -94,6 +94,7 @@
     0.0
    ],
    "id": "p0",
+   "label": "C",
    "position": [
     0.0,
     0.0,
@@ -109,6 +110,7 @@
     1.0
    ],
    "id": "p1",
+   "label": "C",
    "position": [
     0.0,
     0.0,
@@ -124,6 +126,7 @@
     0.0
    ],
    "id": "p2",
+   "label": "C",
    "position": [
     0.0,
     4.0,
@@ -139,6 +142,7 @@
     1.0
    ],
    "id": "p3",
+   "label": "C",
    "position": [
     0.0,
     4.0,
@@ -154,6 +158,7 @@
     0.0
    ],
    "id": "p4",
+   "label": "C",
    "position": [
     4.0,
     0.0,
@@ -169,6 +174,7 @@
     1.0
    ],
    "id": "p5",
+   "label": "C",
    "position": [
     4.0,
     0.0,
@@ -184,6 +190,7 @@
     0.0
    ],
    "id": "p6",
+   "label": "C",
    "position": [
     4.0,
     4.0,
@@ -199,6 +206,7 @@
     1.0
    ],
    "id": "p7",
+   "label": "C",
    "position": [
     4.0,
     4.0,
@@ -214,6 +222,7 @@
     0.0
    ],
    "id": "p8",
+   "label": "N",
    "position": [
     2.0,
     0.0,
@@ -229,6 +238,7 @@
     1.0
    ],
    "id": "p9",
+   "label": "N",
    "position": [
     2.0,
     0.0,
@@ -244,6 +254,7 @@
     0.0
    ],
    "id": "p10",
+   "label": "N",
    "position": [
     2.0,
     4.0,
@@ -259,6 +270,7 @@
     1.0
    ],
    "id": "p11",
+   "label": "N",
    "position": [
     2.0,
     4.0,
@@ -274,6 +286,7 @@
     0.0
    ],
    "id": "p12",
+   "label": "O",
    "position": [
     2.0,
     2.0,
@@ -289,6 +302,7 @@
     1.0
    ],
    "id": "p13",
+   "label": "O",
    "position": [
     2.0,
     2.0,
@@ -304,6 +318,7 @@
     0.5
    ],
    "id": "p14",
+   "label": "H",
    "position": [
     2.0,
     2.0,
@@ -317,6 +332,7 @@
    {
     "element": "C",
     "id": "atom_0_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p0",
     "radius": 0.3
@@ -324,6 +340,7 @@
    {
     "element": "C",
     "id": "atom_1_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p1",
     "radius": 0.3
@@ -331,6 +348,7 @@
    {
     "element": "C",
     "id": "atom_2_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p2",
     "radius": 0.3
@@ -338,6 +356,7 @@
    {
     "element": "C",
     "id": "atom_3_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p3",
     "radius": 0.3
@@ -345,6 +364,7 @@
    {
     "element": "C",
     "id": "atom_4_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p4",
     "radius": 0.3
@@ -352,6 +372,7 @@
    {
     "element": "C",
     "id": "atom_5_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p5",
     "radius": 0.3
@@ -359,6 +380,7 @@
    {
     "element": "C",
     "id": "atom_6_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p6",
     "radius": 0.3
@@ -366,6 +388,7 @@
    {
     "element": "C",
     "id": "atom_7_C",
+    "label": "C",
     "material_id": "matte",
     "point_id": "p7",
     "radius": 0.3
@@ -373,6 +396,7 @@
    {
     "element": "N",
     "id": "atom_8_N",
+    "label": "N",
     "material_id": "matte",
     "point_id": "p8",
     "radius": 0.3
@@ -380,6 +404,7 @@
    {
     "element": "N",
     "id": "atom_9_N",
+    "label": "N",
     "material_id": "matte",
     "point_id": "p9",
     "radius": 0.3
@@ -387,6 +412,7 @@
    {
     "element": "N",
     "id": "atom_10_N",
+    "label": "N",
     "material_id": "matte",
     "point_id": "p10",
     "radius": 0.3
@@ -394,6 +420,7 @@
    {
     "element": "N",
     "id": "atom_11_N",
+    "label": "N",
     "material_id": "matte",
     "point_id": "p11",
     "radius": 0.3
@@ -401,6 +428,7 @@
    {
     "element": "O",
     "id": "atom_12_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p12",
     "radius": 0.3
@@ -408,6 +436,7 @@
    {
     "element": "O",
     "id": "atom_13_O",
+    "label": "O",
     "material_id": "matte",
     "point_id": "p13",
     "radius": 0.3
@@ -415,6 +444,7 @@
    {
     "element": "H",
     "id": "atom_14_H",
+    "label": "H",
     "material_id": "matte",
     "point_id": "p14",
     "radius": 0.3
@@ -424,7 +454,7 @@
   "displacements": [],
   "polyhedra": []
  },
- "schema_version": 2,
+ "schema_version": 3,
  "source_comment": "POSCAR",
  "topologies": []
 }

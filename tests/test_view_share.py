@@ -17,7 +17,7 @@ from gemmy.view import render_live_page, render_loader_page, render_viewer
 from viewer_bundle import available, header
 
 pytestmark = pytest.mark.skipif(not available(), reason="node or web/node_modules is missing (cd web && npm ci)")
-BASE = "https://chazeon.github.io/gemmy/view/"
+BASE = "https://chazeon.github.io/gemmy/"
 
 
 def _run(body: str, args: Any, tmp_path: Path) -> Any:
@@ -37,10 +37,10 @@ def _try_parse(search: str, tmp_path: Path) -> dict:
 
 
 def test_scene_urls_resolve_against_the_page_and_several_scenes_are_kept(tmp_path: Path) -> None:
-    found = _try_parse("?scene=../nacl/scene.json.gz&scene=https://example.org/a.json", tmp_path)
+    found = _try_parse("?scene=nacl/scene.json.gz&scene=https://example.org/a.json", tmp_path)
     assert found["ok"] == [
-        {"kind": "url", "url": "https://chazeon.github.io/gemmy/nacl/scene.json.gz", "byDefault": False},
-        {"kind": "url", "url": "https://example.org/a.json", "byDefault": False},
+        {"kind": "url", "url": "https://chazeon.github.io/gemmy/nacl/scene.json.gz"},
+        {"kind": "url", "url": "https://example.org/a.json"},
     ]
 
 
@@ -70,10 +70,10 @@ try { parseScene(args.text); console.log("{}"); } catch (e) { console.log(JSON.s
 
 def _scene(**extra: Any) -> dict:
     scene = {
-        "schema_version": 2,
+        "schema_version": 3,
         "source_comment": "tiny",
         "materials": {"m": {"base_color": [1, 0, 0, 1]}},
-        "points": [{"id": "p0", "element": "O", "position": [0, 0, 0]}],
+        "points": [{"id": "p0", "element": "O", "label": "O", "position": [0, 0, 0]}],
         "topologies": [],
         "primitives": {},
         "cell": None,
@@ -105,13 +105,14 @@ console.log(JSON.stringify({
 
 
 def test_a_scene_from_another_schema_version_is_refused_by_name(tmp_path: Path) -> None:
-    text = json.dumps(_scene(schema_version=1))
+    text = json.dumps(_scene(schema_version=2))
     found = _run(PARSE_OR_ERROR, {"text": text}, tmp_path)
-    assert "schema_version 1" in found["error"] and "reads version 2" in found["error"]
+    assert "schema_version 2" in found["error"] and "reads version 3" in found["error"]
+    assert "Recompile the scene from its config" in found["error"]
 
 
 def test_a_document_that_is_not_a_scene_is_refused(tmp_path: Path) -> None:
-    assert "not a gemmy scene" in _run(PARSE_OR_ERROR, {"text": json.dumps({"schema_version": 2})}, tmp_path)["error"]
+    assert "not a gemmy scene" in _run(PARSE_OR_ERROR, {"text": json.dumps({"schema_version": 3})}, tmp_path)["error"]
     assert "not valid JSON" in _run(PARSE_OR_ERROR, {"text": "{"}, tmp_path)["error"]
 
 
@@ -262,33 +263,51 @@ console.log(JSON.stringify([
     assert _run(body, {}, tmp_path) == ["nacl", "ice-ih", "a b", "ice.json.gz"]
 
 
-def test_the_page_opens_its_defaults_unless_the_address_names_scenes(tmp_path: Path) -> None:
+def test_an_examples_structure_is_fetched_from_its_folder(tmp_path: Path) -> None:
     body = """
-const base = "https://chazeon.github.io/gemmy/";
-const defaults = ["nacl/scene.json.gz", "ice-ih/scene.json.gz", "stishovite/scene.json.gz"];
-const shown = (sources) => sources.map((s) => ({
-  what: s.kind === "url" ? s.url : `gist ${s.id}`, byDefault: Boolean(s.byDefault),
-}));
-console.log(JSON.stringify({
-  front: shown(sourcesToOpen("", base, defaults)),
-  sceneOverrides: shown(sourcesToOpen("?scene=https://example.org/a.json", base, defaults)),
-  gistOverrides: shown(sourcesToOpen("?gist=0123", base, defaults)),
-  nothing: sourcesToOpen("", base, []),
-  secondTab: sceneName(sourcesToOpen("", base, defaults)[1]),
-  frontName: sourcesToOpen("", base, defaults).map((s) => sceneName(s)),
-}));
+const source = pageStructureOf("POSCAR", ["labels.json", "config.toml"], "https://chazeon.github.io/gemmy/nacl/");
+console.log(JSON.stringify([
+  source.kind, source.file.name, source.file.url, source.sidecars.map((f) => f.url), nameOf(source), fromOf(source),
+]));
+"""
+    assert _run(body, {}, tmp_path) == [
+        "page-structure",
+        "POSCAR",
+        "https://chazeon.github.io/gemmy/nacl/POSCAR",
+        ["https://chazeon.github.io/gemmy/nacl/labels.json", "https://chazeon.github.io/gemmy/nacl/config.toml"],
+        "POSCAR",
+        "https://chazeon.github.io/gemmy/nacl/POSCAR",
+    ]
+
+
+def test_an_examples_structure_names_only_plain_files_of_its_folder(tmp_path: Path) -> None:
+    body = """
+const base = "https://chazeon.github.io/gemmy/nacl/";
+const tryNames = (structure, files) => {
+  try { return pageStructureOf(structure, files, base).file.url; } catch (e) { return e.message; }
+};
+console.log(JSON.stringify([
+  tryNames("a#b.cif", []),
+  tryNames("../POSCAR", []),
+  tryNames("POSCAR", ["https://evil.example/x"]),
+]));
 """
     found = _run(body, {}, tmp_path)
-    assert found["front"] == [
-        {"what": "https://chazeon.github.io/gemmy/nacl/scene.json.gz", "byDefault": True},
-        {"what": "https://chazeon.github.io/gemmy/ice-ih/scene.json.gz", "byDefault": True},
-        {"what": "https://chazeon.github.io/gemmy/stishovite/scene.json.gz", "byDefault": True},
-    ]
-    assert found["sceneOverrides"] == [{"what": "https://example.org/a.json", "byDefault": False}]
-    assert found["gistOverrides"] == [{"what": "gist 0123", "byDefault": False}]
-    assert found["nothing"] == []
-    assert found["secondTab"] == "ice-ih"
-    assert found["frontName"] == ["nacl", "ice-ih", "stishovite"]
+    assert found[0] == "https://chazeon.github.io/gemmy/nacl/a%23b.cif"
+    assert "not a plain file name" in found[1] and "not a plain file name" in found[2]
+
+
+def test_a_bad_gallery_entry_is_skipped_and_the_others_stay(tmp_path: Path) -> None:
+    body = """
+const entry = (name, structure = "POSCAR", thumbnail = name + "/thumbnail.png") =>
+  ({ name, title: name, description: "d", thumbnail, structure: { structure, files: [] } });
+console.warn = () => {};
+console.log(JSON.stringify(
+  parseExamples([entry("nacl"), entry("ice", ""), entry("zeta", "POSCAR", "../x.png"), entry("../up"), { name: 1 }])
+    .map((example) => example.name),
+));
+"""
+    assert _run(body, {}, tmp_path) == ["nacl"]
 
 
 def test_every_kind_of_source_has_a_name_a_line_and_a_link(tmp_path: Path) -> None:
@@ -300,9 +319,9 @@ const embedded = { kind: "embedded", doc: {}, page: names };
 const live = { kind: "live", page: names };
 console.log(JSON.stringify({
   names: [nameOf(file), nameOf(live), nameOf(embedded), nameOf({ kind: "gist", id: "0123", file: null })],
-  lines: [fromOf(file), fromOf(live), fromOf({ kind: "url", url: "https://example.org/a.json", byDefault: false })],
-  defaultTab: linkOf({ kind: "url", url: "https://chazeon.github.io/gemmy/nacl/scene.json.gz", byDefault: true }, page),
-  sceneTab: linkOf({ kind: "url", url: "https://example.org/a.json", byDefault: false }, page),
+  lines: [fromOf(file), fromOf(live), fromOf({ kind: "url", url: "https://example.org/a.json" })],
+  structureTab: linkOf(pageStructureOf("POSCAR", [], "https://chazeon.github.io/gemmy/nacl/"), page),
+  sceneTab: linkOf({ kind: "url", url: "https://example.org/a.json" }, page),
   gistTab: linkOf({ kind: "gist", id: "0123", file: null }, page),
   gistFileTab: linkOf({ kind: "gist", id: "0123", file: "ice.json.gz" }, page),
   liveTab: linkOf(live, page),
@@ -313,7 +332,7 @@ console.log(JSON.stringify({
     assert _run(body, {}, tmp_path) == {
         "names": ["mine.json", "nacl", "nacl", "gist 0123"],
         "lines": ["local file", "a crystal", "https://example.org/a.json"],
-        "defaultTab": "https://chazeon.github.io/gemmy/",
+        "structureTab": "https://chazeon.github.io/gemmy/",
         "sceneTab": "https://chazeon.github.io/gemmy/?scene=https%3A%2F%2Fexample.org%2Fa.json",
         "gistTab": "https://chazeon.github.io/gemmy/?gist=0123",
         "gistFileTab": "https://chazeon.github.io/gemmy/?gist=0123&file=ice.json.gz",
@@ -346,12 +365,14 @@ def test_the_other_pages_say_scene_or_live() -> None:
 
 def _scene_for_page() -> dict:
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "source_comment": "tiny",
         "materials": {"m": {"base_color": [1, 0, 0, 1]}},
-        "points": [{"id": "p0", "element": "O", "position": [0, 0, 0]}],
+        "points": [{"id": "p0", "element": "O", "label": "O", "position": [0, 0, 0]}],
         "topologies": [],
-        "primitives": {"atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O"}]},
+        "primitives": {
+            "atoms": [{"id": "a0", "point_id": "p0", "radius": 1.0, "material_id": "m", "element": "O", "label": "O"}]
+        },
         "cell": {"origin": [0, 0, 0], "vectors": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]},
     }
 

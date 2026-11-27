@@ -65,15 +65,24 @@ class View:
     subtitle: str = ""
     """Line under the title."""
     hosted: bool = False
-    """Write a hosted site instead (--out is its folder, as for GitHub Pages): one shared viewer, a scene.json.gz per
-    scene and a small page for each, view/ for any scene by address or file, and a front page: the viewer with
-    every scene as a tab. Needs a web server."""
+    """Write a hosted site instead (--out is its folder, as for GitHub Pages): one viewer page, index.html, which is the
+    start screen and opens any scene by address or file (no scene is open by default), and a folder per scene with its
+    data only: its structure and config (--structure), or its scene.json.gz, and its thumbnail (--gallery). Pass
+    --site-url for the absolute addresses. Needs a web server."""
     gallery: Path | None = None
     """With --hosted: a folder with <scene name>/gallery.json (title and description) for every scene. Writes
-    examples.json, the scenes in order, for the site's start screen."""
+    examples.json, the scenes in order, for the site's start screen; each card opens its scene's structure, so every
+    scene needs a --structure."""
     thumbnails: Path | None = None
     """With --hosted and --gallery: a folder with <scene name>.png (the start screen's picture of each scene), copied
     into the site. Needed with --gallery, and the other way round."""
+    site_url: str | None = None
+    """With --hosted: the site's absolute address (https://user.github.io/repo/), for the canonical address, og:url and
+    og:image of its pages. Without it those are left out (a local build)."""
+    structure: tuple[str, ...] = ()
+    """With --hosted, NAME=CONFIG for each scene that has a structure (the scene's name, and its config file, as several
+    values after one flag): the page compiles the config's structure in the browser. The config's structure file and
+    the files it names (labels, displacements) are copied into the scene's folder with the config."""
 
 
 @dataclass(frozen=True)

@@ -1,14 +1,15 @@
 // The keyboard: arrows turn and tilt (with Shift they move), [ and ] spin, + - and 0 zoom and fit, t cycles the theme,
-// ? and i open the help and the details, and Esc closes what is open or lets go of the selection. W A S D Q E fly
+// ? opens the help, i the details card (ui/panels.ts), and Esc closes what is open or lets go of the selection. W A S D Q E fly
 // (camera/fly.ts). The arrows and [ ] are held: a tap steps, a hold keeps going (camera/fly.ts press). Keys typed into a
-// field or a popover, and browser or system shortcuts, are left to the page.
+// field, a slider, a style-panel control or a popover, keys a control has handled, and browser or system shortcuts, are
+// left to the page.
 import { STEP } from "../config";
 import { fit, zoom } from "../camera/view";
 import { FLY, type Held, type Motion, flying, letGo, panMotion, press, setShiftHeld, turnMotion } from "../camera/fly";
 import { beginRotation, releasePivot } from "./pivot";
 import { card } from "./home";
 import { toggleHelp } from "./help";
-import { toggleInfo } from "./panels";
+import { toggleDetails } from "./panels";
 import { select } from "./picking";
 import { cycleTheme } from "./theme";
 import { closestOf } from "./dom";
@@ -56,13 +57,16 @@ const KEY_ACTIONS: Record<string, () => void> = {
 // The held keys' presses, by key code: the key's keyup lets its press go.
 const presses = new Map<string, Held>();
 
-// Keys typed into a field or a popover, or that come with a browser or system modifier. The menu is the exception:
-// it stays open while the scene is used (react/main-menu.tsx), so the shortcuts work with the focus in it.
-const KEYS_OF_THEIR_OWN =
-  "input, textarea, [data-slot=dropdown-menu-content], [data-slot=popover-content]:not(#main-panel)";
+// Keys typed into a field, a slider (a histogram handle is a role=slider), a Tweakpane row or button, or a menu or popover, or
+// that come with a browser or system modifier.
+const KEYS_OF_THEIR_OWN = [
+  "input, textarea, [role=slider], .tp-lblv, .tp-btnv",
+  "[data-slot=dropdown-menu-content], [data-slot=popover-content]",
+].join(", ");
 
+// A key that a control has already handled (preventDefault) is its own, whatever its target.
 function isForFieldOrShortcut(e: KeyboardEvent): boolean {
-  return closestOf(e.target, KEYS_OF_THEIR_OWN) !== null || e.metaKey || e.ctrlKey || e.altKey;
+  return e.defaultPrevented || closestOf(e.target, KEYS_OF_THEIR_OWN) !== null || e.metaKey || e.ctrlKey || e.altKey;
 }
 
 // A held key starts its press on its first keydown. The OS auto-repeat after it is the same press, so it is ignored. A
@@ -85,8 +89,8 @@ function runShortcut(e: KeyboardEvent): boolean {
   }
   // The card is shown over the start screen, a load in progress and a failed load: no scene is on the stage then.
   if (e.key === "i" && !e.shiftKey) {
-    if (!card.peek().shown) return true;
-    toggleInfo();
+    if (card.peek().shown) return true;
+    toggleDetails();
     return true;
   }
   if (FLY[e.code]) {

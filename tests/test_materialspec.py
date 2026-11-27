@@ -55,7 +55,7 @@ def _scene(materials, poly_material=None, used_by_atom=None) -> SceneDocument:
     polys = []
     if poly_material:
         polys.append(PolyhedronPrimitive("p", "n", "c", [], "t", "topology_locked", poly_material, None))
-    atoms = [AtomPrimitive("a", "X", "p", 1.0, used_by_atom)] if used_by_atom else []
+    atoms = [AtomPrimitive("a", "X", "X", "p", 1.0, used_by_atom)] if used_by_atom else []
     prim = ScenePrimitives(atoms=atoms, polyhedra=polys)
     return SceneDocument("x", {m: _mat() for m in materials}, [], [], prim, None, 2)
 

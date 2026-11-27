@@ -48,7 +48,8 @@ const EMPTY_SCENE: LoadedScene = {
 };
 export const loaded = signal<LoadedScene>(EMPTY_SCENE);
 
-// The Show toggles of the menu, and the outlines (ui/stage.ts binds each to what it shows).
+// The Show toggles of the dock's View section (react/style-panel/view-nodes.ts), and the outlines (ui/stage.ts binds each to
+// what it shows).
 export const showAtoms = signal(true);
 export const showBox = signal(true);
 export const outlines = signal(true);

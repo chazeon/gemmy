@@ -1,0 +1,30 @@
+ITEM: TIMESTEP
+0
+ITEM: TIME
+0.0
+ITEM: NUMBER OF ATOMS
+2
+ITEM: UNITS
+metal
+ITEM: BOX BOUNDS pp pp pp
+0.0 4.0
+0.0 4.0
+0.0 4.0
+ITEM: ATOMS id type xs ys zs
+1 1 0.1 0.1 0.1
+2 1 0.2 0.2 0.2
+ITEM: TIMESTEP
+1
+ITEM: TIME
+0.5
+ITEM: NUMBER OF ATOMS
+2
+ITEM: UNITS
+metal
+ITEM: BOX BOUNDS pp pp pp
+0.0 4.0
+0.0 4.0
+0.0 4.0
+ITEM: ATOMS id type xs ys zs
+1 1 0.25 0.25 0.25
+2 1 0.75 0.75 0.75

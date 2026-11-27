@@ -1,0 +1,48 @@
+{
+ "steps": [
+  {
+   "alert": "Could not load POSCAR: This page is one self-contained file and cannot compile structures. Run gemmy compile, or open the hosted viewer or gemmy serve.",
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "drop-structure",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  }
+ ]
+}

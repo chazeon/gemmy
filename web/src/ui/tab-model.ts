@@ -20,15 +20,25 @@ export function chooseTab<T>(list: TabList<T>, k: number): TabList<T> {
   return k >= 0 && k < list.tabs.length ? { tabs: list.tabs, current: k } : list;
 }
 
-// The list without tab k. Closing the current tab makes the one before it current (the first one, when it was the
-// first), since a tab is closed from the right; closing another tab keeps the current one current. When the last tab
-// goes, the list is the home tab alone, so the page always has a tab to show.
+// The list without tab k. Closing the current tab makes its right neighbour current, else the left one (the tab that
+// was last); closing another tab keeps the current one current. When the last tab goes, the list is the home tab alone,
+// so the page always has a tab to show.
 export function closeTab<T>(list: TabList<T>, k: number, home: T): TabList<T> {
   if (k < 0 || k >= list.tabs.length) return list;
   const tabs = list.tabs.filter((_, j) => j !== k);
   if (tabs.length === 0) return { tabs: [home], current: 0 };
-  if (k === list.current) return { tabs, current: Math.max(0, k - 1) };
+  if (k === list.current) return { tabs, current: Math.min(k, tabs.length - 1) };
   return { tabs, current: k < list.current ? list.current - 1 : list.current };
+}
+
+// Choosing tab k from a list whose current tab is the start screen (the New tab) removes that start screen, since it is
+// transient: leaving it for another file closes it. It stays when it is the only tab. Otherwise this is chooseTab.
+export function chooseLeaving<T>(list: TabList<T>, k: number, isHome: (tab: T) => boolean): TabList<T> {
+  const chosen = chooseTab(list, k);
+  if (chosen === list || k === list.current || !isHome(list.tabs[list.current])) return chosen;
+  const tabs = list.tabs.filter((_, j) => j !== list.current);
+  if (tabs.length === 0) return chosen;
+  return { tabs, current: list.current < k ? k - 1 : k };
 }
 
 // New tabs opened from the home tab take its place (replaceCurrent: the home tab is the current one, so a browser's
@@ -49,13 +59,13 @@ export function uniqueLabel(label: string, taken: readonly string[]): string {
   return `${label} (${n})`;
 }
 
-// A link the server built into the strip (ui/tab-bar.ts), as the strip shows it. The page's own link is the tab 0 of the
+// A link the server built into the page (ui/tab-bar.ts), as the file island lists it. The page's own link is the tab 0 of the
 // list: it is current when tab 0 is, and choosing it chooses tab 0 without navigating.
-export interface StripLink {
+export interface PageLink {
   label: string;
   href: string;
   own: boolean;
 }
-export function linksShown<L extends StripLink>(links: readonly L[], current: number): (L & { current: boolean })[] {
+export function linksShown<L extends PageLink>(links: readonly L[], current: number): (L & { current: boolean })[] {
   return links.map((link) => ({ ...link, current: link.own ? current === 0 : false }));
 }

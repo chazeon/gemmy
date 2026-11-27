@@ -1,4 +1,4 @@
-"""Stage 3: selection. Restrict the base set by label, index or polyhedron shell."""
+"""Selection: restrict the base set by label, index or polyhedron shell."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import numpy as np
 from ..config import PolyhedronRule, SelectConfig
 from .bonds import NeighborGraph
 from .polyhedra import find_polyhedra
-from .sites import Site, name_score, point_key
+from .sites import Site, name_matches, point_key
 
 
 class SelectionError(ValueError):
@@ -79,7 +79,7 @@ def apply_selection(
         if index not in by_index:
             raise SelectionError(f"select refers to atom {index}, but the structure has {len(by_index)} atoms")
     wanted = set(select.indices)
-    kept = [s for s in shown if s.index in wanted or any(name_score(label, s) is not None for label in select.labels)]
+    kept = [s for s in shown if s.index in wanted or any(name_matches(label, s) for label in select.labels)]
     if select.shell_of is not None:
         centre, ligands = polyhedron_shell(select.shell_of, shown, by_index, graph, rules, cell)
         have = {point_key(s) for s in kept}

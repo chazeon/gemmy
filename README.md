@@ -38,6 +38,15 @@ uv sync            # or: pip install -e '.[dev]'
   the package. The viewer page loads three.js from jsDelivr (pinned to 0.160.0).
 - **Blender renders** need Blender 4.2 LTS or newer. `gemmy render` finds it via `--blender PATH`, `$BLENDER`,
   `PATH` or the usual install locations, and runs it in the background.
+- **The fastatoms reader** is optional. gemmy reads structures with ASE unless fastatoms is installed and usable, and
+  `GEMMY_READER=ase` or `GEMMY_READER=fastatoms` names one (an error when it is not usable). It is a git dependency
+  pinned to a commit, so it is a dependency group, not an extra: `uv sync --group fastatoms`. With pip, build it
+  without the symmetry module:
+
+  ```bash
+  pip install "fastatoms @ git+https://github.com/chazeon/fastatoms@5e9a9088eacc32d03872432c06827e8928b67d91" \
+    -C cmake.define.FASTATOMS_WITH_SYMMETRY=OFF
+  ```
 
 ## How it works
 
@@ -117,8 +126,8 @@ The previewer for editing a config by hand: save `config.toml` and the page upda
 - **Serving and watching.** It compiles on start and serves `http://127.0.0.1:8000/` (`--port`, `--host`, `--open`).
   It watches the config and the files it names (`structure`, `labels.file`, `displacements.data_file`, or the
   `--poscar` file) and recompiles when one changes.
-- **Compile errors** are printed in the terminal and shown in a banner. The last good scene stays on screen, and the
-  banner clears on the next good compile.
+- **Compile errors** are printed in the terminal and shown on the page's message line. The last good scene stays on screen, and the
+  message clears on the next good compile.
 - **Several configs** are tabs, served at `/0/`, `/1/`, …, each watched on its own. `--poscar`, `--title` and
   `--render` take one config only.
 - **A fixed scene:** `gemmy serve --scene scene.json` serves that file and watches it.
@@ -157,14 +166,13 @@ tabs between them. The links are relative, so the folder works under any path.
 ### Sharing a scene
 
 The viewer can open a scene from an address, a gist or a file, so a scene can be shared without building a page for it.
-On the published site, the front page <https://chazeon.github.io/gemmy/> is the viewer with the examples as tabs, and
-<https://chazeon.github.io/gemmy/view/> opens with no scene. These are the ways to fill the viewer:
+On the published site, <https://chazeon.github.io/gemmy/> is the one page: the viewer, whose start screen lists the
+examples (a card opens one), and which opens with no scene. These are the ways to fill the viewer:
 
-    https://chazeon.github.io/gemmy/view/?scene=https://example.org/ice-ih.json.gz
-    https://chazeon.github.io/gemmy/view/?scene=../nacl/scene.json.gz&scene=../ice-ih/scene.json.gz   # tabs
-    https://chazeon.github.io/gemmy/view/?gist=0123abcd                  # the first .json or .json.gz file
-    https://chazeon.github.io/gemmy/view/?gist=0123abcd&file=ice.json.gz  # or the file named
-    https://chazeon.github.io/gemmy/?gist=0123abcd                        # the front page takes them too
+    https://chazeon.github.io/gemmy/?scene=https://example.org/ice-ih.json.gz
+    https://chazeon.github.io/gemmy/?scene=https://example.org/nacl.json.gz&scene=https://example.org/ice-ih.json.gz   # tabs
+    https://chazeon.github.io/gemmy/?gist=0123abcd                       # the first .json or .json.gz file
+    https://chazeon.github.io/gemmy/?gist=0123abcd&file=ice.json.gz     # or the file named
 
 - **Addresses.** `scene=` takes any http or https address the browser may read; it is resolved against the page, so a
   relative one works on a site. The host must allow cross-origin reads (CORS), as GitHub's raw files and gists do.
@@ -179,11 +187,16 @@ On the published site, the front page <https://chazeon.github.io/gemmy/> is the 
 
 The scene is checked before it is drawn: its `schema_version` must be the one this gemmy writes.
 
-`gemmy view --hosted` writes the site the examples are published as, the way GitHub Pages serves it: the viewer and its
-stylesheet once at the root, named `viewer.<hash>.js` and `style.<hash>.css` (the hash is of their content, so an update
-is never served from a cache as the old file), `<example>/scene.json.gz` and a small `<example>/index.html` for each example, the viewer
-with no scene at `view/`, and the front page: the viewer with every example as a tab, so the site's root opens the
-examples. `scripts/build_site.sh` builds it from the committed examples into `site/`.
+`gemmy view --hosted` writes the site the examples are published as, the way GitHub Pages serves it: one page, `index.html`,
+the viewer whose start screen lists the examples, with the viewer, its stylesheet and the structure compiler beside it,
+named `viewer.<hash>.js`, `style.<hash>.css` and `compile.<hash>.js` (the hash is of their content, so an update is never
+served from a cache as the old file). Each `<example>/` folder holds only data: its structure file and `config.toml` (with
+the files it names, such as labels), which the gallery's card compiles in the browser, so its style panel works, and its
+`thumbnail.png`. A scene without a structure is kept as `scene.json.gz`. `index.html` carries the head metadata: the title,
+description, canonical address, and Open Graph and Twitter card tags, with the first example's thumbnail as the picture.
+The canonical address and the absolute tags need the site's address: `--site-url URL` (`SITE_URL` in
+`scripts/build_site.sh`, default https://chazeon.github.io/gemmy/); without one they are left out. `scripts/build_site.sh`
+builds it from the committed examples into `site/`.
 
 The examples are published with GitHub Pages at https://chazeon.github.io/gemmy/ from the `gh-pages` branch (Settings →
 Pages → Deploy from a branch → `gh-pages`, `/ (root)`). To update it, see the list of its files in
@@ -251,17 +264,25 @@ good GPU for those.
 
 Configs (and settings, label and displacement files) can be TOML (`.toml`) or JSON (any other extension). TOML is
 easier to edit by hand. [examples/ice-ih/config.toml](examples/ice-ih/config.toml) shows most keys, and
-[configs/default.json](configs/default.json) is a complete example. Unknown keys are errors, and the error names the
-key.
+[configs/default.json](configs/default.json) shows the shared materials, cell and displacement keys. Unknown keys are
+errors, and the error names the key.
+
+A structure opened alone in the viewer, with no config, gets the element styles of its elements: the colour its colour
+scheme gives (Auto: VESTA for a crystal, Jmol for a molecule; one JSON file per scheme in `web/src/compile/schemes/`) and a
+sphere radius of half the covalent radius (`web/src/compile/element-styles.json`). Both come from
+`scripts/gen_element_styles.py`. An unknown element is a neutral grey. Its bonds are the covalent-radius rules of its unit cell, and it has no polyhedra.
+Examples that need other styles or rules put them in their own config.
 
 | Key | What it controls |
 |---|---|
 | `structure` | the structure file, relative to the config; `--poscar` overrides it (one config, several structures) |
+| `types.<n>` | the label of LAMMPS type `n`, a plain number from 1 (`1`, not `01`), e.g. `1 = "Fe1"`: for LAMMPS data and dump files; the map must name every type in the file (a partial map is an error) |
 | `elements.<label>` | `visible`, `representation`, `radius`, `color`, `material` |
 | `materials.<name>` | material presets used by atoms, bonds and polyhedra |
 | `cells` | `supercell`, `periodic`, Cartesian `limits`, the display `box`, `eps` |
-| `bonds[]` | element pair, `min`/`max` distance, `radius`, `color`, `style` (`solid`, `dashed`, `dotted`), `complete` |
+| `bonds[]` | species label pair (`a`, `b`), `min`/`max` distance, `radius`, `color`, `style` (`solid`, `dashed`, `dotted`), `complete` |
 | `polyhedra[]` | `center`, `ligands`, `min`/`max` distance, coordination limits, `color`, `image_centers` |
+| `clusters[]` | `kind` (`molecule` or `ring`), `atoms`, `min`/`max` distance, `min_size`/`max_size`, `flat` (rings), `color` |
 | `displacements` | arrows or lines from a `data_file`; `scale`, `include_hidden`, `shell_of`, `inward` |
 | `labels` | a sidecar label `file` and/or a Python `labeler` hook |
 | `select` | show only some atoms: `labels`, `indices`, `shell_of` |
@@ -273,6 +294,9 @@ key.
   - POSCAR, CONTCAR and `*.vasp` keep their species labels (`H1`, `O_oct`, ...).
   - Any other format ASE reads (extxyz, cif, ...) is picked by its extension.
   - The structure needs a cell with volume, because gemmy works in fractional coordinates.
+  - LAMMPS data and dump files number their atoms' types, so `types` says what each type is. A label names its element
+    as a POSCAR species label does (`Fe1` is iron, `Xc` the X dummy), and the label is the atom's style key, so
+    `elements.Fe1` styles that type. Every type in the file needs a label: a type the map does not name is an error.
 
 ### Which atoms are shown
 
@@ -297,9 +321,10 @@ wrap → display box → limits/selection → bonds → bond-end completion → 
 
 ### Labels
 
-Each atom has a label: its POSCAR species label, or its element. Element styles, bond rules and polyhedron
-centres/ligands match the exact label first, then the element. With rules for `"O"-"H"` and `"O"-"H1"`, an
-H1 atom uses the second one.
+Each atom has a label: its POSCAR species label, or its element. Element styles, bond rules, polyhedron
+centres/ligands, clusters and selections match the label exactly, and nothing else: `"C"` does not match `C_dna`,
+and `"H"` does not match `H1`. A style with no matching label falls back to `elements.default`. A bond between
+`O` and `H1` needs its own rule, `"O"-"H1"`. When several rules name a pair and hold its distance, the first one in the list draws it.
 
 Later sources override earlier ones: the POSCAR species line (VASP5 labels such as `H1` or `O_oct`), then
 `labels.file`, then `labels.labeler`.
@@ -324,6 +349,37 @@ Later sources override earlier ones: the POSCAR species line (VASP5 labels such 
   glass, with the same hue, saturation × `ghost_saturation` (0.3), brightness `ghost_value` (0.95) and
   alpha `ghost_opacity` (0.35). A highlighted polyhedron is drawn even when its centre lies outside the box.
 - `displacements.shell_of` defaults to `highlight.shell_of`, so one key marks both.
+
+### Clusters
+
+`[[clusters]]` draws a group of bonded atoms as one solid: `kind = "molecule"` is the hull of the whole group (a C60
+cage), `kind = "ring"` is each smallest ring of it, drawn as a fan from the ring's centroid.
+
+```toml
+[[clusters]]
+kind = "ring"
+atoms = ["C"]        # species labels, as polyhedron ligands match them
+min = 1.3            # the bond window that joins two of the atoms (inclusive)
+max = 1.5
+```
+
+- **Keys.** `kind`, `atoms` (at least one; sorted and unique once read), `min`/`max` (finite, not negative, `min <= max`),
+  `min_size` and `max_size` (integers from 3, `min_size <= max_size`), `visible`, `color` and `material` (a
+  polyhedron's, by default), and `name`, the label of the cluster in the message the compile prints. The name
+  defaults to the formula (`C6H6`) for a molecule and `ring6` for a ring. `flat` (a ring only, default `false`) keeps a ring
+  only when every atom lies within `RING_FLAT_TOLERANCE` = 0.1 A of its plane, the plane through the ring's centroid with
+  the normal of its area vector. A puckered ring (cyclohexane's chair) is left out; a flat one (benzene) is kept.
+- **Defaults by kind.** A molecule has `min_size = 4` and no upper limit (`max_size = null`). A ring has `min_size = 5` and
+  `max_size = 7`. A rule that leaves a size out gets its kind's value.
+- **Rings.** A ring's `max_size` is a number from 3 to `MAX_RING_SIZE` = 12. `null` (no upper limit) is refused,
+  and so is a bigger ring: a ring that large is a macrocycle, which reads better as a molecule (a molecule's `max_size`
+  may be `null`).
+- **Placement.** A cluster is one copy per lattice translation whose centroid lies in the display box (the same inclusive
+  `cells.eps` as the box). A centroid on a box face gives two copies, as a polyhedron centre on a face gives two.
+- **Coincident polyhedra.** A cluster whose members are exactly the ligands of a polyhedron is skipped, with a warning
+  that names both. The polyhedron is drawn in its place, since its centre is the more specific choice.
+- **Highlight.** With `highlight.shell_of`, a cluster stays solid when one of its member atoms is a highlighted centre,
+  and is a ghost otherwise, as polyhedra are. Without highlights, every cluster is solid.
 
 ### Displacement arrows
 

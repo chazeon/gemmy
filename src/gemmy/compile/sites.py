@@ -1,6 +1,6 @@
 """Sites: one atom position each. Expansion from the structure, then the fixed steps that decide which sites
-exist (README, "Which atoms are shown"): snap and wrap (stage 1), the display box with boundary copies
-(stage 2), the cartesian limits, and name matching. The arithmetic is in `lattice`."""
+exist (README, "Which atoms are shown"): snap and wrap, the display box with boundary copies, the cartesian limits,
+and name matching. The arithmetic is in `lattice`."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from dataclasses import dataclass, replace
 import numpy as np
 from ase import Atoms
 
+from ..readers.record import Structure
 from ..scene import Vec3
-from ..structure import Structure
 from . import lattice
 
 
@@ -28,14 +28,15 @@ class Site:
 
     def image(self, shift: tuple[int, int, int], cell: np.ndarray) -> Site:
         """This atom translated by an integer lattice shift (relative to the unshifted atom)."""
-        pos, frac = lattice.offset(self.position, self.fractional, shift, cell)
-        return replace(self, position=pos, fractional=frac, shift=(int(shift[0]), int(shift[1]), int(shift[2])))
+        moved = lattice.offset(self.position, self.fractional, shift, cell)
+        image_shift = (int(shift[0]), int(shift[1]), int(shift[2]))
+        return replace(self, position=moved.position, fractional=moved.fractional, shift=image_shift)
 
     def translate(self, shift: tuple[int, int, int], cell: np.ndarray) -> Site:
         """This site moved by an additional integer lattice shift (shifts accumulate)."""
-        pos, frac = lattice.offset(self.position, self.fractional, shift, cell)
+        moved = lattice.offset(self.position, self.fractional, shift, cell)
         total = (self.shift[0] + shift[0], self.shift[1] + shift[1], self.shift[2] + shift[2])
-        return replace(self, position=pos, fractional=frac, shift=total)
+        return replace(self, position=moved.position, fractional=moved.fractional, shift=total)
 
 
 PointKey = tuple[int, tuple[int, int, int]]
@@ -48,19 +49,16 @@ def point_key(site: Site) -> PointKey:
 
 def site_ref(site: Site, wrap_shift: tuple[int, int, int]) -> str:
     """The atom reference of a site, as `parse_site_ref` reads it. `wrap_shift` is the shift that put the atom
-    in the cell (stage 1); references are relative to that wrapped position, not the raw one."""
-    rel = (site.shift[0] - wrap_shift[0], site.shift[1] - wrap_shift[1], site.shift[2] - wrap_shift[2])
-    return f"{site.index}+{rel[0]}_{rel[1]}_{rel[2]}" if any(rel) else str(site.index)
+    in the cell; references are relative to that wrapped position, not the raw one."""
+    shift_from_wrapped = (site.shift[0] - wrap_shift[0], site.shift[1] - wrap_shift[1], site.shift[2] - wrap_shift[2])
+    if any(shift_from_wrapped):
+        return f"{site.index}+{'_'.join(str(n) for n in shift_from_wrapped)}"
+    return str(site.index)
 
 
-def name_score(name: str, site: Site) -> int | None:
-    """Exact label first, then element: 2 for a label match, 1 for an element match, None for no match.
-    A rule written with the element still matches every label of that element."""
-    if name == site.label:
-        return 2
-    if name == site.element:
-        return 1
-    return None
+def name_matches(name: str, site: Site) -> bool:
+    """Whether a name (a rule's or a selection's) is this site's species label. Labels only: `C` is not `C_dna`."""
+    return name == site.label
 
 
 def repeat_structure(
@@ -103,7 +101,7 @@ def snap_sites(sites: list[Site], cell: np.ndarray, eps: float) -> list[Site]:
     out: list[Site] = []
     for site in sites:
         snapped = lattice.snap(site.fractional, site.position, cell, eps)
-        out.append(site if snapped is None else replace(site, fractional=snapped[0], position=snapped[1]))
+        out.append(site if snapped is None else replace(site, fractional=snapped.fractional, position=snapped.position))
     return out
 
 
@@ -128,6 +126,10 @@ def base_box(
     A periodic atom on a box face is shown on both faces, on an edge 4 times, at a corner 8 times.
     Copies keep the atom's index and differ by an integer shift.
     """
+    # The copies of every site are counted before any is made: a box too large for the page is refused here.
+    lattice.check_box_sites(
+        sum(lattice.box_image_count(site.fractional, box, periodic, eps) for site in sites), len(sites)
+    )
     out: list[Site] = []
     for site in sites:
         for n in lattice.box_shifts(site.fractional, box, periodic, eps):

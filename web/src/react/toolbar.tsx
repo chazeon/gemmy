@@ -1,5 +1,6 @@
 // The toolbar island: the look-along views (a, b, c, and the rotated view), the turn and tilt and spin buttons, and the
-// move buttons. A turn or a move is a press (ui/press.ts): it keeps going while held. On a phone the row scrolls sideways.
+// move buttons, and the message line under them (message-line.tsx). A turn or a move is a press (ui/press.ts): it keeps
+// going while held. On a phone the row scrolls sideways.
 import { Box, type LucideIcon, Rotate3d, RotateCcwSquare, RotateCwSquare } from "lucide-react";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -11,7 +12,9 @@ import { AxisViewIcon } from "./axis-view-icon";
 import { Divider, Group } from "./group";
 import { CUTOUT, ICON } from "./icons";
 import { MoveIcon } from "./move-icon";
+import { MessageLine } from "./message-line";
 import { useOverflowFade } from "./overflow";
+import { ScrollChevrons } from "./scroll-chevrons";
 import { usePress } from "./press";
 import { TipButton } from "./tip";
 import { nudge, STILL, spin } from "./motion";
@@ -114,63 +117,68 @@ export function ToolBar() {
   const ref = useRef<HTMLDivElement>(null);
   useOverflowFade(ref);
   return (
-    <div
-      id="tools"
-      ref={ref}
-      role="toolbar"
-      aria-label="View controls"
-      className="island justify-self-center [grid-area:center]"
-    >
-      <Group label="Look along" className={GROUP}>
-        <LookAlong view="a" tip="Look along a (b right, c up)" />
-        <LookAlong view="b" tip="Look along b (c up)" />
-        <LookAlong view="c" tip="Look along c (a right, b up)" />
-        <LookAlong view="rotated" tip="Rotated view, as in the 3to2d renders" />
-      </Group>
-      <Divider className="mx-1 my-1.5 flex-none" />
-      <Group label="Rotate" className={GROUP}>
-        <Turn
-          axis="x"
-          sign={1}
-          transform="rotate(-90deg)"
-          label="Tilt up"
-          tip="Tilt up, hold to keep turning"
-          shortcut={SHORTCUT.turnUp}
-        />
-        <Turn
-          axis="x"
-          sign={-1}
-          transform="rotate(-90deg) scaleX(-1)"
-          label="Tilt down"
-          tip="Tilt down"
-          shortcut={SHORTCUT.turnDown}
-        />
-        <Turn axis="y" sign={1} transform="scaleX(-1)" label="Turn left" tip="Turn left" shortcut={SHORTCUT.turnLeft} />
-        <Turn axis="y" sign={-1} label="Turn right" tip="Turn right" shortcut={SHORTCUT.turnRight} />
-        <Turn
-          axis="z"
-          sign={-1}
-          icon={RotateCcwSquare}
-          label="Spin anticlockwise"
-          tip="Spin anticlockwise"
-          shortcut={SHORTCUT.spinAnticlockwise}
-        />
-        <Turn
-          axis="z"
-          sign={1}
-          icon={RotateCwSquare}
-          label="Spin clockwise"
-          tip="Spin clockwise"
-          shortcut={SHORTCUT.spinClockwise}
-        />
-      </Group>
-      <Divider className="mx-1 my-1.5 flex-none" />
-      <Group label="Move" className={GROUP}>
-        <Move dx={0} dy={1} label="Move up" tip="Move up" shortcut={SHORTCUT.moveUp} />
-        <Move dx={0} dy={-1} label="Move down" tip="Move down" shortcut={SHORTCUT.moveDown} />
-        <Move dx={-1} dy={0} label="Move left" tip="Move left" shortcut={SHORTCUT.moveLeft} />
-        <Move dx={1} dy={0} label="Move right" tip="Move right" shortcut={SHORTCUT.moveRight} />
-      </Group>
+    <div className="tools-stack">
+      <div id="tools" ref={ref} role="toolbar" aria-label="View controls" className="island">
+        <Group label="Look along" className={GROUP}>
+          <LookAlong view="a" tip="Look along a (b right, c up)" />
+          <LookAlong view="b" tip="Look along b (c up)" />
+          <LookAlong view="c" tip="Look along c (a right, b up)" />
+          <LookAlong view="rotated" tip="Rotated view, as in the 3to2d renders" />
+        </Group>
+        <Divider className="mx-1 my-1.5 flex-none" />
+        <Group label="Rotate" className={GROUP}>
+          <Turn
+            axis="x"
+            sign={1}
+            transform="rotate(-90deg)"
+            label="Tilt up"
+            tip="Tilt up, hold to keep turning"
+            shortcut={SHORTCUT.turnUp}
+          />
+          <Turn
+            axis="x"
+            sign={-1}
+            transform="rotate(-90deg) scaleX(-1)"
+            label="Tilt down"
+            tip="Tilt down"
+            shortcut={SHORTCUT.turnDown}
+          />
+          <Turn
+            axis="y"
+            sign={1}
+            transform="scaleX(-1)"
+            label="Turn left"
+            tip="Turn left"
+            shortcut={SHORTCUT.turnLeft}
+          />
+          <Turn axis="y" sign={-1} label="Turn right" tip="Turn right" shortcut={SHORTCUT.turnRight} />
+          <Turn
+            axis="z"
+            sign={-1}
+            icon={RotateCcwSquare}
+            label="Spin anticlockwise"
+            tip="Spin anticlockwise"
+            shortcut={SHORTCUT.spinAnticlockwise}
+          />
+          <Turn
+            axis="z"
+            sign={1}
+            icon={RotateCwSquare}
+            label="Spin clockwise"
+            tip="Spin clockwise"
+            shortcut={SHORTCUT.spinClockwise}
+          />
+        </Group>
+        <Divider className="mx-1 my-1.5 flex-none" />
+        <Group label="Move" className={GROUP}>
+          <Move dx={0} dy={1} label="Move up" tip="Move up" shortcut={SHORTCUT.moveUp} />
+          <Move dx={0} dy={-1} label="Move down" tip="Move down" shortcut={SHORTCUT.moveDown} />
+          <Move dx={-1} dy={0} label="Move left" tip="Move left" shortcut={SHORTCUT.moveLeft} />
+          <Move dx={1} dy={0} label="Move right" tip="Move right" shortcut={SHORTCUT.moveRight} />
+        </Group>
+      </div>
+      <ScrollChevrons scroller={ref} />
+      <MessageLine />
     </div>
   );
 }

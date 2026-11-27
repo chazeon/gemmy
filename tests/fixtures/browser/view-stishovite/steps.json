@@ -1,11 +1,14 @@
 {
  "steps": [
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 0,
     "draw": 0
    },
+   "files": 1,
    "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -33,18 +36,27 @@
      "true"
     ]
    ],
+   "menu": "true",
    "name": "default-view",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
    "zoom": "1\u00d7"
   },
   {
+   "checks": {
+    "Atoms": false,
+    "Cell box": true,
+    "Outlines": true
+   },
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 2,
     "draw": 19
    },
+   "files": 1,
    "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -72,28 +84,28 @@
      "true"
     ]
    ],
-   "menu": {
-    "checks": {
-     "Atoms": "false",
-     "Cell box": "true",
-     "Outlines": "true"
-    },
-    "chosen": [
-     "Normal"
-    ]
-   },
+   "menu": "true",
    "name": "toggle-atoms",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
+   "width": "Normal",
    "zoom": "1\u00d7"
   },
   {
+   "checks": {
+    "Atoms": false,
+    "Cell box": true,
+    "Outlines": true
+   },
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 2,
     "draw": 19
    },
+   "files": 1,
    "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -121,28 +133,23 @@
      "true"
     ]
    ],
-   "menu": {
-    "checks": {
-     "Atoms": "false",
-     "Cell box": "true",
-     "Outlines": "true"
-    },
-    "chosen": [
-     "Bold"
-    ]
-   },
+   "menu": "true",
    "name": "outline-bold",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
+   "width": "Bold",
    "zoom": "1\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 2,
     "draw": 19
    },
+   "files": 1,
    "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -170,18 +177,22 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "lens-24",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
    "zoom": "1\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 2,
     "draw": 19
    },
+   "files": 1,
    "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -209,18 +220,22 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "fit",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
    "zoom": "1\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 2,
     "draw": 19
    },
+   "files": 1,
    "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -248,18 +263,22 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "view-a",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
    "zoom": "0.6\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
-    "clear": 4,
-    "draw": 38
+    "clear": 2,
+    "draw": 19
    },
+   "files": 1,
    "info": "CentreSi at (1.0000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
    "lensAria": [
     [
@@ -287,18 +306,22 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "select-and-centre",
-   "tabs": [],
+   "plus": true,
    "theme": null,
    "title": "stishovite",
    "zoom": "2.4\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 2,
     "draw": 18
    },
+   "files": 2,
    "info": null,
    "lensAria": [
     [
@@ -326,35 +349,22 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "drop-second-scene",
-   "tabs": [
-    {
-     "current": null,
-     "label": "stishovite"
-    },
-    {
-     "current": "page",
-     "label": "dropped-ice-ih.json"
-    },
-    {
-     "current": null,
-     "label": ""
-    },
-    {
-     "current": null,
-     "label": ""
-    }
-   ],
+   "plus": true,
    "theme": null,
    "title": "dropped-ice-ih.json",
    "zoom": "0.6\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 12,
     "draw": 69
    },
+   "files": 2,
    "info": null,
    "lensAria": [
     [
@@ -382,37 +392,24 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "export-svg",
+   "plus": true,
    "status": "Saved view.svg",
    "svg": "export-svg.svg",
-   "tabs": [
-    {
-     "current": null,
-     "label": "stishovite"
-    },
-    {
-     "current": "page",
-     "label": "dropped-ice-ih.json"
-    },
-    {
-     "current": null,
-     "label": ""
-    },
-    {
-     "current": null,
-     "label": ""
-    }
-   ],
    "theme": null,
    "title": "dropped-ice-ih.json",
    "zoom": "0.6\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": false,
    "draws": {
     "clear": 4,
     "draw": 36
    },
+   "files": 2,
    "info": null,
    "lensAria": [
     [
@@ -440,41 +437,28 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "export-png",
+   "plus": true,
    "png": {
     "height": 1600,
     "type": "image/png",
     "width": 2560
    },
    "status": "Saved view.png",
-   "tabs": [
-    {
-     "current": null,
-     "label": "stishovite"
-    },
-    {
-     "current": "page",
-     "label": "dropped-ice-ih.json"
-    },
-    {
-     "current": null,
-     "label": ""
-    },
-    {
-     "current": null,
-     "label": ""
-    }
-   ],
    "theme": null,
    "title": "dropped-ice-ih.json",
    "zoom": "0.6\u00d7"
   },
   {
+   "chevrons": 0,
+   "chevronsOutside": 0,
    "dark": true,
    "draws": {
     "clear": 2,
     "draw": 18
    },
+   "files": 2,
    "info": null,
    "lensAria": [
     [
@@ -502,27 +486,476 @@
      "false"
     ]
    ],
+   "menu": "true",
    "name": "theme-dark",
-   "tabs": [
+   "plus": true,
+   "theme": "dark",
+   "title": "dropped-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "expanded": "true",
+   "files": 2,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "details-key-first",
+   "plus": true,
+   "theme": "dark",
+   "title": "dropped-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "expanded": "false",
+   "files": 2,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "details-key-second",
+   "plus": true,
+   "theme": "dark",
+   "title": "dropped-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "details": "true",
+   "dock": true,
+   "draws": {
+    "clear": 4,
+    "draw": 36
+   },
+   "files": 2,
+   "focus": "inspector-tab",
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "sheets-both-open",
+   "plus": true,
+   "theme": "dark",
+   "title": "dropped-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 1,
+   "chevronsOutside": 0,
+   "dark": true,
+   "details": "false",
+   "dock": true,
+   "draws": {
+    "clear": 2,
+    "draw": 18
+   },
+   "files": 2,
+   "focus": "customize-button",
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "sheets-phone",
+   "plus": true,
+   "theme": "dark",
+   "title": "dropped-ice-ih.json",
+   "zoom": "0.8\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 2,
+    "draw": 18
+   },
+   "files": 2,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "sheets-wide-again",
+   "plus": true,
+   "theme": "dark",
+   "title": "dropped-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 2,
+    "draw": 18
+   },
+   "files": 3,
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "items": [
     {
-     "current": null,
+     "checked": false,
      "label": "stishovite"
     },
     {
-     "current": "page",
+     "checked": false,
      "label": "dropped-ice-ih.json"
     },
     {
-     "current": null,
-     "label": ""
-    },
-    {
-     "current": null,
-     "label": ""
+     "checked": true,
+     "label": "third-ice-ih.json"
     }
    ],
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "files-three",
+   "plus": true,
    "theme": "dark",
-   "title": "dropped-ice-ih.json",
+   "title": "third-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 4,
+    "draw": 36
+   },
+   "file": "third-ice-ih.json",
+   "files": 2,
+   "focus": "file-trigger",
+   "info": "Click an atom, a bond or a polyhedron to see its distances.",
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "files-close-middle",
+   "plus": true,
+   "theme": "dark",
+   "title": "third-ice-ih.json",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 3,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "files-start",
+   "plus": false,
+   "theme": "dark",
+   "title": "New tab",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 2,
+    "draw": 19
+   },
+   "files": 2,
+   "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": "true",
+   "name": "files-back",
+   "plus": true,
+   "theme": "dark",
+   "title": "stishovite",
+   "zoom": "0.6\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": true,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 2,
+   "info": "CentreSi at (0.5000, 0.5000, 0.3333)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "true"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "false"
+    ]
+   ],
+   "menu": {
+    "items": [
+     "Copy link",
+     "PNG",
+     "SVG",
+     "Save as TOML",
+     "Copy as TOML",
+     "Save as JSON",
+     "Copy as JSON",
+     "Copy render command"
+    ]
+   },
+   "name": "menu-start",
+   "plus": true,
+   "theme": "dark",
+   "title": "stishovite",
    "zoom": "0.6\u00d7"
   }
  ]

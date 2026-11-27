@@ -16,10 +16,10 @@ def _valid_payload() -> dict:
         "schema_version": SCENE_SCHEMA_VERSION,
         "source_comment": "t",
         "points": [
-            {"id": "p0", "element": "Si", "position": [0.0, 0.0, 0.0]},
-            {"id": "p1", "element": "O", "position": [1.0, 0.0, 0.0]},
-            {"id": "p2", "element": "O", "position": [0.0, 1.0, 0.0]},
-            {"id": "p3", "element": "O", "position": [0.0, 0.0, 1.0]},
+            {"id": "p0", "element": "Si", "label": "Si", "position": [0.0, 0.0, 0.0]},
+            {"id": "p1", "element": "O", "label": "O", "position": [1.0, 0.0, 0.0]},
+            {"id": "p2", "element": "O", "label": "O", "position": [0.0, 1.0, 0.0]},
+            {"id": "p3", "element": "O", "label": "O", "position": [0.0, 0.0, 1.0]},
         ],
         "materials": {"mat_atom": {}, "mat_bond": {}, "mat_poly": {}},
         "topologies": [
@@ -27,7 +27,9 @@ def _valid_payload() -> dict:
             {"id": "t1", "point_ids": ["p0", "p1", "p2", "p3"], "faces": [[0, 1, 2], [1, 2, 3]]},
         ],
         "primitives": {
-            "atoms": [{"id": "a0", "element": "Si", "point_id": "p0", "radius": 0.3, "material_id": "mat_atom"}],
+            "atoms": [
+                {"id": "a0", "element": "Si", "label": "Si", "point_id": "p0", "radius": 0.3, "material_id": "mat_atom"}
+            ],
             "bonds": [
                 {
                     "id": "b0",
@@ -36,7 +38,9 @@ def _valid_payload() -> dict:
                     "radius": 0.1,
                     "material_id": "mat_bond",
                     "a_element": "Si",
+                    "a_label": "Si",
                     "b_element": "O",
+                    "b_label": "O",
                 }
             ],
             "polyhedra": [
@@ -82,6 +86,12 @@ class TestSceneDocument(unittest.TestCase):
         payload = _valid_payload()
         payload["schema_version"] = 99
         self.assert_invalid(payload)
+
+    def test_a_version_2_scene_is_refused_by_name(self) -> None:
+        payload = _valid_payload()
+        payload["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "schema_version 2.*Recompile the scene from its config"):
+            validate_scene(payload)
 
     def test_atom_point_reference_must_exist(self) -> None:
         payload = _valid_payload()

@@ -1,0 +1,141 @@
+{
+ "steps": [
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 1,
+   "info": null,
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "home",
+   "plus": false,
+   "theme": null,
+   "title": "New tab",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "dark": false,
+   "draws": {
+    "clear": 2,
+    "draw": 21
+   },
+   "files": 1,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "open-card",
+   "plus": true,
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  },
+  {
+   "chevrons": 0,
+   "chevronsOutside": 0,
+   "colourScheme": true,
+   "dark": false,
+   "draws": {
+    "clear": 0,
+    "draw": 0
+   },
+   "files": 1,
+   "info": "CentreSi at (0.5000, 0.5000, 0.6667)Bonds4 \u00d7 1.758, 2 \u00d7 1.810 \u00c5Mean1.776 \u00c5\u03941.89 \u00d7 10\u207b\u2074Viewabc\u0394 is the bond-length distortion, the mean of ((d \u2212 d\u0304)/d\u0304)\u00b2. Fractional coordinates are in the supercell.",
+   "lensAria": [
+    [
+     "24",
+     "false"
+    ],
+    [
+     "35",
+     "false"
+    ],
+    [
+     "50",
+     "false"
+    ],
+    [
+     "70",
+     "false"
+    ],
+    [
+     "85",
+     "false"
+    ],
+    [
+     "inf",
+     "true"
+    ]
+   ],
+   "menu": "true",
+   "name": "structure-page",
+   "plus": true,
+   "sections": [
+    "View",
+    "Atoms",
+    "Bonds",
+    "Shapes",
+    "Cell"
+   ],
+   "theme": null,
+   "title": "POSCAR",
+   "zoom": "1\u00d7"
+  }
+ ]
+}

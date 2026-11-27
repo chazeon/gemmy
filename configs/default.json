@@ -1,28 +1,4 @@
 {
-  "elements": {
-    "default": {
-      "visible": true,
-      "representation": "sphere",
-      "radius": 0.3,
-      "color": [0.8, 0.8, 0.8, 1.0],
-      "material": "matte"
-    },
-    "O": {
-      "radius": 0.28,
-      "color": [0.9, 0.15, 0.15, 1.0],
-      "material": "matte"
-    },
-    "Si": {
-      "radius": 0.33,
-      "color": [0.95, 0.7, 0.2, 1.0],
-      "material": "metal"
-    },
-    "Al": {
-      "radius": 0.36,
-      "color": [0.7, 0.8, 0.95, 1.0],
-      "material": "metal"
-    }
-  },
   "materials": {
     "matte": {
       "type": "principled",
@@ -40,14 +16,14 @@
     },
     "polyhedron": {
       "type": "principled",
-      "base_color": [0.1, 0.5, 1.0, 0.12],
+      "base_color": [0.1, 0.5, 1.0, 1.0],
       "roughness": 0.2,
       "metallic": 0.0,
-      "alpha": 0.12
+      "alpha": 1.0
     }
   },
   "cells": {
-    "supercell": [2, 2, 2],
+    "supercell": [1, 1, 1],
     "periodic": [true, true, true],
     "limits": {
       "x": [-1000, 2000],
@@ -55,52 +31,6 @@
       "z": [-1000, 2000]
     }
   },
-  "bonds": [
-    {
-      "a": "Si",
-      "b": "O",
-      "min": 1.4,
-      "max": 2.0,
-      "radius": 0.07,
-      "material": "bond",
-      "visible": true
-    },
-    {
-      "a": "Al",
-      "b": "O",
-      "min": 1.5,
-      "max": 2.3,
-      "radius": 0.08,
-      "material": "bond",
-      "visible": true
-    }
-  ],
-  "polyhedra": [
-    {
-      "name": "AlO6",
-      "center": "Al",
-      "ligands": ["O"],
-      "min": 1.5,
-      "max": 2.3,
-      "min_coordination": 6,
-      "max_coordination": 6,
-      "material": "polyhedron",
-      "color": [0.2, 0.6, 1.0, 0.12],
-      "visible": true
-    },
-    {
-      "name": "SiO6",
-      "center": "Si",
-      "ligands": ["O"],
-      "min": 1.5,
-      "max": 2.3,
-      "min_coordination": 6,
-      "max_coordination": 6,
-      "material": "polyhedron",
-      "color": [0.2, 1.0, 0.6, 0.2],
-      "visible": false
-    }
-  ],
   "displacements": {
     "enabled": false,
     "style": "arrow",

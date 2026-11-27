@@ -1,34 +1,53 @@
-  /* The layout, after Excalidraw: the 3D stage fills the window and the controls float over it as islands. The menu
-     button and the name (or the tabs) top-left, the view tools top-centre, Export top-right, messages under them, the
-     lens and zoom row bottom-left under the abc triad (which stays where the Blender render draws it), help and the
-     selection details bottom-right. Phones get their own arrangement at the end of this file. */
+  /* The layout, after Excalidraw: the 3D stage fills the window and the controls float over it as islands. The file
+     island top-left, the view tools top-centre, Export top-right, messages under them, the
+     lens and zoom row bottom-left under the abc triad (which stays where the Blender render draws it), the inspector
+     dock full height on the right, and the corner buttons (details, help) bottom-right, with the details card floating above
+     them. Phones get their own arrangement at the end of this file. */
 
   /* ---- tokens: colours for the light theme, then the dark theme (two selectors: the system's and the page's own) ---- */
+  /* The dock's slide token: every element that slides with the dock (the stage, the island layer, the details card, the edge tab,
+     the stock sidebar's container) takes its duration from here, linear. It is 0 until the first paint is done (overlay.tsx
+     sets data-ready after two frames), so a dock restored as open is simply there, and 0 for reduced motion. */
+  :root { --slide-duration: 0s; }
+  :root[data-ready] { --slide-duration: 200ms; }
+  @media (prefers-reduced-motion: reduce) { :root, :root[data-ready] { --slide-duration: 0s; } }
+
   :root {
-    --bg: #f6f7fa;
-    --bar: #ffffff;
+    --bg: oklch(0.965 0 0);
+    --bar: oklch(0.985 0 0);
     /* a gallery card: its background (the picture is transparent on it), and the shade it moves to on hover or focus */
-    --thumb: rgb(246 247 250);
-    --thumb-hover: rgb(240 241 245);
-    --panel: rgba(255, 255, 255, 0.9);
-    --fg: #1b1e2b;
-    --muted: #5d6276;
-    --rule: #dcdfe8;
-    --hover: #eef1f8;
+    --thumb: oklch(0.945 0 0);
+    --thumb-hover: oklch(0.915 0 0);
+    --panel: oklch(0.985 0 0 / 0.9);
+    --fg: oklch(0.145 0 0);
+    --muted: oklch(0.53 0 0);
+    /* the dock's own colours: its labels, strong text, checkbox borders and sunken fields (light, then dark below) */
+    --dock-muted: oklch(0.53 0 0); --dock-strong: oklch(0.205 0 0); --dock-field: oklch(0.985 0 0);
+    --rule: oklch(0.922 0 0);
+    --hover: oklch(0.95 0 0);
     --accent: #2160d8;
     --on-accent: #ffffff;
     --accent-soft: #e2eafb;
     --err: #b3261e;
-    --box: #2a2d3e;
-    --shadow: 0 0 0 1px rgba(27, 30, 43, 0.06), 0 1px 3px rgba(27, 30, 43, 0.08), 0 6px 14px rgba(27, 30, 43, 0.06);
+    /* shadcn's sidebar colours (light), the neutral palette with the dock and its hovered rows a step darker: the dock's frame, its rows and its borders */
+    --sidebar: oklch(0.95 0 0); --sidebar-foreground: oklch(0.145 0 0); --sidebar-primary: oklch(0.205 0 0); --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.925 0 0); --sidebar-accent-foreground: oklch(0.205 0 0); --sidebar-border: oklch(0.922 0 0); --sidebar-ring: oklch(0.708 0 0);
+    /* the message line's kinds (react/message-line.tsx, data-kind): the sign and the action in the kind's colour, the line
+       tinted by about a tenth of it, and its hairline a stronger tone (Primer's flash). Dark tints are darker tints. */
+    --info: #2160d8; --warn: #875700;
+    --info-tint: color-mix(in srgb, #2160d8 10%, #ffffff); --warn-tint: color-mix(in srgb, #875700 10%, #ffffff); --err-tint: color-mix(in srgb, #b3261e 10%, #ffffff);
+    --info-rule: color-mix(in srgb, #2160d8 45%, #ffffff); --warn-rule: color-mix(in srgb, #875700 45%, #ffffff); --err-rule: color-mix(in srgb, #b3261e 45%, #ffffff);
+    --box: oklch(0.205 0 0);
+    --shadow: 0 0 0 1px oklch(0 0 0 / 0.06), 0 1px 3px oklch(0 0 0 / 0.08), 0 6px 14px oklch(0 0 0 / 0.06);
     --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
     --num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
     --label: "Gemmy Axis Labels", "IBM Plex Sans", sans-serif; /* the triad's face, loaded by render/triad.ts */
 
     /* sizes: the window margin, the corner radii, and the step from one round button to the next */
     --edge: 16px;
+    --dock-width: 272px; /* the inspector dock on the right (react/inspector/inspector.tsx) */
     --radius: 10px; /* islands, popovers, the readout */
-    --radius-small: 8px; /* buttons and tabs inside an island */
+    --radius-small: 8px; /* buttons inside an island */
     /* a gallery card's corner radius (the thumbnail is clipped by the card's own corners) */
     --card-radius: var(--radius);
     /* an island: a 36 px button in its 4 px padding; the gap between islands */
@@ -45,17 +64,23 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #12141b; --bar: #1a1d27; --thumb: #1a1d27; --thumb-hover: #21242e;
-      --panel: rgba(26, 29, 39, 0.92); --fg: #e8eaf2; --muted: #9da3b8;
-      --rule: #2d3142; --hover: #252a38; --accent: #7aa7ff; --on-accent: #0f1420; --accent-soft: #26324f;
-      --err: #ff8a80; --box: #c4c8d6; --shadow: 0 0 0 1px #2d3142, 0 6px 14px rgba(0, 0, 0, 0.35); color-scheme: dark;
+      --bg: oklch(0.21 0 0); --bar: oklch(0.25 0 0); --thumb: oklch(0.25 0 0); --thumb-hover: oklch(0.315 0 0);
+      --panel: oklch(0.25 0 0 / 0.92); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0); --dock-muted: oklch(0.708 0 0); --dock-strong: oklch(0.922 0 0); --dock-field: oklch(0.315 0 0);
+      --rule: oklch(1 0 0 / 10%); --hover: oklch(0.315 0 0); --accent: #7aa7ff; --on-accent: oklch(0.145 0 0); --accent-soft: #26324f;
+      --err: #ff8a80; --info: #7aa7ff; --warn: #e0b04a; --info-tint: color-mix(in srgb, #7aa7ff 10%, oklch(0.25 0 0)); --warn-tint: color-mix(in srgb, #e0b04a 10%, oklch(0.25 0 0)); --err-tint: color-mix(in srgb, #ff8a80 10%, oklch(0.25 0 0)); --info-rule: color-mix(in srgb, #7aa7ff 45%, oklch(0.25 0 0)); --warn-rule: color-mix(in srgb, #e0b04a 45%, oklch(0.25 0 0)); --err-rule: color-mix(in srgb, #ff8a80 45%, oklch(0.25 0 0)); --box: oklch(0.922 0 0); --shadow: 0 0 0 1px oklch(1 0 0 / 10%), 0 6px 14px oklch(0 0 0 / 0.35); color-scheme: dark;
+      /* shadcn's sidebar colours (dark), a step lighter than stock to follow the page */
+      --sidebar: oklch(0.27 0 0); --sidebar-foreground: oklch(0.985 0 0); --sidebar-primary: oklch(0.488 0.243 264.376); --sidebar-primary-foreground: oklch(0.985 0 0);
+      --sidebar-accent: oklch(0.335 0 0); --sidebar-accent-foreground: oklch(0.985 0 0); --sidebar-border: oklch(1 0 0 / 10%); --sidebar-ring: oklch(0.556 0 0);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #12141b; --bar: #1a1d27; --thumb: #1a1d27; --thumb-hover: #21242e;
-    --panel: rgba(26, 29, 39, 0.92); --fg: #e8eaf2; --muted: #9da3b8;
-    --rule: #2d3142; --hover: #252a38; --accent: #7aa7ff; --on-accent: #0f1420; --accent-soft: #26324f;
-    --err: #ff8a80; --box: #c4c8d6; --shadow: 0 0 0 1px #2d3142, 0 6px 14px rgba(0, 0, 0, 0.35); color-scheme: dark;
+    --bg: oklch(0.21 0 0); --bar: oklch(0.25 0 0); --thumb: oklch(0.25 0 0); --thumb-hover: oklch(0.315 0 0);
+    --panel: oklch(0.25 0 0 / 0.92); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0); --dock-muted: oklch(0.708 0 0); --dock-strong: oklch(0.922 0 0); --dock-field: oklch(0.315 0 0);
+    --rule: oklch(1 0 0 / 10%); --hover: oklch(0.315 0 0); --accent: #7aa7ff; --on-accent: oklch(0.145 0 0); --accent-soft: #26324f;
+    --err: #ff8a80; --info: #7aa7ff; --warn: #e0b04a; --info-tint: color-mix(in srgb, #7aa7ff 10%, oklch(0.25 0 0)); --warn-tint: color-mix(in srgb, #e0b04a 10%, oklch(0.25 0 0)); --err-tint: color-mix(in srgb, #ff8a80 10%, oklch(0.25 0 0)); --info-rule: color-mix(in srgb, #7aa7ff 45%, oklch(0.25 0 0)); --warn-rule: color-mix(in srgb, #e0b04a 45%, oklch(0.25 0 0)); --err-rule: color-mix(in srgb, #ff8a80 45%, oklch(0.25 0 0)); --box: oklch(0.922 0 0); --shadow: 0 0 0 1px oklch(1 0 0 / 10%), 0 6px 14px oklch(0 0 0 / 0.35); color-scheme: dark;
+    /* shadcn's sidebar colours (dark), a step lighter than stock to follow the page */
+    --sidebar: oklch(0.27 0 0); --sidebar-foreground: oklch(0.985 0 0); --sidebar-primary: oklch(0.488 0.243 264.376); --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.335 0 0); --sidebar-accent-foreground: oklch(0.985 0 0); --sidebar-border: oklch(1 0 0 / 10%); --sidebar-ring: oklch(0.556 0 0);
   }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--fg); font-family: var(--ui); overflow: hidden; }
@@ -66,33 +91,40 @@
   /* ---- the island layer: a grid over the whole window. Only the islands take the pointer, so a drag anywhere else
      still reaches the stage ---- */
   #ui {
-    position: fixed; inset: 0; z-index: 2; pointer-events: none; box-sizing: border-box;
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
     padding: var(--inset-top) var(--inset-right)
       var(--inset-bottom) var(--inset-left);
     display: grid; gap: var(--gap); align-items: start;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr auto;
-    grid-template-areas: "left center right" "msgs msgs msgs" ". . ." "bottom bottom bottom";
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "left center right" ". . ." "bottom bottom bottom";
   }
   .island {
-    pointer-events: auto; display: flex; align-items: center; gap: 2px; padding: 4px; box-sizing: border-box;
+    pointer-events: auto; display: flex; align-items: center; gap: 2px; padding: 4px;
     max-width: 100%; overflow-x: auto; scrollbar-width: none;
     background: var(--bar); border-radius: var(--radius); box-shadow: var(--shadow);
   }
   .island::-webkit-scrollbar { display: none; }
   /* The islands are a layer over the start screen (z 0, #home): they are positioned, so they paint above its positioned
      cards as the gallery scrolls under them. */
-  #menu-island, #tools, #export-area, #corner-buttons { position: relative; z-index: 1; }
-  #msgs { grid-area: msgs; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--gap); }
+  #file-island, #export-area, #corner-buttons { position: relative; z-index: 1; }
 
   /* ---- scrolling toolbars: on a phone the tool row scrolls sideways, and a finger may pan it from a button. A faded
-     edge marks buttons hidden past it, on every island and on the tab strip ---- */
+     edge marks buttons hidden past it, on every island and on the lens row ---- */
   :is(.island, .fade-row).more-right { --fade: linear-gradient(to left, var(--fade-floor), #000 var(--fade-width)); }
   :is(.island, .fade-row).more-left { --fade: linear-gradient(to right, var(--fade-floor), #000 var(--fade-width)); }
   :is(.island, .fade-row).more-left.more-right {
     --fade: linear-gradient(to right, var(--fade-floor), #000 var(--fade-width), #000 calc(100% - var(--fade-width)), var(--fade-floor));
   }
   :is(.island, .fade-row):is(.more-left, .more-right) { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
+  /* The chevrons on those edges (react/scroll-chevrons.tsx) are drawn only where their edge has more, so the component
+     decides whether they show; these rules only place them, at the edges, over the fade, outside the layout. */
+  .scroll-chevron { position: absolute; top: 0; height: 36px; z-index: 2; }
+  .scroll-chevron-left { left: 0; }
+  .scroll-chevron-right { right: 0; }
+  .tools-stack .scroll-chevron { top: 4px; }
+  .tools-stack .scroll-chevron-left { left: 4px; }
+  .tools-stack .scroll-chevron-right { right: 4px; }
 
   /* ---- the bottom-left row (react/lens-row.tsx): the aperture button in the corner, then the lenses, the zoom and
      fit in one island, under the triad (which stays where the Blender render draws it) ---- */
@@ -101,45 +133,174 @@
     pointer-events: none; display: flex; align-items: center; gap: var(--gap);
   }
   /* the bottom-right island (react/corner-buttons.tsx): the grid's bottom row, on the right */
-  #corner-buttons { grid-row: 4; grid-column: 3; justify-self: end; align-self: end; }
+  #corner-buttons { grid-row: 3; grid-column: 3; justify-self: end; align-self: end; }
 
   /* ---- buttons (the React overlay's own classes, react/*.tsx; these are the page's rules for its buttons) ---- */
-  #export-button, #theme-button { pointer-events: auto; }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .island button:focus-visible { outline-offset: -2px; }
+  #export-button, #theme-button, #export-area { pointer-events: auto; }
 
   /* ---- the stage, the triad and the selection readout ---- */
   main { position: fixed; inset: 0; }
   /* The page fades in once its first tab is shown (main.ts revealWhenReady): page.html hides main and #ui while the body
      is booting, here they fade in when it stops. #ui, not #overlay, which takes no box (display: contents), so opacity
      does nothing on it. */
-  main, #ui { transition: opacity 220ms ease-out; }
-  @media (prefers-reduced-motion: reduce) { main, #ui { transition: none; } }
+  main { transition: opacity 220ms ease-out, transform var(--slide-duration) linear; }
+  #ui { transition: opacity 220ms ease-out, right var(--slide-duration) linear; }
   #stage { position: absolute; inset: 0; touch-action: none; }
   #stage canvas { display: block; }
   #triad { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; }
-  /* The selection card (src/react/info-card.tsx) is drawn by React in the island layer, above the corner island: its
-     corner here, one 8 px gap above the 44 px island, as the help opens (react/placement.ts). Its look is its shadcn
-     classes. */
-  #info { position: absolute; z-index: 2; right: var(--inset-right); bottom: calc(var(--inset-bottom) + var(--island) + var(--gap));
-    width: min(300px, calc(100% - 32px)); pointer-events: auto; }
+  /* The inspector dock (react/inspector/inspector.tsx) on a wide screen is the stock Sidebar (components/ui/sidebar.tsx): its
+     box is fixed, flush with the window's right edge, and its width is --dock-width. Its text is 12 px. */
+  #inspector { font-size: 12px; }
+  /* The inspector dock (react/inspector/*.tsx) draws its section headers itself, with these tokens. */
+  #inspector {
+    --dock-font: 12px;
+    --dock-title: 32px;
+    --dock-header: 28px;
+    --dock-pad-x: 8px;
+    /* the glyph line: a section's chevron sits this far from the dock's left edge, and the panes start on the same line */
+    --dock-edge: 4px;
+    /* where text that is not in a Tweakpane pane starts, from the dock's inner edge: the stock folder title's inset (4 px) */
+    --dock-text-x: 4px;
+    --dock-pad-right: 12px;
+    --dock-icon: 12px;
+    --dock-control: 22px;
+    --dock-radius: 4px;
+    --dock-hairline: var(--rule);
+  }
+  /* a thin scrollbar in the dock's own colour: the dock's scrolling body */
+  #inspector [class*="overflow-y-auto"] { scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
 
-  /* ---- live mode (gemmy serve): compile errors and Blender state, under the top islands; and the progress pill ---- */
-  #banner {
-    pointer-events: auto; box-sizing: border-box; width: min(560px, 100%); padding: 10px 14px; display: grid; gap: 6px; font-size: 13px;
-    background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);
+  /* Tweakpane (react/style-panel/pane.tsx) is stock: its layout, controls and sizes are its own. It is themed only through
+     its documented variables, mapped onto the page's tokens for both themes (the colours and the font family). */
+  .style-pane {
+    --tp-base-background-color: transparent; --tp-base-shadow-color: transparent; --tp-base-font-family: var(--ui);
+    --tp-container-background-color: transparent; --tp-container-background-color-hover: var(--hover);
+    --tp-container-background-color-focus: var(--hover); --tp-container-background-color-active: var(--hover);
+    --tp-container-foreground-color: var(--fg); --tp-label-foreground-color: var(--dock-muted);
+    --tp-input-background-color: var(--dock-field); --tp-input-background-color-hover: var(--dock-field);
+    --tp-input-background-color-focus: var(--dock-field); --tp-input-background-color-active: var(--dock-field);
+    --tp-input-foreground-color: var(--fg);
+    --tp-button-background-color: var(--hover); --tp-button-background-color-hover: var(--rule);
+    --tp-button-background-color-focus: var(--rule); --tp-button-background-color-active: var(--rule);
+    --tp-button-foreground-color: var(--fg);
+    --tp-monitor-background-color: var(--hover); --tp-monitor-foreground-color: var(--dock-muted);
+    --tp-groove-foreground-color: var(--rule);
+    font-variant-numeric: tabular-nums;
   }
-  #banner[hidden], #banner [hidden] { display: none; }
-  #banner p { margin: 0; }
-  #banner .err { color: var(--err); font-family: var(--num); font-size: 12.5px; white-space: pre-wrap; max-height: 40vh; overflow: auto; }
-  /* Blender progress: a small pill at the right; "updated" fades after a few seconds, errors go in the banner. */
-  #toast {
-    align-self: flex-end; margin: 0; padding: 5px 12px; font-size: 12.5px; color: var(--muted); background: var(--panel);
-    border-radius: 999px; box-shadow: var(--shadow); transition: opacity 0.4s;
+
+  /* Three additions to a folder's title row, in Tweakpane's own type (the title button is Tweakpane's; these are its
+     pseudo-elements, set from the adapter's data attributes): the colour dot before the name, the summary at the right,
+     and the "+" of an add row. */
+  .style-pane .tp-fldv_b[data-swatch] .tp-fldv_t::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px;
+    background: var(--swatch, transparent); border: 1px solid color-mix(in srgb, var(--rule) 50%, transparent);
   }
-  #toast[hidden] { display: none; }
-  #toast.fade { opacity: 0; }
-  @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+  .style-pane .tp-fldv_b[data-dim] .tp-fldv_t::before { opacity: 0.35; }
+  .style-pane .tp-fldv_b[data-hidden] .tp-fldv_t { color: var(--dock-muted); }
+  /* a folder a click revealed (style-reveal.ts): a soft accent tint that fades over a second; a static tint with no motion */
+  .style-pane .tp-fldv.dock-flash > .tp-fldv_b { animation: dock-flash 1s ease-out; }
+  @keyframes dock-flash {
+    from { background-color: color-mix(in srgb, var(--accent) 18%, transparent); }
+    to { background-color: transparent; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .style-pane .tp-fldv.dock-flash > .tp-fldv_b { animation: none; background-color: color-mix(in srgb, var(--accent) 12%, transparent); }
+  }
+  /* the eye at the right end of an item's title row: 14 px, the muted colour, ink on hover */
+  .style-pane .tp-fldv_b > .dock-eye {
+    position: absolute; right: 34px; top: 50%; transform: translateY(-50%); z-index: 1;
+    width: 14px; height: 14px; padding: 0; margin: 0; border: 0; background: none; color: var(--dock-muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; border-radius: 3px;
+  }
+  .style-pane .tp-fldv_b > .dock-eye:hover, .style-pane .tp-fldv_b[data-hidden] > .dock-eye { color: var(--fg); }
+  /* the histogram row (a Window) takes its label at the top, beside the first row, not centred over both */
+  .style-pane .tp-lblv:has(.gemmy-rh) { align-items: flex-start; }
+  /* one focus style: shadcn's ring (3 px, the accent at half), for the Tweakpane buttons, inputs and lists, the eye among them */
+  .style-pane :is(button, input, select):focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+  .style-pane .tp-fldv_b > .dock-eye svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .style-pane .tp-fldv_b[data-draft] .tp-fldv_t::before {
+    content: "+"; display: inline-block; margin-right: 6px; font-weight: 500; line-height: 1;
+  }
+  .style-pane .tp-fldv_b[data-draft] { color: var(--dock-muted); }
+  .style-pane .tp-fldv_b[data-summary]::after {
+    content: attr(data-summary); display: flex; align-items: center; position: absolute; top: 0; bottom: 0;
+    right: 54px; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+    font-size: 11px; font-weight: 400; color: var(--dock-muted);
+  }
+
+  /* The details card (react/selection-card.tsx): the picked object's readout, floating over the stage. On a wide window it sits
+     above the bottom-right island (react/details-button.tsx), one gap up, as the help opens (react/placement.ts), and with the
+     dock open it moves left of the dock with the island, so it is never under the dock. It is fixed, so the island layer's
+     grid does not place it. On a phone it is a bottom sheet over the page, above the bottom row (below). */
+  #info {
+    position: fixed; z-index: 2; pointer-events: auto; outline: none;
+    right: var(--inset-right); bottom: calc(var(--inset-bottom) + var(--island) + var(--gap));
+    width: min(300px, calc(100vw - 32px)); max-height: calc(100vh - var(--inset-top) - var(--inset-bottom) - 2 * var(--island));
+    overflow-y: auto;
+    transition: right var(--slide-duration) linear;
+  }
+  /* With the dock open the card's right edge is the corner island's (the island layer ends at the dock): the same offset, no gap.
+     It slides with the dock, as the island layer does (the same 200 ms, gated by data-ready like the rest). */
+  @media (min-width: 641px) {
+    html[data-dock="open"] #info { right: calc(var(--dock-width) + var(--inset-right)); }
+  }
+
+  /* With the dock open on a wide screen (the stock Sidebar shows from the page's wide breakpoint, 641 px) the island layer ends
+     at the dock's left edge, as shadcn's SidebarInset does, so the islands on the right stay left of the dock. The stage is not
+     resized: it keeps its full size and moves left by half the dock's width (a transform: no refit, no redraw), which keeps the
+     structure centred in the part the dock leaves. Both slide with the dock (--slide-duration). */
+  @media (min-width: 641px) {
+    html[data-dock="open"] body:not(.no-scene) #ui { right: var(--dock-width); }
+    html[data-dock="open"] body:not(.no-scene) main { transform: translateX(calc(var(--dock-width) / -2)); }
+  }
+  /* The edge tab (react/inspector-toggle.tsx): on the page's right edge, level with the Export island. Its size, corners,
+     shadow and slide are its classes (utilities). Here are its position: with the dock open on a wide screen it sits at the
+     dock's left edge. */
+  #inspector-tab { position: fixed; top: var(--inset-top); right: 0; z-index: 2; pointer-events: auto; }
+  /* In line with the Export island (its top and height): Export moves left of the tab, which is 50 px wide shut (all of it, so a
+     hover does not reach the island) and 18 px open at the dock's edge, with the gap between. Wide screens only, as the tab. */
+  @media (min-width: 641px) {
+    body:not(.no-scene) #export-area { margin-right: calc(50px + var(--gap) - var(--inset-right)); }
+    html[data-dock="open"] body:not(.no-scene) #export-area { margin-right: calc(18px + var(--gap) - var(--inset-right)); }
+    html[data-dock="open"] #inspector-tab { right: var(--dock-width); }
+  }
+
+  /* The stock Sidebar draws an in-flow gap for a docked sidebar. The page has none: the sidebar container is fixed on its own,
+     so the gap is hidden. */
+  [data-slot="sidebar-gap"] { display: none; }
+
+  /* ---- the message line (react/message-line.tsx): one line with a sign, attached under the toolbar island. The toolbar's
+     column (react/toolbar.tsx, .tools-stack) holds both, so the line is as wide as the island and touches it. While a
+     line is under it the island's bottom corners are square, and the stack's shadow outlines the two as one shape. The
+     live compile error and the follow note are info or error lines too; the most important one shows (ui/message.ts). ---- */
+  .tools-stack {
+    grid-area: center; justify-self: center; position: relative; z-index: 1; min-width: 0; max-width: 100%;
+    width: max-content; display: flex; flex-direction: column; border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .tools-stack #tools { box-shadow: none; }
+  .tools-stack:has(.message-line) #tools { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .message-line {
+    /* the kind's colours: info by default, then the warning and error below */
+    --kind: var(--info); --kind-tint: var(--info-tint); --kind-rule: var(--info-rule);
+    pointer-events: auto; width: 100%; height: 30px; min-width: 0; contain: inline-size;
+    display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px;
+    font-size: 12.5px; line-height: 16px; color: var(--fg); background: var(--kind-tint);
+    border-top: 1px solid var(--kind-rule); border-radius: 0 0 var(--radius) var(--radius); transition: opacity 0.4s;
+  }
+  .message-line[data-kind="warning"] { --kind: var(--warn); --kind-tint: var(--warn-tint); --kind-rule: var(--warn-rule); }
+  .message-line[data-kind="error"] { --kind: var(--err); --kind-tint: var(--err-tint); --kind-rule: var(--err-rule); }
+  .message-line.fade { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { .message-line { transition: none; } }
+  .message-sign { flex: none; width: 14px; height: 14px; color: var(--kind); }
+  .message-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* the action (Undo): a small text button in the kind's colour, at the end of the line (Primer's flash action) */
+  .message-action { flex: none; height: 24px; padding: 0 8px; font-size: 12.5px; color: var(--kind); }
+  /* with no scene the toolbar is hidden: the line stands alone, a card of its own */
+  body.no-scene .tools-stack { box-shadow: none; }
+  body.no-scene .message-line {
+    width: min(560px, calc(100vw - var(--inset-left) - var(--inset-right))); border-top: 0; border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
 
   /* ---- the start screen (the home tab, drawn by React: src/react/home.tsx). #home is the first item of the overlay's grid
      and spans the whole grid, so it covers the window, with the islands drawn over it. It scrolls. The first screen (the
@@ -149,29 +310,29 @@
     position: relative; z-index: 0; /* a layer of its own, under the islands (see #ui) */
     --gutter: 24px;
     --peek: 96px;
-    grid-column: 1 / -1; grid-row: 1 / -1; align-self: stretch; contain: size; box-sizing: border-box; min-height: 0;
+    grid-column: 1 / -1; grid-row: 1 / -1; align-self: stretch; contain: size; min-height: 0;
     margin: calc(-1 * var(--inset-top)) calc(-1 * var(--inset-right)) calc(-1 * var(--inset-bottom)) calc(-1 * var(--inset-left));
     overflow-y: auto; pointer-events: auto; background: var(--bg); font-size: 14px;
   }
   .home-first {
-    box-sizing: border-box; height: 100vh; height: 100dvh; padding: 0 var(--gutter);
+    /* at least a screen: a tall card (the type map form) grows the screen, so the gallery below never overlaps it */
+    min-height: 100vh; min-height: 100dvh; padding: 0 var(--gutter);
     display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center;
   }
   .home-card { grid-row: 2; }
   /* the served scene (gemmy serve) sits under the card, out of the centring */
   .home-served { grid-row: 3; align-self: start; margin-top: 12px; }
   .home-gallery {
-    box-sizing: border-box; max-width: 1040px; margin: calc(-1 * var(--peek)) auto 0; padding: 0 var(--gutter) 96px;
+    max-width: 1040px; margin: calc(-1 * var(--peek)) auto 0; padding: 0 var(--gutter) 96px;
     display: grid; gap: 12px;
   }
-  .home-gallery h2 { margin: 0; }
   .home-fade {
     position: fixed; left: 0; right: 0; bottom: 0; height: 64px; pointer-events: none; opacity: 1;
     background: linear-gradient(to top, var(--bg), transparent);
   }
   /* the columns follow the window's width: 4, then 3, then 2 (a phone) */
   .examples {
-    list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   @media (min-width: 768px) { .examples { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (min-width: 1024px) { .examples { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -181,11 +342,11 @@
      the open icon (Lucide's square-arrow-up-right-exit, its arrow sliding out) show beside it. A touch screen shows the
      title alone. */
   .example {
-    position: relative; display: block; width: 100%; aspect-ratio: 3 / 2; padding: 0; overflow: hidden; font: inherit;
+    position: relative; display: block; width: 100%; aspect-ratio: 3 / 2; overflow: hidden;
     text-align: left; color: var(--fg); background: var(--thumb); border: 1px solid var(--rule);
     border-radius: var(--card-radius); cursor: pointer; transition: border-color 160ms ease-out;
   }
-  .example:hover, .example:focus-visible { border-color: var(--muted); outline: none; }
+  .example:hover, .example:focus-visible { border-color: var(--muted); }
   .example .thumb { position: absolute; inset: 0; display: block; }
   /* the structure fades out towards the card's edges, the box's own edges soft, so it sits in the card rather than being cut by it */
   .example .thumb img {
@@ -236,32 +397,55 @@
   }
   body.dragging #stage { outline: 2px dashed var(--accent); outline-offset: -12px; }
 
-  /* a tab that has just opened (ui/tab-bar.ts pulseTab) pulses once in the accent colour */
-  .tab-opened { animation: tab-opened 0.9s ease-out; }
-  @keyframes tab-opened { from { background-color: var(--accent-soft); } }
-  @media (prefers-reduced-motion: reduce) { .tab-opened { animation: none; } }
-
   /* ---- breakpoints. Both must come after the rules above, so they win. ---- */
   /* Too narrow for the tools between name and Export: they get a row of their own. */
   @media (max-width: 1080px) {
     #ui {
       grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-rows: auto auto auto 1fr auto;
-      grid-template-areas: "left right" "center center" "msgs msgs" ". ." "bottom bottom";
+      grid-template-rows: auto auto 1fr auto;
+      grid-template-areas: "left right" "center center" ". ." "bottom bottom";
     }
-    #corner-buttons { grid-row: 5; grid-column: 2; }
+    #corner-buttons { grid-row: 4; grid-column: 2; }
   }
-  /* Phone: every control at the top (the bottom is the triad's and the readout's), the readout across the width.
-     640px is PHONE_MAX_WIDTH in web/src/ui/panels.ts, which opens and closes the panels by the same width: keep them
-     equal. */
-  @media (max-width: 640px) {
-    #ui {
-      grid-template-rows: auto auto auto auto 1fr;
-      grid-template-areas: "left right" "center center" "bottom help" "msgs msgs" ". .";
+  /* With the dock open below 1560 px the top bar takes the narrow arrangement (the toolbar on its own row, centred): the Export
+     island, moved left of the dock, would otherwise sit over the toolbar. */
+  @media (min-width: 641px) and (max-width: 1559px) {
+    html[data-dock="open"] #ui {
+      grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
+      grid-template-areas: "left right" "center center" ". ." "bottom bottom";
     }
-    #corner-buttons { grid-area: help; align-self: start; }
-    #info { left: var(--inset-left); width: auto; } /* above the corner island and the lens row */
+    html[data-dock="open"] #corner-buttons { grid-row: 4; grid-column: 2; }
+  }
+  /* Phone: the top bar and the toolbar at the top, the readout across the width, and the bottom row (the lens row, bottom-left,
+     and the corner island, bottom-right: both fixed at the bottom inset). 640px is PHONE_MAX_WIDTH in web/src/ui/panels.ts,
+     which opens and closes the panels by the same width: keep them equal. */
+  @media (max-width: 640px) {
+    :root { --phone-corner-width: 120px; }
+    #ui {
+      grid-template-rows: auto auto 1fr;
+      grid-template-areas: "left right" "center center" ". .";
+    }
+    /* The corner island is 120 px wide (three 36 px buttons in the island's padding and gaps). The lens row stops short of it:
+       its own scroll area ends before the island, so the two never overlap, folded or unfolded. */
+    #corner-buttons {
+      position: fixed; z-index: 1; right: var(--inset-right); bottom: var(--inset-bottom);
+    }
+    #lens-column { right: calc(var(--inset-right) + var(--phone-corner-width) + var(--gap)); }
+    /* the phone's sheets: the details card (react/selection-card.tsx) and the dock (react/inspector/inspector.tsx) take the same
+       box, a card inset by the gutter above the bottom row. One at a time (ui/panels.ts). Each one's content scrolls inside a
+       height cap, so the stage stays visible behind it. */
+    #info, #inspector {
+      position: fixed; z-index: 2; left: var(--inset-left); right: var(--inset-right); width: auto; height: auto;
+      bottom: calc(var(--inset-bottom) + 64px); max-height: 55vh; min-height: 0; overflow: hidden;
+    }
+    /* a drag on a phone sheet scrolls the sheet, never the stage: the sheets' own scroll takes vertical pans */
+    #info { overflow-y: auto; touch-action: pan-y; }
     #home { --gutter: 16px; }
-    .page-from { display: none; } /* the name's line under it (top-bar.tsx), which the phone has no room for */
     .examples { gap: 10px; }
   }
+
+/* ---- capture mode (ui/capture.ts): the stage alone; the overlay is not mounted, this hides what is left ---- */
+:root.capture #ui, :root.capture #triad { display: none; }
+:root.capture main { transition: none; }
+/* the API's transparent background (ui/capture-api.ts): the canvas is cleared to alpha 0, so nothing shows behind it */
+:root.transparent body, :root.transparent main, :root.transparent #stage { background: transparent; }

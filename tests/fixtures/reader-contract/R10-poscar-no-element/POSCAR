@@ -1,0 +1,10 @@
+a VASP 5 species label that names no element
+1.0
+4.0 0.0 0.0
+0.0 4.0 0.0
+0.0 0.0 4.0
+Qq O
+1 1
+Direct
+0.0 0.0 0.0
+0.5 0.5 0.5

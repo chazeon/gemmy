@@ -69,7 +69,7 @@ LOOKS: dict[str, Look] = {
         srgb_colors=True,
         lights=_SOFT_LIGHTS,
     ),
-    # The previous look: AgX, lifted exposure, dim world, grey backdrop wall and floor.
+    # Classic: AgX, lifted exposure, dim world, grey backdrop wall and floor.
     "classic": Look(
         exposure=0.35,
         view_transform="AgX",
