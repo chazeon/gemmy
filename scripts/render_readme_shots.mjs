@@ -201,10 +201,10 @@ html, body { margin: 0; background: transparent; font-family: -apple-system, Bli
   padding: ${BEZEL}px; background: #111113; border-radius: 55px; }
 #screen { position: relative; width: ${SCREEN.width}px; height: ${SCREEN.height}px; border-radius: ${SCREEN_RADIUS}px; overflow: hidden; background: ${PAGE_BACKGROUND}; }
 #status { position: absolute; left: 0; top: 0; width: 100%; height: ${STATUS_BAR}px; }
-#time { position: absolute; left: 44px; top: 17px; font-size: 16px; font-weight: 600; color: #000; }
+#time { position: absolute; left: 44px; top: 18px; font-size: 16px; font-weight: 600; color: #000; }
 #signal { position: absolute; right: 74px; top: 22px; display: flex; gap: 2px; align-items: flex-end; height: 11px; }
 #signal i { display: block; width: 3px; background: #000; border-radius: 1px; }
-#battery { position: absolute; right: 40px; top: 19px; width: 22px; height: 11px; border: 1px solid #000; border-radius: 3px; padding: 1px; box-sizing: border-box; }
+#battery { position: absolute; right: 40px; top: 22px; width: 22px; height: 11px; border: 1px solid #000; border-radius: 3px; padding: 1px; box-sizing: border-box; }
 #battery::after { content: ""; display: block; height: 100%; width: 80%; background: #000; border-radius: 1.5px; }
 #battery::before { content: ""; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
 #island { position: absolute; left: 50%; top: 11px; transform: translateX(-50%); width: 120px; height: 35px; border-radius: 18px; background: #000; }
