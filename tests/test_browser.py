@@ -428,6 +428,15 @@ LAYOUT_TOLERANCE_PX = 1.0
 PHONE_WIDTH_PX = 393
 
 
+def _grid_row_failures(where: str, tracks: int, declared: int, want: int) -> list[str]:
+    failures = []
+    if tracks != declared:
+        failures.append(f"{where}: the island layer has {tracks} grid rows but declares {declared} (an implicit row)")
+    if declared != want:
+        failures.append(f"{where}: the island layer declares {declared} grid rows, not {want}")
+    return failures
+
+
 def _layout_failures(layout: dict) -> list[str]:
     failures = []
     desktop, phone = layout["desktop"], layout["phone"]
@@ -464,6 +473,13 @@ def _layout_failures(layout: dict) -> list[str]:
                 failures.append(
                     f"desktop, dock open: the {name} row's controls are {row['spread']:.2f} px off one centre line"
                 )
+    # The island layer has no implicit grid row in any state: a track beyond the rows its areas declare takes a cell,
+    # and stops the start screen (#home, spanning the explicit rows) short of the window's bottom edge. Three rows,
+    # except with the dock open below 1560 px, which declares four (style.css, #ui).
+    for name, shot in (("desktop", desktop), ("phone", phone)):
+        for state in ("shut", "unfolded", "open"):
+            failures += _grid_row_failures(f"{name}, {state}", shot[state]["rows"], shot[state]["areaRows"], 3)
+    failures += _grid_row_failures("desktop, dock open", desktop["dock"]["rows"], desktop["dock"]["areaRows"], 4)
     # The file island never overlaps the toolbar island, in any arrangement. At the desktop width with the dock shut the
     # two share a row, and the file island ends a gap before the toolbar's left edge.
     for name, shot in (("desktop", desktop), ("phone", phone)):
@@ -568,6 +584,23 @@ def _edge_tab_failures(edge: dict) -> list[str]:
 @pytest.mark.parametrize("page", [page.name for page in PAGES])
 def test_page_layout(page: str, browser_run: dict) -> None:
     failures = _layout_failures(browser_run["pages"][page]["layout"])
+    assert not failures, "\n".join(failures)
+
+
+@pytest.mark.parametrize("page", [page.name for page in PAGES if page.card is not None])
+def test_the_start_screen_covers_the_window_at_wide_and_phone(page: str, browser_run: dict) -> None:
+    # Read on the start screen (the driver's probe, before any card opens): #home's box is the window on all four edges,
+    # and the island layer has its three grid rows, at a wide window and at a phone's.
+    cover = browser_run["pages"][page]["probes"]["start-cover"]
+    failures = []
+    for name in ("desktop", "phone"):
+        shot = cover[name]
+        view = shot["viewport"]
+        home = shot["home"]
+        for edge, want in (("top", 0), ("left", 0), ("right", view["width"]), ("bottom", view["height"])):
+            if abs(home[edge] - want) > LAYOUT_TOLERANCE_PX:
+                failures.append(f"{name}: the start screen's {edge} edge is {home[edge]} px, not {want} px")
+        failures += _grid_row_failures(f"{name}, start screen", shot["rows"], shot["areaRows"], 3)
     assert not failures, "\n".join(failures)
 
 
@@ -726,7 +759,7 @@ def test_the_view_section_sets_the_atoms_check_and_the_outline_width(browser_run
     # The View section (react/style-panel/view-section.tsx) is the dock's first: its check and its list are read back.
     toggled = _step(browser_run, VIEW_STISHOVITE, "toggle-atoms")
     assert toggled["checks"]["Atoms"] is False and toggled["checks"]["Cell box"] is True
-    assert _step(browser_run, VIEW_STISHOVITE, "outline-bold")["width"] == "Bold"
+    assert _step(browser_run, VIEW_STISHOVITE, "outline-width")["width"] == "1.75"
 
 
 def test_one_cell_draws_fewer_instances_than_the_supercell(browser_run: dict) -> None:
@@ -842,6 +875,51 @@ def test_a_style_edit_keeps_the_selected_object_by_its_identity(browser_run: dic
     probe = browser_run["pages"][SITE_PANEL]["probes"]["colour-edit-readout"]
     assert probe["before"] is not None and "Centre" in probe["before"], "nothing was selected before the edit"
     assert probe["after"] == probe["before"], "the style edit cleared or changed the selection"
+
+
+def test_an_edited_atom_radius_shows_its_reset_dot_and_the_dot_restores_the_default(browser_run: dict) -> None:
+    # A changed value (docs/ui.md): the dot shows once the radius differs from its default, the label does not move, and
+    # a press on the dot restores the default and the dot goes. The stishovite O radius (0.42) is set in the config,
+    # so it already differs from the scheme's default and shows the dot before the edit.
+    probe = browser_run["pages"][SITE_PANEL]["probes"]["reset-dot"]
+    assert probe["dotBefore"] is True, "the configured radius differs from the scheme's default, so the dot shows"
+    assert float(probe["edited"]["value"]) == pytest.approx(0.9)
+    assert probe["edited"]["dot"] is True, "the edited radius shows no reset dot"
+    assert probe["edited"]["labelAfter"] == probe["labelBefore"], "the reset dot moved the label"
+    assert probe["restored"] != probe["edited"]["value"], "the reset dot did not restore a value"
+    assert probe["dotAfter"] is False, "the dot stays after the reset"
+
+
+def test_the_dock_never_scrolls_sideways_with_a_reset_dot_showing(browser_run: dict) -> None:
+    # A text selection dragged past the dock's edge autoscrolls the dock's scroll box: with a changed value's dot
+    # showing, the box has no sideways overflow, so nothing is cut off at the left.
+    scroll = browser_run["pages"][SITE_PANEL]["probes"]["reset-dot"]["scroll"]
+    assert scroll["scrollWidth"] == scroll["clientWidth"], scroll
+    assert scroll["outside"] == [], scroll
+
+
+def test_each_periodic_box_lines_up_with_the_supercell_box_below_it_in_light_and_dark(browser_run: dict) -> None:
+    # The Periodic row's checkboxes are right-aligned in their columns (style.css, .gemmy-check): each right edge is the
+    # right edge of the Supercell box under it, to a pixel.
+    probe = browser_run["pages"][SITE_PANEL]["probes"]["cell-align"]
+    for theme in ("light", "dark"):
+        checks, boxes = probe[theme]["checks"], probe[theme]["boxes"]
+        assert len(checks) == len(boxes) == 3, probe
+        for check, box in zip(checks, boxes, strict=True):
+            assert abs(check - box) <= 1, f"{theme}: checkbox right {check} is not the box right {box}"
+
+
+def test_outlines_off_disables_the_width_and_keeps_its_value(browser_run: dict) -> None:
+    probe = browser_run["pages"][SITE_PANEL]["probes"]["outlines-off"]
+    assert probe["off"] == {"checked": False, "disabled": True, "value": probe["before"]}
+    assert probe["disabledOn"] is False, "the width stays disabled after the outlines are turned back on"
+
+
+def test_a_bond_for_a_new_pair_is_saved_as_the_last_bond_and_expanded(browser_run: dict) -> None:
+    probe = browser_run["pages"][SITE_PANEL]["probes"]["bond-draft"]
+    assert probe["titles"][-1] == "O–O", "the saved bond is not the last bond row"
+    assert probe["expanded"] is True, "the saved bond's folder is not expanded"
+    assert probe["draftOpen"] is False, "the draft stays open after a save"
 
 
 def test_a_phone_sheet_has_a_close_button_and_escape_closes_it_to_the_customize_button(browser_run: dict) -> None:

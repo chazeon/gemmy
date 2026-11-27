@@ -79,7 +79,9 @@ ALL_CONFIGS = [*JSON_CONFIGS, *TOML_CONFIGS]
 # Accepted inputs that stress the aliases, the coercions and the defaults (Python accepts all of them). They cross the
 # bridge as JSON, so they hold no non-finite number (json.dumps writes those as tokens node's JSON.parse refuses).
 EXTRA_ACCEPTED: list[dict[str, Any]] = [
-    {"cell": {"supercell": [2, 1, 1], "limits": {"x": [3, 1]}}},  # limits are not order-checked, as in Python
+    {
+        "cell": {"supercell": [2, 1, 1], "periodic": [True, False, False], "limits": {"x": [3, 1]}}
+    },  # limits are not order-checked, as in Python
     {"cells": {"cartesian_limits": {"y": [0, 1]}, "box": {"z": [0.25, 0.75]}, "periodic": [True, False, True]}},
     {
         "bonds": [
@@ -453,6 +455,25 @@ def test_invalid_toml_config_is_rejected_with_the_key_path(case: int) -> None:
     (result,) = run([{"fn": "loadSceneConfigJson", "args": ["config.toml", text]}])
     assert result["type"] == "ConfigError", f"{name}: TS accepted the config"
     assert result["error"].startswith(path + ": "), f"{name}: {result['error']}"
+
+
+def test_a_supercell_repeats_only_along_periodic_axes_in_both_readers() -> None:
+    """A count above 1 on a non-periodic axis is refused by Python and by TS with the same words; a count of 1 there,
+    or any count along a periodic axis, is accepted by both."""
+    from gemmy.config import scene_config_from_dict
+
+    message = "cell.supercell: c is 2 but c is not periodic; a supercell repeats only along periodic axes."
+    refused = {"cells": {"supercell": [1, 1, 2], "periodic": [True, True, False]}}
+    with pytest.raises(ValueError) as python_error:
+        scene_config_from_dict(refused)
+    assert message in str(python_error.value)
+    (result,) = run([{"fn": "parseSceneConfigJson", "args": [refused]}])
+    assert result["type"] == "ConfigError"
+    assert message in result["error"]
+    for accepted in ({"cells": {"supercell": [1, 1, 1]}}, {"cells": {"supercell": [2, 2, 2], "periodic": [True] * 3}}):
+        scene_config_from_dict(accepted)
+        (ok,) = run([{"fn": "parseSceneConfigJson", "args": [accepted]}])
+        assert "ok" in ok, ok.get("error")
 
 
 def test_loading_a_config_that_is_not_an_object_is_rejected() -> None:

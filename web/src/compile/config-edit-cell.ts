@@ -30,14 +30,22 @@ export function setBoxEnds(config: SceneConfig, ends: { from: Vec3; to: Vec3 }):
 }
 
 // The periodic flag of one axis (x along a, y along b, z along c); the flags are stored as [x, y, z].
+// Unticking an axis also sets its supercell to 1 in the same edit: a supercell repeats only along periodic axes (the
+// contract), so one undo restores both.
 export function setPeriodic(config: SceneConfig, axis: Axis, periodic: boolean): SceneConfig {
-  return editDraft(config, (draft) => ({
-    ...draft,
-    cells: {
-      ...draft.cells,
-      periodic: draft.cells.periodic.map((flag, position) => (position === AXIS_POSITION[axis] ? periodic : flag)),
-    },
-  }));
+  const position = AXIS_POSITION[axis];
+  return editDraft(config, (draft) => {
+    const supercell = [...draft.cells.supercell] as typeof draft.cells.supercell;
+    if (!periodic && supercell[position] > 1) supercell[position] = 1;
+    return {
+      ...draft,
+      cells: {
+        ...draft.cells,
+        periodic: draft.cells.periodic.map((flag, index) => (index === position ? periodic : flag)),
+        supercell,
+      },
+    };
+  });
 }
 
 // The box with one axis set to `range`, or with the axis removed (the whole cell) when range is null.

@@ -49,12 +49,19 @@ export type PaneNode =
       min?: number;
       max?: number;
       step: number;
+      // Per number, whether it is disabled (dimmed, and its box takes no input): the Supercell box of a non-periodic axis.
+      disabled?: [boolean, boolean, boolean];
       commit(next: [number, number, number]): void;
     }
   | { kind: "checkbox"; label: string; value: boolean; commit(next: boolean): void }
+  // Tick boxes on one row, each with its label (the Periodic row's a, b, c). Each item has its own value and commit.
+  | { kind: "checks"; label: string; items: { label: string; value: boolean; commit(next: boolean): void }[] }
   // A colour. `alpha` is whether the colour takes transparency (the config's colour fields do): its picker then has an alpha
   // slider and its hex has eight digits, whatever the colour's alpha is now. Not a property of the value.
-  | { kind: "color"; label: string; value: Rgba; alpha: boolean; commit(next: Rgba): void }
+  // `default`, where the field has one, is the value a reset returns it to (a dot marks a value that differs from it).
+  | { kind: "color"; label: string; value: Rgba; alpha: boolean; default?: Rgba; commit(next: Rgba): void }
+  // A number: a plain field, its bounds only limit the commit. With `toggle`, a checkbox leads the row: its own value and commit, and the number is
+  // dimmed and disabled while it is off (the number keeps its value). A toggle and its number share one row.
   | {
       kind: "number";
       label: string;
@@ -62,7 +69,21 @@ export type PaneNode =
       min?: number;
       max?: number;
       step: number;
+      toggle?: { value: boolean; commit(next: boolean): void };
+      default?: number;
       commit(next: number): void;
+    }
+  // Two whole numbers on one row, the lower then the upper (a cluster's min_size and max_size): the boxes sit on the Supercell
+  // row's grid (field-sizes.ts). A null upper is no limit, and its box is empty. `default`, where the field has one, is what a
+  // reset returns it to (a dot marks a value that differs from it).
+  | {
+      kind: "sizes";
+      label: string;
+      value: [number, number | null];
+      min: number;
+      step: number;
+      default?: [number, number | null];
+      commit(next: [number, number | null]): void;
     }
   // A window; with a histogram (the distances the window can take) the adapter draws it as a range slider over the bars.
   | {
@@ -79,10 +100,32 @@ export type PaneNode =
   | { kind: "list"; label: string; value: string; options: Choice<string>[]; commit(next: string): void };
 
 // The nodes that hold a value (everything but a folder and a button).
-export type ValueNode = Exclude<PaneNode, { kind: "folder" } | { kind: "button" }>;
+export type ValueNode = Exclude<PaneNode, { kind: "folder" } | { kind: "button" } | { kind: "checks" }>;
 
 export function isValueNode(node: PaneNode): node is ValueNode {
-  return node.kind !== "folder" && node.kind !== "button";
+  return node.kind !== "folder" && node.kind !== "button" && node.kind !== "checks";
+}
+
+// Whether a number differs from its default. The tolerance is a thousandth of the field's step, so a value a step away
+// always counts as changed and float noise never does.
+const DEFAULT_TOLERANCE = 1e-3;
+const COLOUR_TOLERANCE = 1e-6;
+
+export function isChangedFromDefault(node: ValueNode): boolean {
+  if (node.kind === "number" && node.default !== undefined)
+    return Math.abs(node.value - node.default) > node.step * DEFAULT_TOLERANCE;
+  if (node.kind === "color" && node.default !== undefined) {
+    const { value, default: fallback } = node;
+    return (["r", "g", "b", "a"] as const).some(
+      (channel) => Math.abs(value[channel] - fallback[channel]) > COLOUR_TOLERANCE,
+    );
+  }
+  if (node.kind === "sizes" && node.default !== undefined) {
+    const [low, high] = node.value;
+    const [defaultLow, defaultHigh] = node.default;
+    return low !== defaultLow || high !== defaultHigh;
+  }
+  return false;
 }
 
 // The nodes in the order a tree walk meets them (a folder, then its children): the adapter keeps one binding per node.
@@ -106,10 +149,37 @@ function shapeOf(node: PaneNode): unknown {
       return { kind: node.kind, title: node.title };
     case "readonly":
       return { kind: node.kind, label: node.label };
+    case "checks":
+      return { kind: node.kind, label: node.label, items: node.items.map((item) => item.label) };
     case "point3d":
-      return { kind: node.kind, label: node.label, min: node.min, max: node.max, step: node.step };
+      return {
+        kind: node.kind,
+        label: node.label,
+        min: node.min,
+        max: node.max,
+        step: node.step,
+        disabled: node.disabled,
+      };
     case "number":
-      return { kind: node.kind, label: node.label, min: node.min, max: node.max, step: node.step };
+      return {
+        kind: node.kind,
+        label: node.label,
+        min: node.min,
+        max: node.max,
+        step: node.step,
+        toggle: node.toggle !== undefined,
+        hasDefault: node.default !== undefined,
+      };
+    case "color":
+      return { kind: node.kind, label: node.label, hasDefault: node.default !== undefined };
+    case "sizes":
+      return {
+        kind: node.kind,
+        label: node.label,
+        min: node.min,
+        step: node.step,
+        hasDefault: node.default !== undefined,
+      };
     case "interval":
       return {
         kind: node.kind,

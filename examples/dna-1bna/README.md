@@ -13,6 +13,8 @@ Changes:
 - Box cell: the bounding box plus 8 Å on each side, no periodic boundaries, extxyz.
 - Dashed Watson-Crick hydrogen bonds are not drawn. N/O pairs at 2.6 to 3.2 Å give 70 candidates, too noisy to be useful.
 
+The config also draws the flat rings of C and N, the DNA bases: 36 rings (24 six-membered, 12 five-membered) as filled faces.
+
 `config.toml` and `config.json` are the same config in two formats; `render.sh` uses the TOML one.
 
 Run `./render.sh` (needs `gemmy` on PATH or `GEMMY="uv run gemmy"`, and Blender); output goes to `./renders`.

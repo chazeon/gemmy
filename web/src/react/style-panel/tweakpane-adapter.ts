@@ -4,9 +4,20 @@
 // with `last` false while a drag runs; only the change that ends (last true) is committed.
 import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 import { Pane, type TpPluginBundle } from "tweakpane";
-import { type PaneNode, type ValueNode, flattenPane, isValueNode, structureKey } from "./pane-model";
+import {
+  type PaneNode,
+  type ValueNode,
+  flattenPane,
+  isChangedFromDefault,
+  isValueNode,
+  structureKey,
+} from "./pane-model";
 import { CHANNEL_MAX, fromHex, toHex } from "./colour-hex";
 import { EYE, EYE_OFF } from "./eye-icons";
+import { type FieldChecks, mountFieldChecks, showFieldChecks } from "./field-checks";
+import { mountFieldReset, showFieldReset } from "./field-reset";
+import { type FieldSizes, mountFieldSizes, readFieldSizes, showFieldSizes } from "./field-sizes";
+import { type FieldToggle, mountFieldToggle, showFieldToggle, showPointDisabled } from "./field-toggle";
 import { ORIGIN_ICONS } from "./origin-icons";
 import { WriteGate, sameValue } from "./tweakpane-commit";
 import { rangeHistogramBundle } from "./tweakpane-range-histogram";
@@ -17,10 +28,12 @@ interface Container {
   addButton(params: { title: string }): { on(event: "click", handler: () => void): unknown };
   addFolder(params: { title: string; expanded: boolean }): Folder;
   addBlade(params: Record<string, unknown>): {
+    element: HTMLElement;
     on(event: "click", handler: (ev: { index: number[] }) => void): unknown;
   };
 }
 interface Bound {
+  element: HTMLElement;
   on(event: "change", handler: (ev: { value: unknown; last: boolean }) => void): unknown;
 }
 interface Folder extends Container {
@@ -43,6 +56,16 @@ interface Slot {
   node: PaneNode;
   holder?: { value: unknown };
   folder?: Folder;
+  // A number's toggle (field-toggle.ts) and the row it sits in.
+  toggle?: { toggle: FieldToggle; row: HTMLElement };
+  // A checks row's checkboxes (field-checks.ts).
+  checks?: FieldChecks;
+  // A sizes row's two boxes (field-sizes.ts).
+  sizes?: FieldSizes;
+  // The reset button of a field that has a default (field-reset.ts).
+  reset?: HTMLButtonElement;
+  // The point row of a point3d node (its disabled boxes are written to it, field-toggle.ts).
+  point?: HTMLElement;
 }
 
 // How long a folder flashes after a reveal (style.css, .dock-flash).
@@ -57,31 +80,44 @@ export class PaneAdapter {
   private slots: Slot[] = [];
   private key = "";
   private readonly gate = new WriteGate();
+  // A folder to reveal once the nodes that hold it are drawn (a saved rule's folder, which lands after the save's render).
+  private pendingReveal: { key: string; focus: boolean } | null = null;
 
   constructor(private readonly host: HTMLElement) {}
 
   sync(nodes: readonly PaneNode[]): void {
     const key = structureKey(nodes);
+    const pending = this.pendingReveal;
+    this.pendingReveal = null;
     // The writes and the refresh are not user edits: Tweakpane reports the values they set as changes (tweakpane-commit.ts).
     this.gate.run(() => {
       if (this.pane === null || key !== this.key) this.rebuild(nodes, key);
       else this.writeValues(nodes);
       this.pane?.refresh();
     });
+    if (pending !== null) this.showFolder(pending.key, pending.focus);
   }
 
   // Shows the folder with this key: it opens (the user's fold is kept by the key too), comes into view, and flashes for a
   // second (style.css, .dock-flash): a static tint when the reader asks for no motion.
-  reveal(key: string): void {
+  reveal(key: string, focus: boolean): void {
+    if (!this.showFolder(key, focus)) this.pendingReveal = { key, focus };
+  }
+
+  // Opens, scrolls to and flashes the folder with this key, and focuses its title when `focus` (a saved draft's rule).
+  // False when no folder has it (yet).
+  private showFolder(key: string, focus: boolean): boolean {
     const folder = this.slots.find((slot) => slot.node.kind === "folder" && slot.node.title === key)?.folder;
-    if (folder === undefined) return;
+    if (folder === undefined) return false;
     folds.set(key, true);
     folder.expanded = true;
     const element = folder.element;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     element.scrollIntoView({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+    if (focus) element.querySelector<HTMLElement>(".tp-fldv_b")?.focus({ preventScroll: true });
     element.classList.add("dock-flash");
     window.setTimeout(() => element.classList.remove("dock-flash"), FLASH_MS);
+    return true;
   }
 
   dispose(): void {
@@ -100,6 +136,9 @@ export class PaneAdapter {
     this.pane = pane;
     this.key = key;
     this.slots = mountNodes(pane, nodes, this.gate);
+    // A draft row that has just appeared is brought into view (its folder is drawn where the rule will land).
+    const draft = this.slots.find((slot) => slot.node.kind === "folder" && slot.node.draft === true);
+    draft?.folder?.element.scrollIntoView({ block: "nearest" });
   }
 
   private writeValues(nodes: readonly PaneNode[]): void {
@@ -109,6 +148,13 @@ export class PaneAdapter {
       slot.node = node;
       if (slot.folder !== undefined && node.kind === "folder") showSummary(slot.folder, node);
       if (slot.holder !== undefined && isValueNode(node)) slot.holder.value = tweakValue(node);
+      if (slot.checks !== undefined && node.kind === "checks") showFieldChecks(slot.checks, node.items);
+      if (slot.sizes !== undefined && node.kind === "sizes") showFieldSizes(slot.sizes, node.value);
+      if (slot.reset !== undefined && isValueNode(node)) showFieldReset(slot.reset, isChangedFromDefault(node));
+      if (slot.point !== undefined && node.kind === "point3d" && node.disabled !== undefined)
+        showPointDisabled(slot.point, node.disabled);
+      if (slot.toggle !== undefined && node.kind === "number" && node.toggle !== undefined)
+        showFieldToggle(slot.toggle.toggle, slot.toggle.row, node.toggle.value);
     });
   }
 }
@@ -157,10 +203,61 @@ function mountNode(container: Container, node: PaneNode, gate: WriteGate): Slot[
     });
     return [slot];
   }
+  if (node.kind === "checks") {
+    const blade = container.addBlade({ view: "separator" });
+    slot.checks = mountFieldChecks(blade.element, node.label, node.items, (index, on) => {
+      const current = slot.node;
+      if (gate.accepts() && current.kind === "checks") current.items[index].commit(on);
+    });
+    showFieldChecks(slot.checks, node.items);
+    return [slot];
+  }
+  if (node.kind === "sizes") {
+    const blade = container.addBlade({ view: "separator" });
+    const sizes = mountFieldSizes(blade.element, node.label, () => {
+      const current = slot.node;
+      if (!gate.accepts() || current.kind !== "sizes") return;
+      const next = readFieldSizes(sizes, current.min);
+      if (next === null) showFieldSizes(sizes, current.value);
+      else if (!sameValue(next, current.value)) current.commit(next);
+    });
+    slot.sizes = sizes;
+    showFieldSizes(sizes, node.value);
+    if (node.default !== undefined) {
+      // The reset dot sits in the row's gutter; its click commits the default, as the number's does.
+      slot.reset = mountFieldReset(sizes.row, () => {
+        const current = slot.node;
+        if (current.kind === "sizes" && current.default !== undefined) current.commit(current.default);
+      });
+    }
+    return [slot];
+  }
   slot.holder = { value: tweakValue(node) };
-  container.addBinding(slot.holder, "value", bindingParams(node)).on("change", (ev) => {
+  const binding = container.addBinding(slot.holder, "value", bindingParams(node));
+  binding.on("change", (ev) => {
     if (ev.last && gate.accepts() && isValueNode(slot.node)) commitValue(slot.node, ev.value);
   });
+  if (node.kind === "point3d" && node.disabled !== undefined) {
+    slot.point = binding.element;
+    showPointDisabled(binding.element, node.disabled);
+  }
+  if (node.kind === "number" && node.toggle !== undefined) {
+    const row = binding.element;
+    const toggle = mountFieldToggle(row, (on) => {
+      const current = slot.node;
+      if (gate.accepts() && current.kind === "number" && current.toggle !== undefined) current.toggle.commit(on);
+    });
+    slot.toggle = { toggle, row };
+    showFieldToggle(toggle, row, node.toggle.value);
+  }
+  if ((node.kind === "number" || node.kind === "color") && node.default !== undefined) {
+    // The dot hangs in the row's gutter, so it is the row that takes it.
+    slot.reset = mountFieldReset(binding.element, () => {
+      const current = slot.node;
+      if (current.kind === "number" && current.default !== undefined) current.commit(current.default);
+      else if (current.kind === "color" && current.default !== undefined) current.commit(current.default);
+    });
+  }
   return [slot];
 }
 
@@ -298,6 +395,9 @@ function bindingParams(node: ValueNode): Record<string, unknown> {
       return { label, min: node.min, max: node.max, step: node.step, histogram: node.histogram };
     case "list":
       return { label, options: node.options };
+    // A sizes row is not a binding: mountNode draws it from its own boxes (field-sizes.ts).
+    case "sizes":
+      return { label };
   }
 }
 
@@ -334,6 +434,9 @@ function commitValue(node: ValueNode, raw: unknown): void {
     case "text":
     case "list":
       commitIfChanged(node, raw as string);
+      return;
+    // A sizes row commits from its own boxes (mountNode).
+    case "sizes":
       return;
   }
 }

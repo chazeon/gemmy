@@ -73,8 +73,8 @@ There is no main menu. Its jobs live where they belong: New tab is the file isla
 - With several messages live, the line shows the most important: error, then warning, then info. A timed note wins a tie. API: `note(text, {kind, action, ms})` for timed notes; `setStanding(name, text|null, kind)` for messages that stay until their owner clears them.
 
 ## Right side: the dock and its tab (wide screens, 641 px and up)
-- **Dock**: the stock shadcn Sidebar (`components/ui/sidebar.tsx`, default variant), flush at the window's right edge, full height, in the sidebar tokens of the neutral palette. It has no title and no close button. It is for detailed style editing only. Sections, in order:
-  1. View: Atoms, Outlines, Cell box and Axes toggles, and Outline width. Shown for every file. Axes shows or hides the a b c
+- **Dock**: the stock shadcn Sidebar (`components/ui/sidebar.tsx`, default variant), flush at the window's right edge, full height, in the sidebar tokens of the neutral palette. It has no title and no close button. It is for detailed style editing only, and it scrolls up and down, never sideways (the content is `overflow-x-hidden`). Sections, in order:
+  1. View: Atoms, Cell box and Axes toggles, and Outlines. Outlines is one row: the outlines' checkbox, then a plain number box for the width, 0.25 to 3 in steps of 0.05, default 1 (the automatic width), clamped to that range. A toggle and its value share the row: while the checkbox is off the number is dimmed and disabled, keeping its value. Shown for every file. Axes shows or hides the a b c
      triad on the page and in the PNG and SVG exports, so an export has the triad exactly when the page shows it. Like Cell box,
      it is not remembered: a page load starts with it on.
   2. Atoms, Bonds, Shapes and Cell, for a structure (a file compiled in the page), not for a ready-made scene.
@@ -94,6 +94,19 @@ There is no main menu. Its jobs live where they belong: New tab is the file isla
   - A phone has no edge tab: its customize button opens the dock.
 - **Clicking an object** does two things at once: it opens the details card (see below), and, if the dock is open, it opens and highlights the style folder that draws it, found by label. On a phone only one sheet is open at a time, so there a pick shows the details card and the dock sheet closes.
 - **Style rows** use stock Tweakpane, themed only by its variables, keeping the library's edges and folder rail. Every colour row takes transparency: its picker has an alpha slider, and its hex is 8-digit (`#rrggbbaa`) at any alpha. Why: the format follows what the colour styles, not its current value, so a solid shape can be made transparent.
+- **Popups are opaque.** The pane is transparent, so the dock shows through it, but a Tweakpane popup (`.tp-popv`, the colour picker) is a surface of its own: the dock's sidebar colour, the panel radius and a shadow, never see-through. Why: a picker over the Cell rows or a shape folder must not show the rows behind it.
+- **Rows before folders.** A section may mix rows and folders. A single setting is a row (Supercell is a point row), not a folder with one field. A folder holds two or more fields (the display box's From, To and Reset). Rows come before folders in a section.
+- **Cell order**: Periodic, then Supercell, then the Display box folder. **Periodic** is one row with a letter and a tick box per axis, `a [✓]  b [✓]  c [✓]`: the letter then the box, right-aligned in a column on the same three-column grid as Supercell's boxes (the `checks` node, drawn by field-checks.ts); each tick keeps its own commit.
+- **Supercell follows Periodic**: unticking an axis in Periodic sets its supercell to 1 in the same edit (one undo restores both), and dims and disables that axis's Supercell box. A supercell repeats only along periodic axes. Ticking the axis again leaves the count at 1.
+- **Changed values.** A value that differs from its default in scope shows a reset dot: a neutral (muted grey, not the accent) dot of about 6 px hanging in the row's left gutter, centred on the row. It is absolutely positioned, so it takes no room and no label moves. Its hit area is about 16 px, with the title and aria-label "Reset to default". A press restores the default as one undoable commit, through the same path an edit takes (field-reset.ts). Scope: atom colour and radius, the automatic rules' numeric, size and colour fields, the outline width (1). Not user-added rules, visibility, text or toggles. Fields keep their stock size and widths; nothing reserves room for the dot.
+- **Cluster folders** (Shapes): a ring or a molecule is one folder, titled by its atoms and member counts: "C, N 5–6-ring"
+  for a ring of sizes 5 to 6, "C, H 4+-molecule" for a molecule with no upper limit (the kind word is the config's). Its rows are
+  Kind, Atoms, Size, Window and Colour. **Size** is a range: two whole-number boxes with an en dash between them (`[ 5 ] – [ 6 ]`),
+  the lower then the upper (min_size, max_size), from 3 up. The boxes are the Window row's number fields and the row fills the
+  value column, from its left edge to its right edge. An empty upper box is no limit, a molecule's only. A reversed pair or a
+  ring with no limit is refused with the config's message, and nothing changes. The Size of an automatic ring has a reset dot,
+  back to what detection chose. Editing a size ends the rule's automatic status, as any edit does.
+- **Drafts land where they will be.** An add row sits where its rule will be saved: a bond draft after the last bond rule, a polyhedron draft after the last polyhedron, a cluster draft after the last cluster. When added, it scrolls into view. On save it closes, and the new rule's folder is expanded, scrolled into view and focused, in place. A refused save keeps the draft open.
 
 ## Bottom right: the corner island
 - **Desktop**: `[details | ?]`.
@@ -122,7 +135,7 @@ The phone width is `PHONE_MAX_WIDTH` in web/src/ui/layout-modes.ts; the page's l
 
 ## Names and colours of atoms
 - An atom's species label as written (`C_dna`, `H1`) is its identity everywhere: styles, bond, shape and ring rules, the Atoms section, the readout, selection and search. A rule for `C` does not match `C_dna`.
-- The element is used only for chemistry defaults: default colour and radius, and automatic detection (bonds, polyhedra, rings). Detection emits its rules by label ("C_dna 6-ring").
+- The element is used only for chemistry defaults: default colour and radius, and automatic detection (bonds, polyhedra, rings). Detection emits its rules by label, one ring rule per label set with its sizes as a range ("C_dna 6-ring", "C,N 5–6-ring").
 - Colour scheme: Jmol for molecules, VESTA for crystals (periodic structures), with a per-browser choice of Auto or any scheme in the registry (`web/src/compile/schemes/registry.ts`), listed after Auto in registry order. A stored choice that names no scheme is Auto.
 - Automatic shapes:
   - Polyhedra for crystals, rings for molecules, coloured by the centre atom.
@@ -160,7 +173,7 @@ selection highlight. The page still loads a scene the usual ways (embedded, `?sc
 - `ready()`: resolves when the first scene is shown, the page has revealed itself and one frame is drawn.
 - `openExample(name)`: opens a gallery example as its card does and resolves once it is drawn (a hosted site's page).
 - `set({ atoms, box, axes, outlines, outlineWidth, theme, transparent, view })`: sets what is given and requests a render. `theme` is
-  `"light"` or `"dark"`, `outlineWidth` is 0.5, 1 or 1.75, `transparent` removes the page background, `view` is the `#view` string.
+  `"light"` or `"dark"`, `outlineWidth` is a number from 0.25 to 3 (clamped), `transparent` removes the page background, `view` is the `#view` string.
 - `rendered()`: asks for a frame and resolves after it is drawn.
 - `export("png" | "svg", options)`: the picture, not downloaded: a `Blob` (PNG, 2x the stage; `options.transparent`, default true)
   or the SVG text. The config and settings exports are not in the API.

@@ -89,7 +89,7 @@
    "plus": true,
    "theme": null,
    "title": "stishovite",
-   "width": "Normal",
+   "width": "1.00",
    "zoom": "1\u00d7"
   },
   {
@@ -134,11 +134,11 @@
     ]
    ],
    "menu": "true",
-   "name": "outline-bold",
+   "name": "outline-width",
    "plus": true,
    "theme": null,
    "title": "stishovite",
-   "width": "Bold",
+   "width": "1.75",
    "zoom": "1\u00d7"
   },
   {

@@ -90,7 +90,8 @@ export { ConfigError } from "../src/compile/config-errors";
 
 // The style sections' descriptions (react/style-panel/pane-model.ts): plain data, read by tests/test_view_style_pane.py.
 export { styleTargetOf } from "../src/react/style-panel/style-target";
-export { flattenPane, structureKey } from "../src/react/style-panel/pane-model";
+export { flattenPane, isChangedFromDefault, structureKey } from "../src/react/style-panel/pane-model";
+export { bondDefaultKey, polyhedronDefaultKey, ringDefaultKey } from "../src/ui/structure-model";
 // A colour as the hex text the colour fields show (react/style-panel/colour-hex.ts).
 export { fromHex, toHex } from "../src/react/style-panel/colour-hex";
 export { selectionNodes } from "../src/react/style-panel/selection-nodes";

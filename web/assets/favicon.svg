@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="32 33.25 416 416" role="img" aria-labelledby="title description">
+  <title id="title">Glowing geometric network</title>
+  <desc id="description">A cyan hexagon encloses two intersecting triangles and seven bright nodes, with orange connections radiating from the center.</desc>
+  <style>
+    svg { --c1: #008eab; --c2: #0b8abc; --c3: #2288c7; --c4: #be7708; --c5: #bc7306; --c6: #c56b08; --c7: #be7708; --c8: #bd780d; --c9: #c56b08; --c10: #008eab; --c11: #0b8abc; --c12: #2288c7; --c13: #be7708; --c14: #c56b08; --c15: #c56b08; --c16: #bd780d; }
+    @media (prefers-color-scheme: dark) { svg { --c1: #20e4e9; --c2: #15c2f3; --c3: #108bde; --c4: #ffb323; --c5: #ffae20; --c6: #ff880d; --c7: #ffad38; --c8: #ffcb68; --c9: #ff971e; --c10: #12b4ce; --c11: #109bdd; --c12: #158dda; --c13: #ffa122; --c14: #fa9212; --c15: #fa9212; --c16: #ffc047; } }
+    @media (max-width: 24px) {
+      .glow, .interior { display: none; }
+      .outer-hexagon { stroke-width: 23; }
+      .orange-triangle { stroke-width: 24; }
+      .orange-spokes { stroke-width: 16; }
+      #node-rings circle { r: 29px; }
+      #node-centers circle { r: 15.5px; }
+      #node-rings .hub { r: 33px; }
+      #node-centers .hub { r: 18px; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="cyan-frame" x1="111" y1="96" x2="351" y2="408" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: var(--c1)"/>
+      <stop offset=".56" style="stop-color: var(--c2)"/>
+      <stop offset="1" style="stop-color: var(--c3)"/>
+    </linearGradient>
+    <linearGradient id="cyan-interior" x1="240" y1="164" x2="240" y2="398" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#25bddb"/>
+      <stop offset=".43" stop-color="#3884a3"/>
+      <stop offset="1" stop-color="#158bdb"/>
+    </linearGradient>
+    <linearGradient id="orange-frame" x1="240" y1="85" x2="240" y2="318" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: var(--c4)"/>
+      <stop offset=".49" style="stop-color: var(--c5)"/>
+      <stop offset="1" style="stop-color: var(--c6)"/>
+    </linearGradient>
+    <linearGradient id="orange-spokes" x1="240" y1="85" x2="240" y2="318" gradientUnits="userSpaceOnUse">
+      <stop style="stop-color: var(--c7)"/>
+      <stop offset=".64" style="stop-color: var(--c8)"/>
+      <stop offset="1" style="stop-color: var(--c9)"/>
+    </linearGradient>
+    <linearGradient id="vertical-spoke" x1="240" y1="242" x2="240" y2="398" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffc76e"/>
+      <stop offset=".44" stop-color="#a09171"/>
+      <stop offset=".73" stop-color="#397b9e"/>
+      <stop offset="1" stop-color="#148fdf"/>
+    </linearGradient>
+    <radialGradient id="center-light" cx="240" cy="242" r="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffb234" stop-opacity=".30"/>
+      <stop offset=".50" stop-color="#f8a329" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#f8a329" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="broad-glow" x="0" y="0" width="512" height="466" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+    <filter id="near-glow" x="0" y="0" width="512" height="466" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3.2"/>
+    </filter>
+
+  </defs>
+
+  <g>
+    <circle class="glow" cx="240" cy="242" r="122" fill="url(#center-light)"/>
+    <g class="glow" filter="url(#broad-glow)" opacity=".50">
+      <use href="#connections"/>
+      <use href="#node-rings"/>
+    </g>
+    <g class="glow" filter="url(#near-glow)" opacity=".55">
+      <use href="#connections"/>
+      <use href="#node-rings"/>
+    </g>
+    <g id="connections" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path class="outer-hexagon" d="M240 85 377,164 377,318 240,398 103,318 103,164Z" stroke="url(#cyan-frame)" stroke-width="10"/>
+      <path class="interior" d="M103 164H377L240 398Z" stroke="url(#cyan-interior)" stroke-width="10" opacity=".78"/>
+      <path class="interior" d="M103 164 240,242 377,164" stroke="url(#cyan-interior)" stroke-width="8" opacity=".91"/>
+      <path class="interior" d="M240 242V398" stroke="url(#vertical-spoke)" stroke-width="8.5"/>
+      <path class="orange-spokes" d="M240 85V242L103 318M240 242 377,318" stroke="url(#orange-spokes)" stroke-width="8.5"/>
+      <path class="orange-triangle" d="M240 85 377,318H103Z" stroke="url(#orange-frame)" stroke-width="11.5"/>
+    </g>
+    <g id="node-rings">
+      <circle cx="103" cy="164" r="22.5" style="fill: var(--c10)"/>
+      <circle cx="377" cy="164" r="22.5" style="fill: var(--c11)"/>
+      <circle cx="240" cy="398" r="22.5" style="fill: var(--c12)"/>
+      <circle cx="240" cy="85" r="23" style="fill: var(--c13)"/>
+      <circle cx="103" cy="318" r="22.5" style="fill: var(--c14)"/>
+      <circle cx="377" cy="318" r="22.5" style="fill: var(--c15)"/>
+      <circle class="hub" cx="240" cy="242" r="28.5" style="fill: var(--c16)"/>
+    </g>
+    <use class="glow" href="#node-centers" filter="url(#near-glow)" opacity=".68"/>
+    <g id="node-centers" fill="#fffef6">
+      <circle cx="103" cy="164" r="12.7"/>
+      <circle cx="377" cy="164" r="12.7"/>
+      <circle cx="240" cy="398" r="12.7"/>
+      <circle cx="240" cy="85" r="12.7"/>
+      <circle cx="103" cy="318" r="12.7"/>
+      <circle cx="377" cy="318" r="12.7"/>
+      <circle class="hub" cx="240" cy="242" r="18.3"/>
+    </g>
+  </g>
+</svg>

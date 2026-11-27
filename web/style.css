@@ -60,6 +60,8 @@
     /* the shadow: a hairline rim, a near and a far layer. The dark theme has no near layer (its near colour is clear). */
     --shadow: 0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 10%)),
       0 1px 3px light-dark(oklch(0 0 0 / 0.08), transparent), 0 6px 14px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.35));
+    /* the colour of a popup's shadow (Tweakpane's 0 2px 4px shape, see .style-pane .tp-popv): a shadow the dock's sidebar shows */
+    --popup-shadow: light-dark(oklch(0 0 0 / 0.14), oklch(0 0 0 / 0.5));
     --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
     --num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
     --label: "Gemmy Axis Labels", "IBM Plex Sans", sans-serif; /* the triad's face, loaded by render/triad.ts */
@@ -218,6 +220,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* The pane is transparent (above), but its popups are surfaces: the colour picker (.tp-popv) takes the dock's sidebar colour,
+     the panel radius and a shadow, so nothing behind it shows through (docs/ui.md, Style rows). Tweakpane's unlayered CSS reads
+     its popup colours from custom properties (--bs-bg, --bs-br, --bs-sh), so the popup sets those on itself: this page's
+     style.css is the legacy layer, and a plain declaration of background-color would lose to the unlayered one. The shadow is
+     Tweakpane's shape (0 2px 4px) with the colour set here; its layered list cannot pass through --bs-sh. */
+  .style-pane .tp-popv {
+    --bs-bg: var(--sidebar); --bs-br: var(--radius); --bs-sh: var(--popup-shadow);
+  }
+
   /* Three additions to a folder's title row, in Tweakpane's own type (the title button is Tweakpane's; these are its
      pseudo-elements, set from the adapter's data attributes): the colour dot before the name, the summary at the right,
      and the "+" of an add row. */
@@ -247,6 +258,32 @@
   .style-pane .tp-lblv:has(.gemmy-rh) { align-items: flex-start; }
   /* one focus style: shadcn's ring (3 px, the accent at half), for the Tweakpane buttons, inputs and lists, the eye among them */
   .style-pane :is(button, input, select):focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+  /* the reset dot of a changed value (field-reset.ts): a 6 px accent dot in the row's left gutter, its centre 5 px left of the
+     label's first letter, 2 px clear of it (the label is 4 px in), and centred on the row; absolute, so it takes no room and no label moves.
+     The button is 16 px; its centre is the dot's */
+  .style-pane .gemmy-has-reset { position: relative; }
+  .style-pane .gemmy-reset {
+    position: absolute; left: -9px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; padding: 0; margin: 0;
+    border: 0; border-radius: 50%; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .style-pane .gemmy-reset::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dock-muted); }
+  .style-pane .gemmy-reset:is(:hover, :focus-visible)::before { background: var(--fg); }
+  .style-pane .gemmy-reset[data-off] { display: none; }
+  /* a checks row (field-checks.ts): a tick box and its letter, one after another in the value cell */
+  /* the columns of a checks row sit on the point control's grid: one 52 px box (the number box of a point, Tweakpane's width)
+     and its 2 px gap, one column per item, so each check is under the matching box of the Supercell row */
+  .style-pane .gemmy-checks { display: grid; grid-template-columns: repeat(var(--gemmy-checks, 1), 52px); column-gap: 2px; align-items: center; }
+  /* a sizes row (field-sizes.ts): the two boxes of the Window row's fields, with the dash between them, filling the value column
+     from its left edge to its right edge; the boxes share the width equally around the dash */
+  .style-pane .gemmy-sizes { display: grid; grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr); column-gap: 4px; align-items: center; min-width: 0; }
+  .style-pane .gemmy-sizes-dash { text-align: center; color: var(--in-fg); }
+  /* a column's letter and box sit at its right edge (field-checks.ts), so each box lines up with the Supercell box below */
+  .style-pane .gemmy-check { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; cursor: pointer; }
+  .style-pane .gemmy-check .tp-ckbv { flex: none; }
+  .style-pane .gemmy-check-label { color: var(--fg); }
+  /* a number row with a toggle (field-toggle.ts, marked gemmy-toggled): the value cell is one line, the checkbox, then the number box */
+  .style-pane .gemmy-toggled > .tp-lblv_v { display: flex; align-items: center; min-width: 0; }
+  .style-pane .gemmy-toggled > .tp-lblv_v > .tp-ckbv { flex: none; margin-right: 8px; }
   .style-pane .tp-fldv_b > .dock-eye svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .style-pane .tp-fldv_b[data-draft] .tp-fldv_t::before {
     content: "+"; display: inline-block; margin-right: 6px; font-weight: 500; line-height: 1;

@@ -17,6 +17,17 @@ export function setClusterWindow(config: SceneConfig, index: number, min: number
   return editRule(config, "clusters", index, { min, max });
 }
 
+// The member counts, min_size then max_size. A max of null is no limit (a molecule's only); the schema refuses a smaller max
+// than min, and a null max for a ring, with its own message.
+export function setClusterSizes(
+  config: SceneConfig,
+  index: number,
+  minSize: number,
+  maxSize: number | null,
+): SceneConfig {
+  return editRule(config, "clusters", index, { min_size: minSize, max_size: maxSize });
+}
+
 export function setClusterAtoms(config: SceneConfig, index: number, atoms: string[]): SceneConfig {
   return editRule(config, "clusters", index, { atoms: [...atoms] });
 }

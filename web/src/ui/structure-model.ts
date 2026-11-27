@@ -2,7 +2,7 @@
 // compiled again from it. The compile runs in the compiler (compile.js); this module only holds the pieces and
 // the signal that says which model the stage shows. `activeModel` is set when a tab is shown (ui/structure-config.ts).
 import { type Signal, signal } from "@preact/signals-core";
-import type { BondRule, ClusterRule, PolyhedronRule, SceneConfig } from "../compile/config";
+import type { BondRule, ClusterRule, Color, PolyhedronRule, SceneConfig } from "../compile/config";
 import { pairOf } from "../compile/config-edit-bonds";
 import { ringKeyOf } from "../compile/config-edit-clusters";
 import type { FileSource } from "../compile/files";
@@ -68,16 +68,50 @@ export function automaticColoursOf(model: StructureModel | null): Set<string> {
   return ownedIn(automaticColours, model);
 }
 
+// What detection gave each rule it made, by identity: the defaults the panel's reset dots return a field to. An edit ends a
+// rule's automatic status but not its default, so an edited rule can still be reset; a re-detect or a clear replaces or
+// removes the entries of the rules it owns, and removing a rule removes its entry.
+export interface DetectedValues {
+  radius?: number;
+  // A ring's member counts, min_size and max_size (null: no limit).
+  sizes?: [number, number | null];
+  color: Color;
+}
+const detectedValues = new WeakMap<StructureModel, Map<string, DetectedValues>>();
+
+export function detectedValuesOf(model: StructureModel | null): Map<string, DetectedValues> {
+  if (model === null) return new Map();
+  let values = detectedValues.get(model);
+  if (values === undefined) {
+    values = new Map();
+    detectedValues.set(model, values);
+  }
+  return values;
+}
+
+// The identities a default is keyed by: a bond's pair, a polyhedron's centre, a ring's pattern (prefixed by kind).
+export const bondDefaultKey = (pair: string) => `bond ${pair}`;
+export const polyhedronDefaultKey = (centre: string) => `polyhedron ${centre}`;
+export const ringDefaultKey = (pattern: string) => `ring ${pattern}`;
+
 // Records the rules a model was given by detection (its default config's bonds).
 export function markAutomaticBonds(model: StructureModel, rules: readonly BondRule[]): void {
   const identities = automaticBondsOf(model);
-  for (const rule of rules) identities.add(pairOf(rule));
+  const values = detectedValuesOf(model);
+  for (const rule of rules) {
+    identities.add(pairOf(rule));
+    values.set(bondDefaultKey(pairOf(rule)), { radius: rule.radius, color: rule.color });
+  }
 }
 
 // Records the polyhedra a model was given by detection (its default config's polyhedra), by centre label.
 export function markAutomaticPolyhedra(model: StructureModel, rules: readonly PolyhedronRule[]): void {
   const centres = automaticPolyhedraOf(model);
-  for (const rule of rules) centres.add(rule.center);
+  const values = detectedValuesOf(model);
+  for (const rule of rules) {
+    centres.add(rule.center);
+    values.set(polyhedronDefaultKey(rule.center), { color: rule.color });
+  }
 }
 
 // Records the labels a model was given a scheme's colour for (its default config's elements, keyed by label).
@@ -89,5 +123,10 @@ export function markAutomaticColours(model: StructureModel, labels: readonly str
 // Records the ring patterns a model was given by detection (its default config's ring clusters).
 export function markAutomaticRings(model: StructureModel, rules: readonly ClusterRule[]): void {
   const patterns = automaticRingsOf(model);
-  for (const rule of rules) if (rule.kind === "ring") patterns.add(ringKeyOf(rule));
+  const values = detectedValuesOf(model);
+  for (const rule of rules) {
+    if (rule.kind !== "ring") continue;
+    patterns.add(ringKeyOf(rule));
+    values.set(ringDefaultKey(ringKeyOf(rule)), { color: rule.color, sizes: [rule.min_size, rule.max_size] });
+  }
 }

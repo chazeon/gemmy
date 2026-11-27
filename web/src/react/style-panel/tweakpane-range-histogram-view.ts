@@ -110,4 +110,7 @@ export const RANGE_HISTOGRAM_CSS = `
 .gemmy-rh-input:hover { background: var(--in-bg-h); }
 .gemmy-rh-input:focus { background: var(--in-bg-f); }
 .gemmy-rh-input-max { text-align: right; }
+/* No spin buttons: the value is typed or stepped with the arrow keys, as in the panel's other number boxes */
+.gemmy-rh-input { appearance: textfield; }
+.gemmy-rh-input::-webkit-inner-spin-button, .gemmy-rh-input::-webkit-outer-spin-button { appearance: none; margin: 0; }
 `;

@@ -27,7 +27,7 @@ def test_rocksalt_atoms_are_one_folder_per_name_with_show_colour_and_radius() ->
         """
 let result;
 const config = parseSceneConfig(args[0]);
-const colours = { scheme: "vesta", automatic: new Set(), change: () => config };
+const colours = { scheme: "vesta", automatic: new Set(), change: () => config, defaultOf: () => null };
 const nodes = atomsNodes(config, ["Mg", "O"], () => {}, colours);
 result = {
   scheme: { kind: nodes[0].kind, label: nodes[0].label, value: nodes[0].value, options: nodes[0].options },
@@ -80,7 +80,7 @@ def test_a_control_commits_the_edited_config() -> None:
 let result;
 const config = parseSceneConfig(args[0]);
 const edits = [];
-const colours = { scheme: "vesta", automatic: new Set(), change: () => config };
+const colours = { scheme: "vesta", automatic: new Set(), change: () => config, defaultOf: () => null };
 const nodes = atomsNodes(config, ["Mg", "O"], (edit) => edits.push(edit()), colours);
 const [colour, radius] = nodes[2].children;
 nodes[2].visible.commit(false);
@@ -108,7 +108,8 @@ let result;
 const config = parseSceneConfig(args[0]);
 const distances = new Map([[elementPairKey("O", "Mg"), [1.9, 2.1, 2.2]]]);
 const [, bond] = bondsNodes({ config, names: ["Mg", "O"], distances, apply: () => {}, draft: null, onDraft: () => {},
-  automatic: new Set(), detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
+  automatic: new Set(), detected: new Map(),
+  detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
 });
 const window = bond.children.find((control) => control.kind === "interval");
 result = { title: bond.title, min: window.min, max: window.max, step: window.step, value: window.value };
@@ -130,7 +131,8 @@ const config = parseSceneConfig(args[0]);
 const distances = new Map([[elementPairKey("Mg", "O"), [2.1]], [elementPairKey("O", "O"), [2.9]]]);
 const nodesFor = (cfg, draft = null) =>
   bondsNodes({ config: cfg, names: ["Mg", "O"], distances, apply: () => {}, draft, onDraft: () => {},
-  automatic: new Set(), detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
+  automatic: new Set(), detected: new Map(),
+  detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
 });
 const before = structureKey(nodesFor(config));
 const thinner = { ...args[0], bonds: [{ ...args[0].bonds[0], radius: 0.2 }] };
@@ -183,12 +185,13 @@ solid.polyhedra[0].color = [0.2, 0.6, 1.0, 1.0];
 const config = parseSceneConfig(solid);
 const shapes = shapesNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: () => {},
-  draft: null, onDraft: () => {}, automatic: new Set(), detect: () => [],
+  draft: null, onDraft: () => {}, automatic: new Set(), automaticRings: new Set(), detected: new Map(),
+  detect: () => [],
 });
 const colourOf = (folder) => folder.children.find((control) => control.kind === "color");
 // The polyhedron folder is the one with the Image centres control (only polyhedra have it).
 const polyhedron = shapes.find((node) => node.children?.some((control) => control.label === "Image centres"));
-const colours = { scheme: "vesta", automatic: new Set(), change: () => config };
+const colours = { scheme: "vesta", automatic: new Set(), change: () => config, defaultOf: () => null };
 const atoms = atomsNodes(config, ["Mg", "O"], () => {}, colours);
 result = {
   polyhedronValue: colourOf(polyhedron).value,
@@ -212,7 +215,7 @@ def test_flatten_walks_a_folder_before_its_children() -> None:
         """
 let result;
 const config = parseSceneConfig(args[0]);
-const colours = { scheme: "vesta", automatic: new Set(), change: () => config };
+const colours = { scheme: "vesta", automatic: new Set(), change: () => config, defaultOf: () => null };
 const flat = flattenPane(atomsNodes(config, ["Mg"], () => {}, colours));
 result = flat.map((node) => node.label ?? node.title);
 """,
@@ -237,30 +240,75 @@ result = { picked: namesFromText(" O ,, Mg ", ["Mg", "O"]), message };
     assert result == {"picked": ["O", "Mg"], "message": '"Fe" is not an atom of this structure.'}
 
 
-def test_the_cell_folders_commit_a_supercell_count_and_clear_a_box_only_when_boxed() -> None:
-    # The Cell section's folders (pane-model.ts, cellNodes): the count is a three-number row, and Reset box only edits a
-    # boxed cell.
+def test_unticking_a_periodic_axis_sets_its_supercell_to_one_and_disables_its_box() -> None:
+    # One edit does both (one undo restores both): the axis's supercell goes to 1 and its box is disabled; ticking the
+    # axis again leaves the count at 1 and enables the box.
+    result = node_json(
+        """
+let result;
+const raw = structuredClone(args[0]);
+raw.cells = { supercell: [2, 2, 1], periodic: [true, true, true] };
+const config = parseSceneConfig(raw);
+const edits = [];
+const apply = (edit) => edits.push(edit());
+cellNodes(config, apply)[0].items[1].commit(false);
+const unticked = cellNodes(edits[0], apply);
+unticked[0].items[1].commit(true);
+const ticked = cellNodes(edits[1], apply);
+result = {
+  edits: edits.length,
+  untickedSupercell: edits[0].cell.supercell,
+  untickedPeriodic: edits[0].cell.periodic,
+  disabledAfterUntick: unticked[1].disabled,
+  tickedSupercell: edits[1].cell.supercell,
+  tickedPeriodic: edits[1].cell.periodic,
+  disabledAfterTick: ticked[1].disabled,
+  enabledCount: ticked[1].value,
+};
+""",
+        _rocksalt(),
+    )
+    assert result["edits"] == 2
+    assert result["untickedSupercell"] == [2, 1, 1]
+    assert result["untickedPeriodic"] == [True, False, True]
+    assert result["disabledAfterUntick"] == [False, True, False]
+    assert result["tickedSupercell"] == [2, 1, 1]
+    assert result["tickedPeriodic"] == [True, True, True]
+    assert result["disabledAfterTick"] == [False, False, False]
+    assert result["enabledCount"] == [2, 1, 1]  # the count stays at 1 after the tick
+
+
+def test_the_cell_rows_are_periodic_then_supercell_and_each_axis_commits_on_its_own() -> None:
+    # The Cell section (cell-nodes.ts): Periodic is a row of three checks, Supercell a row of three boxes, then the
+    # display box folder. Each tick keeps its own commit, and Reset box only edits a boxed cell.
     result = node_json(
         """
 let result;
 const config = parseSceneConfig(args[0]);
 const edits = [];
 const nodes = cellNodes(config, (edit) => edits.push(edit()));
-nodes[0].children[0].commit([2, 1, 1]);
+nodes[1].commit([2, 1, 1]);
+nodes[0].items[1].commit(false);
 nodes[2].children[2].commit();
 result = {
-  titles: nodes.map((node) => node.title),
-  summaries: nodes.map((node) => node.summary),
+  kinds: nodes.map((node) => node.kind),
+  titles: nodes.map((node) => node.title ?? node.label),
+  summaries: nodes.map((node) => node.summary ?? null),
+  items: nodes[0].items.map((item) => [item.label, item.value]),
   supercell: edits[0].cell.supercell,
+  periodic: edits[1].cell.periodic,
   edits: edits.length,
 };
 """,
         _rocksalt(),
     )
-    assert result["titles"] == ["Supercell", "Periodic", "Display box"]
-    assert result["summaries"][1] == "a b c"
+    assert result["kinds"] == ["checks", "point3d", "folder"]
+    assert result["titles"] == ["Periodic", "Supercell", "Display box"]
+    assert result["summaries"] == [None, None, "full cell"]
+    assert result["items"] == [["a", True], ["b", True], ["c", True]]
     assert result["supercell"][0] == 2
-    assert result["edits"] == 1  # the count; the reset of an unboxed cell is no edit
+    assert result["periodic"] == [True, False, True]
+    assert result["edits"] == 2  # the count and the b tick; the reset of an unboxed cell is no edit
 
 
 def test_a_polyhedron_folder_has_image_centres_and_show_centre_atom() -> None:
@@ -271,7 +319,8 @@ const config = parseSceneConfig(args[0]);
 const edits = [];
 const shapes = shapesNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: (edit) => edits.push(edit()),
-  draft: null, onDraft: () => {}, automatic: new Set(), detect: () => [],
+  draft: null, onDraft: () => {}, automatic: new Set(), automaticRings: new Set(), detected: new Map(),
+  detect: () => [],
 });
 const [, polyhedron] = shapes;
 const labels = polyhedron.children.map((control) => control.label);
@@ -304,10 +353,12 @@ let result;
 const config = parseSceneConfig(args[0]);
 const edits = [];
 const draft = { kind: "polyhedron", centre: "O", ligands: "Mg", clusterKind: "molecule", atoms: "" };
-const [, addFolder] = shapesNodes({
+const shapes = shapesNodes({
   config, names: ["Mg", "O"], distances: new Map([[elementPairKey("O", "Mg"), [2.1]]]),
-  apply: (edit) => edits.push(edit()), draft, onDraft: () => {}, automatic: new Set(), detect: () => [],
+  apply: (edit) => edits.push(edit()), draft, onDraft: () => {}, automatic: new Set(), automaticRings: new Set(),
+  detected: new Map(), detect: () => [],
 });
+const addFolder = shapes.find((node) => node.title === "New shape");
 const [add] = addFolder.children.slice(-1);
 add.commit();
 const edited = edits[0];
@@ -331,7 +382,8 @@ let result;
 const config = parseSceneConfig(args[0]);
 const nodes = bondsNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: () => {}, draft: null, onDraft: () => {},
-  automatic: new Set(), detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
+  automatic: new Set(), detected: new Map(),
+  detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
 });
 result = { title: nodes[0].title, labels: nodes[0].children.map((control) => control.label ?? control.title) };
 """,
@@ -351,7 +403,8 @@ const automatic = new Set([identity]);
 const edits = [];
 const [, bond] = bondsNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: (edit) => edits.push(edit()), draft: null, onDraft: () => {},
-  automatic, detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
+  automatic, detected: new Map(),
+  detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
 });
 const tagged = bond.origin;
 bond.visible.commit(false);
@@ -375,7 +428,8 @@ const detected = parseSceneConfig({ bonds: [{ a: "O", b: "O", min: 2.5, max: 3.0
 const edits = [];
 const nodes = bondsNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: (edit) => edits.push(edit()), draft: null, onDraft: () => {},
-  automatic, detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => detected,
+  automatic, detected: new Map(),
+  detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => detected,
 });
 nodes[0].children.find((control) => control.title === "Re-detect").commit();
 result = {
@@ -396,7 +450,8 @@ const press = (current, automatic, detected, detection, title) => {
   let next = null;
   const nodes = bondsNodes({
     config: current, names: ["Mg", "O"], distances: new Map(), apply: (edit) => { next = edit(); }, draft: null,
-    onDraft: () => {}, automatic, detection, onDetection: () => {}, detect: () => detected,
+    onDraft: () => {}, automatic, detected: new Map(), detection, onDetection: () => {},
+    detect: () => detected,
   });
   nodes[0].children.find((control) => control.title === title).commit();
   return next;
@@ -453,7 +508,8 @@ const automatic = new Set([pairOf({ a: "Mg", b: "O" })]);
 let edited = null;
 const bond = bondsNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: (edit) => { edited = edit(); }, draft: null,
-  onDraft: () => {}, automatic, detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {},
+  onDraft: () => {}, automatic, detected: new Map(),
+  detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {},
   detect: () => [],
 })[1];
 (bond.visible ?? bond.children.find((control) => control.label === "Show")).commit(false);
@@ -620,3 +676,239 @@ result = {
         _rocksalt(),
     )
     assert result == {"titles": ["O atom", "Si atom"], "sameShape": False}
+
+
+def test_defaults_are_set_only_in_scope_and_a_reset_commits_the_default() -> None:
+    # The scheme's style is an atom's default, the detected values a detected bond's, and the user's own rule (no
+    # detected entry) has none. A reset commits the default through the node's own commit.
+    result = node_json(
+        """
+let result;
+const config = parseSceneConfig(args[0]);
+const user = structuredClone(config.bonds[0]);
+user.a = "O"; user.b = "O";
+config.bonds.push(user);
+const edits = [];
+const apply = (edit) => edits.push(edit());
+const scheme = { color: [0.9, 0.1, 0.1, 1], radius: 0.7 };
+const colours = { scheme: "vesta", automatic: new Set(), change: () => config,
+  defaultOf: (name) => (name === "O" ? scheme : null) };
+const atoms = atomsNodes(config, ["Mg", "O"], apply, colours);
+const [oColour, oRadius] = atoms[2].children;
+const [mgColour, mgRadius] = atoms[1].children;
+const detected = new Map([[bondDefaultKey(pairOf(config.bonds[0])), { radius: 0.1, color: [0, 0, 1, 1] }]]);
+const bonds = bondsNodes({ config, names: ["Mg", "O"], distances: new Map(), apply,
+  draft: null, onDraft: () => {}, automatic: new Set(), detected, detection: { tolerance: 0.15, metalPairs: false },
+  onDetection: () => {}, detect: () => [] });
+const detectedRule = bonds.find((node) => node.title === "Mg–O");
+const userRule = bonds.find((node) => node.title === "O–O");
+oRadius.commit(oRadius.default);
+result = {
+  atomDefaults: { O: [oColour.default, oRadius.default], Mg: [mgColour.default ?? null, mgRadius.default ?? null] },
+  detectedDefaults: detectedRule.children.filter((c) => c.default !== undefined).map((c) => [c.label, c.default]),
+  userDefaults: userRule.children.filter((c) => c.default !== undefined).map((c) => c.label),
+  changed: [isChangedFromDefault(oRadius), isChangedFromDefault(mgRadius)],
+  resetRadius: edits[0].elements.O.radius,
+};
+""",
+        _rocksalt(),
+    )
+    assert result["atomDefaults"] == {"O": [{"r": 0.9, "g": 0.1, "b": 0.1, "a": 1}, 0.7], "Mg": [None, None]}
+    assert result["detectedDefaults"] == [["Radius", 0.1], ["Colour", {"r": 0, "g": 0, "b": 1, "a": 1}]]
+    assert result["userDefaults"] == []
+    assert result["changed"] == [True, False]  # the O radius (0.28) differs from its scheme's 0.7; Mg has no default
+    assert result["resetRadius"] == pytest.approx(0.7)
+
+
+def test_a_bond_draft_lands_after_the_last_bond_rule_and_is_expanded() -> None:
+    result = node_json(
+        """
+let result;
+const config = parseSceneConfig(args[0]);
+const twoRules = { ...config, bonds: [...config.bonds, { ...config.bonds[0], a: "O", b: "O" }] };
+const nodes = bondsNodes({
+  config: twoRules, names: ["Mg", "O"], distances: new Map(), apply: () => {}, draft: ["O", "Mg"], onDraft: () => {},
+  automatic: new Set(), detected: new Map(), detection: { tolerance: 0.15, metalPairs: false },
+  onDetection: () => {}, detect: () => [],
+});
+const last = nodes[nodes.length - 1];
+result = { titles: nodes.map((node) => node.title), draft: last.draft, expanded: last.expanded };
+""",
+        _rocksalt(),
+    )
+    assert result["titles"] == ["Detect from radii", "Mg–O", "O–O", "New bond"]
+    assert result["draft"] is True
+    assert result["expanded"] is True
+
+
+def test_a_shape_draft_lands_after_the_last_polyhedron_or_the_last_cluster() -> None:
+    result = node_json(
+        """
+let result;
+const base = parseSceneConfig(args[0]);
+const cluster = { kind: "molecule", atoms: ["Mg", "O"], min: 1.8, max: 2.4 };
+const config = parseSceneConfig({ ...args[0], clusters: [cluster] });
+const input = (draft) => ({
+  config, names: ["Mg", "O"], distances: new Map(), apply: () => {}, draft, onDraft: () => {},
+  automatic: new Set(), automaticRings: new Set(), detected: new Map(), detect: () => [],
+});
+const titlesOf = (draft) => shapesNodes(input(draft)).map((node) => node.title);
+const polyhedronDraft = { kind: "polyhedron", centre: "", ligands: "", clusterKind: "molecule", atoms: "" };
+const clusterDraft = { ...polyhedronDraft, kind: "cluster" };
+result = {
+  none: titlesOf(null),
+  polyhedron: titlesOf(polyhedronDraft),
+  cluster: titlesOf(clusterDraft),
+  base: shapesNodes({ ...input(null), config: base }).map((node) => node.title),
+};
+""",
+        _rocksalt(),
+    )
+    assert result["none"] == ["Detect shapes", "Mg (O)", "Mg, O 4+-molecule"]
+    assert result["polyhedron"] == ["Detect shapes", "Mg (O)", "New shape", "Mg, O 4+-molecule"]
+    assert result["cluster"] == ["Detect shapes", "Mg (O)", "Mg, O 4+-molecule", "New shape"]
+    assert result["base"] == ["Detect shapes", "Mg (O)"]
+
+
+# ---- the cluster Size row (shapes-nodes.ts, field-sizes.ts) -----------------------------------------------
+# A ring detection made (its name is its set and sizes, its detected sizes 5 to 6), a ring the config leaves
+# the sizes out of (the kind's 5 to 7), and a molecule with no upper limit. Each folder's title follows its
+# member counts.
+
+SIZE_SCRIPT = """
+const config = parseSceneConfig({ ...args[0], clusters: [
+  { kind: "ring", atoms: ["C", "N"], min: 1.3, max: 1.6, name: "C,N 5–6-ring", min_size: 5, max_size: 6 },
+  { kind: "ring", atoms: ["C"], min: 1.3, max: 1.6 },
+  { kind: "molecule", atoms: ["Mg", "O"], min: 1.8, max: 2.4, min_size: 4, max_size: null },
+] });
+const detected = new Map([[ringDefaultKey("ring C,N 5–6-ring"), { color: [1, 0, 0], sizes: [5, 6] }]]);
+const automaticRings = new Set(["ring C,N 5–6-ring"]);
+const edits = [];
+let refused = null;
+const apply = (edit) => {
+  try {
+    edits.push(edit());
+    return true;
+  } catch (error) {
+    refused = error.message;
+    return false;
+  }
+};
+const nodesFor = (current) => shapesNodes({
+  config: current, names: ["Mg", "O", "C", "N"], distances: new Map(), apply, draft: null, onDraft: () => {},
+  automatic: new Set(), automaticRings, detected, detect: () => ({ polyhedra: [], rings: [] }),
+});
+const folderOf = (current, title) => nodesFor(current).find((node) => node.title === title);
+const sizesOf = (folder) => folder.children.find((control) => control.kind === "sizes");
+const titlesOf = (current) => nodesFor(current).map((node) => node.title);
+"""
+
+
+def test_each_cluster_folder_has_a_size_row_with_the_config_or_the_kind_default() -> None:
+    result = node_json(
+        """
+let result;
+"""
+        + SIZE_SCRIPT
+        + """
+const ring = sizesOf(folderOf(config, "C, N 5–6-ring"));
+const plain = sizesOf(folderOf(config, "C 5–7-ring"));
+const molecule = sizesOf(folderOf(config, "Mg, O 4+-molecule"));
+result = {
+  titles: titlesOf(config),
+  ring: { value: ring.value, min: ring.min, step: ring.step, default: ring.default },
+  plain: { value: plain.value, default: plain.default ?? null },
+  molecule: { value: molecule.value, default: molecule.default ?? null },
+  detectedChanged: isChangedFromDefault(ring),
+  editedChanged: isChangedFromDefault({ ...ring, value: [6, 6] }),
+};
+""",
+        _rocksalt(),
+    )
+    assert result["titles"] == ["Detect shapes", "Mg (O)", "C, N 5–6-ring", "C 5–7-ring", "Mg, O 4+-molecule"]
+    # The ring detection made has its detected sizes as the default; a ring the config leaves out has the
+    # kind's (5 to 7), and a molecule's upper limit is null, no limit.
+    assert result["ring"] == {"value": [5, 6], "min": 3, "step": 1, "default": [5, 6]}
+    assert result["plain"] == {"value": [5, 7], "default": None}
+    assert result["molecule"] == {"value": [4, None], "default": None}
+    assert result["detectedChanged"] is False
+    assert result["editedChanged"] is True
+
+
+def test_the_size_commit_edits_only_min_size_and_max_size_and_the_title_follows() -> None:
+    result = node_json(
+        """
+let result;
+"""
+        + SIZE_SCRIPT
+        + """
+const sizes = sizesOf(folderOf(config, "C, N 5–6-ring"));
+sizes.commit([6, 6]);
+const [edited] = edits;
+const withoutSizes = ({ min_size, max_size, ...rest }) => rest;
+result = {
+  sizes: [edited.clusters[0].min_size, edited.clusters[0].max_size],
+  restSame: JSON.stringify(withoutSizes(edited.clusters[0])) === JSON.stringify(withoutSizes(config.clusters[0])),
+  othersSame: JSON.stringify(edited.clusters.slice(1)) === JSON.stringify(config.clusters.slice(1)),
+  stillAutomatic: automaticRings.has("ring C,N 5–6-ring"),
+  titles: titlesOf(edited),
+};
+""",
+        _rocksalt(),
+    )
+    assert result["sizes"] == [6, 6]
+    assert result["restSame"] is True
+    assert result["othersSame"] is True
+    assert result["stillAutomatic"] is False  # an edit ends the rule's automatic status, as any other edit does
+    assert result["titles"] == ["Detect shapes", "Mg (O)", "C, N 6-ring", "C 5–7-ring", "Mg, O 4+-molecule"]
+
+
+def test_a_size_commit_that_inverts_the_sizes_is_refused_with_the_config_message() -> None:
+    result = node_json(
+        """
+let result;
+"""
+        + SIZE_SCRIPT
+        + """
+const sizes = sizesOf(folderOf(config, "C 5–7-ring"));
+sizes.commit([8, 7]);
+const inverted = refused;
+refused = null;
+sizes.commit([5, null]);  // a ring has no no-limit size
+const unlimited = refused;
+result = { inverted, unlimited, edits: edits.length };
+""",
+        _rocksalt(),
+    )
+    assert result["inverted"] == "clusters.1.max_size: min_size must be <= max_size."
+    assert "a ring's max_size is a number from 3 to 12" in result["unlimited"]
+    assert result["edits"] == 0
+
+
+def test_a_molecule_can_take_an_upper_limit_and_the_reset_returns_the_detected_sizes() -> None:
+    result = node_json(
+        """
+let result;
+"""
+        + SIZE_SCRIPT
+        + """
+sizesOf(folderOf(config, "Mg, O 4+-molecule")).commit([4, 6]);
+const limited = edits[0].clusters[2];
+sizesOf(folderOf(config, "C, N 5–6-ring")).commit([6, 6]);
+const changed = edits[1];
+const edited = sizesOf(folderOf(changed, "C, N 6-ring"));
+const defaultOfEdited = edited.default;  // what detection chose: the reset dot returns to it
+edited.commit(defaultOfEdited);
+result = {
+  molecule: [limited.min_size, limited.max_size],
+  titles: titlesOf(edits[0]),
+  reset: [edits[2].clusters[0].min_size, edits[2].clusters[0].max_size],
+  defaultOfEdited,
+};
+""",
+        _rocksalt(),
+    )
+    assert result["molecule"] == [4, 6]
+    assert result["titles"] == ["Detect shapes", "Mg (O)", "C, N 5–6-ring", "C 5–7-ring", "Mg, O 4–6-molecule"]
+    assert result["defaultOfEdited"] == [5, 6]
+    assert result["reset"] == [5, 6]

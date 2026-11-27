@@ -1,5 +1,5 @@
 // The Atoms section: one folder per element (its show eye, its colour and its radius), and the colour scheme row above them.
-import { COLOUR_SCHEME_OPTIONS, type ColourSchemeChoice } from "../../compile/colour-schemes";
+import { COLOUR_SCHEME_OPTIONS, type ColourSchemeChoice, type ElementEntry } from "../../compile/colour-schemes";
 import type { SceneConfig } from "../../compile/config";
 import { setElementColor, setElementRadius, setElementVisible } from "../../compile/config-edit-elements";
 import { ATOM_RADIUS_RANGE, type Apply, RADIUS_STEP, elementStyleOf } from "../../ui/style-panel-model";
@@ -11,11 +11,13 @@ function atomSummary(style: { radius: number }): string {
 }
 
 // The Atoms section's colours: the scheme in use, the elements still holding their scheme colour (`automatic`, which a
-// hand-set colour removes), and the change of scheme, which returns the config recoloured.
+// hand-set colour removes), and the change of scheme, which returns the config recoloured. `defaultOf` is the scheme's style
+// of a label's element (null when the structure has none for it): the defaults the reset dots return to.
 export interface AtomColours {
   scheme: ColourSchemeChoice;
   automatic: Set<string>;
   change(next: ColourSchemeChoice): SceneConfig;
+  defaultOf(name: string): ElementEntry | null;
 }
 
 // Auto, then every registered scheme (compile/colour-schemes.ts), in the registry's order.
@@ -38,6 +40,7 @@ export function atomsNodes(
     const style = elementStyleOf(config, name);
     // A colour the user sets is theirs: the element leaves the set the scheme recolours.
     const recolour = endingAutomatic(apply, colours.automatic, name);
+    const fallback = colours.defaultOf(name);
     return {
       kind: "folder",
       title: name,
@@ -51,6 +54,7 @@ export function atomsNodes(
           label: "Colour",
           alpha: true,
           value: rgbaOf(style.color),
+          default: fallback ? rgbaOf(fallback.color) : undefined,
           commit: (rgba) => recolour(() => setElementColor(config, name, colorOf(rgba))),
         },
         {
@@ -58,6 +62,7 @@ export function atomsNodes(
           label: "Radius",
           value: style.radius,
           ...numberRange(ATOM_RADIUS_RANGE, RADIUS_STEP),
+          default: fallback?.radius,
           commit: (radius) => apply(() => setElementRadius(config, name, radius)),
         },
       ],

@@ -232,6 +232,17 @@ class CellConfig(Frozen):
             raise ValueError(f"limits axes must be x, y or z; got {bad}.")
         return value
 
+    @model_validator(mode="after")
+    def _supercell_repeats_periodic_axes(self) -> CellConfig:
+        # A supercell repeats the cell along an axis only where the structure is periodic (the TS twin says the same).
+        for axis, count, periodic in zip("abc", self.supercell, self.periodic, strict=True):
+            if count > 1 and not periodic:
+                raise ValueError(
+                    f"cell.supercell: {axis} is {count} but {axis} is not periodic; "
+                    "a supercell repeats only along periodic axes."
+                )
+        return self
+
     # Tolerance (fractional units) for wrapping (0.99999 -> 0) and for the inclusive display box.
     eps: float = Field(default=1e-4, ge=0, lt=0.5, allow_inf_nan=False)
     # Display box in fractional coordinates of the supercell, per axis; missing axes default to [0, 1].

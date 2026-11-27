@@ -635,7 +635,7 @@ export function redetectShapesFixture(structureName: string, structureText: stri
   const detected = detectShapes(structure, neighborSource(structure, [1, 1, 1], periodic), config, VESTA);
   const automatic = new Set(config.polyhedra.map((rule) => rule.center));
   const automaticRings = new Set(config.clusters.map(clusterEdits.ringKeyOf).filter((key) => key !== ""));
-  const next = redetectShapes(config, automatic, automaticRings, detected);
+  const next = redetectShapes(config, automatic, automaticRings, new Map(), detected);
   return { centres: [...automatic], patterns: [...automaticRings], data: configToData(next) };
 }
 

@@ -1,4 +1,4 @@
-// The Cell section: three folders by property (the supercell, the periodic switch, the display box), each with its summary.
+// The Cell section: the periodic switches and the supercell are rows (a single setting is a row), the display box is a folder.
 import type { SceneConfig } from "../../compile/config";
 import { setBox, setBoxEnds, setPeriodic, setSupercell } from "../../compile/config-edit-cell";
 import { type Apply, MAX_SUPERCELL, boxOf } from "../../ui/style-panel-model";
@@ -15,43 +15,33 @@ type BoxEnd = "from" | "to";
 type Triple = [number, number, number];
 
 export function cellNodes(config: SceneConfig, apply: Apply): PaneNode[] {
-  return [supercellNode(config, apply), periodicNode(config, apply), displayBoxNode(config, apply)];
+  return [periodicNode(config, apply), supercellNode(config, apply), displayBoxNode(config, apply)];
 }
 
 function supercellNode(config: SceneConfig, apply: Apply): PaneNode {
   return {
-    kind: "folder",
-    title: "Supercell",
-    summary: config.cell.supercell.join(" × "),
-    expanded: false,
-    children: [
-      {
-        kind: "point3d",
-        label: "Count",
-        value: [...config.cell.supercell],
-        min: SUPERCELL_MIN,
-        max: MAX_SUPERCELL,
-        step: SUPERCELL_STEP,
-        commit: (next) => apply(() => setSupercell(config, next)),
-      },
-    ],
+    kind: "point3d",
+    label: "Supercell",
+    value: [...config.cell.supercell],
+    min: SUPERCELL_MIN,
+    max: MAX_SUPERCELL,
+    step: SUPERCELL_STEP,
+    // A supercell repeats only along a periodic axis: the boxes of the other axes are disabled (Periodic unticks them).
+    disabled: config.cell.periodic.map((on) => !on) as [boolean, boolean, boolean],
+    commit: (next) => apply(() => setSupercell(config, next)),
   };
 }
 
+// One row with an a, b, c tick box per axis; each axis keeps its own commit.
 function periodicNode(config: SceneConfig, apply: Apply): PaneNode {
   return {
-    kind: "folder",
-    title: "Periodic",
-    summary: periodicSummary(config),
-    expanded: false,
-    children: CELL_KEYS.map(
-      (axis, index): PaneNode => ({
-        kind: "checkbox",
-        label: CELL_AXES[index],
-        value: config.cell.periodic[index],
-        commit: (flag) => apply(() => setPeriodic(config, axis, flag)),
-      }),
-    ),
+    kind: "checks",
+    label: "Periodic",
+    items: CELL_KEYS.map((axis, index) => ({
+      label: CELL_AXES[index],
+      value: config.cell.periodic[index],
+      commit: (flag: boolean) => apply(() => setPeriodic(config, axis, flag)),
+    })),
   };
 }
 
@@ -95,11 +85,6 @@ function boxEnds(config: SceneConfig, which: BoxEnd): Triple {
 
 function isBoxed(config: SceneConfig): boolean {
   return CELL_KEYS.some((axis) => config.cell.box[axis] !== undefined);
-}
-
-function periodicSummary(config: SceneConfig): string {
-  const on = CELL_AXES.filter((_, index) => config.cell.periodic[index]);
-  return on.length === 0 ? "none" : on.join(" ");
 }
 
 function boxSummary(config: SceneConfig): string {

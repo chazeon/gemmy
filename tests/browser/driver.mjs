@@ -137,6 +137,10 @@ const LAYOUT = `(() => {
   }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
   return {
     viewport: { width: innerWidth, height: innerHeight },
+    // The island layer's grid rows (style.css, #ui: auto 1fr auto, three). An extra row takes a cell and stops #home short.
+    rows: getComputedStyle(document.getElementById("ui")).gridTemplateRows.trim().split(/\\s+/).length,
+    // The rows the layout declares (its grid-template-areas): the tracks beyond these are implicit, and take a cell.
+    areaRows: (getComputedStyle(document.getElementById("ui")).gridTemplateAreas.match(/"[^"]*"/g) || []).length,
     scrollWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
     controls: { menu: menuControls.length, tools: toolControls.length, row: rowControls.length },
     spread: {
@@ -402,6 +406,7 @@ async function runPage(browser, page) {
     // so no draw of a thumbnail lands in a later step.
     await waitFor(`(${GALLERY_READY}) && (${PAGE_REVEALED})`, "the start screen", GALLERY_WAIT_MS);
     await record("home");
+    probes["start-cover"] = await startCover({ s, evaluate, waitFor, settle });
     await record("open-card", async () => {
       await clickJs(`[data-example="${page.card}"]`);
       // A card opens its example's structure, titled by its file (ui/loader.ts showLoaded sets "gemmy: <name>").
@@ -433,6 +438,10 @@ const ROWS = `(() => {
     };
   };
   return {
+    // The island layer's grid rows, read with the dock open (the same count as LAYOUT's, style.css, #ui).
+    rows: getComputedStyle(document.getElementById("ui")).gridTemplateRows.trim().split(/\\s+/).length,
+    // The rows the layout declares (its grid-template-areas): the tracks beyond these are implicit, and take a cell.
+    areaRows: (getComputedStyle(document.getElementById("ui")).gridTemplateAreas.match(/"[^"]*"/g) || []).length,
     tools: boxOf([...document.querySelectorAll("#tools button")]),
     title: boxOf([...document.querySelectorAll("#file-island button, #file-island a, #export-area button")]),
   };
@@ -516,6 +525,30 @@ async function measureEdgeTab({ s, evaluate, mouseClick, pressKey, waitFor, wait
   await mouseClick("#inspector-tab");
   await waitForDock(false);
   return edge;
+}
+
+// The start screen covers the window: #home's box is the viewport on all four edges, at each viewport (wide, then a phone), and
+// the island layer has its three grid rows. Read on the start screen, and the window is put back to wide after.
+const COVER = `(() => {
+  const home = document.getElementById("home").getBoundingClientRect();
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    home: { top: home.top, left: home.left, right: home.right, bottom: home.bottom },
+    rows: getComputedStyle(document.getElementById("ui")).gridTemplateRows.trim().split(/\\s+/).length,
+    // The rows the layout declares (its grid-template-areas): the tracks beyond these are implicit, and take a cell.
+    areaRows: (getComputedStyle(document.getElementById("ui")).gridTemplateAreas.match(/"[^"]*"/g) || []).length,
+  };
+})()`;
+async function startCover({ s, evaluate, waitFor, settle }) {
+  const cover = {};
+  for (const viewport of LAYOUT_VIEWPORTS) {
+    await setViewport({ s, waitFor }, viewport);
+    await settle();
+    cover[viewport.name] = await evaluate(COVER);
+  }
+  await setViewport({ s, waitFor }, LAYOUT_VIEWPORTS[0]);
+  await settle();
+  return cover;
 }
 
 // The layout at each viewport: read with the dock shut (its toggle shuts it), then the lens row unfolded (a phone starts

@@ -3,7 +3,9 @@
 // section's state; everything else is the config. A section that throws shows its own message (the dock's boundary).
 import { useState } from "react";
 import { DEFAULT_DETECTION, type DetectionOptions, defaultBondRules } from "../../compile/default-rules";
+import { elementTableOf } from "../../compile/colour-schemes";
 import { detectShapes } from "../../compile/default-kind";
+import { labelsOf } from "../../compile/default-rules";
 import { schemeFor } from "../../compile/structure-kind";
 import { colourScheme } from "../../ui/colour-scheme";
 import { switchColourScheme } from "../../ui/colour-switch";
@@ -13,6 +15,7 @@ import {
   automaticColoursOf,
   automaticPolyhedraOf,
   automaticRingsOf,
+  detectedValuesOf,
 } from "../../ui/structure-model";
 import { DockSection } from "../inspector/dock-section";
 import { useSignal } from "../use-signal";
@@ -28,10 +31,19 @@ export function AtomsSection(props: SectionProps) {
   // The scheme list and the elements' colours: the page keeps which elements hold their scheme colour, per model.
   const scheme = useSignal(colourScheme);
   const model = activeModel.value;
+  // The scheme's style of each label's element: the defaults its colour and radius reset to.
+  const elementOf = new Map(
+    model === null ? [] : labelsOf(model.structure).map((entry) => [entry.label, entry.element]),
+  );
+  const table = model === null ? null : elementTableOf(schemeFor(model.structure, scheme));
   const colours: AtomColours = {
     scheme,
     automatic: automaticColoursOf(model),
     change: (next) => switchColourScheme(model, props.config, next),
+    defaultOf: (name) => {
+      const element = elementOf.get(name);
+      return element !== undefined && table !== null && Object.hasOwn(table, element) ? table[element] : null;
+    },
   };
   return (
     <DockSection id="atoms" title="Atoms" count={props.names.length}>
@@ -76,6 +88,7 @@ export function BondsSection(props: SectionProps) {
           draft,
           onDraft: setDraft,
           automatic,
+          detected: detectedValuesOf(model),
           detection,
           onDetection: setDetection,
           detect,
@@ -119,6 +132,7 @@ export function ShapesSection(props: SectionProps) {
           onDraft: setDraft,
           automatic,
           automaticRings,
+          detected: detectedValuesOf(model),
           detect,
         })}
       />

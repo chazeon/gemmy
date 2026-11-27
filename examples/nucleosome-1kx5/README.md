@@ -13,6 +13,8 @@ Changes:
 - The source has no hydrogen atoms, so none are drawn.
 - The atoms were read from the mmCIF with a small stdlib parser and written as extxyz with ASE. The box cell is the bounding box plus 10 Å on each side, with no periodic boundaries.
 
+The config also draws the flat rings of the DNA bases (`C_dna` and `N_dna` only, not the histones' C and N): 441 rings (294 six-membered, 147 five-membered) as filled faces.
+
 `config.toml` and `config.json` are the same config in two formats; `render.sh` uses the TOML one.
 
 Run `./render.sh` (needs `gemmy` on PATH or `GEMMY="uv run gemmy"`, and Blender); output goes to `./renders`.

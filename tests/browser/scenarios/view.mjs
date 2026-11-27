@@ -39,8 +39,9 @@ const LAST_BLOB = `(async () => {
   return { type: blob.type, width: header.getUint32(${PNG_WIDTH_OFFSET}), height: header.getUint32(${PNG_HEIGHT_OFFSET}) };
 })()`;
 
-// The dock's View section (react/style-panel/view-section.tsx): its checkboxes and its outline-width list, drawn by Tweakpane.
-// A row is found by its label. The dock opens at its tab on a wide screen when it is shut; a scene opens with it as it was left.
+// The dock's View section (react/style-panel/view-section.tsx): its checkboxes, and the Outlines row (a toggle and the width's number box),
+// drawn by Tweakpane. A row is found by its label. The dock opens at its tab on a wide screen when it is shut; a scene
+// opens with it as it was left.
 const VIEW_ROW = (label) =>
   `[...document.querySelectorAll("#inspector .tp-lblv")].find((row) => row.querySelector(".tp-lblv_l")?.textContent.trim() === ${JSON.stringify(label)})`;
 
@@ -56,14 +57,19 @@ async function clickViewCheck({ evaluate }, label) {
     if (!input) throw new Error(${JSON.stringify(`no View check ${label}`)}); input.click(); return true; })()`);
 }
 
-async function chooseViewWidth({ evaluate }, text) {
-  await evaluate(`(() => { const select = ${VIEW_ROW("Outline width")}?.querySelector("select");
-    const option = select && [...select.options].find((o) => o.textContent.trim() === ${JSON.stringify(text)});
-    if (!option) throw new Error(${JSON.stringify(`no outline width ${text}`)});
-    select.value = option.value; select.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`);
+// The width's number box is the Outlines row's text input (the toggle is not one).
+const WIDTH_BOX = `${VIEW_ROW("Outlines")}?.querySelector('input:not([type="checkbox"])')`;
+
+async function typeViewWidth({ evaluate }, value) {
+  await evaluate(`(() => { const box = ${WIDTH_BOX};
+    if (!box) throw new Error("no outline width box");
+    box.value = ${JSON.stringify(String(value))};
+    box.dispatchEvent(new Event("input", { bubbles: true }));
+    box.dispatchEvent(new Event("change", { bubbles: true }));
+    box.blur(); return true; })()`);
 }
 
-// The View section's values as the panel shows them: the three checks, and the outline width's text.
+// The View section's values as the panel shows them: the three checks, and the outline width's number box.
 async function viewValues({ evaluate }) {
   return evaluate(`(() => {
     const checks = Object.fromEntries(["Atoms", "Outlines", "Cell box"].map((label) => {
@@ -71,8 +77,8 @@ async function viewValues({ evaluate }) {
         .find((r) => r.querySelector(".tp-lblv_l")?.textContent.trim() === label);
       return [label, row?.querySelector('input[type="checkbox"]')?.checked ?? null];
     }));
-    const width = ${VIEW_ROW("Outline width")}?.querySelector("select");
-    return { checks, width: width ? width.options[width.selectedIndex].textContent.trim() : null };
+    const width = ${WIDTH_BOX};
+    return { checks, width: width ? width.value : null };
   })()`);
 }
 
@@ -88,10 +94,10 @@ export async function run(context) {
     () => viewValues(context),
   );
   await record(
-    "outline-bold",
+    "outline-width",
     async () => {
       await openViewSection(context);
-      await chooseViewWidth(context, "Bold");
+      await typeViewWidth(context, 1.75);
     },
     () => viewValues(context),
   );

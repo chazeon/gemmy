@@ -10,10 +10,12 @@ import {
   setClusterAtoms,
   setClusterColor,
   setClusterKind,
+  setClusterSizes,
   setClusterVisible,
   setClusterWindow,
 } from "../../compile/config-edit-clusters";
 import { setElementVisible } from "../../compile/config-edit-elements";
+import { revealStyle } from "./style-reveal";
 import type { DetectedShapes } from "../../compile/default-kind";
 import {
   addPolyhedronReplacingBonds,
@@ -29,6 +31,7 @@ import {
   setPolyhedronWindow,
 } from "../../compile/config-edit-polyhedra";
 import { ConfigError } from "../../compile/config-errors";
+import { type DetectedValues, polyhedronDefaultKey, ringDefaultKey } from "../../ui/structure-model";
 import {
   type Apply,
   defaultClusterAtoms,
@@ -44,6 +47,7 @@ import {
   colorOf,
   distanceRange,
   endingAutomatic,
+  forgetDefaults,
   namesChoices,
   replaceOwnership,
   rgbaOf,
@@ -56,11 +60,13 @@ export interface ShapesInput {
   distances: PairDistances;
   apply: Apply;
   draft: ShapeDraft | null;
-  onDraft(next: ShapeDraft): void;
+  onDraft(next: ShapeDraft | null): void;
   // The centre elements whose polyhedra detection made (ui/structure-model.ts). The panel edits this set as they change.
   automatic: Set<string>;
   // The ring patterns detection made (ui/structure-model.ts). The panel edits this set as the rings change.
   automaticRings: Set<string>;
+  // What detection gave each polyhedron and ring it made (ui/structure-model.ts): the defaults the reset dots return to.
+  detected: Map<string, DetectedValues>;
   // Runs the shape detection on the structure (the page supplies the structure): the polyhedra or the rings its kind takes.
   detect(): DetectedShapes;
 }
@@ -76,6 +82,9 @@ export interface ShapeDraft {
 const NAMES_SEPARATOR = ", ";
 
 const DEFAULT_CLUSTER_KIND: ClusterRule["kind"] = "molecule";
+// A cluster's member counts are whole numbers from 3 up (the schema's minimum); the Size boxes step by 1.
+const CLUSTER_SIZE_MIN = 3;
+const CLUSTER_SIZE_STEP = 1;
 const NO_CENTRE: Choice<string> = { text: "Choose an atom", value: "" };
 
 const CLUSTER_KINDS: Choice<ClusterRule["kind"]>[] = [
@@ -102,14 +111,18 @@ export function shapesNodes(input: ShapesInput): PaneNode[] {
   const { config, draft } = input;
   const polyhedra = config.polyhedra.map((_, index) => polyhedronNode(input, index));
   const clusters = config.clusters.map((_, index) => clusterNode(input, index));
+  // The draft is drawn where it lands: a polyhedron after the last polyhedron, a cluster after the last cluster.
   const addRow = draft === null ? [] : [addShapeNode(input, draft)];
-  return [detectShapesNode(input), ...addRow, ...polyhedra, ...clusters];
+  const addsPolyhedron = draft?.kind === "polyhedron";
+  return addsPolyhedron
+    ? [detectShapesNode(input), ...polyhedra, ...addRow, ...clusters]
+    : [detectShapesNode(input), ...polyhedra, ...clusters, ...addRow];
 }
 
 // Detect shapes: Re-detect replaces only the automatic polyhedra and rings; Clear removes them. There is no tolerance to set:
 // the shapes take the default detection windows.
 function detectShapesNode(input: ShapesInput): PaneNode {
-  const { config, automatic, automaticRings, detect, apply } = input;
+  const { config, automatic, automaticRings, detected, detect, apply } = input;
   return {
     kind: "folder",
     title: "Detect shapes",
@@ -118,7 +131,7 @@ function detectShapesNode(input: ShapesInput): PaneNode {
       {
         kind: "button",
         title: "Re-detect",
-        commit: () => apply(() => redetectShapes(config, automatic, automaticRings, detect())),
+        commit: () => apply(() => redetectShapes(config, automatic, automaticRings, detected, detect())),
       },
       {
         kind: "button",
@@ -126,6 +139,8 @@ function detectShapesNode(input: ShapesInput): PaneNode {
         commit: () =>
           apply(() => {
             const next = clearAutomaticRings(clearAutomaticPolyhedra(config, [...automatic]), [...automaticRings]);
+            forgetDefaults(detected, [...automatic].map(polyhedronDefaultKey));
+            forgetDefaults(detected, [...automaticRings].map(ringDefaultKey));
             replaceOwnership(automatic, []);
             replaceOwnership(automaticRings, []);
             return next;
@@ -141,25 +156,36 @@ export function redetectShapes(
   config: SceneConfig,
   automatic: Set<string>,
   automaticRings: Set<string>,
-  detected: DetectedShapes,
+  defaults: Map<string, DetectedValues>,
+  found: DetectedShapes,
 ): SceneConfig {
   const owned = [...automatic];
   const ownedRings = [...automaticRings];
-  const polyhedra = replaceAutomaticPolyhedra(config, owned, detected.polyhedra, detected.emitted);
-  const next = replaceAutomaticRings(polyhedra, ownedRings, detected.rings);
-  const centres = detectedPolyhedraOwnership(config, owned, detected.polyhedra);
-  const patterns = detectedRingsOwnership(config, ownedRings, detected.rings);
+  const polyhedra = replaceAutomaticPolyhedra(config, owned, found.polyhedra, found.emitted);
+  const next = replaceAutomaticRings(polyhedra, ownedRings, found.rings);
+  const centres = detectedPolyhedraOwnership(config, owned, found.polyhedra);
+  const patterns = detectedRingsOwnership(config, ownedRings, found.rings);
+  forgetDefaults(defaults, owned.map(polyhedronDefaultKey));
+  forgetDefaults(defaults, ownedRings.map(ringDefaultKey));
+  for (const rule of found.polyhedra) {
+    if (centres.includes(rule.center)) defaults.set(polyhedronDefaultKey(rule.center), { color: rule.color });
+  }
+  for (const rule of found.rings) {
+    if (patterns.includes(ringKeyOf(rule)))
+      defaults.set(ringDefaultKey(ringKeyOf(rule)), { color: rule.color, sizes: [rule.min_size, rule.max_size] });
+  }
   replaceOwnership(automatic, centres);
   replaceOwnership(automaticRings, patterns);
   return next;
 }
 
 function polyhedronNode(input: ShapesInput, index: number): PaneNode {
-  const { config, names, distances, apply, automatic } = input;
+  const { config, names, distances, apply, automatic, detected } = input;
   const rule = config.polyhedra[index];
   const ligands = rule.ligands.join(NAMES_SEPARATOR);
-  // Any edit of the polyhedron ends its automatic status: the rule is the user's from then on.
+  // Any edit of the polyhedron ends its automatic status: the rule is the user's from then on. Its default stays (detected).
   const change = endingAutomatic(apply, automatic, rule.center);
+  const fallback = detected.get(polyhedronDefaultKey(rule.center));
   const isAutomatic = automatic.has(rule.center);
   const windowText = windowSummary(rule.min_distance, rule.max_distance);
   return {
@@ -208,24 +234,37 @@ function polyhedronNode(input: ShapesInput, index: number): PaneNode {
         label: "Colour",
         alpha: true,
         value: rgbaOf(rule.color),
+        default: fallback ? rgbaOf(fallback.color) : undefined,
         commit: (rgba) => change(() => setPolyhedronColor(config, index, colorOf(rgba))),
       },
-      { kind: "button", title: "Remove", commit: () => change(() => removePolyhedronRule(config, index)) },
+      {
+        kind: "button",
+        title: "Remove",
+        commit: () =>
+          change(() => {
+            detected.delete(polyhedronDefaultKey(rule.center));
+            return removePolyhedronRule(config, index);
+          }),
+      },
     ],
   };
 }
 
-function clusterNode({ config, names, distances, apply, automaticRings }: ShapesInput, index: number): PaneNode {
+function clusterNode(
+  { config, names, distances, apply, automaticRings, detected }: ShapesInput,
+  index: number,
+): PaneNode {
   const rule = config.clusters[index];
   const atoms = rule.atoms.join(NAMES_SEPARATOR);
   const key = ringKeyOf(rule);
-  // Any edit of the cluster ends its automatic status: the rule is the user's from then on.
+  // Any edit of the cluster ends its automatic status: the rule is the user's from then on. Its default stays (detected).
   const change = endingAutomatic(apply, automaticRings, key);
+  const fallback = detected.get(ringDefaultKey(key));
   const isAutomatic = automaticRings.has(key);
   const windowText = windowSummary(rule.min_distance, rule.max_distance);
   return {
     kind: "folder",
-    title: shapeTitle(atoms, rule.kind),
+    title: shapeTitle(rule),
     summary: windowText,
     origin: isAutomatic ? "automatic" : "manual",
     swatch: { rgba: rgbaOf(rule.color), dim: !rule.visible },
@@ -246,6 +285,15 @@ function clusterNode({ config, names, distances, apply, automaticRings }: Shapes
         commit: (text) => change(() => setClusterAtoms(config, index, namesFromText(text, names))),
       },
       {
+        kind: "sizes",
+        label: "Size",
+        value: [rule.min_size, rule.max_size],
+        min: CLUSTER_SIZE_MIN,
+        step: CLUSTER_SIZE_STEP,
+        default: fallback?.sizes,
+        commit: ([low, high]) => change(() => setClusterSizes(config, index, low, high)),
+      },
+      {
         kind: "interval",
         label: "Window",
         value: [rule.min_distance, rule.max_distance],
@@ -257,9 +305,18 @@ function clusterNode({ config, names, distances, apply, automaticRings }: Shapes
         label: "Colour",
         alpha: true,
         value: rgbaOf(rule.color),
+        default: fallback ? rgbaOf(fallback.color) : undefined,
         commit: (rgba) => change(() => setClusterColor(config, index, colorOf(rgba))),
       },
-      { kind: "button", title: "Remove", commit: () => change(() => removeClusterRule(config, index)) },
+      {
+        kind: "button",
+        title: "Remove",
+        commit: () =>
+          change(() => {
+            detected.delete(ringDefaultKey(key));
+            return removeClusterRule(config, index);
+          }),
+      },
     ],
   };
 }
@@ -305,14 +362,21 @@ function polyhedronDraftNodes(
     {
       kind: "button",
       title: "Add polyhedron",
-      commit: () =>
-        apply(() => {
+      commit: () => {
+        let key = "";
+        const saved = apply(() => {
           if (!names.includes(draft.centre)) throw new ConfigError("Choose the centre atom first.");
           const ligands = namesFromText(draft.ligands, names);
           if (ligands.length === 0) throw new ConfigError("Choose at least one ligand.");
+          key = polyhedronTitle(draft.centre, ligands);
           const [min, max] = firstShellWindow(distancesBetween(distances, draft.centre, ligands));
           return addPolyhedronReplacingBonds(config, draft.centre, ligands, min, max);
-        }),
+        });
+        if (saved) {
+          onDraft(null);
+          revealStyle({ section: "shapes", key }, true);
+        }
+      },
     },
   ];
 }
@@ -335,24 +399,44 @@ function clusterDraftNodes({ names, apply, distances, config, onDraft }: ShapesI
     {
       kind: "button",
       title: "Add cluster",
-      commit: () =>
-        apply(() => {
+      commit: () => {
+        let key = "";
+        const saved = apply(() => {
           const atoms = namesFromText(draft.atoms, names);
           if (atoms.length === 0) throw new ConfigError("Choose at least one atom.");
           const [min, max] = firstShellWindow(distancesWithin(distances, atoms));
-          return addClusterRule(config, draft.clusterKind, atoms, min, max);
-        }),
+          const next = addClusterRule(config, draft.clusterKind, atoms, min, max);
+          // The added rule is the last one; its title takes the member counts the schema filled in.
+          key = shapeTitle(next.clusters[next.clusters.length - 1]);
+          return next;
+        });
+        if (saved) {
+          onDraft(null);
+          revealStyle({ section: "shapes", key }, true);
+        }
+      },
     },
   ];
 }
 
 // The folder title of a polyhedron rule: its centre and ligands ("Fe (O)"), as the style target finds it (style-target.ts).
 export function polyhedronFolderTitle(rule: PolyhedronRule): string {
-  return `${rule.center} (${rule.ligands.join(NAMES_SEPARATOR)})`;
+  return polyhedronTitle(rule.center, rule.ligands);
 }
 
-export function shapeTitle(name: string, kind: string): string {
-  return `${name} · ${kind}`;
+function polyhedronTitle(center: string, ligands: readonly string[]): string {
+  return `${center} (${ligands.join(NAMES_SEPARATOR)})`;
+}
+
+// The folder title of a cluster rule: its atoms and member counts, as a ring's name reads ("C, N 6-ring", "C, N 5–6-ring"). A
+// molecule's title takes the same pattern with its kind word, and "4+" for a molecule with no upper limit ("C, H 4+-molecule").
+export function shapeTitle(rule: Pick<ClusterRule, "atoms" | "kind" | "min_size" | "max_size">): string {
+  return `${rule.atoms.join(NAMES_SEPARATOR)} ${sizesText(rule.min_size, rule.max_size)}-${rule.kind}`;
+}
+
+function sizesText(low: number, high: number | null): string {
+  if (high === null) return `${low}+`;
+  return low === high ? `${low}` : `${low}–${high}`;
 }
 
 // The names a text control holds ("O, F"), each one an atom of the structure. An unknown name is refused, so the edit

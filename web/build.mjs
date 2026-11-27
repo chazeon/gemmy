@@ -78,6 +78,12 @@ await writeFile(
 );
 
 // The page keeps its markers (/*__STYLE__*/ and //__SCRIPT__) for gemmy.view to fill; the comment goes after the doctype.
-const page = await readFile(path.join(here, "page.html"), "utf8");
+// The favicon (assets/favicon.svg, its colours following the system's light or dark) goes into the page as a data URL, so
+// a single-file page carries it too.
+const favicon = await readFile(path.join(here, "assets", "favicon.svg"));
+const page = (await readFile(path.join(here, "page.html"), "utf8")).replace(
+  "__FAVICON__",
+  `data:image/svg+xml;base64,${favicon.toString("base64")}`,
+);
 const cut = page.indexOf("\n") + 1;
 await writeFile(path.join(out, "page.html"), `${page.slice(0, cut)}<!-- ${GENERATED} -->\n${page.slice(cut)}`);

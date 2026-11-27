@@ -9,7 +9,8 @@ export type Span = [number, number];
 // The distances of each unordered element pair, sorted, keyed by elementPairKey (compile/pair-distances.ts).
 export type PairDistances = Map<string, number[]>;
 // Applies one config edit: the edit runs, and its result (or its rejection) goes to the panel's callbacks.
-export type Apply = (edit: () => SceneConfig) => void;
+// Runs an edit; true when the config accepted it (a refused edit goes to the error line, and false comes back).
+export type Apply = (edit: () => SceneConfig) => boolean;
 
 // Sliders step in hundredths of an angstrom, and the slider of a pair reaches this far past its farthest distance.
 export const DISTANCE_STEP = 0.01;
@@ -128,9 +129,11 @@ export function applier(onChange: (next: SceneConfig) => void, onError: (message
   return (edit) => {
     try {
       onChange(edit());
+      return true;
     } catch (error) {
       if (!(error instanceof ConfigError)) throw error;
       onError(error.message);
+      return false;
     }
   };
 }

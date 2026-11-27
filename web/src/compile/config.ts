@@ -264,21 +264,36 @@ const clusterRule = acceptAliases(
 );
 
 const cellConfig = acceptAliases(
-  z.strictObject({
-    supercell: z._default(z.tuple([z.int(), z.int(), z.int()]), [1, 1, 1]),
-    periodic: z._default(z.tuple([z.boolean(), z.boolean(), z.boolean()]), [false, false, false]),
-    cartesian_limits: z._default(z.nullable(axisRanges("limits", false)), null),
-    // A fractional tolerance: finite, and below half a cell.
-    eps: z._default(
-      finite.check(
-        z.gte(0, { error: "Input should be greater than or equal to 0" }),
-        z.lt(0.5, { error: "Input should be less than 0.5" }),
+  z
+    .strictObject({
+      supercell: z._default(z.tuple([z.int(), z.int(), z.int()]), [1, 1, 1]),
+      periodic: z._default(z.tuple([z.boolean(), z.boolean(), z.boolean()]), [false, false, false]),
+      cartesian_limits: z._default(z.nullable(axisRanges("limits", false)), null),
+      // A fractional tolerance: finite, and below half a cell.
+      eps: z._default(
+        finite.check(
+          z.gte(0, { error: "Input should be greater than or equal to 0" }),
+          z.lt(0.5, { error: "Input should be less than 0.5" }),
+        ),
+        DEFAULT_EPS,
       ),
-      DEFAULT_EPS,
-    ),
-    // Display box in fractional coordinates of the supercell, per axis; missing axes default to [0, 1].
-    box: z._default(axisRanges("box", true), {}),
-  }),
+      // Display box in fractional coordinates of the supercell, per axis; missing axes default to [0, 1].
+      box: z._default(axisRanges("box", true), {}),
+    })
+    // A supercell repeats the cell along an axis only where the structure is periodic (the Python config says the same).
+    .check((ctx) => {
+      const { supercell, periodic } = ctx.value;
+      supercell.forEach((count, index) => {
+        if (count > 1 && !periodic[index]) {
+          const axis = "abc"[index];
+          ctx.issues.push({
+            code: "custom",
+            message: `cell.supercell: ${axis} is ${count} but ${axis} is not periodic; a supercell repeats only along periodic axes.`,
+            input: ctx.value,
+          });
+        }
+      });
+    }),
   ["cartesian_limits"],
 );
 

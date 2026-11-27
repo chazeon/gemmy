@@ -1,9 +1,9 @@
 // Default rings for a structure opened without a config: the flat rings of 5 or 6 atoms, drawn as filled cluster rules of
 // kind "ring" (config.ts). Detection finds the chordless cycles of such atoms over the automatic bond windows
-// (default-rules.ts), keeps the planar ones (every atom near the ring's plane), and makes one rule per label pattern
-// ("C 6-ring", "C_dna 6-ring", "C,N 5-ring"). A rule's distance window is the bond windows of the ring's elements, and its
-// colour is the centre colour of the pattern's most common label (colour-schemes.ts). Everything else is the cluster
-// schema's own default (config.ts).
+// (default-rules.ts), keeps the planar ones (every atom near the ring's plane), and makes one rule per label set, whose sizes
+// are a range ("C 6-ring", "C_dna 6-ring", "C,N 5–6-ring"). A rule's distance window is the bond windows of the ring's
+// elements, and its colour is the centre colour of the label set's most common label (colour-schemes.ts). Everything else
+// is the cluster schema's own default (config.ts).
 import { type ClusterRule, type Color, parseSceneConfig, type SceneConfig } from "./config";
 import {
   BOND_MIN_DISTANCE,
@@ -179,9 +179,11 @@ function countsOf(labels: string[]): Map<string, number> {
   return new Map([...counts].sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
-// The name of a ring rule: its label set and size, as "C 6-ring", "C_dna 6-ring" or "C,C_dna 5-ring".
-function ringRuleName(atoms: string[], size: number): string {
-  return `${atoms.join(",")} ${size}-ring`;
+// The name of a ring rule: its label set and sizes, as "C 6-ring", "C_dna 6-ring", "C,C_dna 5-ring" or, for a range of sizes,
+// "C,N 5–6-ring" (an en dash). The same pattern as the panel's folder titles (shapes-nodes.ts).
+function ringRuleName(atoms: string[], minSize: number, maxSize: number): string {
+  const sizes = minSize === maxSize ? `${minSize}` : `${minSize}–${maxSize}`;
+  return `${atoms.join(",")} ${sizes}-ring`;
 }
 
 // The most common label of a ring (the first in sorted order on a tie), with its element: the colour of the ring is taken
@@ -225,14 +227,23 @@ function ringReach(elements: string[], windows: Map<string, BondWindow>): number
   return reach;
 }
 
-// A group of rings: those of one label set and one size. A cluster rule matches atoms by label, so it draws every ring of
-// its labels and size; `flat` keeps only the flat ones.
-interface RingGroup {
+// A group of rings: those of one label set and one size. The unit the merge decides on (keepUnmerged).
+interface SizeGroup {
   size: number;
   atoms: string[]; // the group's labels, sorted: the rule's atoms
   members: LabelledElement[]; // every member's label and element, for the colour
   reach: number; // the distance window of the group's rule (ringReach, the longest over its rings)
   nearestContact: number; // the nearest pair of its labels that is not a bond of its windows (Infinity when none)
+}
+
+// A rule: the kept size groups of one label set. A cluster rule matches atoms by label, so it draws every ring of its labels
+// with a size in its range; `flat` keeps only the flat ones.
+interface RingGroup {
+  atoms: string[];
+  minSize: number;
+  maxSize: number;
+  members: LabelledElement[]; // every member's label and element, for the colour
+  reach: number; // the longest of the size groups' windows (ringReach)
 }
 
 // The shortest distance between two atoms of the group's labels that its windows do not call a bond. A rule with a wider
@@ -257,14 +268,15 @@ function nearestContactOf(
 }
 
 // The groups of the rings, one per element set and size. A group merges into a larger element set of the same size when
-// that rule draws exactly its rings (mergesInto), so a ring is drawn once; otherwise it keeps its own rule.
+// that rule draws exactly its rings (mergesInto), so a ring is drawn once; the kept groups are then one rule per element set
+// (ruleGroupsOf).
 function ringGroupsOf(
   rings: Member[][],
   source: NeighborSource,
   windows: Map<string, BondWindow>,
   pairs: NeighborPairs,
 ): RingGroup[] {
-  const groups = new Map<string, RingGroup>();
+  const groups = new Map<string, SizeGroup>();
   for (const ring of rings) {
     const members = ring.map((m) => ({ label: source.labels[m.index], element: source.symbols[m.index] }));
     const atoms = [...new Set(members.map((member) => member.label))].sort();
@@ -279,12 +291,38 @@ function ringGroupsOf(
     ...group,
     nearestContact: nearestContactOf(group.atoms, source, windows, pairs),
   }));
-  return keepUnmerged(all);
+  return ruleGroupsOf(keepUnmerged(all));
+}
+
+// One rule per element set: the kept size groups of a set become one group, whose sizes are their range and whose members
+// and window are the union of theirs. The range draws only the sizes the groups kept, so no ring is drawn twice. That holds
+// because RING_SIZES has two consecutive sizes: a size a larger rule took can then never lie between two sizes this set kept.
+function ruleGroupsOf(groups: SizeGroup[]): RingGroup[] {
+  const bySet = new Map<string, RingGroup>();
+  for (const group of groups) {
+    const key = group.atoms.join(",");
+    const rule = bySet.get(key);
+    if (rule === undefined) {
+      bySet.set(key, {
+        atoms: group.atoms,
+        minSize: group.size,
+        maxSize: group.size,
+        members: [...group.members],
+        reach: group.reach,
+      });
+    } else {
+      rule.minSize = Math.min(rule.minSize, group.size);
+      rule.maxSize = Math.max(rule.maxSize, group.size);
+      rule.members.push(...group.members);
+      rule.reach = Math.max(rule.reach, group.reach);
+    }
+  }
+  return [...bySet.values()];
 }
 
 // The groups that keep a rule. Larger label sets are decided first, so a group merges into a rule that is itself kept.
-function keepUnmerged(groups: RingGroup[]): RingGroup[] {
-  const kept: RingGroup[] = [];
+function keepUnmerged(groups: SizeGroup[]): SizeGroup[] {
+  const kept: SizeGroup[] = [];
   for (const group of [...groups].sort((a, b) => b.atoms.length - a.atoms.length)) {
     if (!kept.some((larger) => mergesInto(group, larger))) kept.push(group);
   }
@@ -294,7 +332,7 @@ function keepUnmerged(groups: RingGroup[]): RingGroup[] {
 // Whether the larger group's rule draws the rings of `group`, and only those: the same ring size, every label of
 // `group` and more besides, a window that reaches the group's own bonds, and no contact of the group's labels inside that
 // window (a benzene's 2.42 A diagonals, inside a C,Si window of 2.55 A, would break its rings).
-function mergesInto(group: RingGroup, larger: RingGroup): boolean {
+function mergesInto(group: SizeGroup, larger: SizeGroup): boolean {
   return (
     larger.size === group.size &&
     larger.atoms.length > group.atoms.length &&
@@ -304,11 +342,11 @@ function mergesInto(group: RingGroup, larger: RingGroup): boolean {
   );
 }
 
-// One cluster rule per ring group, in size then name order.
+// One cluster rule per ring group, in smallest size then name order.
 function ringRulesOf(groups: RingGroup[], styles: SceneConfig["elements"], scheme: ColourScheme): DetectedRing[] {
   return groups
-    .map((group) => ({ ...group, name: ringRuleName(group.atoms, group.size) }))
-    .sort((a, b) => a.size - b.size || (a.name < b.name ? -1 : 1))
+    .map((group) => ({ ...group, name: ringRuleName(group.atoms, group.minSize, group.maxSize) }))
+    .sort((a, b) => a.minSize - b.minSize || (a.name < b.name ? -1 : 1))
     .map((group) => {
       const centre = colourLabelOf(group.members);
       return {
@@ -316,8 +354,8 @@ function ringRulesOf(groups: RingGroup[], styles: SceneConfig["elements"], schem
         atoms: group.atoms,
         min_distance: BOND_MIN_DISTANCE,
         max_distance: group.reach,
-        min_size: group.size,
-        max_size: group.size,
+        min_size: group.minSize,
+        max_size: group.maxSize,
         flat: true as const,
         color: centreColourOf(styles, centre.label, centre.element, scheme),
         name: group.name,

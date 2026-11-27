@@ -17,8 +17,8 @@ export function StylePane({ nodes, section }: { nodes: PaneNode[]; section?: Sec
   const request = useSignal(styleReveal);
   useEffect(() => {
     if (request === null || section === undefined) return;
-    const key = takeReveal(section);
-    if (key !== null) adapter.current?.reveal(key);
+    const reveal = takeReveal(section);
+    if (reveal !== null) adapter.current?.reveal(reveal.key, reveal.focus);
   }, [request, section]);
   // Every render writes the nodes: a change of structure rebuilds the pane, a change of values refreshes it in place.
   useLayoutEffect(() => {

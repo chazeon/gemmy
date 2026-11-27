@@ -35,6 +35,11 @@ export function replaceOwnership(owned: Set<string>, keys: Iterable<string>): vo
   for (const key of keys) owned.add(key);
 }
 
+// Drops the defaults of the rules whose keys are these: the rules left the config, so nothing resets to what they were given.
+export function forgetDefaults(defaults: Map<string, unknown>, keys: readonly string[]): void {
+  for (const key of keys) defaults.delete(key);
+}
+
 export function rgbaOf(color: Color): Rgba {
   const [r, g, b, a] = color;
   return { r, g, b, a };

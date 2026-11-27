@@ -8,7 +8,12 @@
 // - the desktop markup shows from the page's `wide` breakpoint (641 px, tailwind.css), not md (768 px);
 // - the width is the page's --sidebar-width (style.css: the dock's width), set once there, not by the provider;
 // - the container's slide takes its duration from the page's --slide-duration (style.css: 0 until data-ready, 200 ms after,
-//   0 for reduced motion) in place of duration-200, on the gap and the fixed container.
+//   0 for reduced motion) in place of duration-200, on the gap and the fixed container;
+// - the root is fixed, so it takes no cell of the island layer's grid (style.css, #ui: three rows). A static root is a grid
+//   item with an implicit row, which stops the start screen (#home) 8 px short of the window's bottom edge. Its visible part,
+//   the fixed container, is out of flow already, as #lens-column and #inspector-tab are.
+// - the content scrolls only up and down (overflow-y-auto overflow-x-hidden, not overflow-auto): a text selection dragged past
+//   the dock's edge autoscrolls its scroll box, and a sideways scroll would cut the labels off (docs/ui.md).
 "use client";
 
 import * as React from "react";
@@ -81,7 +86,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground wide:block"
+      className="group peer fixed hidden text-sidebar-foreground wide:block"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -133,7 +138,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden group-data-[collapsible=icon]:overflow-hidden",
         className,
       )}
       {...props}

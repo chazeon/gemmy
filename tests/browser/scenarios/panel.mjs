@@ -20,9 +20,8 @@ const POLYHEDRON = "Si (O)";
 const STILL_TICKS = 3;
 const SETTLE_TICK_MS = 60;
 const BOND = "O–Si";
-// The Cell section's supercell: one folder, with the three counts in one row (a, b, c in order).
-const SUPERCELL_FOLDER = "Supercell";
-const SUPERCELL_ROW = "Count";
+// The Cell section's supercell: a row of three counts (a, b, c in order), found by its label in the dock.
+const SUPERCELL_ROW = "Supercell";
 const SUPERCELL_INDEX = { a: 0, b: 1, c: 2 };
 // The stage points a phone tap tries, as fractions of the stage: the middle first, then outwards.
 const TAP_POINTS = [
@@ -32,10 +31,15 @@ const STAGE_RECT = `(() => { const r = document.getElementById("stage").getBound
   return { left: r.left, top: r.top, width: r.width, height: r.height }; })()`;
 
 // Tweakpane's folder by its title, and a row of a folder by its label (Tweakpane's markup: .tp-fldv, .tp-fldv_t, .tp-lblv_l).
+// A folder's title is the title attribute of its button (tweakpane-adapter.ts sets it to the full title): a shut folder's
+// text can carry its summary and marks, so the text is not the title.
 const folder = (title) =>
-  `[...document.querySelectorAll("#inspector .tp-fldv")].find((f) => f.querySelector(".tp-fldv_t")?.textContent.trim() === ${JSON.stringify(title)})`;
+  `[...document.querySelectorAll("#inspector .tp-fldv")].find((f) => f.querySelector(":scope > .tp-fldv_b")?.title === ${JSON.stringify(title)})`;
 const row = (folderTitle, label) =>
   `[...(${folder(folderTitle)}).querySelectorAll(".tp-lblv")].find((r) => r.querySelector(".tp-lblv_l")?.textContent.trim() === ${JSON.stringify(label)})`;
+// A row of the dock by its label, in any section (a row that is not in a folder: Supercell, Outlines).
+const rowIn = (label) =>
+  `[...document.querySelectorAll("#inspector .tp-lblv")].find((r) => r.querySelector(".tp-lblv_l")?.textContent.trim() === ${JSON.stringify(label)})`;
 // A row's number fields, by what they hold: a colour's components, an interval's ends, a number. The colour's text view
 // (which holds the object) and the selects are left out, and so is any control that is not a number's text.
 const field = (folderTitle, label, index = 0) =>
@@ -180,18 +184,15 @@ async function instances({ evaluate }) {
 }
 
 // The supercell's field on one axis, and the three counts read back.
-const supercellField = (axis) => field(SUPERCELL_FOLDER, SUPERCELL_ROW, SUPERCELL_INDEX[axis]);
+const supercellField = (axis) =>
+  `[...(${rowIn(SUPERCELL_ROW)}).querySelectorAll("input")].filter((i) => /^-?[0-9.]+$/.test(i.value))[${SUPERCELL_INDEX[axis]}]`;
 const supercellValues = (context) =>
-  context.evaluate(
-    `[${Object.keys(SUPERCELL_INDEX)
-      .map((axis) => fieldValue(SUPERCELL_FOLDER, SUPERCELL_ROW, SUPERCELL_INDEX[axis]))
-      .join(", ")}]`,
-  );
+  context.evaluate(`[${Object.keys(SUPERCELL_INDEX).map((axis) => `(${supercellField(axis)}).value`).join(", ")}]`);
 
 // Sets each lattice vector's supercell count to a target (an axis that is already there is not typed).
 async function setSupercell(context, targets) {
   for (const [axis, count] of targets) {
-    const current = await context.evaluate(fieldValue(SUPERCELL_FOLDER, SUPERCELL_ROW, SUPERCELL_INDEX[axis]));
+    const current = await context.evaluate(`(${supercellField(axis)}).value`);
     if (Number(current) === count) continue;
     await commitField(context, supercellField(axis), String(count));
   }
@@ -319,7 +320,6 @@ export async function run(context) {
   await record(
     "supercell-two",
     async () => {
-      await openFolder(context, SUPERCELL_FOLDER);
       await setSupercell(context, [
         ["a", 2],
         ["b", 2],
@@ -439,6 +439,9 @@ export async function run(context) {
       // A press on the hue bar, a drag along it and a release: the change is committed once, on the release.
       await openColourPicker(context, POLYHEDRON, "Colour");
       const bar = `(${row(POLYHEDRON, "Colour")}).querySelector(".tp-colpv_h")`;
+      // The hue bar is found in the dock's scroll box: a press below the window's edge would land on nothing.
+      await evaluate(`(${bar}).scrollIntoView({ block: "nearest" })`);
+      await context.settle();
       const box = await evaluate(`(() => { const r = ${bar}.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; })()`);
       const [left, top, width, height] = box;
       const y = top + height / 2;
@@ -504,6 +507,117 @@ export async function run(context) {
     },
   );
 
+  // Probes on the stishovite tab, not golden steps (docs/ui.md: Changed values, Outlines, drafts). The dock is open on a wide screen.
+  if (!(await context.dockIsOpen())) await pressElement(context, `document.querySelector('#inspector-tab')`);
+  const openSection = async (title) => {
+    if ((await evaluate(`${SECTION_TRIGGER(title)}.getAttribute("aria-expanded")`)) === "false") {
+      await pressElement(context, SECTION_TRIGGER(title));
+      await waitFor(`${SECTION_TRIGGER(title)}.getAttribute("aria-expanded") === "true"`, `the ${title} section to open`);
+    }
+  };
+  // A changed value: an atom's radius edited shows the reset dot, its label does not move, and a press on the dot restores
+  // the value it reset to (the scheme's radius, the default) and the dot goes.
+  await openSection("Atoms");
+  await openFolder(context, "O");
+  const RADIUS = row("O", "Radius");
+  const RADIUS_DOT = `(${RADIUS}).querySelector(".gemmy-reset")`;
+  const dotShown = `getComputedStyle(${RADIUS_DOT}).display !== "none"`;
+  const labelLeft = `(${RADIUS}).querySelector(".tp-lblv_l").getBoundingClientRect().left`;
+  const radiusProbe = {
+    before: await evaluate(fieldValue("O", "Radius")),
+    dotBefore: await evaluate(dotShown),
+    labelBefore: await evaluate(labelLeft),
+  };
+  await commitField(context, field("O", "Radius"), "0.9");
+  radiusProbe.edited = {
+    value: await evaluate(fieldValue("O", "Radius")),
+    dot: await evaluate(dotShown),
+    labelAfter: await evaluate(labelLeft),
+  };
+  await pressElement(context, RADIUS_DOT);
+  await context.settle();
+  radiusProbe.restored = await evaluate(fieldValue("O", "Radius"));
+  radiusProbe.dotAfter = await evaluate(dotShown);
+  // The Periodic boxes sit over the Supercell boxes: each checkbox's right edge is the right edge of the box below it, in
+  // light and in dark (the probe measures the rectangles, so a change of the grid shows here).
+  await openSection("Cell");
+  const measureAlign = () =>
+    evaluate(`(() => {
+      const row = (label) => [...document.querySelectorAll("#inspector .tp-lblv")].find((r) => r.querySelector(".tp-lblv_l")?.textContent.trim() === label);
+      const checks = [...row("Periodic").querySelectorAll(".gemmy-check .tp-ckbv_w")].map((el) => Math.round(el.getBoundingClientRect().right * 10) / 10);
+      const boxes = [...row("Supercell").querySelectorAll("input")].filter((i) => /^-?[0-9.]+$/.test(i.value)).map((el) => Math.round(el.getBoundingClientRect().right * 10) / 10);
+      return { checks, boxes };
+    })()`);
+  const alignLight = await measureAlign();
+  await context.s("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+  await context.settle();
+  const alignDark = await measureAlign();
+  await context.s("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+  await context.settle();
+  context.probes["cell-align"] = { light: alignLight, dark: alignDark };
+  // The dock's scroll box is never wider than its content, with a changed value's dot showing (a sideways overflow lets a
+  // text selection's autoscroll cut the labels off): the box's scroll width, its client width, and what sticks out.
+  radiusProbe.scroll = await evaluate(`(() => {
+    const box = document.querySelector('#inspector [data-slot="sidebar-content"]');
+    const right = box.getBoundingClientRect().right;
+    const left = box.getBoundingClientRect().left;
+    const outside = [...box.querySelectorAll("*")].filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && (r.right > right + 0.5 || r.left < left - 0.5) && !el.closest(".tp-popv");
+    }).map((el) => el.className.toString().slice(0, 40) || el.tagName);
+    return { scrollWidth: box.scrollWidth, clientWidth: box.clientWidth, scrollLeft: box.scrollLeft, outside: outside.slice(0, 8) };
+  })()`);
+  context.probes["reset-dot"] = radiusProbe;
+  // Outlines is one row: its checkbox turns the number off, the number is disabled and keeps its value, and turns back on.
+  await openSection("View");
+  const OUTLINES = rowIn("Outlines");
+  const OUTLINE_BOX = `(${OUTLINES}).querySelector('input[type="checkbox"]')`;
+  const OUTLINE_NUMBER = `[...(${OUTLINES}).querySelectorAll("input")].find((i) => i.type !== "checkbox")`;
+  const outlineBefore = await evaluate(`(${OUTLINE_NUMBER}).value`);
+  await pressElement(context, `(${OUTLINES}).querySelector(".tp-ckbv_l")`);
+  await context.settle();
+  const outlinesOff = {
+    checked: await evaluate(`(${OUTLINE_BOX}).checked`),
+    disabled: await evaluate(`(${OUTLINE_NUMBER}).disabled`),
+    value: await evaluate(`(${OUTLINE_NUMBER}).value`),
+  };
+  await pressElement(context, `(${OUTLINES}).querySelector(".tp-ckbv_l")`);
+  await context.settle();
+  context.probes["outlines-off"] = {
+    before: outlineBefore,
+    off: outlinesOff,
+    disabledOn: await evaluate(`(${OUTLINE_NUMBER}).disabled`),
+  };
+  // A bond for a pair with no rule yet, saved: its folder is the last bond folder, and it is expanded.
+  await openSection("Bonds");
+  await pressElement(context, `document.querySelector('#inspector [aria-label="Add a bond"]')`);
+  await waitFor(`!!(${folder("New bond")})`, "the New bond folder");
+  for (const [label, name] of [
+    ["First atom", "O"],
+    ["Second atom", "O"],
+  ]) {
+    await context.evaluate(`(() => {
+      const select = (${row("New bond", label)}).querySelector("select");
+      select.value = ${JSON.stringify(name)};
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await context.settle();
+  }
+  await pressElement(
+    context,
+    `[...(${folder("New bond")}).querySelectorAll("button")].find((b) => b.textContent.trim() === "Add bond")`,
+  );
+  await waitFor(`!!(${folder("O–O")})`, "the new O–O bond's folder");
+  await context.settle();
+  context.probes["bond-draft"] = await evaluate(`(() => {
+    const bonds = [...document.querySelectorAll("#inspector .tp-fldv")].filter((f) => f.querySelector(".tp-fldv_t")?.textContent.includes("–"));
+    const last = bonds[bonds.length - 1];
+    return {
+      titles: bonds.map((f) => f.querySelector(".tp-fldv_t").textContent.trim()),
+      expanded: last.classList.contains("tp-fldv-expanded"),
+      draftOpen: !!${folder("New bond")},
+    };
+  })()`);
   // Over the budget, on the c60 cage (240 atoms a cell, 1 920 at 2 x 2 x 2; the page compiles at most 200 000): a and b go
   // to 10 (48 000 atoms, within the budget), then c to 9 (216 000) is refused. The Cell's supercell stops at 10 a side,
   // so the stishovite cell (6 atoms) cannot reach the budget. c stays at 2, the note says why, and the scene keeps its
@@ -524,7 +638,6 @@ export async function run(context) {
     if ((await evaluate(`${SECTION_TRIGGER("Cell")}.getAttribute("aria-expanded")`)) === "false") {
       await pressElement(context, SECTION_TRIGGER("Cell"));
     }
-    await openFolder(context, SUPERCELL_FOLDER);
       await waitCompiled(context);
     },
     async () => ({

@@ -443,7 +443,7 @@ CHAINS = {
     "bonds": (("setBondWindow", 0, 1.5, 2.8), ("addBondRule", "O", "O", 2.5, 3.0), ("removeBondRule", 0)),
     "polyhedra": (("setPolyhedronLigands", 0, ["Mg", "O"]), ("addPolyhedronRule", "O", ["Mg"], 1.8, 2.4)),
     "clusters": (("addClusterRule", "ring", ["Mg"], 1.3, 1.5), ("setClusterColor", 1, [0.0, 0.0, 1.0, 0.5])),
-    "cell": (("setSupercell", [2, 2, 1]), ("setBox", "y", [0.0, 0.5]), ("setPeriodic", "x", False)),
+    "cell": (("setSupercell", [2, 2, 1]), ("setBox", "y", [0.0, 0.5]), ("setPeriodic", "z", False)),
 }
 
 

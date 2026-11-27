@@ -14,6 +14,7 @@ import {
   setBondWindow,
 } from "../../compile/config-edit-bonds";
 import type { DetectionOptions } from "../../compile/default-rules";
+import { type DetectedValues, bondDefaultKey } from "../../ui/structure-model";
 import {
   BOND_RADIUS_RANGE,
   type Apply,
@@ -32,12 +33,14 @@ import {
   colorOf,
   distanceRange,
   endingAutomatic,
+  forgetDefaults,
   namesChoices,
   numberRange,
   replaceOwnership,
   rgbaOf,
   windowSummary,
 } from "./node-helpers";
+import { revealStyle } from "./style-reveal";
 
 export interface BondsInput {
   config: SceneConfig;
@@ -46,9 +49,11 @@ export interface BondsInput {
   apply: Apply;
   // The pair the Add row picks, or null while the row is shut.
   draft: BondDraft | null;
-  onDraft(next: BondDraft): void;
+  onDraft(next: BondDraft | null): void;
   // The identities of the rules detection made (ui/structure-config.ts). The panel edits this set as the rules change.
   automatic: Set<string>;
+  // What detection gave each rule it made (ui/structure-model.ts): the defaults the reset dots return to.
+  detected: Map<string, DetectedValues>;
   // The detection settings the Detect group shows, and what its controls commit.
   detection: DetectionOptions;
   onDetection(next: DetectionOptions): void;
@@ -82,11 +87,11 @@ function bondSummary(rule: { min_distance: number; max_distance: number }): stri
 export function bondsNodes(input: BondsInput): PaneNode[] {
   const rules = input.config.bonds.map((_rule, index) => bondNode(input, index));
   const add = input.draft === null ? [] : [addBondNode(input, input.draft)];
-  return [detectNode(input), ...add, ...rules];
+  return [detectNode(input), ...rules, ...add];
 }
 
 // Detect from radii: the settings, then the two actions. Re-detect replaces only the automatic rules; Clear removes them.
-function detectNode({ config, automatic, detection, onDetection, detect, apply }: BondsInput): PaneNode {
+function detectNode({ config, automatic, detected, detection, onDetection, detect, apply }: BondsInput): PaneNode {
   return {
     kind: "folder",
     title: "Detect from radii",
@@ -108,7 +113,7 @@ function detectNode({ config, automatic, detection, onDetection, detect, apply }
       {
         kind: "button",
         title: "Re-detect",
-        commit: () => apply(() => redetect(config, automatic, detect(detection))),
+        commit: () => apply(() => redetect(config, automatic, detected, detect(detection))),
       },
       {
         kind: "button",
@@ -116,6 +121,7 @@ function detectNode({ config, automatic, detection, onDetection, detect, apply }
         commit: () =>
           apply(() => {
             const next = clearAutomaticBonds(config, [...automatic]);
+            forgetDefaults(detected, [...automatic].map(bondDefaultKey));
             replaceOwnership(automatic, []);
             return next;
           }),
@@ -126,20 +132,32 @@ function detectNode({ config, automatic, detection, onDetection, detect, apply }
 
 // Re-detect: the owned pairs are re-detected (their rules replaced in place), and the set becomes the pairs the detection now
 // owns (a pair a user rule holds stays the user's).
-function redetect(config: SceneConfig, automatic: Set<string>, detected: BondRule[]): SceneConfig {
+function redetect(
+  config: SceneConfig,
+  automatic: Set<string>,
+  defaults: Map<string, DetectedValues>,
+  detected: BondRule[],
+): SceneConfig {
   const owned = [...automatic];
   const next = replaceAutomaticBonds(config, owned, detected);
-  replaceOwnership(automatic, detectedOwnership(config, owned, detected));
+  const kept = detectedOwnership(config, owned, detected);
+  forgetDefaults(defaults, owned.map(bondDefaultKey));
+  for (const rule of detected) {
+    if (kept.includes(pairOf(rule)))
+      defaults.set(bondDefaultKey(pairOf(rule)), { radius: rule.radius, color: rule.color });
+  }
+  replaceOwnership(automatic, kept);
   return next;
 }
 
 function bondNode(input: BondsInput, index: number): PaneNode {
-  const { config, distances, apply, automatic } = input;
+  const { config, distances, apply, automatic, detected } = input;
   const rule = config.bonds[index];
-  // Any edit of the rule ends its automatic status: the rule is the user's from then on.
+  // Any edit of the rule ends its automatic status: the rule is the user's from then on. Its default stays (detected).
   const key = pairOf(rule);
   const change = endingAutomatic(apply, automatic, key);
   const isAutomatic = automatic.has(key);
+  const fallback = detected.get(bondDefaultKey(key));
   return {
     kind: "folder",
     title: pairName(rule.a, rule.b),
@@ -161,6 +179,7 @@ function bondNode(input: BondsInput, index: number): PaneNode {
         label: "Radius",
         value: rule.radius,
         ...numberRange(BOND_RADIUS_RANGE, RADIUS_STEP),
+        default: fallback?.radius,
         commit: (radius) => change(() => setBondRadius(config, index, radius)),
       },
       {
@@ -168,6 +187,7 @@ function bondNode(input: BondsInput, index: number): PaneNode {
         label: "Colour",
         alpha: true,
         value: rgbaOf(rule.color),
+        default: fallback ? rgbaOf(fallback.color) : undefined,
         commit: (rgba) => change(() => setBondColor(config, index, colorOf(rgba))),
       },
       {
@@ -177,7 +197,15 @@ function bondNode(input: BondsInput, index: number): PaneNode {
         options: BOND_STYLES,
         commit: (next) => change(() => setBondStyle(config, index, choiceValue(BOND_STYLES, next))),
       },
-      { kind: "button", title: "Remove", commit: () => change(() => removeBondRule(config, index)) },
+      {
+        kind: "button",
+        title: "Remove",
+        commit: () =>
+          change(() => {
+            detected.delete(bondDefaultKey(key));
+            return removeBondRule(config, index);
+          }),
+      },
     ],
   };
 }
@@ -210,7 +238,11 @@ function addBondNode({ config, names, distances, apply, onDraft }: BondsInput, p
         title: "Add bond",
         commit: () => {
           const [min, max] = firstShellWindow(pairDistances(distances, first, second));
-          apply(() => addBondRule(config, first, second, min, max));
+          // A saved draft closes, and its rule's folder is shown where the draft was (style-reveal.ts).
+          if (apply(() => addBondRule(config, first, second, min, max))) {
+            onDraft(null);
+            revealStyle({ section: "bonds", key: pairName(first, second) }, true);
+          }
         },
       },
     ],
