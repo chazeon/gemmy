@@ -70,11 +70,15 @@ async function pressElement({ s, evaluate }, expression) {
 }
 
 // A tap at a point of the stage, as a finger makes it: a press and a release at one place.
-async function tapAt({ s, sleep }, stage, fx, fy) {
+// The press and the release are each drawn in a frame of their own: the page redraws on the press (the hover and the
+// press state) and on the release (the pick), and two events in one frame would draw one frame, not two.
+async function tapAt({ s, sleep, nextFrame }, stage, fx, fy) {
   const x = stage.left + stage.width * fx;
   const y = stage.top + stage.height * fy;
   await s("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  await nextFrame();
   await s("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", buttons: 0, clickCount: 1 });
+  await nextFrame();
   await sleep(100);
 }
 
@@ -194,7 +198,7 @@ async function setSupercell(context, targets) {
 }
 
 export async function run(context) {
-  const { record, dropFiles, waitFor, evaluate, openExportMenu, pickExportItem, blobCount, drawCount, s, settle, sleep, waitForDock } = context;
+  const { record, dropFiles, waitFor, evaluate, openExportMenu, pickExportItem, blobCount, drawCount, s, settle, sleep, waitForDock, nextFrame } = context;
 
   await record("drop-structure", async () => {
     const before = await drawCount();
@@ -555,6 +559,7 @@ export async function run(context) {
       await s("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
       await waitFor(`window.innerWidth === 393`, "the phone viewport");
       await settle();
+      await nextFrame();
       if (await evaluate(`!!document.querySelector('[aria-label="Hide the selection details"]')`)) {
         await pressElement(context, `document.querySelector('[aria-label="Hide the selection details"]')`);
         await waitFor(`!document.querySelector('[aria-label="Hide the selection details"]')`, "the card to close");
@@ -570,8 +575,10 @@ export async function run(context) {
         if (await evaluate(`!!document.querySelector('[aria-label="Hide the selection details"]')`)) break;
       }
       await waitFor(`!!document.querySelector('[aria-label="Hide the selection details"]')`, "the selection card to open on a tap");
+      await nextFrame();
       await s("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
       await waitFor(`window.innerWidth === 1280`, "the desktop viewport");
+      await nextFrame();
     },
     async () => ({
       card: await evaluate(`document.querySelector('#info [role="heading"]')?.textContent ?? null`),

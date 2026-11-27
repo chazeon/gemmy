@@ -282,6 +282,9 @@ function pageTools(s) {
     }
     throw new Error("the page kept drawing");
   };
+  // Resolves once the frame that is drawn next has drawn what was changed before the call: two animation frames, the second
+  // one after the page's render loop has drawn the first. Each change a step makes is drawn in a frame of its own this way.
+  const nextFrame = () => evaluate(`new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))`);
   // A press at the centre of an element, as a user's mouse makes it (the menu opens on a press, not a click).
   const mouseClick = async (selector) => {
     const { x, y } =
@@ -329,6 +332,7 @@ function pageTools(s) {
     drawCount,
     blobCount,
     settle,
+    nextFrame,
     mouseClick,
     waitForDock,
     dockIsOpen,
