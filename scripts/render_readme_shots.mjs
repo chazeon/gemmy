@@ -6,8 +6,9 @@
 // of its oxygen atoms is selected, so the details card shows. The theme is light (the system's light scheme, nothing stored)
 // and the camera is the default one.
 //   desktop  1600 x 1000 at 1x, the dock open: its View section and the Atoms folder in view.
-//   phone    an iPhone viewport, 393 x 852, with the details card over the page. It is drawn in a plain CSS frame made in
-//            Chrome (a black bezel, a status bar with the Dynamic Island, a Safari-style address bar under the page) and shot at 3x.
+//   phone    a real iPhone's screen, 393 x 852 (an iPhone 15 Pro), with the details card over the page. The page's viewport is the
+//            screen less the status bar and the Safari bar: 393 x 706. It is drawn in a plain CSS frame made in Chrome (a black
+//            bezel, a status bar with the Dynamic Island, a Safari-style address bar under the page) and shot at 3x.
 // Both pictures are quantised to 256 colours with ImageMagick when it is installed (as scripts/render_examples.sh does).
 // Chrome comes from GEMMY_CHROME or the usual place. Needs Node 22 or later.
 //
@@ -27,11 +28,15 @@ const FLAGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"];
 const EXAMPLES = ["nacl", "ice-ih", "stishovite"];
 const SHOWN_FILE = "ice-ih";
 const DESKTOP = { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false };
-const PHONE = { width: 393, height: 852, deviceScaleFactor: 3, mobile: true };
-// The phone frame, in css px: the bezel, the status bar above the page, and the Safari strip below it.
-const BEZEL = 12;
+// The phone's screen, in css px, as a real iPhone 15 Pro has it. The page is the screen less the status bar above it and
+// the Safari bar below it, so the viewport is shorter than the screen.
+const SCREEN = { width: 393, height: 852 };
 const STATUS_BAR = 54;
 const SAFARI_BAR = 92;
+const VIEWPORT = { width: SCREEN.width, height: SCREEN.height - STATUS_BAR - SAFARI_BAR };
+const PHONE = { ...VIEWPORT, deviceScaleFactor: 3, mobile: true };
+// The phone frame, in css px: the bezel around the screen.
+const BEZEL = 12;
 const SCREEN_RADIUS = 43; // inside a 55 px outer corner
 const PAGE_BACKGROUND = "#f6f7fa";
 const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -189,13 +194,12 @@ function quantise(input, output) {
 // The phone frame: a black bezel, a status bar (time, signal and battery) with the Dynamic Island, the viewport's picture,
 // and a Safari-style address bar with the site's address, then the home indicator. Plain CSS, no image files.
 function frameHtml() {
-  const screenHeight = STATUS_BAR + PHONE.height + SAFARI_BAR;
   return `<!doctype html>
 <html><head><meta charset="utf-8"><style>
 html, body { margin: 0; background: transparent; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
-#device { position: absolute; left: 0; top: 0; box-sizing: border-box; width: ${PHONE.width + 2 * BEZEL}px; height: ${screenHeight + 2 * BEZEL}px;
+#device { position: absolute; left: 0; top: 0; box-sizing: border-box; width: ${SCREEN.width + 2 * BEZEL}px; height: ${SCREEN.height + 2 * BEZEL}px;
   padding: ${BEZEL}px; background: #111113; border-radius: 55px; }
-#screen { position: relative; width: ${PHONE.width}px; height: ${screenHeight}px; border-radius: ${SCREEN_RADIUS}px; overflow: hidden; background: ${PAGE_BACKGROUND}; }
+#screen { position: relative; width: ${SCREEN.width}px; height: ${SCREEN.height}px; border-radius: ${SCREEN_RADIUS}px; overflow: hidden; background: ${PAGE_BACKGROUND}; }
 #status { position: absolute; left: 0; top: 0; width: 100%; height: ${STATUS_BAR}px; }
 #time { position: absolute; left: 44px; top: 17px; font-size: 16px; font-weight: 600; color: #000; }
 #signal { position: absolute; right: 74px; top: 22px; display: flex; gap: 2px; align-items: flex-end; height: 11px; }
@@ -204,7 +208,7 @@ html, body { margin: 0; background: transparent; font-family: -apple-system, Bli
 #battery::after { content: ""; display: block; height: 100%; width: 80%; background: #000; border-radius: 1.5px; }
 #battery::before { content: ""; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
 #island { position: absolute; left: 50%; top: 11px; transform: translateX(-50%); width: 120px; height: 35px; border-radius: 18px; background: #000; }
-#page { position: absolute; left: 0; top: ${STATUS_BAR}px; width: ${PHONE.width}px; height: ${PHONE.height}px; display: block; }
+#page { position: absolute; left: 0; top: ${STATUS_BAR}px; width: ${VIEWPORT.width}px; height: ${VIEWPORT.height}px; display: block; }
 #safari { position: absolute; left: 0; bottom: 0; width: 100%; height: ${SAFARI_BAR}px; }
 #address { position: absolute; left: 12px; right: 12px; top: 14px; height: 42px; border-radius: 21px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
   display: flex; align-items: center; justify-content: center; font-size: 16px; color: #1c1c1e; }
@@ -260,14 +264,14 @@ try {
   await chooseFile(phone, SHOWN_FILE);
   await selectOxygen(phone, true);
   await sleep(1000);
-  const viewport = await phone.send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width: PHONE.width, height: PHONE.height, scale: 1 } });
+  const viewport = await phone.send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width: VIEWPORT.width, height: VIEWPORT.height, scale: 1 } });
   writeFileSync(join(work, "phone-viewport.png"), Buffer.from(viewport.data, "base64"));
   await browser.send("Target.closeTarget", { targetId: phone.targetId });
   await browser.send("Target.disposeBrowserContext", { browserContextId });
 
   // The frame, drawn in Chrome around the viewport's picture, shot at 3x on a transparent background.
   writeFileSync(join(work, "frame.html"), frameHtml());
-  const frame = await newPage(browser, { width: PHONE.width + 2 * BEZEL + 40, height: STATUS_BAR + PHONE.height + SAFARI_BAR + 2 * BEZEL + 40, deviceScaleFactor: 3, mobile: false });
+  const frame = await newPage(browser, { width: SCREEN.width + 2 * BEZEL + 40, height: SCREEN.height + 2 * BEZEL + 40, deviceScaleFactor: 3, mobile: false });
   await frame.send("Emulation.setDefaultBackgroundColorOverride", { color: { r: 0, g: 0, b: 0, a: 0 } });
   await frame.send("Page.navigate", { url: `file://${join(work, "frame.html")}` });
   await frame.waitFor(`document.getElementById("page").complete && document.getElementById("page").naturalWidth > 0`, "the viewport picture");
