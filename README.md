@@ -16,8 +16,8 @@ gemmy render --scene scene.json --look.preset 3to2d --out picture.png
 Try the web viewer on the examples: **https://chazeon.github.io/gemmy/**
 
 <p align="center">
-  <img src="docs/images/viewer-desktop.png" height="380" alt="The web viewer on a desktop browser: the three examples as tabs, ice Ih with an oxygen atom selected and its info card, the axis triad, the lens row and the toolbar">
-  <img src="docs/images/viewer-phone.png" height="380" alt="The web viewer on a phone: ice Ih with an oxygen atom selected and its info card, in a phone frame">
+  <img src="docs/images/viewer-desktop.png" height="380" alt="The web viewer on a desktop browser: the file menu with the three examples (ice-ih.vasp shown), ice Ih with an oxygen atom selected and its details card, and the dock open on the right with its View section and Atoms folders">
+  <img src="docs/images/viewer-phone.png" height="380" alt="The web viewer on a phone, in a phone frame: ice Ih with an oxygen atom selected and its details card, and the address bar below the page">
 </p>
 
 Blender renders of the examples (`3to2d` look):
@@ -74,6 +74,7 @@ the browser renders the same in Blender.
 gemmy serve examples/nacl/config.toml examples/ice-ih/config.toml examples/stishovite/config.toml  # all three, as tabs
 cd examples/stishovite && GEMMY="uv run gemmy" OUT=/tmp/stishovite ./render.sh                     # Blender
 scripts/render_examples.sh    # re-render the README pictures into docs/images/
+scripts/render_readme_shots.mjs  # re-take the two web-viewer pictures (headless Chrome, no Blender)
 scripts/build_site.sh         # the examples as a static site in site/
 scripts/update_pages.sh       # the same site, committed to the gh-pages branch
 ```

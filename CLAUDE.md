@@ -83,7 +83,7 @@ Import rules are enforced by `tests/test_import_boundaries.py` (a table of rules
   Committed examples (`examples/<name>/`) are public structures: POSCAR, `config.toml` + `config.json` (kept equal by
   a test), README, `render.sh` and `gallery.json` (title and description; the hosted front page's start screen lists
   them, `gemmy view --hosted --gallery examples`, scripts/build_site.sh); no scene.json. Their small README pictures live in `docs/images/`, made by
-  `scripts/render_examples.sh`. `tests/test_examples.py` compiles them, so keep configs current when keys change.
+  `scripts/render_examples.sh`; the two web-viewer pictures by `scripts/render_readme_shots.mjs` (headless Chrome, no Blender). `tests/test_examples.py` compiles them, so keep configs current when keys change.
 - Do not push or merge unless asked.
 
 ## Workflow
