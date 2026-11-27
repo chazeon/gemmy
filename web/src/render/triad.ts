@@ -3,9 +3,9 @@
 // own canvas after the 3D triad; drawTriad draws them into any canvas (the PNG export's).
 import { Color } from "three";
 import { AXIS_FONT, AXIS_LETTERS, LOOK } from "../config";
-import { camera, loaded, requestRender } from "../state";
+import { camera, loaded, requestRender, showAxes } from "../state";
 import { captureMode } from "../ui/capture";
-import { MAX_PIXEL_RATIO, cssVar, stage } from "./draw";
+import { MAX_PIXEL_RATIO, colourVar, cssVar, stage } from "./draw";
 import { type TriadItem, type TriadLayout, latticeInView, triadLayout } from "./triad-layout";
 
 // The size in the font-loading request. Any size loads the face, so this only names it.
@@ -48,9 +48,9 @@ export function drawTriad(
   sizeCanvas(canvas, width, height, dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
-  if (!axisFontReady || captureMode) return; // capture mode draws the structure alone
+  if (!axisFontReady || captureMode || !showAxes.value) return; // capture mode and the Axes toggle off draw no letters
   const lattice = latticeInView(loaded.value.lattice, camera.value.quaternion);
-  const background = transparent ? null : cssVar("--bg").trim();
+  const background = transparent ? null : colourVar("--bg");
   drawLetters(ctx, triadLayout(lattice, width, height, inset), background);
 }
 

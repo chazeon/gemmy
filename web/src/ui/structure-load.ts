@@ -98,7 +98,10 @@ function finishStructure(
     markAutomaticRings(model, config.clusters);
     markAutomaticColours(model, Object.keys(config.elements));
   }
+  // The read's note comes first: a partly occupied site (R12) is said before the compile's own warnings.
   const warnings: string[] = [];
+  const partial = compiler.partialNote(resolved.structure.partial);
+  if (partial !== null) warnings.push(partial);
   const doc = compileModel(model, warnings);
   return { doc, name: fileName, model, warnings, applied: resolved.applied, learned: resolved.learned };
 }

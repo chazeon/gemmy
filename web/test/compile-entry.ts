@@ -2,6 +2,7 @@
 // that loads the vendored fastatoms wasm (tests/ts_bundle.py bundles it in). A test job calls any export by name, so a
 // new stage adds its helpers here, not in Python.
 import { neighborSource } from "../src/structure/neighbors";
+export { partialNote } from "../src/structure/partial";
 import type { NeighborSource, Structure } from "../src/structure/structure";
 import type { Vec3 } from "../src/types";
 import type { BondRule, ClusterRule, PolyhedronRule, SelectConfig } from "../src/compile/config";

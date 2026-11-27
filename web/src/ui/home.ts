@@ -8,6 +8,7 @@ import { type Example, type Gallery, galleryNear, structureOf } from "../scene/e
 import { type SceneSource, type Source, gistSourceOf, resolveWebUrl } from "../scene/source";
 import { errorText } from "../errors";
 import type { TypePrompt } from "./types-needed";
+import { setScene } from "./layout-modes";
 
 interface HomeActions {
   openSource(source: Source): void;
@@ -42,7 +43,7 @@ const CLEARED = { status: "", error: null, typePrompt: null } satisfies Partial<
 // ---- the card: shown over the stage, with the status and the error of the scene being loaded ----
 function show(patch: Partial<CardState>): void {
   card.value = { ...card.value, shown: true, ...patch };
-  document.body.classList.add("no-scene");
+  setScene("none");
 }
 export function busy(text: string): void {
   show({ ...CLEARED, status: text });
@@ -60,7 +61,7 @@ export function clearTypePrompt(): void {
 }
 export function hideCard(): void {
   card.value = { ...card.value, ...CLEARED, shown: false };
-  document.body.classList.remove("no-scene");
+  setScene("shown");
 }
 
 // The start screen itself. `served` is the name of the scene a gemmy serve page serves, or null on any other page.

@@ -44,7 +44,7 @@ uv sync            # or: pip install -e '.[dev]'
   without the symmetry module:
 
   ```bash
-  pip install "fastatoms @ git+https://github.com/chazeon/fastatoms@5e9a9088eacc32d03872432c06827e8928b67d91" \
+  pip install "fastatoms @ git+https://github.com/chazeon/fastatoms@83948cca9c71d9597b4e38dc2d5d647f6e5ac57f" \
     -C cmake.define.FASTATOMS_WITH_SYMMETRY=OFF
   ```
 

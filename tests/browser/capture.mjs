@@ -34,6 +34,14 @@ try {
     const header = new DataView(await blob.slice(0, 24).arrayBuffer());
     return { type: blob.type, width: header.getUint32(16), height: header.getUint32(20) };
   })()`);
+  // The Axes toggle reaches the SVG export: the triad's group is in the document with it on, and not with it off.
+  out.svg = await evaluate(`(async () => {
+    gemmy.set({ axes: true });
+    const shown = await gemmy.export("svg");
+    gemmy.set({ axes: false });
+    const hidden = await gemmy.export("svg");
+    return { shown: shown.includes('id="triad"'), hidden: hidden.includes('id="triad"'), state: gemmy.state().axes };
+  })()`);
 } catch (error) {
   out.error = String(error);
   status = 1;

@@ -77,7 +77,7 @@ async function viewValues({ evaluate }) {
 }
 
 export async function run(context) {
-  const { record, clickJs, evaluate, mouseClick, waitFor, openExportMenu } = context;
+  const { record, clickJs, evaluate, mouseClick, waitFor, openExportMenu, dockIsOpen } = context;
   await record("default-view");
   await record(
     "toggle-atoms",
@@ -102,6 +102,10 @@ export async function run(context) {
   // step records only the Centre press, whose frames do not vary (the pick's are settled before its count starts).
   await pickPolyhedron(context);
   await record("select-and-centre", () => centreSelected(context));
+  // A file's view is what the page keeps for it (docs/ui.md, rule 2): the page's own scene's zoom and readout are read as the
+  // page leaves it for the dropped scene, and again when the page comes back to it (the probes after the steps).
+  const VIEW_NOW = `({ zoom: document.getElementById("zoom-level").textContent, info: document.getElementById("info-body")?.textContent ?? null })`;
+  const viewBeforeSwitch = await evaluate(VIEW_NOW);
   await record("drop-second-scene", () => dropSecondScene(context));
   await exportStep(context, "export-svg", "SVG", "svg");
   await exportStep(context, "export-png", "PNG", "png");
@@ -124,7 +128,7 @@ export async function run(context) {
   await record(
     "sheets-both-open",
     async () => {
-      if (await evaluate(DOCK_OPEN)) {
+      if (await dockIsOpen()) {
         await context.mouseClick(EDGE_TAB);
         await context.waitForDock(false);
       }
@@ -217,6 +221,14 @@ export async function run(context) {
     await context.clickJs(`[data-testid="file-item"][data-label=${JSON.stringify(labels[0])}]`);
     await waitFor(`!document.getElementById("file-panel")`, "the file menu to shut");
   }, async () => ({ title: await evaluate(FILE_NAME_NOW) }));
+  context.probes["files-back-view"] = { before: viewBeforeSwitch, after: await evaluate(VIEW_NOW) };
+  // Choosing the file on the stage (its own row, checked) changes nothing: the view and the readout stay as they are.
+  const viewBeforePick = await evaluate(VIEW_NOW);
+  await openFileMenu(context);
+  await context.clickJs(`[data-testid="file-item"][aria-current="true"]`);
+  await waitFor(`!document.getElementById("file-panel")`, "the file menu to shut");
+  await context.settle();
+  context.probes["same-file-pick"] = { before: viewBeforePick, after: await evaluate(VIEW_NOW) };
   // The Export menu leads with Copy link, and lists no New tab. It is read on a scene: its button is hidden on the start screen.
   await record("menu-start", openExportMenu);
 }

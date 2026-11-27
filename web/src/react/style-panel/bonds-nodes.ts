@@ -28,7 +28,6 @@ import {
 } from "../../ui/style-panel-model";
 import type { Choice, PaneNode } from "./pane-model";
 import {
-  autoSummary,
   choiceValue,
   colorOf,
   distanceRange,
@@ -75,8 +74,8 @@ export function newBondDraft(distances: PairDistances, names: readonly string[])
   return defaultBondNames(distances, names);
 }
 
-function bondSummary(rule: { min_distance: number; max_distance: number; visible: boolean }): string {
-  return windowSummary(rule.min_distance, rule.max_distance, rule.visible);
+function bondSummary(rule: { min_distance: number; max_distance: number }): string {
+  return windowSummary(rule.min_distance, rule.max_distance);
 }
 
 // The Detect group above the rules, then the Add row while it is open, then the rules.
@@ -144,7 +143,8 @@ function bondNode(input: BondsInput, index: number): PaneNode {
   return {
     kind: "folder",
     title: pairName(rule.a, rule.b),
-    summary: autoSummary(isAutomatic, bondSummary(rule)),
+    summary: bondSummary(rule),
+    origin: isAutomatic ? "automatic" : "manual",
     swatch: { rgba: rgbaOf(rule.color), dim: !rule.visible },
     visible: { value: rule.visible, commit: (visible) => change(() => setBondVisible(config, index, visible)) },
     expanded: false,

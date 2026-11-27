@@ -12,6 +12,8 @@
 
 /* shadcn's dark variant: the class on <html> that ui/theme.ts sets when the page is dark (Dark, or Auto with a dark system) */
 @custom-variant dark (&:is(.dark *));
+/* the start screen (no scene: html[data-scene="none"], ui/layout-modes.ts): the scene's own controls hide with `no-scene:hidden` */
+@custom-variant no-scene (html[data-scene="none"] &);
 
 @source "./src";
 
@@ -62,7 +64,7 @@
   --font-sans: var(--ui);
   --font-mono: var(--num);
 
-  /* the desktop layout (the dock as the stock Sidebar): one width above the phone's 640 px (ui/panels.ts PHONE_MAX_WIDTH) */
+  /* the desktop layout (the dock as the stock Sidebar): one width above the phone's 640 px (ui/layout-modes.ts PHONE_MAX_WIDTH) */
   --breakpoint-wide: 641px;
 
   --color-background: var(--bar);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the vendored fastatoms (VASP, XYZ, CIF, LAMMPS and neighbour lists, as WebAssembly) into web/vendor/fastatoms/.
-# Usage: scripts/build_fastatoms.sh [<commit-sha>]   (default: ca3d236, branch wasm-core of chazeon/fastatoms)
+# Usage: scripts/build_fastatoms.sh [<commit-sha>]   (default: 83948cc, branch wasm-core of chazeon/fastatoms)
 # It clones that commit into a scratch directory (removed on exit), builds the wasm with js/scripts/build-wasm.sh
 # (--gemmy, LAMMPS on, single file; emsdk at $EMSDK or ~/emsdk), builds the TypeScript wrapper with npm, and copies
 # js/dist/*.js, *.d.ts and dist/wasm/fastatoms.mjs with its fastatoms.d.mts (the glue stays in wasm/) plus
@@ -10,7 +10,7 @@
 # See docs/plans/ts-compile.md section 3.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-sha="${1:-ca3d236}"
+sha="${1:-83948cc}"
 repo="https://github.com/chazeon/fastatoms"
 build_args=(--gemmy -DFASTATOMS_WITH_LAMMPS=ON -DFASTATOMS_WASM_SINGLE_FILE=ON)
 vendor="$root/web/vendor"

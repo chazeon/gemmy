@@ -6,6 +6,7 @@
 // - no ctrl/cmd+B shortcut and no sidebar_state cookie: the page has neither (docs/ui.md); the dock's open state is the
 //   page's own (ui/panels.ts), which the provider is controlled by (react/overlay.tsx);
 // - the desktop markup shows from the page's `wide` breakpoint (641 px, tailwind.css), not md (768 px);
+// - the width is the page's --sidebar-width (style.css: the dock's width), set once there, not by the provider;
 // - the container's slide takes its duration from the page's --slide-duration (style.css: 0 until data-ready, 200 ms after,
 //   0 for reduced motion) in place of duration-200, on the gap and the fixed container.
 "use client";
@@ -13,7 +14,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 
 type SidebarContextProps = {
@@ -52,7 +52,6 @@ function SidebarProvider({
         data-slot="sidebar-wrapper"
         style={
           {
-            "--sidebar-width": SIDEBAR_WIDTH,
             "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
             ...style,
           } as React.CSSProperties

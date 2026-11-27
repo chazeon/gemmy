@@ -3,7 +3,7 @@
 // silhouette, a polyhedron's edges, a bond's sides and end ellipses, and the crossing of an atom or bond with a face).
 // This file builds the structure's group (its objects, passes and curves), adds the polyhedron edges and the cell box
 // (lines that the line pass shows, edges.ts), and writes the document. The triad is traced after the structure
-// (triad-trace.ts).
+// (triad-trace.ts) when the view shows the axes.
 import * as THREE from "three";
 import { ARROW, LOOK, axisFontFace } from "../config";
 import { linearHex, srgbHex } from "../export/markup";
@@ -99,9 +99,9 @@ export function buildTracedSvg(options: SvgOptions): TracedResult {
     const group = makeGroup(options, view, prepared, passes, pass);
     const layers = traceRegions(group);
     const box = cellBoxMarkup(options, prepared, group.linePass, layers);
-    const triad = traceTriad(options, view, TRACE_SCALE);
-    const text = documentText(options, layers, box, triad.node);
-    return { text, paths: layers.paths + triad.paths, ms: performance.now() - started };
+    const triad = options.show.axes ? traceTriad(options, view, TRACE_SCALE) : null;
+    const text = documentText(options, layers, box, triad?.node ?? null);
+    return { text, paths: layers.paths + (triad?.paths ?? 0), ms: performance.now() - started };
   } finally {
     disposeMeshes([...prepared.built.meshes, ...prepared.built.shells, ...prepared.built.thin, ...prepared.lines]);
   }
@@ -202,7 +202,7 @@ function fillRgb(options: SvgOptions, obj: TracedObject): number[] {
 
 // The document in paint order: the axis font (embedded as a style), the clip paths, the fills, the cell box, the
 // outlines and the triad. The browser serialises the tree once, escaping every text and attribute value on the way.
-function documentText(options: SvgOptions, layers: Layers, box: SVGElement | null, triad: SVGElement): string {
+function documentText(options: SvgOptions, layers: Layers, box: SVGElement | null, triad: SVGElement | null): string {
   const svg = svgEl(
     "svg",
     { width: options.width, height: options.height, viewBox: `0 0 ${options.width} ${options.height}` },

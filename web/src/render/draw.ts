@@ -213,12 +213,29 @@ export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name);
 }
 
-// How far the live stage is moved left by the open dock, in CSS px (style.css: half the dock's width, on a wide screen with a
-// scene), which the triad's corner is moved right by to stay in view. 0 when the dock is shut, and in every export.
+// A page colour as sRGB hex, for the page's scheme. The tokens are light-dark() of oklch colours (style.css), which three.js
+// and SVG tools do not read, so a hidden probe takes the token as its colour, one pixel is painted with what the browser
+// resolves, and the pixel is read back. The probe stays in the page.
+const colourProbe = document.createElement("span");
+colourProbe.hidden = true;
+document.body.append(colourProbe);
+const colourPixel = document
+  .createElement("canvas")
+  .getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
+colourPixel.canvas.width = colourPixel.canvas.height = 1;
+export function colourVar(name: string): string {
+  colourProbe.style.color = `var(${name})`;
+  colourPixel.fillStyle = getComputedStyle(colourProbe).color;
+  colourPixel.fillRect(0, 0, 1, 1);
+  const [r, g, b] = colourPixel.getImageData(0, 0, 1, 1).data;
+  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
+// How far the live stage is moved left by the open dock, in CSS px: half the dock's space, which style.css sets (--dock-reserved,
+// on the body: nothing unless the dock is open on a wide screen with a scene). The triad's corner is moved right by it to stay
+// in view. Exports do not call this: they keep the full canvas.
 export function dockInset(): number {
-  const open = document.documentElement.dataset.dock === "open";
-  if (!open || document.body.classList.contains("no-scene") || !matchMedia("(min-width: 641px)").matches) return 0;
-  return Number.parseFloat(cssVar("--dock-width")) / 2;
+  return Number.parseFloat(getComputedStyle(document.body).getPropertyValue("--dock-reserved")) / 2;
 }
 
 // A page colour from its sRGB components (the scene's colours are sRGB, as colour pickers show them).

@@ -4,41 +4,62 @@
      dock full height on the right, and the corner buttons (details, help) bottom-right, with the details card floating above
      them. Phones get their own arrangement at the end of this file. */
 
-  /* ---- tokens: colours for the light theme, then the dark theme (two selectors: the system's and the page's own) ---- */
   /* The dock's slide token: every element that slides with the dock (the stage, the island layer, the details card, the edge tab,
-     the stock sidebar's container) takes its duration from here, linear. It is 0 until the first paint is done (overlay.tsx
-     sets data-ready after two frames), so a dock restored as open is simply there, and 0 for reduced motion. */
+     the stock sidebar's container) takes its duration from here, linear. It is 0 until the page is revealed (main.ts sets
+     data-ready with the reveal), so a dock restored as open is simply there, and 0 for reduced motion. */
   :root { --slide-duration: 0s; }
   :root[data-ready] { --slide-duration: 200ms; }
   @media (prefers-reduced-motion: reduce) { :root, :root[data-ready] { --slide-duration: 0s; } }
 
+  /* ---- tokens. Each colour is written once as light-dark(light, dark): the browser takes the light or the dark value from the
+     element's colour-scheme. :root follows the system's scheme; data-theme (ui/theme.ts) pins it to light or dark. A colour
+     that reads the page's canvas or three.js goes through colourVar (render/draw.ts), which resolves it on a probe. ---- */
   :root {
-    --bg: oklch(0.965 0 0);
-    --bar: oklch(0.985 0 0);
+    color-scheme: light dark;
+    --bg: light-dark(oklch(0.965 0 0), oklch(0.21 0 0));
+    --bar: light-dark(oklch(0.985 0 0), oklch(0.25 0 0));
     /* a gallery card: its background (the picture is transparent on it), and the shade it moves to on hover or focus */
-    --thumb: oklch(0.945 0 0);
-    --thumb-hover: oklch(0.915 0 0);
-    --panel: oklch(0.985 0 0 / 0.9);
-    --fg: oklch(0.145 0 0);
-    --muted: oklch(0.53 0 0);
-    /* the dock's own colours: its labels, strong text, checkbox borders and sunken fields (light, then dark below) */
-    --dock-muted: oklch(0.53 0 0); --dock-strong: oklch(0.205 0 0); --dock-field: oklch(0.985 0 0);
-    --rule: oklch(0.922 0 0);
-    --hover: oklch(0.95 0 0);
-    --accent: #2160d8;
-    --on-accent: #ffffff;
-    --accent-soft: #e2eafb;
-    --err: #b3261e;
-    /* shadcn's sidebar colours (light), the neutral palette with the dock and its hovered rows a step darker: the dock's frame, its rows and its borders */
-    --sidebar: oklch(0.95 0 0); --sidebar-foreground: oklch(0.145 0 0); --sidebar-primary: oklch(0.205 0 0); --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.925 0 0); --sidebar-accent-foreground: oklch(0.205 0 0); --sidebar-border: oklch(0.922 0 0); --sidebar-ring: oklch(0.708 0 0);
+    --thumb: light-dark(oklch(0.945 0 0), oklch(0.25 0 0));
+    --thumb-hover: light-dark(oklch(0.915 0 0), oklch(0.315 0 0));
+    --panel: light-dark(oklch(0.985 0 0 / 0.9), oklch(0.25 0 0 / 0.92));
+    --fg: light-dark(oklch(0.145 0 0), oklch(0.985 0 0));
+    --muted: light-dark(oklch(0.53 0 0), oklch(0.708 0 0));
+    /* the dock's own colours: its labels (the page's muted), strong text, and sunken fields */
+    --dock-muted: var(--muted);
+    --dock-strong: light-dark(oklch(0.205 0 0), oklch(0.922 0 0));
+    --dock-field: light-dark(oklch(0.985 0 0), oklch(0.315 0 0));
+    --rule: light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%));
+    --hover: light-dark(oklch(0.95 0 0), oklch(0.315 0 0));
+    --accent: light-dark(#2160d8, #7aa7ff);
+    --on-accent: light-dark(#ffffff, oklch(0.145 0 0));
+    --accent-soft: light-dark(#e2eafb, #26324f);
+    --err: light-dark(#b3261e, #ff8a80);
+    /* shadcn's sidebar colours, the neutral palette with the dock and its hovered rows a step darker: the dock's frame, its rows
+       and its borders. The foreground and the border are the page's own, so they alias it. */
+    --sidebar: light-dark(oklch(0.95 0 0), oklch(0.27 0 0));
+    --sidebar-foreground: var(--fg);
+    --sidebar-primary: light-dark(oklch(0.205 0 0), oklch(0.488 0.243 264.376));
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: light-dark(oklch(0.925 0 0), oklch(0.335 0 0));
+    --sidebar-accent-foreground: light-dark(oklch(0.205 0 0), oklch(0.985 0 0));
+    --sidebar-border: var(--rule);
+    --sidebar-ring: light-dark(oklch(0.708 0 0), oklch(0.556 0 0));
     /* the message line's kinds (react/message-line.tsx, data-kind): the sign and the action in the kind's colour, the line
-       tinted by about a tenth of it, and its hairline a stronger tone (Primer's flash). Dark tints are darker tints. */
-    --info: #2160d8; --warn: #875700;
-    --info-tint: color-mix(in srgb, #2160d8 10%, #ffffff); --warn-tint: color-mix(in srgb, #875700 10%, #ffffff); --err-tint: color-mix(in srgb, #b3261e 10%, #ffffff);
-    --info-rule: color-mix(in srgb, #2160d8 45%, #ffffff); --warn-rule: color-mix(in srgb, #875700 45%, #ffffff); --err-rule: color-mix(in srgb, #b3261e 45%, #ffffff);
-    --box: oklch(0.205 0 0);
-    --shadow: 0 0 0 1px oklch(0 0 0 / 0.06), 0 1px 3px oklch(0 0 0 / 0.08), 0 6px 14px oklch(0 0 0 / 0.06);
+       tinted by about a tenth of it over the bar, and its hairline a stronger tone (Primer's flash). */
+    --info: light-dark(#2160d8, #7aa7ff);
+    --warn: light-dark(#875700, #e0b04a);
+    /* the tints are mixed into the paper the line sits on: white in the light theme, the bar's dark in the dark one */
+    --tint-base: light-dark(#ffffff, oklch(0.25 0 0));
+    --info-tint: color-mix(in srgb, var(--info) 10%, var(--tint-base));
+    --warn-tint: color-mix(in srgb, var(--warn) 10%, var(--tint-base));
+    --err-tint: color-mix(in srgb, var(--err) 10%, var(--tint-base));
+    --info-rule: color-mix(in srgb, var(--info) 45%, var(--tint-base));
+    --warn-rule: color-mix(in srgb, var(--warn) 45%, var(--tint-base));
+    --err-rule: color-mix(in srgb, var(--err) 45%, var(--tint-base));
+    --box: light-dark(oklch(0.205 0 0), oklch(0.922 0 0));
+    /* the shadow: a hairline rim, a near and a far layer. The dark theme has no near layer (its near colour is clear). */
+    --shadow: 0 0 0 1px light-dark(oklch(0 0 0 / 0.06), oklch(1 0 0 / 10%)),
+      0 1px 3px light-dark(oklch(0 0 0 / 0.08), transparent), 0 6px 14px light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.35));
     --ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
     --num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
     --label: "Gemmy Axis Labels", "IBM Plex Sans", sans-serif; /* the triad's face, loaded by render/triad.ts */
@@ -46,13 +67,23 @@
     /* sizes: the window margin, the corner radii, and the step from one round button to the next */
     --edge: 16px;
     --dock-width: 272px; /* the inspector dock on the right (react/inspector/inspector.tsx) */
+    /* the stock sidebar (components/ui/sidebar.tsx) is the dock, so its width is the dock's */
+    --sidebar-width: var(--dock-width);
+    /* the space the open dock takes from the page's right edge: its width on a wide screen with a scene, else none. The island
+       layer, the details card and the edge tab start from it, and the stage moves by half of it (below). */
+    --dock-reserved: 0px;
     --radius: 10px; /* islands, popovers, the readout */
     --radius-small: 8px; /* buttons inside an island */
     /* a gallery card's corner radius (the thumbnail is clipped by the card's own corners) */
     --card-radius: var(--radius);
-    /* an island: a 36 px button in its 4 px padding; the gap between islands */
-    --island: 44px;
+    /* an island: a 36 px control (the stock button's h-9) in its 4 px padding; the gap between islands */
+    --control: 36px;
+    --island-pad: 4px;
+    --island: calc(var(--control) + 2 * var(--island-pad));
     --gap: 8px;
+    /* the edge tab (react/inspector-toggle.tsx): shut, its 50 px of padding, two icons and the gap; open, the 18 px chevron */
+    --tab-shut: 50px;
+    --tab-open: 18px;
     /* the window's inset on each side: the margin, or the device's safe area where it is larger (a notch) */
     --inset-top: max(var(--edge), env(safe-area-inset-top, 0px));
     --inset-right: max(var(--edge), env(safe-area-inset-right, 0px));
@@ -62,25 +93,21 @@
     --fade-width: 40px;
     --fade-floor: rgb(0 0 0 / 0.15);
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: oklch(0.21 0 0); --bar: oklch(0.25 0 0); --thumb: oklch(0.25 0 0); --thumb-hover: oklch(0.315 0 0);
-      --panel: oklch(0.25 0 0 / 0.92); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0); --dock-muted: oklch(0.708 0 0); --dock-strong: oklch(0.922 0 0); --dock-field: oklch(0.315 0 0);
-      --rule: oklch(1 0 0 / 10%); --hover: oklch(0.315 0 0); --accent: #7aa7ff; --on-accent: oklch(0.145 0 0); --accent-soft: #26324f;
-      --err: #ff8a80; --info: #7aa7ff; --warn: #e0b04a; --info-tint: color-mix(in srgb, #7aa7ff 10%, oklch(0.25 0 0)); --warn-tint: color-mix(in srgb, #e0b04a 10%, oklch(0.25 0 0)); --err-tint: color-mix(in srgb, #ff8a80 10%, oklch(0.25 0 0)); --info-rule: color-mix(in srgb, #7aa7ff 45%, oklch(0.25 0 0)); --warn-rule: color-mix(in srgb, #e0b04a 45%, oklch(0.25 0 0)); --err-rule: color-mix(in srgb, #ff8a80 45%, oklch(0.25 0 0)); --box: oklch(0.922 0 0); --shadow: 0 0 0 1px oklch(1 0 0 / 10%), 0 6px 14px oklch(0 0 0 / 0.35); color-scheme: dark;
-      /* shadcn's sidebar colours (dark), a step lighter than stock to follow the page */
-      --sidebar: oklch(0.27 0 0); --sidebar-foreground: oklch(0.985 0 0); --sidebar-primary: oklch(0.488 0.243 264.376); --sidebar-primary-foreground: oklch(0.985 0 0);
-      --sidebar-accent: oklch(0.335 0 0); --sidebar-accent-foreground: oklch(0.985 0 0); --sidebar-border: oklch(1 0 0 / 10%); --sidebar-ring: oklch(0.556 0 0);
-    }
+  /* The layers, as z-index tokens (docs/ui.md, "Layers"): the start screen under the islands, the islands, the cards and the
+     sheets over them (and the edge tab and the scroll chevrons with them), and the triad over the stage. The Radix popovers
+     take z-50 of their own (the components), above all of these. */
+  :root {
+    --z-home: 0;
+    --z-stage: 1;
+    --z-island: 1;
+    --z-layer: 2;
+    --z-float: 2;
   }
-  :root[data-theme="dark"] {
-    --bg: oklch(0.21 0 0); --bar: oklch(0.25 0 0); --thumb: oklch(0.25 0 0); --thumb-hover: oklch(0.315 0 0);
-    --panel: oklch(0.25 0 0 / 0.92); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0); --dock-muted: oklch(0.708 0 0); --dock-strong: oklch(0.922 0 0); --dock-field: oklch(0.315 0 0);
-    --rule: oklch(1 0 0 / 10%); --hover: oklch(0.315 0 0); --accent: #7aa7ff; --on-accent: oklch(0.145 0 0); --accent-soft: #26324f;
-    --err: #ff8a80; --info: #7aa7ff; --warn: #e0b04a; --info-tint: color-mix(in srgb, #7aa7ff 10%, oklch(0.25 0 0)); --warn-tint: color-mix(in srgb, #e0b04a 10%, oklch(0.25 0 0)); --err-tint: color-mix(in srgb, #ff8a80 10%, oklch(0.25 0 0)); --info-rule: color-mix(in srgb, #7aa7ff 45%, oklch(0.25 0 0)); --warn-rule: color-mix(in srgb, #e0b04a 45%, oklch(0.25 0 0)); --err-rule: color-mix(in srgb, #ff8a80 45%, oklch(0.25 0 0)); --box: oklch(0.922 0 0); --shadow: 0 0 0 1px oklch(1 0 0 / 10%), 0 6px 14px oklch(0 0 0 / 0.35); color-scheme: dark;
-    /* shadcn's sidebar colours (dark), a step lighter than stock to follow the page */
-    --sidebar: oklch(0.27 0 0); --sidebar-foreground: oklch(0.985 0 0); --sidebar-primary: oklch(0.488 0.243 264.376); --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.335 0 0); --sidebar-accent-foreground: oklch(0.985 0 0); --sidebar-border: oklch(1 0 0 / 10%); --sidebar-ring: oklch(0.556 0 0);
+  /* the page's own choice (ui/theme.ts) pins the scheme; with no choice, :root follows the system */
+  :root[data-theme="light"] { color-scheme: light; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  @media (min-width: 641px) {
+    html[data-dock="open"][data-scene="shown"] { --dock-reserved: var(--dock-width); }
   }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--fg); font-family: var(--ui); overflow: hidden; }
@@ -91,7 +118,7 @@
   /* ---- the island layer: a grid over the whole window. Only the islands take the pointer, so a drag anywhere else
      still reaches the stage ---- */
   #ui {
-    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    position: fixed; inset: 0 var(--dock-reserved) 0 0; z-index: var(--z-layer); pointer-events: none;
     padding: var(--inset-top) var(--inset-right)
       var(--inset-bottom) var(--inset-left);
     display: grid; gap: var(--gap); align-items: start;
@@ -99,15 +126,18 @@
     grid-template-rows: auto 1fr auto;
     grid-template-areas: "left center right" ". . ." "bottom bottom bottom";
   }
+  /* What takes the pointer in the layer: the islands, the elements with the .hit class (the start screen, the message line, the
+     edge tab) and the two sheets (the details card and the dock). The layer and the stage behind it take none. */
+  .island, .hit, .sheet, #inspector { pointer-events: auto; }
   .island {
-    pointer-events: auto; display: flex; align-items: center; gap: 2px; padding: 4px;
+    display: flex; align-items: center; gap: 2px; padding: var(--island-pad);
     max-width: 100%; overflow-x: auto; scrollbar-width: none;
     background: var(--bar); border-radius: var(--radius); box-shadow: var(--shadow);
   }
   .island::-webkit-scrollbar { display: none; }
   /* The islands are a layer over the start screen (z 0, #home): they are positioned, so they paint above its positioned
      cards as the gallery scrolls under them. */
-  #file-island, #export-area, #corner-buttons { position: relative; z-index: 1; }
+  #file-island, #export-area, #corner-buttons { position: relative; z-index: var(--z-island); }
 
   /* ---- scrolling toolbars: on a phone the tool row scrolls sideways, and a finger may pan it from a button. A faded
      edge marks buttons hidden past it, on every island and on the lens row ---- */
@@ -119,7 +149,7 @@
   :is(.island, .fade-row):is(.more-left, .more-right) { -webkit-mask-image: var(--fade); mask-image: var(--fade); }
   /* The chevrons on those edges (react/scroll-chevrons.tsx) are drawn only where their edge has more, so the component
      decides whether they show; these rules only place them, at the edges, over the fade, outside the layout. */
-  .scroll-chevron { position: absolute; top: 0; height: 36px; z-index: 2; }
+  .scroll-chevron { position: absolute; top: 0; height: var(--control); z-index: var(--z-float); }
   .scroll-chevron-left { left: 0; }
   .scroll-chevron-right { right: 0; }
   .tools-stack .scroll-chevron { top: 4px; }
@@ -136,10 +166,10 @@
   #corner-buttons { grid-row: 3; grid-column: 3; justify-self: end; align-self: end; }
 
   /* ---- buttons (the React overlay's own classes, react/*.tsx; these are the page's rules for its buttons) ---- */
-  #export-button, #theme-button, #export-area { pointer-events: auto; }
 
   /* ---- the stage, the triad and the selection readout ---- */
-  main { position: fixed; inset: 0; }
+  /* the stage keeps its full size and moves left by half the dock's space (a transform: no refit, no redraw) */
+  main { position: fixed; inset: 0; transform: translateX(calc(var(--dock-reserved) / -2)); }
   /* The page fades in once its first tab is shown (main.ts revealWhenReady): page.html hides main and #ui while the body
      is booting, here they fade in when it stops. #ui, not #overlay, which takes no box (display: contents), so opacity
      does nothing on it. */
@@ -147,7 +177,7 @@
   #ui { transition: opacity 220ms ease-out, right var(--slide-duration) linear; }
   #stage { position: absolute; inset: 0; touch-action: none; }
   #stage canvas { display: block; }
-  #triad { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; }
+  #triad { position: absolute; left: 0; top: 0; pointer-events: none; z-index: var(--z-stage); }
   /* The inspector dock (react/inspector/inspector.tsx) on a wide screen is the stock Sidebar (components/ui/sidebar.tsx): its
      box is fixed, flush with the window's right edge, and its width is --dock-width. Its text is 12 px. */
   #inspector { font-size: 12px; }
@@ -222,9 +252,21 @@
     content: "+"; display: inline-block; margin-right: 6px; font-weight: 500; line-height: 1;
   }
   .style-pane .tp-fldv_b[data-draft] { color: var(--dock-muted); }
+  /* A folder's title row with an eye: the title is a flex item that gives way, and the summary keeps its natural width at the
+     right, before the eye (the padding keeps both clear of the eye and the marker). The title truncates with an ellipsis. */
+  .style-pane .tp-fldv_b[data-summary] { display: flex; align-items: center; }
+  .style-pane .tp-fldv_b[data-summary] > .tp-fldv_t {
+    flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .style-pane .tp-fldv_b:has(> .dock-eye) { padding-right: 54px; }
+  /* the origin icon (origin-icons.ts): 12 px, muted, at the start of the summary */
+  .style-pane .tp-fldv_b > .dock-origin {
+    flex: none; display: flex; width: 12px; height: 12px; margin-left: 6px; color: var(--dock-muted);
+  }
+  .style-pane .tp-fldv_b > .dock-origin svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .style-pane .tp-fldv_b[data-summary]::after {
-    content: attr(data-summary); display: flex; align-items: center; position: absolute; top: 0; bottom: 0;
-    right: 54px; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+    content: attr(data-summary); display: block; flex: none; max-width: 40%; padding-left: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
     font-size: 11px; font-weight: 400; color: var(--dock-muted);
   }
 
@@ -232,37 +274,25 @@
      above the bottom-right island (react/details-button.tsx), one gap up, as the help opens (react/placement.ts), and with the
      dock open it moves left of the dock with the island, so it is never under the dock. It is fixed, so the island layer's
      grid does not place it. On a phone it is a bottom sheet over the page, above the bottom row (below). */
-  #info {
-    position: fixed; z-index: 2; pointer-events: auto; outline: none;
-    right: var(--inset-right); bottom: calc(var(--inset-bottom) + var(--island) + var(--gap));
+  /* The box is the .sheet class (the phone's sheets share it: the dock's phone card, react/inspector/inspector.tsx). */
+  .sheet {
+    position: fixed; z-index: var(--z-float); outline: none;
+    right: calc(var(--dock-reserved) + var(--inset-right)); bottom: calc(var(--inset-bottom) + var(--island) + var(--gap));
     width: min(300px, calc(100vw - 32px)); max-height: calc(100vh - var(--inset-top) - var(--inset-bottom) - 2 * var(--island));
-    overflow-y: auto;
-    transition: right var(--slide-duration) linear;
   }
-  /* With the dock open the card's right edge is the corner island's (the island layer ends at the dock): the same offset, no gap.
-     It slides with the dock, as the island layer does (the same 200 ms, gated by data-ready like the rest). */
-  @media (min-width: 641px) {
-    html[data-dock="open"] #info { right: calc(var(--dock-width) + var(--inset-right)); }
-  }
-
-  /* With the dock open on a wide screen (the stock Sidebar shows from the page's wide breakpoint, 641 px) the island layer ends
-     at the dock's left edge, as shadcn's SidebarInset does, so the islands on the right stay left of the dock. The stage is not
-     resized: it keeps its full size and moves left by half the dock's width (a transform: no refit, no redraw), which keeps the
-     structure centred in the part the dock leaves. Both slide with the dock (--slide-duration). */
-  @media (min-width: 641px) {
-    html[data-dock="open"] body:not(.no-scene) #ui { right: var(--dock-width); }
-    html[data-dock="open"] body:not(.no-scene) main { transform: translateX(calc(var(--dock-width) / -2)); }
-  }
+  #info { overflow-y: auto; transition: right var(--slide-duration) linear; }
+  /* The island layer ends at the dock's left edge, as shadcn's SidebarInset does, so the islands on the right stay left of the dock.
+     The stage keeps its full size and moves left by half the dock's space (main above), which keeps the structure centred in the
+     part the dock leaves. Everything here slides with the dock (--slide-duration). The dock's space is nothing on a phone, a
+     narrow window and the start screen, so these rules need no media query of their own. */
   /* The edge tab (react/inspector-toggle.tsx): on the page's right edge, level with the Export island. Its size, corners,
-     shadow and slide are its classes (utilities). Here are its position: with the dock open on a wide screen it sits at the
-     dock's left edge. */
-  #inspector-tab { position: fixed; top: var(--inset-top); right: 0; z-index: 2; pointer-events: auto; }
+     shadow and slide are its classes (utilities). Here is its position: with the dock open it sits at the dock's left edge. */
+  #inspector-tab { position: fixed; top: var(--inset-top); right: var(--dock-reserved); z-index: var(--z-float); }
   /* In line with the Export island (its top and height): Export moves left of the tab, which is 50 px wide shut (all of it, so a
      hover does not reach the island) and 18 px open at the dock's edge, with the gap between. Wide screens only, as the tab. */
   @media (min-width: 641px) {
-    body:not(.no-scene) #export-area { margin-right: calc(50px + var(--gap) - var(--inset-right)); }
-    html[data-dock="open"] body:not(.no-scene) #export-area { margin-right: calc(18px + var(--gap) - var(--inset-right)); }
-    html[data-dock="open"] #inspector-tab { right: var(--dock-width); }
+    html[data-scene="shown"] #export-area { margin-right: calc(var(--tab-shut) + var(--gap) - var(--inset-right)); }
+    html[data-dock="open"][data-scene="shown"] #export-area { margin-right: calc(var(--tab-open) + var(--gap) - var(--inset-right)); }
   }
 
   /* The stock Sidebar draws an in-flow gap for a docked sidebar. The page has none: the sidebar container is fixed on its own,
@@ -274,7 +304,7 @@
      line is under it the island's bottom corners are square, and the stack's shadow outlines the two as one shape. The
      live compile error and the follow note are info or error lines too; the most important one shows (ui/message.ts). ---- */
   .tools-stack {
-    grid-area: center; justify-self: center; position: relative; z-index: 1; min-width: 0; max-width: 100%;
+    grid-area: center; justify-self: center; position: relative; z-index: var(--z-island); min-width: 0; max-width: 100%;
     width: max-content; display: flex; flex-direction: column; border-radius: var(--radius); box-shadow: var(--shadow);
   }
   .tools-stack #tools { box-shadow: none; }
@@ -282,7 +312,7 @@
   .message-line {
     /* the kind's colours: info by default, then the warning and error below */
     --kind: var(--info); --kind-tint: var(--info-tint); --kind-rule: var(--info-rule);
-    pointer-events: auto; width: 100%; height: 30px; min-width: 0; contain: inline-size;
+    width: 100%; height: 30px; min-width: 0; contain: inline-size;
     display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px;
     font-size: 12.5px; line-height: 16px; color: var(--fg); background: var(--kind-tint);
     border-top: 1px solid var(--kind-rule); border-radius: 0 0 var(--radius) var(--radius); transition: opacity 0.4s;
@@ -296,8 +326,8 @@
   /* the action (Undo): a small text button in the kind's colour, at the end of the line (Primer's flash action) */
   .message-action { flex: none; height: 24px; padding: 0 8px; font-size: 12.5px; color: var(--kind); }
   /* with no scene the toolbar is hidden: the line stands alone, a card of its own */
-  body.no-scene .tools-stack { box-shadow: none; }
-  body.no-scene .message-line {
+  html[data-scene="none"] .tools-stack { box-shadow: none; }
+  html[data-scene="none"] .message-line {
     width: min(560px, calc(100vw - var(--inset-left) - var(--inset-right))); border-top: 0; border-radius: var(--radius);
     box-shadow: var(--shadow);
   }
@@ -307,12 +337,12 @@
      window's height) holds the Open card, centred; the gallery starts --peek above the first screen's bottom edge, so its
      top shows there, and the fade (.home-fade) at that edge follows the scroll. ---- */
   #home {
-    position: relative; z-index: 0; /* a layer of its own, under the islands (see #ui) */
+    position: relative; z-index: var(--z-home); /* a layer of its own, under the islands (see #ui) */
     --gutter: 24px;
     --peek: 96px;
     grid-column: 1 / -1; grid-row: 1 / -1; align-self: stretch; contain: size; min-height: 0;
     margin: calc(-1 * var(--inset-top)) calc(-1 * var(--inset-right)) calc(-1 * var(--inset-bottom)) calc(-1 * var(--inset-left));
-    overflow-y: auto; pointer-events: auto; background: var(--bg); font-size: 14px;
+    overflow-y: auto; background: var(--bg); font-size: 14px;
   }
   .home-first {
     /* at least a screen: a tall card (the type map form) grows the screen, so the gallery below never overlaps it */
@@ -392,7 +422,7 @@
   }
   /* With no scene (the start screen) the scene's controls go; the Export button hides itself (a utility class, as its
      own display is a utility that would win over this layer), and the theme button stays. */
-  body.no-scene #tools, body.no-scene #lens-column, body.no-scene #corner-buttons {
+  html[data-scene="none"] #tools, html[data-scene="none"] #lens-column, html[data-scene="none"] #corner-buttons {
     display: none;
   }
   body.dragging #stage { outline: 2px dashed var(--accent); outline-offset: -12px; }
@@ -417,10 +447,11 @@
     html[data-dock="open"] #corner-buttons { grid-row: 4; grid-column: 2; }
   }
   /* Phone: the top bar and the toolbar at the top, the readout across the width, and the bottom row (the lens row, bottom-left,
-     and the corner island, bottom-right: both fixed at the bottom inset). 640px is PHONE_MAX_WIDTH in web/src/ui/panels.ts,
-     which opens and closes the panels by the same width: keep them equal. */
+     and the corner island, bottom-right: both fixed at the bottom inset). 640px is PHONE_MAX_WIDTH (web/src/ui/layout-modes.ts),
+     which tests/test_ui_breakpoints.py checks these literals against. */
   @media (max-width: 640px) {
-    :root { --phone-corner-width: 120px; }
+    /* three 36 px controls, the island's two 2 px gaps and its padding */
+    :root { --phone-corner-width: calc(3 * var(--control) + 2 * 2px + 2 * var(--island-pad)); }
     #ui {
       grid-template-rows: auto auto 1fr;
       grid-template-areas: "left right" "center center" ". .";
@@ -428,18 +459,20 @@
     /* The corner island is 120 px wide (three 36 px buttons in the island's padding and gaps). The lens row stops short of it:
        its own scroll area ends before the island, so the two never overlap, folded or unfolded. */
     #corner-buttons {
-      position: fixed; z-index: 1; right: var(--inset-right); bottom: var(--inset-bottom);
+      position: fixed; z-index: var(--z-island); right: var(--inset-right); bottom: var(--inset-bottom);
     }
     #lens-column { right: calc(var(--inset-right) + var(--phone-corner-width) + var(--gap)); }
-    /* the phone's sheets: the details card (react/selection-card.tsx) and the dock (react/inspector/inspector.tsx) take the same
-       box, a card inset by the gutter above the bottom row. One at a time (ui/panels.ts). Each one's content scrolls inside a
-       height cap, so the stage stays visible behind it. */
-    #info, #inspector {
-      position: fixed; z-index: 2; left: var(--inset-left); right: var(--inset-right); width: auto; height: auto;
-      bottom: calc(var(--inset-bottom) + 64px); max-height: 55vh; min-height: 0; overflow: hidden;
+    /* the phone's sheets (.sheet: the details card, react/selection-card.tsx, and the dock's phone card, react/inspector/inspector.tsx)
+       take one box, a card inset by the gutter above the bottom row. One at a time (ui/panels.ts). Each one's content scrolls
+       inside a height cap, so the stage stays visible behind it. The details card's own scroll (#info) is its overflow-y. */
+    .sheet {
+      left: var(--inset-left); right: var(--inset-right); width: auto; height: auto;
+      /* above the bottom row: the island, a gap, and the gap again with the island's padding (64 px) */
+      bottom: calc(var(--inset-bottom) + var(--island) + 2 * var(--gap) + var(--island-pad));
+      max-height: 55vh; min-height: 0; overflow: hidden;
+      /* a drag on a phone sheet scrolls the sheet, never the stage: the sheets' own scroll takes vertical pans */
+      touch-action: pan-y;
     }
-    /* a drag on a phone sheet scrolls the sheet, never the stage: the sheets' own scroll takes vertical pans */
-    #info { overflow-y: auto; touch-action: pan-y; }
     #home { --gutter: 16px; }
     .examples { gap: 10px; }
   }

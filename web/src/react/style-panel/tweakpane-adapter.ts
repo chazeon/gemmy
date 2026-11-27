@@ -7,6 +7,7 @@ import { Pane, type TpPluginBundle } from "tweakpane";
 import { type PaneNode, type ValueNode, flattenPane, isValueNode, structureKey } from "./pane-model";
 import { CHANNEL_MAX, fromHex, toHex } from "./colour-hex";
 import { EYE, EYE_OFF } from "./eye-icons";
+import { ORIGIN_ICONS } from "./origin-icons";
 import { WriteGate, sameValue } from "./tweakpane-commit";
 import { rangeHistogramBundle } from "./tweakpane-range-histogram";
 
@@ -208,8 +209,30 @@ function showSummary(folder: Folder, node: PaneNode & { kind: "folder" }): void 
   if (button === null) return;
   showEye(button, node);
   button.dataset.summary = node.summary ?? "";
+  button.title = node.title; // the full title, where the row truncates it (style.css)
+  showOrigin(button, node);
   showDraftMark(button, node);
   showSwatch(button, node);
+}
+
+// A rule's origin: an icon at the start of its summary, automatic (detected) or manual (the user's own). It is a real element,
+// labelled, so it is not icon-only for a screen reader. A row with no origin has none.
+function showOrigin(button: HTMLElement, node: PaneNode & { kind: "folder" }): void {
+  let mark = button.querySelector<HTMLElement>(":scope > .dock-origin");
+  if (node.origin === undefined) {
+    mark?.remove();
+    return;
+  }
+  if (mark === null) {
+    mark = document.createElement("span");
+    mark.className = "dock-origin";
+    mark.setAttribute("role", "img");
+    button.append(mark);
+  }
+  const icon = ORIGIN_ICONS[node.origin];
+  mark.setAttribute("aria-label", icon.label);
+  mark.title = icon.label;
+  mark.innerHTML = icon.svg;
 }
 
 // An add row (New bond, New shape) draws a "+" in the muted colour (style.css).

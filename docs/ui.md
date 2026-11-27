@@ -12,6 +12,25 @@ What the page shows, where it sits, and how it behaves. Every UI change follows 
 - **Measure, don't guess.** A layout change is checked against the real DOM (getBoundingClientRect) at 1280×800 and 393×852, and the numbers are reported.
 - **One popup at a time.** Opening a menu, dropdown or popover closes any other.
 
+## Layers
+The z-order is one table of tokens on `:root` (web/style.css). Anything new picks one of these, never a number of its own:
+
+| Token | Value | What |
+| --- | --- | --- |
+| `--z-home` | 0 | the start screen (`#home`), under the islands |
+| `--z-stage` | 1 | the axis triad, over the stage (inside `main`) |
+| `--z-island` | 1 | the islands, the toolbar column and the phone's corner island |
+| `--z-layer` | 2 | the island layer (`#ui`), over the stage |
+| `--z-float` | 2 | the details card and the phone sheets, the edge tab and the scroll chevrons |
+
+The Radix popovers (the menus, the help) take `z-50` from their components, above all of these.
+
+The start screen is a page state, not a view: `html[data-scene="none"]` (set by ui/home.ts, read by the CSS and the `no-scene:hidden` variant). With no scene the toolbar, the lens row, the corner buttons, the details card, the dock, the edge tab and Export are hidden; `html[data-scene="shown"]` is a scene.
+
+What takes the pointer in the layer, all of it by one rule: the islands, the elements with the `.hit` class (the start screen, the
+message line, the edge tab) and the two sheets (`#info`, `#inspector`). The layer and the stage behind it take none, so a drag on
+the bare page reaches the stage.
+
 ## Top bar (left to right)
 There is no main menu. Its jobs live where they belong: New tab is the file island's (+), Open file… is on the start screen (and dropping a file works anywhere), and Copy link is in the Export menu.
 
@@ -48,11 +67,16 @@ There is no main menu. Its jobs live where they belong: New tab is the file isla
   - the text in the normal foreground;
   - the action (Undo) a small text button in the kind's colour at the right end.
   Colours are tokens on `:root`, with dark-mode values. Text meets WCAG AA.
+- A read's notes show as a warning on load. A structure with partly occupied sites (R12) shows one warning on the message
+  line when it loads, worded by `partialNote` (web/src/structure/partial.ts); `gemmy compile` warns with the same text
+  (`partial_note` in readers/record.py). It is a timed note like the load's other warnings, so it shows once per load.
 - With several messages live, the line shows the most important: error, then warning, then info. A timed note wins a tie. API: `note(text, {kind, action, ms})` for timed notes; `setStanding(name, text|null, kind)` for messages that stay until their owner clears them.
 
 ## Right side: the dock and its tab (wide screens, 641 px and up)
 - **Dock**: the stock shadcn Sidebar (`components/ui/sidebar.tsx`, default variant), flush at the window's right edge, full height, in the sidebar tokens of the neutral palette. It has no title and no close button. It is for detailed style editing only. Sections, in order:
-  1. View: Atoms, Outlines and Cell box toggles, and Outline width. Shown for every file.
+  1. View: Atoms, Outlines, Cell box and Axes toggles, and Outline width. Shown for every file. Axes shows or hides the a b c
+     triad on the page and in the PNG and SVG exports, so an export has the triad exactly when the page shows it. Like Cell box,
+     it is not remembered: a page load starts with it on.
   2. Atoms, Bonds, Shapes and Cell, for a structure (a file compiled in the page), not for a ready-made scene.
   On the New tab there is no file, so the dock and its edge tab are hidden.
   There is no Selection section; the details card shows the selection.
@@ -79,10 +103,13 @@ There is no main menu. Its jobs live where they belong: New tab is the file isla
 - **Details card**: the selection's details (the old info card), floating above the corner island. Its right edge is the island's, open or shut, and it slides with the dock over the same 200 ms. A pick opens it.
 
 ## Phone (640 px wide or less)
+The phone width is `PHONE_MAX_WIDTH` in web/src/ui/layout-modes.ts; the page's layout is `html[data-mode="phone|wide"]`, which follows it. The CSS literals of the phone and the wide rules are checked against that constant by tests/test_ui_breakpoints.py.
+
 - The bottom-right island sits level with the bottom-left lens row: `[details | customize | ?]`.
   - customize (Lucide `SlidersHorizontal`) opens the dock as a bottom sheet.
   - The edge tab is hidden.
 - The details card and the dock are bottom sheets above that row. Only one is open at a time. A tap on an atom opens the details card.
+  Both are the `.sheet` class (web/style.css): one box, inset by the gutter, with a drag that pans the sheet and never the stage.
 - There is no horizontal page scroll. The lens row (folded or not) and the corner island never overlap.
 
 ## Opening files: one switch
@@ -106,15 +133,11 @@ There is no main menu. Its jobs live where they belong: New tab is the file isla
 1. **Escape order.** Escape first lets a focused editor handle it. Then it closes the open popup (there is at most one: the file list, the Export menu or the help), else the focused phone sheet. A further unhandled press clears the selection and pivot.
 2. **Files remember their view.** Each open file keeps its own camera, selection and pivot. Switching back to it restores them, and picking the current file again changes nothing.
 
-   **(planned)** Not built yet: switching files still resets the view and selects the default shape.
-
 3. **Keep the selection after an edit.** After a live refresh or a style edit, the selected object is restored by its identity if it still exists. If it was removed, the selection and pivot are cleared.
 
-   **(planned)** Not built yet: a live refresh or a style edit still clears the selection.
 
 4. **Phone sheets.** Both phone sheets (details and customize) have a visible close button and are non-modal. On a phone they start closed. Panel choices are remembered separately for desktop and phone.
 
-   **(planned)** Not built yet: the phone sheets have no close button and no Escape, and desktop and phone share one remembered choice.
 
 5. **Copy link on the start screen** copies the page URL without a camera pose. On a scene, Copy link includes that scene's current view.
 6. **Last file.** Closing a file never strands you. With opening on, closing the last file leaves the New tab (see File island). With opening off, the last file cannot be closed.
@@ -136,9 +159,9 @@ selection highlight. The page still loads a scene the usual ways (embedded, `?sc
 
 - `ready()`: resolves when the first scene is shown, the page has revealed itself and one frame is drawn.
 - `openExample(name)`: opens a gallery example as its card does and resolves once it is drawn (a hosted site's page).
-- `set({ atoms, box, outlines, outlineWidth, theme, transparent, view })`: sets what is given and requests a render. `theme` is
+- `set({ atoms, box, axes, outlines, outlineWidth, theme, transparent, view })`: sets what is given and requests a render. `theme` is
   `"light"` or `"dark"`, `outlineWidth` is 0.5, 1 or 1.75, `transparent` removes the page background, `view` is the `#view` string.
 - `rendered()`: asks for a frame and resolves after it is drawn.
 - `export("png" | "svg", options)`: the picture, not downloaded: a `Blob` (PNG, 2x the stage; `options.transparent`, default true)
   or the SVG text. The config and settings exports are not in the API.
-- `state()`: `{ atoms, box, outlines, outlineWidth, theme, transparent, view, size }`.
+- `state()`: `{ atoms, box, axes, outlines, outlineWidth, theme, transparent, view, size }`.

@@ -10,6 +10,13 @@ export interface AtomRecord {
   styleKey: string;
 }
 
+// A kept site whose occupants are not one species at occupancy 1 (R12): the index of its atom, and each occupant's
+// symbol with its occupancy, the largest share first. The same shape as readers/record.py's PartialSite.
+export interface PartialSite {
+  index: number;
+  occupants: Record<string, number>;
+}
+
 export interface Structure {
   // The file's name.
   comment: string;
@@ -18,6 +25,8 @@ export interface Structure {
   // The axes the file says are periodic (a POSCAR or CIF: all three; an extxyz or LAMMPS file: its pbc).
   pbc: [boolean, boolean, boolean];
   atoms: AtomRecord[];
+  // The kept sites that are partly occupied (R12); empty unless the file has an occupancy table.
+  partial: PartialSite[];
 }
 
 // The neighbour pairs of a supercell, as fastatoms gives them: i and j are atom indices into the supercell, S holds

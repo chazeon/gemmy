@@ -34,20 +34,16 @@ function pageSources(): Source[] {
 
 // The page comes in at once, not piece by piece: the stage and the controls stay hidden (body.booting, page.html) until
 // the first tab is shown and the fonts are in, then fade in together (style.css). A slow scene is not waited for past
-// REVEAL_LATEST_MS, so its loading message shows.
+// REVEAL_LATEST_MS, so its loading message shows. The reveal is one step: it shows the page and sets data-ready, which starts
+// the slides (style.css: --slide-duration is 0 until then, so a dock restored as open is simply there).
 const REVEAL_LATEST_MS = 800;
 async function revealWhenReady(firstTab: Promise<void>): Promise<void> {
   const ready = firstTab.then(() => document.fonts.ready);
   await Promise.race([ready, new Promise((done) => setTimeout(done, REVEAL_LATEST_MS))]);
   // after the frame that draws the first tab
-  await new Promise((done) =>
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        document.body.classList.remove("booting");
-        done(undefined);
-      }),
-    ),
-  );
+  await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  document.body.classList.remove("booting");
+  document.documentElement.setAttribute("data-ready", "");
 }
 
 // Capture mode (ui/capture.ts) is the stage alone: no overlay, and none of the page's inputs.

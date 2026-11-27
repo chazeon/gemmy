@@ -15,7 +15,7 @@ const TOAST_TEXT = `(document.getElementById("message")?.textContent ?? "")`;
 const BUDGET_NOTE = "the page compiles at most";
 const SECTION_TRIGGER = (title) =>
   `[...document.querySelectorAll('#inspector [data-slot="collapsible-trigger"]')].find((b) => b.querySelector("span.truncate")?.textContent.trim() === ${JSON.stringify(title)})`;
-const POLYHEDRON = "Si (O) · polyhedron";
+const POLYHEDRON = "Si (O)";
 // A box is settled when it has held still for STILL_TICKS polls, SETTLE_TICK_MS apart.
 const STILL_TICKS = 3;
 const SETTLE_TICK_MS = 60;
@@ -208,7 +208,7 @@ export async function run(context) {
     "open-style",
     async () => {
       // The one inspector toggle opens the dock (it may already be open, as a scene left it): the sections are on the dock.
-      if (!(await evaluate(`document.documentElement.dataset.dock === "open"`))) {
+      if (!(await context.dockIsOpen())) {
         await pressElement(context, `document.querySelector('#inspector-tab')`);
       }
       await waitFor(`!!document.querySelector("#inspector .style-pane")`, "the style sections");
@@ -222,6 +222,10 @@ export async function run(context) {
   );
 
   // The polyhedron's colour, typed into its red, green, blue and alpha fields (r, g, b are set; a stays at 1).
+  // The selection's readout before the first style edit and after it (docs/ui.md, rule 3): a style edit rebuilds the scene, and the
+  // selected object is found again by its identity, so its readout stays (a probe, after the steps).
+  const READOUT = `document.getElementById("info-body")?.textContent ?? null`;
+  const readoutBeforeEdit = await evaluate(READOUT);
   await record(
     "polyhedron-colour",
     async () => {
@@ -242,6 +246,7 @@ export async function run(context) {
       instances: await instances(context),
     }),
   );
+  context.probes["colour-edit-readout"] = { before: readoutBeforeEdit, after: await evaluate(READOUT) };
 
   // A bond rule is added from the Bonds section's + button: the New bond folder, then its Add bond button. The Bonds section
   // is folded first, so the + covers a folded section too: it opens the section and shows the row.
@@ -456,7 +461,7 @@ export async function run(context) {
     "polyhedron-alpha",
     async () => {
       // The dock is opened if it is shut, as the budget step opens it.
-      if (!(await evaluate(`document.documentElement.dataset.dock === "open"`))) {
+      if (!(await context.dockIsOpen())) {
         await pressElement(context, `document.querySelector('#inspector-tab')`);
       }
       // The Shapes section is opened as the user left it: a folded section is opened at its header first.
@@ -507,7 +512,7 @@ export async function run(context) {
         ["c60/config.toml", "config.toml"],
       ]);
     // The dock is shut on a new tab, as the tab was left: the one inspector toggle opens it.
-    if (!(await evaluate(`document.documentElement.dataset.dock === "open"`))) {
+    if (!(await context.dockIsOpen())) {
       await pressElement(context, `document.querySelector('#inspector-tab')`);
     }
     await waitFor(`!!${SECTION_TRIGGER("Cell")}`, "the c60 tab's Cell section");
@@ -555,7 +560,7 @@ export async function run(context) {
         await waitFor(`!document.querySelector('[aria-label="Hide the selection details"]')`, "the card to close");
       }
       // The dock may be open from the desktop steps: on a phone it is a sheet over the stage, so the tap waits for it to shut.
-      if (await evaluate(`document.documentElement.dataset.dock === "open"`)) {
+      if (await context.dockIsOpen()) {
         await pressElement(context, `document.getElementById("customize-button")`);
         await waitForDock(false);
       }
@@ -570,7 +575,7 @@ export async function run(context) {
     },
     async () => ({
       card: await evaluate(`document.querySelector('#info [role="heading"]')?.textContent ?? null`),
-      dock: await evaluate(`document.documentElement.dataset.dock === "open"`),
+      dock: await context.dockIsOpen(),
     }),
   );
 
@@ -611,7 +616,7 @@ export async function run(context) {
   await s("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
   await waitFor(`window.innerWidth === 393`, "the phone viewport");
   await settle();
-  if (!(await evaluate(`document.documentElement.dataset.dock === "open"`))) {
+  if (!(await context.dockIsOpen())) {
     await pressElement(context, `document.getElementById("customize-button")`);
   }
   await waitFor(`!!document.querySelector("#inspector .style-pane")`, "the phone sheet");
@@ -641,4 +646,38 @@ export async function run(context) {
   if ((await pose()) !== poseBefore) throw new Error("a touch drag on the phone sheet moved the camera");
   await s("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
   await waitFor(`window.innerWidth === 1280`, "the desktop viewport");
+  // A probe after the steps (docs/ui.md, rule 4): the phone's style sheet has a Close button, and Escape closes it while it holds
+  // the focus, the focus then going back to the customize button. The dock is one open state for both widths, so the probe puts
+  // the sheet and the dock back as they were before the layout is measured after the scenario.
+  const DOCK_OPEN_NOW = `document.documentElement.dataset.dock === "open"`;
+  const dockWas = await context.evaluate(DOCK_OPEN_NOW);
+  await context.s("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+  await context.waitFor(`window.innerWidth === 393`, "the phone viewport");
+  await context.settle();
+  if (!(await context.evaluate(`!!document.getElementById("inspector")`))) {
+    await pressElement(context, `document.getElementById("customize-button")`);
+  }
+  await context.waitFor(`!!document.querySelector("#inspector .style-pane")`, "the phone sheet");
+  await context.settle();
+  const closeButton = await context.evaluate(`!!document.querySelector('#inspector [aria-label="Close the style panel"]')`);
+  await context.evaluate(`document.getElementById("inspector").focus({ preventScroll: true })`);
+  const focusBefore = await context.evaluate(`document.activeElement?.id ?? null`);
+  await context.pressKey({ key: "Escape", code: "Escape", keyCode: 27 });
+  await context.sleep(300);
+  context.probes["phone-sheet-escape"] = {
+    closeButton,
+    focusBefore,
+    shut: await context.evaluate(`!document.getElementById("inspector")`),
+    focus: await context.evaluate(`document.activeElement?.id ?? null`),
+  };
+  if (dockWas) {
+    await pressElement(context, `document.getElementById("customize-button")`);
+    await context.waitFor(`!!document.querySelector("#inspector .style-pane")`, "the phone sheet to open again");
+  }
+  await context.s("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+  await context.waitFor(`window.innerWidth === 1280`, "the desktop viewport");
+  if ((await context.evaluate(DOCK_OPEN_NOW)) !== dockWas) {
+    await context.mouseClick("#inspector-tab");
+    await context.waitForDock(dockWas);
+  }
 }

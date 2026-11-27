@@ -94,7 +94,7 @@ function HomeScreen({ state }: { state: CardState }) {
   const found = useSignal(gallery);
   const { scroller, content, shade } = useBottomFade();
   return (
-    <div id="home" ref={scroller} data-testid="home">
+    <div id="home" ref={scroller} data-testid="home" className="hit">
       <div ref={content}>
         <div className="home-first">
           <div className="home-card grid w-full max-w-[420px] justify-items-stretch gap-3">

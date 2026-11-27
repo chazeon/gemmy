@@ -7,7 +7,7 @@ import { decodeView, encodeView, poseOf } from "../camera/viewhash";
 import { viewNow } from "../camera/view";
 import { nextFrame } from "../render/loop";
 import { stage } from "../render/draw";
-import { loaded, outlines, requestRender, showAtoms, showBox } from "../state";
+import { loaded, outlines, requestRender, showAtoms, showAxes, showBox } from "../state";
 import { makePng, makeSvg } from "./export";
 import { OUTLINE_WIDTHS, chooseOutlineScale, outlineScale } from "./outline-scale";
 import { type ThemeChoice, setTheme, theme } from "./theme";
@@ -17,6 +17,7 @@ const TRANSPARENT_CLASS = "transparent";
 export interface CaptureOptions {
   atoms?: boolean;
   box?: boolean;
+  axes?: boolean;
   outlines?: boolean;
   /** The outline width multiplier: 0.5 (thin), 1 (normal) or 1.75 (bold). */
   outlineWidth?: number;
@@ -32,6 +33,7 @@ const root = document.documentElement;
 function set(options: CaptureOptions): void {
   if (options.atoms !== undefined) showAtoms.value = options.atoms;
   if (options.box !== undefined) showBox.value = options.box;
+  if (options.axes !== undefined) showAxes.value = options.axes;
   if (options.outlines !== undefined) outlines.value = options.outlines;
   if (options.outlineWidth !== undefined) {
     if (!OUTLINE_WIDTHS.some((width) => width.value === options.outlineWidth))
@@ -52,6 +54,7 @@ function state() {
   return {
     atoms: showAtoms.value,
     box: showBox.value,
+    axes: showAxes.value,
     outlines: outlines.value,
     outlineWidth: outlineScale.value,
     theme: theme.value satisfies ThemeChoice,

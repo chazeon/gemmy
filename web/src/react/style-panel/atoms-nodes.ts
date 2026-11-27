@@ -4,10 +4,10 @@ import type { SceneConfig } from "../../compile/config";
 import { setElementColor, setElementRadius, setElementVisible } from "../../compile/config-edit-elements";
 import { ATOM_RADIUS_RANGE, type Apply, RADIUS_STEP, elementStyleOf } from "../../ui/style-panel-model";
 import type { Choice, PaneNode } from "./pane-model";
-import { choiceValue, colorOf, endingAutomatic, fixed, hiddenMark, numberRange, rgbaOf } from "./node-helpers";
+import { choiceValue, colorOf, endingAutomatic, fixed, numberRange, rgbaOf } from "./node-helpers";
 
-function atomSummary(style: { radius: number; visible: boolean }): string {
-  return `${fixed(style.radius)} Å${hiddenMark(style.visible)}`;
+function atomSummary(style: { radius: number }): string {
+  return `${fixed(style.radius)} Å`;
 }
 
 // The Atoms section's colours: the scheme in use, the elements still holding their scheme colour (`automatic`, which a

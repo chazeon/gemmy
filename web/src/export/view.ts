@@ -25,7 +25,7 @@ interface ViewOptions {
 // What the SVG export draws: the view, the scene, and what the page shows of it (the atoms and the box, the outlines).
 export interface SvgOptions extends ViewOptions {
   data: Scene;
-  show: { atoms: boolean; box: boolean };
+  show: { atoms: boolean; box: boolean; axes: boolean };
   outlines: boolean;
   outlineScale: number; // the user's outline width (ui/outline-scale.ts): a multiplier on the automatic width
   lattice: Vec3[]; // the a, b, c vectors, for the triad

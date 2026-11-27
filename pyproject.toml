@@ -52,7 +52,7 @@ blender = [
 dev = ["pytest>=8", "ruff>=0.6"]
 # The fastatoms Python reader (GEMMY_READER=fastatoms, `uv sync --group fastatoms`). A group, not an extra, so the wheel's
 # metadata names no git source. Without it the ASE reader is the only one.
-fastatoms = ["fastatoms @ git+https://github.com/chazeon/fastatoms@5e9a9088eacc32d03872432c06827e8928b67d91"]
+fastatoms = ["fastatoms @ git+https://github.com/chazeon/fastatoms@83948cca9c71d9597b4e38dc2d5d647f6e5ac57f"]
 
 [tool.ruff]
 line-length = 120

@@ -235,15 +235,15 @@ const QUIET_MS = 200;
 const SETTLE_LIMIT_MS = 15000;
 // The viewports the layout is read at: the desktop, and a phone (which starts with its lens row folded).
 const LAYOUT_VIEWPORTS = [
-  { name: "desktop", width: 1280, height: 800 },
-  { name: "phone", width: 393, height: 852 },
+  { name: "desktop", width: 1280, height: 800, mode: "wide" },
+  { name: "phone", width: 393, height: 852, mode: "phone" },
 ];
-// The page's own phone rule (the page's max-width: 640px media query) says which viewports are a touch device (Chrome's mobile
-// emulation): the size is set first, and the emulation turned on if the page calls it a phone.
-async function setViewport({ s, evaluate }, width, height) {
+// The page's layout mode follows the window's width (data-mode, ui/layout-modes.ts), which is where the page's phone width is
+// read from. A phone is a touch device (Chrome's mobile emulation), turned on once the page says it is in the phone layout.
+async function setViewport({ s, waitFor }, { width, height, mode }) {
   await s("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false });
-  const phone = await evaluate(`matchMedia("(max-width: 640px)").matches`);
-  if (phone) await s("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: true });
+  await waitFor(`document.documentElement.dataset.mode === ${JSON.stringify(mode)}`, `the ${mode} layout`);
+  if (mode === "phone") await s("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: true });
 }
 
 // The page's controls, each one a call on the page through `s` (a CDP method and its params) in the page's session.
@@ -294,6 +294,7 @@ function pageTools(s) {
   // The dock is open (or shut): the page's data-dock says so at once, and the dock's slide (a CSS transition on the sidebar,
   // the stage, the island layer and the edge tab, --slide-duration) is finished. An idle headless page draws no frames, so its
   // transitions never advance by themselves: they are finished, which lands every element on its final box.
+  const dockIsOpen = () => evaluate(`document.documentElement.dataset.dock === "open"`);
   const waitForDock = async (open) => {
     await waitFor(`document.documentElement.dataset.dock === ${JSON.stringify(open ? "open" : "shut")}`, `the dock to be ${open ? "open" : "shut"}`);
     await evaluate(`document.getAnimations().forEach((animation) => animation.finish())`);
@@ -330,9 +331,9 @@ function pageTools(s) {
     settle,
     mouseClick,
     waitForDock,
+    dockIsOpen,
     openExportMenu,
     closeExportMenu,
-    openExportMenu,
     pickExportItem,
     dropFiles: (names, afterDrop) => evaluate(dropFilesScript(names, afterDrop)),
     alertText: () => evaluate(ALERT_TEXT),
@@ -347,7 +348,7 @@ async function runPage(browser, page) {
   const { sessionId } = await browser.send("Target.attachToTarget", { targetId, flatten: true });
   const s = (method, params) => browser.send(method, params, sessionId);
   const tools = pageTools(s);
-  const { evaluate, waitFor, waitForDock, clickJs, settle, glCounts, mouseClick, pressKey, openExportMenu, closeExportMenu } = tools;
+  const { evaluate, waitFor, waitForDock, dockIsOpen, clickJs, settle, glCounts, mouseClick, pressKey, openExportMenu, closeExportMenu } = tools;
   const steps = [];
   // Probes: checks a scenario makes after its recorded steps. They are returned beside the steps, never in them, so a probe
   // adds nothing to the goldens (tests/fixtures/browser), which hold the recorded steps only.
@@ -408,7 +409,7 @@ async function runPage(browser, page) {
   }
 
   await SCENARIOS[page.scenario].run(context);
-  const layout = await measureLayout({ s, evaluate, clickJs, settle, waitFor, waitForDock, mouseClick, pressKey, openExportMenu, closeExportMenu });
+  const layout = await measureLayout({ s, evaluate, clickJs, settle, waitFor, waitForDock, dockIsOpen, mouseClick, pressKey, openExportMenu, closeExportMenu });
   await s("Target.closeTarget", { targetId });
   return { steps, layout, probes };
 }
@@ -516,13 +517,12 @@ async function measureEdgeTab({ s, evaluate, mouseClick, pressKey, waitFor, wait
 // The layout at each viewport: read with the dock shut (its toggle shuts it), then the lens row unfolded (a phone starts
 // with it folded, and it is folded again after), then with the menu open. The desktop is also read with the dock open,
 // where the top bar's rows are measured (ROWS). Not a golden: the layout is read, not compared.
-async function measureLayout({ s, evaluate, clickJs, settle, waitFor, waitForDock, mouseClick, pressKey, openExportMenu, closeExportMenu }) {
+async function measureLayout({ s, evaluate, clickJs, settle, waitFor, waitForDock, dockIsOpen, mouseClick, pressKey, openExportMenu, closeExportMenu }) {
   const layout = {};
-  const dockOpen = () => evaluate(`document.documentElement.dataset.dock === "open"`);
   for (const viewport of LAYOUT_VIEWPORTS) {
-    await setViewport({ s, evaluate }, viewport.width, viewport.height);
+    await setViewport({ s, waitFor }, viewport);
     await settle();
-    if (await dockOpen()) {
+    if (await dockIsOpen()) {
       await mouseClick('#inspector-tab');
       await waitForDock(false);
       await settle();

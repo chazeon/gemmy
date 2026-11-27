@@ -14,13 +14,15 @@ import {
   outlines,
   requestRender,
   showAtoms,
+  showAxes,
   showBox,
   takeDirty,
   zoomLabel,
 } from "../state";
+import { sceneShown } from "../ui/layout-modes";
 import { outlineScale } from "../ui/outline-scale";
 import { systemDark, theme } from "../ui/theme";
-import { boxMaterial, controls, cssVar, dockInset, orthoCamera, perspCamera, renderer, scene, stage } from "./draw";
+import { boxMaterial, colourVar, controls, dockInset, orthoCamera, perspCamera, renderer, scene, stage } from "./draw";
 import { drawLiveTriad } from "./triad";
 import { renderTriad } from "./triad3d";
 
@@ -54,7 +56,16 @@ function fitOrthoFrustum(width: number, height: number): void {
 // The one render effect: the picture depends on these signals, so a change to any of them marks the view dirty. A camera
 // move calls requestRender itself (camera/view.ts commit, and the trackball's change below), so the glides and the fly
 // keys redraw through it too; the camera's own state is not a signal, which is why it is not in this list.
-const PICTURE: readonly Signal<unknown>[] = [loaded, outlines, outlineScale, showAtoms, showBox, theme, systemDark];
+const PICTURE: readonly Signal<unknown>[] = [
+  loaded,
+  outlines,
+  outlineScale,
+  showAtoms,
+  showBox,
+  showAxes,
+  theme,
+  systemDark,
+];
 effect(() => {
   for (const part of PICTURE) void part.value;
   requestRender();
@@ -64,7 +75,7 @@ effect(() => {
 // sets the page's attribute before its signal, so the variable read here is the new one). The render effect redraws.
 effect(() => {
   void [theme.value, systemDark.value];
-  boxMaterial.color.set(cssVar("--box").trim());
+  boxMaterial.color.set(colourVar("--box"));
 });
 
 // Draws one frame when the view is dirty. Fly and trackball movement run every frame and mark the view dirty
@@ -120,7 +131,7 @@ const moved = new MutationObserver(() => {
   if (document.documentElement.dataset.dock === dockSeen) return;
   dockSeen = document.documentElement.dataset.dock;
   controls.handleResize();
-  if (!document.body.classList.contains("no-scene")) requestRender(); // the start screen has no triad
+  if (sceneShown()) requestRender(); // the start screen has no triad
 });
 moved.observe(document.documentElement, { attributes: true, attributeFilter: ["data-dock"] });
 stage.closest("main")?.addEventListener("transitionend", (event) => {

@@ -49,9 +49,10 @@ const EMPTY_SCENE: LoadedScene = {
 export const loaded = signal<LoadedScene>(EMPTY_SCENE);
 
 // The Show toggles of the dock's View section (react/style-panel/view-nodes.ts), and the outlines (ui/stage.ts binds each to
-// what it shows).
+// what it shows). The axes toggle is read by the triad's drawing (render/triad3d.ts, render/triad.ts) and by the SVG export.
 export const showAtoms = signal(true);
 export const showBox = signal(true);
+export const showAxes = signal(true);
 export const outlines = signal(true);
 
 // The camera on show, the lens in mm, and the zoom of the last fit; the view is "fitted" while the zoom still equals

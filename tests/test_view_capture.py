@@ -88,5 +88,10 @@ def test_set_changes_the_state(capture_run: dict) -> None:
     assert capture_run["after"]["transparent"] is True
 
 
+def test_the_axes_toggle_puts_the_triad_in_the_svg_or_leaves_it_out(capture_run: dict) -> None:
+    assert capture_run["before"]["axes"] is True
+    assert capture_run["svg"] == {"shown": True, "hidden": False, "state": False}
+
+
 def test_png_export_has_the_stage_size(capture_run: dict) -> None:
     assert capture_run["png"] == {"type": "image/png", "width": WIDTH * PNG_SCALE, "height": HEIGHT * PNG_SCALE}

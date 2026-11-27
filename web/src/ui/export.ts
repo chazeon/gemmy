@@ -4,7 +4,7 @@
 // Two signals hold what the menu shows: the text the clipboard refused (a dialog to copy it by hand), and the serve
 // page's Render item (set by ui/live.ts).
 import { signal } from "@preact/signals-core";
-import { renderer, scene, stage } from "../render/draw";
+import { colourVar, renderer, scene, stage } from "../render/draw";
 import { buildTracedSvg } from "../trace/traced";
 import { exportView, renderCommand, settingsJson, settingsToml } from "../export/settings";
 import { drawTriad } from "../render/triad";
@@ -14,7 +14,7 @@ import type { SceneConfig } from "../compile/config";
 import { ConfigError } from "../compile/config-errors";
 import { configToJson, configToToml } from "../compile/config-export";
 import { configNameFor } from "../compile/files";
-import { camera, loaded, outlines, requestRender, showAtoms, showBox } from "../state";
+import { camera, loaded, outlines, requestRender, showAtoms, showAxes, showBox } from "../state";
 import { outlineScale } from "./outline-scale";
 import { activeModel, type StructureModel } from "./structure-model";
 import { note } from "./message";
@@ -106,30 +106,18 @@ function triadAt(scale: number, transparent: boolean): HTMLCanvasElement {
   return canvas;
 }
 
-// A page colour as sRGB hex, whatever CSS writes it as (the page's tokens are oklch, which SVG tools do not read). The browser
-// paints one pixel with it and the pixel is read back.
-function srgbHex(cssColour: string): string {
-  const pixel = document.createElement("canvas");
-  pixel.width = pixel.height = 1;
-  const ctx = pixel.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
-  ctx.fillStyle = cssColour;
-  ctx.fillRect(0, 0, 1, 1);
-  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
-}
-
 // The SVG export (trace/traced.ts): the same view, drawn from the GPU's object ids. Its one page colour is the cell box's.
 export function makeSvg(): ReturnType<typeof buildTracedSvg> {
   const { data } = loaded.value;
   if (!data) throw new Error("Load a scene first: there is no scene on show to export.");
-  const boxColor = srgbHex(getComputedStyle(document.documentElement).getPropertyValue("--box").trim());
+  const boxColor = colourVar("--box");
   try {
     return buildTracedSvg({
       data,
       centre: loaded.value.centre,
       extent: loaded.value.extent,
       ...pageCamera(),
-      show: { atoms: showAtoms.value, box: showBox.value },
+      show: { atoms: showAtoms.value, box: showBox.value, axes: showAxes.value },
       outlines: outlines.value,
       outlineScale: outlineScale.value,
       lattice: loaded.value.lattice.map((v) => v.toArray()),

@@ -833,6 +833,28 @@ def test_a_file_is_closed_from_the_keyboard_and_the_focus_stays_on_the_trigger(b
     assert probe["focus"] == "file-trigger"
 
 
+def test_a_file_keeps_its_view_and_selection_when_the_page_switches_away_and_back(browser_run: dict) -> None:
+    probe = browser_run["pages"][VIEW_STISHOVITE]["probes"]["files-back-view"]
+    assert probe["after"] == probe["before"], "the file did not come back with its zoom and selection"
+
+
+def test_a_style_edit_keeps_the_selected_object_by_its_identity(browser_run: dict) -> None:
+    probe = browser_run["pages"][SITE_PANEL]["probes"]["colour-edit-readout"]
+    assert probe["before"] is not None and "Centre" in probe["before"], "nothing was selected before the edit"
+    assert probe["after"] == probe["before"], "the style edit cleared or changed the selection"
+
+
+def test_a_phone_sheet_has_a_close_button_and_escape_closes_it_to_the_customize_button(browser_run: dict) -> None:
+    probe = browser_run["pages"][SITE_PANEL]["probes"]["phone-sheet-escape"]
+    assert probe["closeButton"] is True, "the phone style sheet has no Close button"
+    assert probe["focus"] == "customize-button", "Escape did not close the focused phone sheet to its button"
+
+
+def test_choosing_the_file_on_the_stage_changes_nothing(browser_run: dict) -> None:
+    probe = browser_run["pages"][VIEW_STISHOVITE]["probes"]["same-file-pick"]
+    assert probe["after"] == probe["before"], "choosing the current file changed the view"
+
+
 def test_closing_the_current_file_moves_to_its_right_neighbour_and_the_focus_to_the_trigger(browser_run: dict) -> None:
     three = _step(browser_run, VIEW_STISHOVITE, "files-three")
     closed = _step(browser_run, VIEW_STISHOVITE, "files-close-middle")

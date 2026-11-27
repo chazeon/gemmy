@@ -1,5 +1,5 @@
 // The keyboard: arrows turn and tilt (with Shift they move), [ and ] spin, + - and 0 zoom and fit, t cycles the theme,
-// ? opens the help, i the details card (ui/panels.ts), and Esc closes what is open or lets go of the selection. W A S D Q E fly
+// ? opens the help, i the details card (ui/panels.ts), and Esc closes the open popup or else lets go of the selection. W A S D Q E fly
 // (camera/fly.ts). The arrows and [ ] are held: a tap steps, a hold keeps going (camera/fly.ts press). Keys typed into a
 // field, a slider, a style-panel control or a popover, keys a control has handled, and browser or system shortcuts, are
 // left to the page.
@@ -9,7 +9,7 @@ import { FLY, type Held, type Motion, flying, letGo, panMotion, press, setShiftH
 import { beginRotation, releasePivot } from "./pivot";
 import { card } from "./home";
 import { toggleHelp } from "./help";
-import { toggleDetails } from "./panels";
+import { closeTopmost, toggleDetails } from "./panels";
 import { select } from "./picking";
 import { cycleTheme } from "./theme";
 import { closestOf } from "./dom";
@@ -103,20 +103,22 @@ function runShortcut(e: KeyboardEvent): boolean {
 }
 
 export function wireKeyboard(): void {
-  window.addEventListener("keydown", (e) => {
-    setShiftHeld(e.shiftKey);
-    // A menu that is open takes the Esc first: the menu closes itself after this event, and the selection stays.
-    // Read here, as the menu is still in the page.
-    const menuOpen =
-      document.querySelector(":popover-open, [data-slot=dropdown-menu-content], [data-slot=popover-content]") !== null;
-    if (isForFieldOrShortcut(e)) return;
-    if (e.key === "Escape") {
-      if (!menuOpen) {
+  // Escape is read in the capture phase, before the popups' own dismissal (Radix) runs: the open popup is the one the panel
+  // table holds, and it closes first, so the selection stays. Only with no popup open does Escape clear the selection.
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "Escape" || isForFieldOrShortcut(e)) return;
+      if (!closeTopmost()) {
         select(null);
         releasePivot();
       }
-      return;
-    }
+    },
+    { capture: true },
+  );
+  window.addEventListener("keydown", (e) => {
+    setShiftHeld(e.shiftKey);
+    if (isForFieldOrShortcut(e)) return;
     if (pressHeldKey(e) || runShortcut(e)) e.preventDefault();
   });
   window.addEventListener("keyup", (e) => {

@@ -12,7 +12,7 @@ import { pageName } from "./dom";
 import { errorText } from "../errors";
 import { busy, clearTypePrompt, fail, focusUrl, hideCard, showHome } from "./home";
 import { showDetails, showInspector } from "./panels";
-import { openScene, updateScene } from "./stage";
+import { type FileMemory, memoryOfStage, openScene, updateScene } from "./stage";
 import { type TabHandlers, showTabs } from "./tab-bar";
 import { addTab, chooseLeaving, closeTab, openTabs, tabsOf, uniqueLabel } from "./tab-model";
 import { type Attempt, attemptOf, beginAttempt, invalidateAttempts, stopIfStale } from "./attempts";
@@ -28,7 +28,8 @@ import { allowOpen } from "./open-files";
 
 // A tab: its label in the bar, its source, and the scene once loaded (kept, so choosing the tab again does not load
 // it). `attempt` counts the tab's loads (ui/attempts.ts); `told` is the loaded scene whose notes were shown, so they show
-// once; `autoMatchOff` is set by Undo, so the tab's next load asks for its map rather than applying a saved one.
+// once; `autoMatchOff` is set by Undo, so the tab's next load asks for its map rather than applying a saved one; `memory` is
+// the view and selection the file was left with, restored when it is shown again (ui/stage.ts).
 interface Tab {
   label: string;
   source: Source;
@@ -36,6 +37,7 @@ interface Tab {
   attempt: number;
   told: Loaded | null;
   autoMatchOff: boolean;
+  memory: FileMemory | null;
 }
 // A loaded scene and the title it is shown under (a gist's title is its file, which only the load knows). A structure
 // also has its model, and the notes its load raised.
@@ -81,7 +83,7 @@ const currentIsHome = (): boolean => currentTab()?.source.kind === "home";
 const shows = (tab: Tab, attempt: Attempt): boolean => attempt.current() && tab === currentTab();
 
 function tabOf(label: string, source: Source): Tab {
-  return { label, source, loaded: null, attempt: 0, told: null, autoMatchOff: false };
+  return { label, source, loaded: null, attempt: 0, told: null, autoMatchOff: false, memory: null };
 }
 
 function homeTab(): Tab {
@@ -173,6 +175,8 @@ function showHomeTab(): void {
 async function showCurrent(): Promise<void> {
   const tab = currentTab();
   if (!tab) return;
+  // The file on the stage keeps its view and selection before the page moves on (docs/ui.md, rule 2).
+  if (state.shown) state.shown.memory = memoryOfStage();
   clearTypePrompt();
   clearNote();
   for (const listener of state.tabListeners) listener(tab.source);
@@ -196,7 +200,7 @@ async function showCurrent(): Promise<void> {
 }
 
 function showLoaded(tab: Tab, loaded: Loaded): void {
-  openScene(loaded.doc, takePendingPose());
+  openScene(loaded.doc, takePendingPose(), tab.memory);
   state.shown = tab;
   if (loaded.model) {
     showModel(loaded.model, (doc) => {
@@ -269,6 +273,8 @@ export function reloadLive(version: string | null | undefined): Promise<void> {
 }
 
 function choose(k: number): Promise<void> {
+  // Choosing the file that is on the stage changes nothing: its view and selection stay (docs/ui.md, rule 2).
+  if (k === state.tabs.current && state.shown === state.tabs.tabs[k]) return Promise.resolve();
   // The start screen is transient: leaving it for another file closes it (ui/tab-model.ts chooseLeaving).
   state.tabs = chooseLeaving(state.tabs, k, (tab) => tab.source.kind === "home");
   renderBar();

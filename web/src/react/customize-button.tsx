@@ -3,24 +3,15 @@
 // is on a wide screen (style.css hides it on a wide screen, where the tab does this job). It shows as pressed while the dock
 // is open. Focus comes back to it when the dock shuts (ui/panels.ts toggleInspector).
 import { SlidersHorizontal } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { inspector, inspectorFocus, toggleInspector } from "../ui/panels";
+import { inspector, toggleInspector } from "../ui/panels";
 import { ICON } from "./icons";
 import { TipButton } from "./tip";
 import { useSignal } from "./use-signal";
 
 export function CustomizeButton() {
   const { open } = useSignal(inspector);
-  const returnTo = useSignal(inspectorFocus);
-  const button = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (returnTo !== "opener") return;
-    button.current?.focus({ preventScroll: true });
-    inspectorFocus.value = null;
-  }, [returnTo]);
   return (
     <TipButton
-      ref={button}
       id="customize-button"
       variant={open ? "secondary" : "ghost"}
       size="icon"

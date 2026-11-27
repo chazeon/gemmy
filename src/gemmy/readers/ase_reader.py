@@ -12,7 +12,7 @@ from pathlib import Path
 from ..elements import element_of_label
 from . import lammps_data, lammps_dump, typemap
 from .formats import format_of, read_text
-from .record import NO_VOLUME, AtomRecord, Structure, float_triple, lattice_rows, no_cell_error
+from .record import NO_VOLUME, AtomRecord, Structure, float_triple, lattice_rows, no_cell_error, partial_sites
 from .species_text import SPECIES_LINE, extxyz_species, read_poscar
 
 # gemmy's format names as ASE's: ASE reads a dump with the lammps-dump-text reader.
@@ -53,7 +53,7 @@ class AseReader:
             return _read_vasp(path, text)
         if fmt == "extxyz":
             return _read_extxyz(path, text)
-        return _from_atoms(_ase_read(text, fmt), path.name)
+        return _read_cif(path, text)
 
 
 def _ase_read_function():
@@ -98,6 +98,15 @@ def _read_extxyz(path: Path, text: str) -> Structure:
     if species is None:
         return _from_atoms(atoms, path.name)
     return _from_atoms(atoms, path.name, style_keys=species, elements=[element_of_label(s) for s in species])
+
+
+def _read_cif(path: Path, text: str) -> Structure:
+    """A CIF. ASE keeps the site of maximum occupancy where sites are disordered (R12), and its info holds the occupancy
+    table, with each atom's row in spacegroup_kinds: those give the partly occupied sites."""
+    atoms = _ase_read(text, "cif")
+    structure = _from_atoms(atoms, path.name)
+    structure.partial = partial_sites(atoms.info.get("occupancy"), atoms.arrays.get("spacegroup_kinds"))
+    return structure
 
 
 def _read_data(path: Path, text: str, types: Mapping[int, str]) -> Structure:

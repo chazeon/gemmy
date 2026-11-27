@@ -200,7 +200,7 @@ result = {
 """,
         _rocksalt(),
     )
-    assert "polyhedron" in result["polyhedronTitle"]
+    assert result["polyhedronTitle"] == "Mg (O)"
     assert result["polyhedronValue"]["a"] == 1
     assert result["polyhedronAlpha"] is True
     assert result["atomAlpha"] is True
@@ -353,13 +353,13 @@ const [, bond] = bondsNodes({
   config, names: ["Mg", "O"], distances: new Map(), apply: (edit) => edits.push(edit()), draft: null, onDraft: () => {},
   automatic, detection: { tolerance: 0.15, metalPairs: false }, onDetection: () => {}, detect: () => [],
 });
-const tagged = bond.summary;
+const tagged = bond.origin;
 bond.visible.commit(false);
 result = { tagged, stillAutomatic: automatic.has(identity), hidden: edits[0].bonds[0].visible };
 """,
         _rocksalt(),
     )
-    assert result["tagged"].startswith("auto · ")
+    assert result["tagged"] == "automatic"
     assert result["stillAutomatic"] is False
     assert result["hidden"] is False
 

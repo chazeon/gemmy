@@ -16,6 +16,7 @@ from typing import Any
 
 import pytest
 
+from gemmy.readers.record import PartialSite, partial_note
 from gemmy.readers.selection import READERS, problem
 from ts_bundle import available as node_available
 from ts_bundle import run
@@ -66,12 +67,23 @@ def _rounded(values) -> list:
     return [[round(x, ROUND_DIGITS) + 0.0 for x in row] for row in values]
 
 
-def _summary(lattice, elements, style_keys, fractional) -> dict[str, Any]:
+def _partial_rows(sites) -> list:
+    """The partly occupied sites as [index, [[symbol, occupancy], ...]] rows, occupancies rounded, in the order given.
+    `sites` holds (index, occupants) pairs, the occupants a list of (symbol, occupancy) pairs."""
+    return [
+        [index, [[symbol, round(share, ROUND_DIGITS) + 0.0] for symbol, share in occupants]]
+        for index, occupants in sites
+    ]
+
+
+def _summary(lattice, elements, style_keys, fractional, partial, note) -> dict[str, Any]:
     return {
         "lattice": _rounded(lattice),
         "elements": list(elements),
         "style_keys": list(style_keys),
         "fractional": _rounded(fractional),
+        "partial": _partial_rows(partial),
+        "note": note,
     }
 
 
@@ -86,6 +98,8 @@ def _outcome_from_python(case: Case, reader: str) -> dict[str, Any]:
         [a.element for a in structure.atoms],
         [a.style_key for a in structure.atoms],
         [a.fractional for a in structure.atoms],
+        [(site.index, list(site.occupants.items())) for site in structure.partial],
+        partial_note(structure.partial),
     )
 
 
@@ -100,20 +114,27 @@ def _ts_job(case: Case) -> dict[str, Any]:
 
 @functools.cache
 def _ts_outcomes() -> dict[str, dict[str, Any]]:
-    """The page's reader on every case, from one node process."""
+    """The page's reader on every case, from one node process; the page's note for each read is a second job."""
     results = run([_ts_job(case) for case in CASES])
-    outcomes = {}
+    outcomes, reads = {}, {}
     for case, result in zip(CASES, results, strict=True):
         if "error" in result:
             outcomes[case.name] = {"error": result["error"]}
             continue
         structure = result["ok"]["structure"]
+        reads[case.name] = structure["partial"]
         outcomes[case.name] = _summary(
             structure["lattice"],
             [a["element"] for a in structure["atoms"]],
             [a["styleKey"] for a in structure["atoms"]],
             [a["fractional"] for a in structure["atoms"]],
+            [(site["index"], list(site["occupants"].items())) for site in structure["partial"]],
+            None,
         )
+    names = list(reads)
+    notes = run([{"fn": "partialNote", "args": [reads[name]]} for name in names])
+    for name, note in zip(names, notes, strict=True):
+        outcomes[name]["note"] = note["ok"]
     return outcomes
 
 
@@ -129,6 +150,10 @@ def _check(case: Case, outcome: dict[str, Any]) -> None:
     assert outcome["elements"] == expected["elements"]
     assert outcome["style_keys"] == expected["style_keys"]
     assert outcome["fractional"] == expected["fractional"]
+    # A case with no partial sites in its expectation has none: no note is raised where the file has none.
+    expected_partial = [(site["index"], list(site["occupants"].items())) for site in expected.get("partial", [])]
+    assert outcome["partial"] == _partial_rows(expected_partial)
+    assert outcome["note"] == expected.get("note")
 
 
 def _marks(reader: str, case: Case) -> list:
@@ -181,3 +206,31 @@ def test_ase_only_formats_are_read_by_ase(tmp_path: Path) -> None:
     write(traj, atoms)
     structure = READERS["ase"].read(traj, {})
     assert sorted(a.element for a in structure.atoms) == sorted(atoms.get_chemical_symbols())
+
+
+# The note's wording (R12) on one mixed site, several, a vacancy and none: Python and the page give each the same text,
+# written out here.
+NOTE_WORDING = [
+    (
+        [{"index": 0, "occupants": {"Co": 0.7, "Fe": 0.3}}],
+        "1 mixed site: kept the larger share (Co 0.7 over Fe 0.3). Partial occupancy isn't drawn.",
+    ),
+    (
+        [{"index": 0, "occupants": {"Co": 0.7, "Fe": 0.3}}, {"index": 3, "occupants": {"Mn": 0.5, "Ni": 0.5}}],
+        "2 mixed sites: kept the larger share at each (first: Co 0.7 over Fe 0.3). Partial occupancy isn't drawn.",
+    ),
+    (
+        [{"index": 1, "occupants": {"Cl": 0.5}}],
+        "1 partly occupied site: kept the larger share (Cl 0.5). Partial occupancy isn't drawn.",
+    ),
+    ([], None),
+]
+
+
+@pytest.mark.skipif(not node_available(), reason="node or web/node_modules is missing (cd web && npm ci)")
+@pytest.mark.parametrize(("sites", "text"), NOTE_WORDING)
+def test_partial_note_wording_is_the_same_on_the_page(sites: list, text: str | None) -> None:
+    python_sites = [PartialSite(site["index"], site["occupants"]) for site in sites]
+    [page] = run([{"fn": "partialNote", "args": [sites]}])
+    assert partial_note(python_sites) == text
+    assert page["ok"] == text

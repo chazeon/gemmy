@@ -11,6 +11,7 @@ import { hideBondsCoveredByPolyhedra, hideCentresOfPolyhedra } from "../compile/
 import { compileScene } from "../compile/pipeline";
 import { initStructureReader, readStructure } from "../structure/fastatoms";
 import { neighborSource } from "../structure/neighbors";
+import { partialNote } from "../structure/partial";
 import type { Structure } from "../structure/structure";
 
 // The style of an element the table does not have (the dummy X): a neutral grey, at the viewer's default radius. The
@@ -62,6 +63,7 @@ function fileSource(files: readonly SidecarFile[]): MapFileSource {
 const compiler = {
   ready: initStructureReader(),
   readStructure,
+  partialNote,
   neighborSource,
   loadSceneConfig,
   defaultConfig,

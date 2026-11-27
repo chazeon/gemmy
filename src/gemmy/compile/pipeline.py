@@ -15,7 +15,7 @@ import numpy as np
 
 from ..config import BondRule, SceneConfig, load_scene_config, save_scene
 from ..readers import load_structure
-from ..readers.record import Structure
+from ..readers.record import Structure, partial_note
 from ..scene import (
     AtomPrimitive,
     BondPrimitive,
@@ -528,6 +528,9 @@ def compile_scene_from_files(config_path: str | Path, structure: str | Path | No
     relative file names in the config resolve against the config's folder."""
     config = load_scene_config(config_path)
     atoms = load_structure(structure_path(config_path, structure), config.types)
+    note = partial_note(atoms.partial)
+    if note is not None:
+        warnings.warn(note, UserWarning, stacklevel=2)
     return compile_scene(atoms, config, base_dir=Path(config_path).resolve().parent)
 
 

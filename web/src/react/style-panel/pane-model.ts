@@ -26,6 +26,9 @@ export type PaneNode =
       kind: "folder";
       title: string;
       summary?: string;
+      // Where a rule came from, for the rows that have an origin: a detected rule (automatic) or the user's own (manual).
+      // The adapter draws it as an icon at the start of the summary.
+      origin?: "automatic" | "manual";
       // The colour dot before the name, and whether the item is hidden (the dot is then drawn faded).
       swatch?: { rgba: Rgba; dim: boolean };
       // The eye before the name: whether the item is shown, and the commit that shows or hides it (the folder does not fold).

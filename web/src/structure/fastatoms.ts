@@ -21,6 +21,7 @@ import { dataTypeNames, noMapIdentity, tiltsInLabelOrder } from "./lammps-data";
 import { extxyzSpecies, vasp4AtomLabels, vasp4CommentSpecies } from "./species-text";
 import { hasEntries, type TypeMap, type TypeSignature, typeSignatureOf, unmappedTypes, unresolvedTypes } from "./types";
 import { elementOfLabel } from "./elements";
+import { partialSites } from "./partial";
 import type { Vec3 } from "../types";
 
 export interface ReadStructureOptions {
@@ -212,6 +213,15 @@ function withVasp4Labels(structure: Structure, reader: ReaderEntry, text: string
   return { ...structure, atoms: structure.atoms.map((atom, k) => ({ ...atom, styleKey: labels[k] })) };
 }
 
+// R12: a CIF's partly occupied sites, from the binding's occupancy table (info) and each atom's row (spacegroup_kinds).
+function withPartial(structure: Structure, atoms: Atoms, reader: ReaderEntry): Structure {
+  if (reader.fastatomsFormat !== "cif") return structure;
+  const kinds = atoms.arrays.includes("spacegroup_kinds")
+    ? (atoms.getArray("spacegroup_kinds") as Float64Array)
+    : undefined;
+  return { ...structure, partial: partialSites(atoms.info.occupancy, kinds) };
+}
+
 // The structure and, for a LAMMPS file, its unresolved types. The caller disposes the atoms.
 function describe(
   atoms: Atoms,
@@ -221,7 +231,11 @@ function describe(
   choice: TypeChoice | undefined,
 ): ReadStructureResult {
   const keys: StyleKeys = typeof reader.styleKeys === "function" ? reader.styleKeys(text) : reader.styleKeys;
-  const structure = withExtxyzSpecies(withVasp4Labels(toStructure(atoms, name, keys), reader, text), reader, text);
+  const structure = withPartial(
+    withExtxyzSpecies(withVasp4Labels(toStructure(atoms, name, keys), reader, text), reader, text),
+    atoms,
+    reader,
+  );
   // Only a LAMMPS file has a type array, and it is numeric.
   if (!(reader.typeNumbers && atoms.arrays.includes("type"))) {
     return { structure, unresolvedTypes: [], typeSignature: null };
@@ -305,7 +319,7 @@ function toStructure(atoms: Atoms, name: string, keys: StyleKeys): Structure {
     fractional: triple(scaled, 3 * k),
     styleKey: styleKeys[k],
   }));
-  return { comment: name, lattice, pbc: [px, py, pz], atoms: records };
+  return { comment: name, lattice, pbc: [px, py, pz], atoms: records, partial: [] };
 }
 
 // Three numbers from a flat array, from offset `at`.

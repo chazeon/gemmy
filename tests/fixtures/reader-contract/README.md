@@ -50,7 +50,9 @@ The page reads each input as its raw bytes (a gzip file is gunzipped by the page
 - R11-extxyz-symbols: an extended XYZ with a Lattice header; keys are the symbols.
 - R11-extxyz-z-disagrees: the Fe atom's Z column says 8; the species Fe decides.
 - R12-cif-labels: a CIF whose atom labels (`Na1`, `Cl1`) are dropped; the type symbols give the keys.
-- R12-cif-disorder: Fe at occupancy 0.3 and Co at 0.7 on one site: Co (the larger) is kept.
+- R12-cif-disorder: Fe at occupancy 0.3 and Co at 0.7 on one site: Co (the larger) is kept, and the site is partial
+  (`partial`: its index 0, occupants Co 0.7 over Fe 0.3).
+- R12-cif-ordered-occupancy: one species per site at occupancy 1.0, with an occupancy column: no partial sites.
 - R13-nomap-data-masses: no map; the Masses comments name the elements (24.305 is Mg, 15.999 is O).
 - R13-nomap-masses-disagree: the comment `# Mg1` on a type whose mass is O's: the comment wins, its text is the label.
 - R13-nomap-mass-no-comment: no comments; 24.305 is within 0.1 u of Mg only, so Mg, keyed by its type number.

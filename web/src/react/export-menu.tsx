@@ -52,7 +52,7 @@ function ExportMenu() {
     <>
       <DropdownMenu open={popup.open} onOpenChange={popup.onOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button id="export-button" style={nudge(0, 1)} className="[body.no-scene_&]:hidden">
+          <Button id="export-button" style={nudge(0, 1)} className="no-scene:hidden">
             <Download size={18} strokeWidth={2} />
             Export
           </Button>

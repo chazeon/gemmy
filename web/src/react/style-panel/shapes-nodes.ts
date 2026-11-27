@@ -40,7 +40,6 @@ import {
 } from "../../ui/style-panel-model";
 import type { Choice, PaneNode } from "./pane-model";
 import {
-  autoSummary,
   choiceValue,
   colorOf,
   distanceRange,
@@ -162,11 +161,12 @@ function polyhedronNode(input: ShapesInput, index: number): PaneNode {
   // Any edit of the polyhedron ends its automatic status: the rule is the user's from then on.
   const change = endingAutomatic(apply, automatic, rule.center);
   const isAutomatic = automatic.has(rule.center);
-  const windowText = windowSummary(rule.min_distance, rule.max_distance, rule.visible);
+  const windowText = windowSummary(rule.min_distance, rule.max_distance);
   return {
     kind: "folder",
     title: polyhedronFolderTitle(rule),
-    summary: autoSummary(isAutomatic, windowText),
+    summary: windowText,
+    origin: isAutomatic ? "automatic" : "manual",
     swatch: { rgba: rgbaOf(rule.color), dim: !rule.visible },
     visible: { value: rule.visible, commit: (visible) => change(() => setPolyhedronVisible(config, index, visible)) },
     expanded: false,
@@ -222,11 +222,12 @@ function clusterNode({ config, names, distances, apply, automaticRings }: Shapes
   // Any edit of the cluster ends its automatic status: the rule is the user's from then on.
   const change = endingAutomatic(apply, automaticRings, key);
   const isAutomatic = automaticRings.has(key);
-  const windowText = windowSummary(rule.min_distance, rule.max_distance, rule.visible);
+  const windowText = windowSummary(rule.min_distance, rule.max_distance);
   return {
     kind: "folder",
     title: shapeTitle(atoms, rule.kind),
-    summary: autoSummary(isAutomatic, windowText),
+    summary: windowText,
+    origin: isAutomatic ? "automatic" : "manual",
     swatch: { rgba: rgbaOf(rule.color), dim: !rule.visible },
     visible: { value: rule.visible, commit: (visible) => change(() => setClusterVisible(config, index, visible)) },
     expanded: false,
@@ -345,9 +346,9 @@ function clusterDraftNodes({ names, apply, distances, config, onDraft }: ShapesI
   ];
 }
 
-// The folder title of a polyhedron rule: its centre and ligands, as the style target finds it (style-target.ts).
+// The folder title of a polyhedron rule: its centre and ligands ("Fe (O)"), as the style target finds it (style-target.ts).
 export function polyhedronFolderTitle(rule: PolyhedronRule): string {
-  return shapeTitle(`${rule.center} (${rule.ligands.join(NAMES_SEPARATOR)})`, "polyhedron");
+  return `${rule.center} (${rule.ligands.join(NAMES_SEPARATOR)})`;
 }
 
 export function shapeTitle(name: string, kind: string): string {

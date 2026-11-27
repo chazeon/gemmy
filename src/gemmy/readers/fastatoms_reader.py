@@ -11,7 +11,7 @@ from pathlib import Path
 from ..elements import element_of_label
 from . import lammps_data, lammps_dump, typemap
 from .formats import LAMMPS_FORMATS, format_of, read_text
-from .record import NO_VOLUME, AtomRecord, Structure, float_triple, lattice_rows, no_cell_error
+from .record import NO_VOLUME, AtomRecord, Structure, float_triple, lattice_rows, no_cell_error, partial_sites
 from .species_text import extxyz_species, read_poscar
 
 
@@ -34,7 +34,11 @@ class FastatomsReader:
         # A CIF, or any other format the binding reads from a file: its own options (a CIF's disorder rule) apply.
         with path.open("rb") as handle:
             atoms = _core_read(handle, fmt, **_core_options(fmt))
-        return _structure(atoms, path)
+        structure = _structure(atoms, path)
+        if fmt == "cif":
+            # The partly occupied sites (R12) come from the binding's occupancy table, by each atom's row.
+            structure.partial = partial_sites(atoms.info.get("occupancy"), atoms.arrays.get("spacegroup_kinds"))
+        return structure
 
 
 def _core_options(fmt: str) -> dict[str, str]:

@@ -3,12 +3,12 @@
 // a bottom sheet over the page; the card's place and its open state are in style.css and ui/panels.ts. It is drawn in the
 // overlay, not in the dock: the dock is for the style sections (react/inspector/inspector.tsx).
 import { Check, Copy, Scan, ScanBox, X } from "lucide-react";
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DISTORTION_NOTE, type BondEnd, type Readout, SUPERCELL_NOTE, readout, readoutTitle } from "../ui/readout";
 import { centreShown, centreShownAlong } from "../ui/readout-centre";
-import { chooseDetails, detailsFocus, detailsOpen } from "../ui/panels";
+import { chooseDetails, detailsOpen } from "../ui/panels";
 import { AXES, axisColour } from "./axis-view-icon";
 import { Group } from "./group";
 import { ICON_SMALL, MENU_ICON } from "./icons";
@@ -19,24 +19,15 @@ const COPY_FEEDBACK_MS = 1500;
 
 export function SelectionCard() {
   const open = useSignal(detailsOpen);
-  const focus = useSignal(detailsFocus);
   const data = useSignal(readout);
-  const frame = useRef<HTMLDivElement>(null);
-  // Opening the card brings the focus to the card itself: a button would open its tip on the focus.
-  useEffect(() => {
-    if (focus !== "card") return;
-    frame.current?.focus({ preventScroll: true });
-    detailsFocus.value = null;
-  }, [focus]);
   if (!open) return null;
   return (
     <Card
-      ref={frame}
       id="info"
       role="region"
       tabIndex={-1}
       aria-label="Selection details"
-      className="gap-3 py-3 outline-none [body.no-scene_&]:hidden"
+      className="sheet gap-3 py-3 outline-none no-scene:hidden"
     >
       <CardHeader className="px-3">
         <CardTitle role="heading" aria-level={2} className="text-[15px]">

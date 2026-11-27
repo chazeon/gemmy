@@ -6,13 +6,13 @@
 // text on the page (triad.ts).
 import * as THREE from "three";
 import { LOOK } from "../config";
-import { outlines, camera, loaded } from "../state";
+import { outlines, camera, loaded, showAxes } from "../state";
 import { captureMode } from "../ui/capture";
 import {
   OUTLINE_THICKNESS,
   OUTLINE_VERTEX_SHADER,
   addToonLights,
-  cssVar,
+  colourVar,
   outlineMaterial,
   renderer,
   stage,
@@ -57,7 +57,7 @@ let builtLength = 0;
 // structure but are occluded among themselves. `transparent` is the PNG export without a page background: the faded
 // parts then take their opacity rather than a mix toward the background.
 export function renderTriad(transparent = false, inset = 0): void {
-  if (captureMode) return; // capture mode draws the structure alone
+  if (captureMode || !showAxes.value) return; // capture mode and the Axes toggle off draw the structure alone
   const width = stage.clientWidth;
   const height = stage.clientHeight;
   const layout = triadLayout(latticeInView(loaded.value.lattice, camera.value.quaternion), width, height, inset);
@@ -65,7 +65,7 @@ export function renderTriad(transparent = false, inset = 0): void {
   const parts = triadModel(layout.length, loaded.value.lattice);
   ensureGeometry(parts, layout.length);
   placeTriadCamera(triadCamera, camera.value.quaternion, corner, layout.length);
-  const background = transparent ? null : new THREE.Color(cssVar("--bg").trim());
+  const background = transparent ? null : new THREE.Color(colourVar("--bg"));
   paintSolids(parts, layout.items, background);
   placeSolids(parts);
 

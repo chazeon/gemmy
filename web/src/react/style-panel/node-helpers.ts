@@ -9,23 +9,13 @@ import type { Choice, Rgba } from "./pane-model";
 // The bars of a window's histogram: enough to show the shells of the distances, few enough to read on the strip.
 const WINDOW_HISTOGRAM_BINS = 40;
 
-const HIDDEN = " · hidden";
-
 export function fixed(value: number): string {
   return String(Number(value.toFixed(2)));
 }
 
-export function hiddenMark(visible: boolean): string {
-  return visible ? "" : HIDDEN;
-}
-
-export function windowSummary(min: number, max: number, visible: boolean): string {
-  return `${fixed(min)}–${fixed(max)} Å${hiddenMark(visible)}`;
-}
-
-// A folder's summary while it is automatic: "auto" before the text, so the user sees the detection made it.
-export function autoSummary(isAutomatic: boolean, text: string): string {
-  return isAutomatic ? `auto · ${text}` : text;
+// A folder's summary is its value only: a hidden item shows the crossed-out eye, the one indicator of visibility.
+export function windowSummary(min: number, max: number): string {
+  return `${fixed(min)}–${fixed(max)} Å`;
 }
 
 // The control's commit for an item the detection may own: the edit runs through apply, then the item (its key in `owned`)

@@ -15,19 +15,15 @@ import { LensRow } from "./lens-row";
 import { SelectionCard } from "./selection-card";
 import { TopBar } from "./top-bar";
 import { useSignal } from "./use-signal";
-import type { CSSProperties } from "react";
 
 const TIP_DELAY_MS = 300;
-
-// The dock's width is the page's own token (style.css --dock-width), which the stock Sidebar reads as its width.
-const SIDEBAR_STYLE = { "--sidebar-width": "var(--dock-width)" } as CSSProperties;
 
 function Overlay() {
   // The dock's open state is the sidebar's: the provider is controlled by the inspector signal, which the edge tab toggles.
   const { open } = useSignal(inspector);
   // The start screen comes first: it spans the grid under the islands, which are drawn after it.
   return (
-    <SidebarProvider open={open} className="contents" style={SIDEBAR_STYLE}>
+    <SidebarProvider open={open} className="contents">
       <TooltipProvider delayDuration={TIP_DELAY_MS}>
         <Home />
         <TopBar />
@@ -49,6 +45,4 @@ export function mountOverlay(container: HTMLElement): void {
   flushSync(() => {
     createRoot(container).render(<Overlay />);
   });
-  // The transitions of the dock, the stage, the island layer and the edge tab wait for the first paint (style.css, data-ready).
-  requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.setAttribute("data-ready", "")));
 }

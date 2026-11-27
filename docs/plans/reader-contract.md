@@ -108,7 +108,9 @@ and when they disagree the species is the one the file's own tools (ASE) take as
 
 **R12 CIF.** The cell comes from the `_cell_` lines. A site's element is the element of its type symbol (R9); the atom
 labels (`Na1`) are dropped, and the style key is the element symbol. A disordered site (sites at one position, with
-occupancies that share it) keeps the site with the largest occupancy, at that site's place in the file's order.
+occupancies that share it) keeps the site with the largest occupancy, at that site's place in the file's order. The
+reader also reports each kept site whose occupants are not one species at 1.0 (mixed, or a vacancy), with its occupants
+and their occupancies, largest first: `Structure.partial`, one entry per such atom.
 Reason: a scene shows one atom per place, so the occupant with the largest share is the one the structure is most
 likely to hold. Labels are numbering of the sites, not species names, so they are not keys.
 

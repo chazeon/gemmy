@@ -51,7 +51,7 @@ export function MessageLine() {
       role={message.kind === "error" ? "alert" : "status"}
       data-kind={message.kind}
       title={message.text}
-      className={cn("message-line", isFading && "fade")}
+      className={cn("message-line hit", isFading && "fade")}
     >
       <Sign className="message-sign" aria-hidden="true" />
       <span className="message-text">{message.text}</span>
