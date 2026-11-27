@@ -430,9 +430,21 @@ async function keyboardClose(context) {
     `[...document.querySelectorAll('[data-testid="file-item"]')].find((el) => el.getAttribute("aria-current") !== "true" && el.querySelector("button"))?.dataset.label ?? null`,
   );
   const HIGHLIGHTED = `document.activeElement?.dataset.label ?? null`;
-  // The walk starts at the first row (Home), so the target is always below it, wherever the focus began.
+  // Radix moves the focus to a row in a timer queued by the key (Home: the first row; an arrow: the next one). A later key
+  // must not find that timer still pending, or it would move the focus back. So after each key the page runs a zero-delay
+  // timer of its own, which fires after the one Radix queued: the focus has landed before the next key. The walk starts at
+  // the first row (Home), so the target is always below it.
+  const landed = () => evaluate(`new Promise((ok) => setTimeout(ok, 0))`);
+  const rows = await evaluate(`[...document.querySelectorAll('[data-testid="file-item"]')].map((el) => el.dataset.label)`);
+  const targetRow = rows.indexOf(target);
   await pressKey(HOME);
-  for (let step = 0; step < 40 && (await evaluate(HIGHLIGHTED)) !== target; step++) await pressKey(ARROW_DOWN);
+  await landed();
+  await waitFor(`${HIGHLIGHTED} === ${JSON.stringify(rows[0])}`, "the focus on the first file row");
+  for (let row = 1; row <= targetRow; row++) {
+    await pressKey(ARROW_DOWN);
+    await landed();
+    await waitFor(`${HIGHLIGHTED} === ${JSON.stringify(rows[row])}`, `the focus on the file row ${rows[row]}`);
+  }
   const highlighted = await evaluate(HIGHLIGHTED);
   await pressKey(DELETE);
   await waitFor(`!${FILE_MENU_OPEN}`, "the file menu to shut");
